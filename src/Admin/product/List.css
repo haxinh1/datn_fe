@@ -1,0 +1,46 @@
+.page-title {
+  font-size: 2rem;
+  color: blue;
+}
+.tick {
+  display: block;
+  margin: 0 auto;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+.action-link {
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+.action-link-purple {
+  color: purple;
+}
+.action-link-blue {
+  color: blue;
+}
+.divider {
+  height: 20px;
+  width: 1.5px;
+  background-color: black;
+  margin: 0 8px;
+}
+.action-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+.select-item {
+  margin-bottom: 0;
+  width: 200px;
+}
