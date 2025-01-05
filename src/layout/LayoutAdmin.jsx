@@ -1,98 +1,108 @@
-import React from 'react';
-import { Breadcrumb, Layout, Menu, theme } from 'antd';
-import { Link, Outlet } from 'react-router-dom';
-import { BookOutlined, FormOutlined, HomeOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
+import React from "react";
+import { Link, Outlet } from "react-router-dom";
+import { Breadcrumb, Layout, Menu, theme } from "antd";
+import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, ShoppingCartOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
 
-const { Header, Content, Footer } = Layout;
-
-const items = [
-  {
-    key: 'home',
-    label: <Link to="/"> <HomeOutlined style={{ marginRight: '8px' }} />Trang chủ</Link>,
-  },
-  {
-    key: 'admin',
-    label: <Link to="/admin"><BookOutlined style={{ marginRight: '8px' }} />Thống kê</Link>,
-  },
-  {
-    key: 'register',
-    label: <Link to="/register"><FormOutlined style={{ marginRight: '8px' }} />Đăng ký</Link>,
-  },
-  {
-    key: 'login',
-    label: <Link to="/login"><UserOutlined style={{ marginRight: '8px' }} />Đăng nhập</Link>,
-  },
-  {
-    key: 'cart',
-    label: <Link to="/cart"><ShoppingCartOutlined style={{ marginRight: '8px' }} />Giỏ hàng</Link>,
-  },
-];
+const { Header, Content, Footer, Sider } = Layout;
 
 const LayoutAdmin = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-  
+
+  const menuItems = [
+    {
+      key: "list-pr",
+      icon: <BookOutlined />,
+      label: <Link to="/list-pr">Quản lý sản phẩm</Link>,
+    },
+    {
+      key: "category",
+      icon: <BilibiliFilled />,
+      label: <Link to="/categories">Thể Loại</Link>,
+    },
+    {
+      key: "bill",
+      icon: <BilibiliFilled />,
+      label: <Link to="/bill">Hóa đơn</Link>,
+    },
+    {
+      key: "inbox",
+      icon: <MessageOutlined />,
+      label: <Link to="/inbox">Tin nhắn</Link>,
+    },
+    {
+      key: "register",
+      icon: <FormOutlined />,
+      label: <Link to="/register">Đăng ký</Link>,
+    },
+    {
+      key: "login",
+      icon: <UserOutlined />,
+      label: <Link to="/login">Đăng nhập</Link>,
+    },
+    {
+      key: "home",
+      icon: <HomeOutlined />,
+      label: <Link to="/home">Trang chủ</Link>,
+    },
+  ];
+
   return (
-    <Layout>
-      <Header
+    <Layout style={{ minHeight: "100vh" }}>
+      {/* Sidebar */}
+      <Sider
         style={{
-          position: 'sticky', 
+          height: "100vh",
+          position: "fixed", // Cố định Sidebar
+          left: 0,
           top: 0,
-          zIndex: 1,
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
+          zIndex: 10,
         }}
+        breakpoint="lg"
+        collapsedWidth="0"
+        onBreakpoint={(broken) => console.log(broken)}
+        onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
-        <div className="demo-logo" />
-        
-        <Menu
-          theme="dark"
-          mode="horizontal"
-          // defaultSelectedKeys={['home']}
-          items={items}
+        <div
+          className="demo-logo-vertical"
           style={{
-            flex: 1,
-            minWidth: 0,
+            height: "32px",
+            margin: "16px",
+            background: "rgba(255, 255, 255, 0.2)",
           }}
         />
-      </Header>
-      
-      <Content
-        style={{
-          padding: '0 48px',
-        }}
-      >
-        <Breadcrumb
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={["admin"]} items={menuItems} />
+      </Sider>
+
+      {/* Main Layout */}
+      <Layout style={{ marginLeft: 200 }}> {/* Bù lại chiều rộng của Sider */}
+        <Header
           style={{
-            margin: '16px 0',
-          }}
-        >
-          {/* <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item> */}
-        </Breadcrumb>
-        <div
-          style={{
-            padding: 24,
-            minHeight: 550,
+            padding: 0,
             background: colorBgContainer,
-            borderRadius: borderRadiusLG,
+          }}
+        />
+           
+        <Content
+          style={{
+            margin: "24px 16px 0",
           }}
         >
-          <Outlet />
-        </div>
-      </Content>
-      
-      <Footer
-        style={{
-          textAlign: 'center',
-        }}
-      >
-        {/* Ant Design ©{new Date().getFullYear()} Created by Ant UED */}
-        Design by quang0suy
-      </Footer>
+          <Breadcrumb style={{ margin: "16px 0" }} />
+          <div
+            style={{
+              padding: 24,
+              minHeight: 360,
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+            }}
+          >
+            <Outlet />
+          </div>
+        </Content>
+        <Footer style={{ textAlign: "center" }}>Design by Group FE</Footer>
+      </Layout>
     </Layout>
   );
 };

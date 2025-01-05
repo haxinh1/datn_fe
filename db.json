@@ -1,130 +1,56 @@
 {
   "products": [
     {
-      "name": "nam long",
-      "price": 44,
-      "quantity": 14,
-      "available": true,
-      "type": "type1",
-      "category": "idCategory2",
-      "description": "ggg",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727535076/kqkkhzkoxu51xbkivckl.jpg",
-      "id": "1f96"
-    },
-    {
-      "id": "859b",
-      "name": "nam long",
-      "price": 2,
-      "quantity": 10,
-      "available": true,
-      "type": "type2",
-      "category": "idCategory2",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727537622/srh8ycw1krleuuem7fya.jpg"
-    },
-    {
-      "id": "df6a",
       "name": "iphone",
       "price": 555,
+      "sell_price": 555,
+      "sale_price": 555,
+      "sale_price_start_at": 555,
+      "sale_price_end_at": 555,
+      "created_at": "03/01/2025",
+      "updated_at": "03/01/2025",
       "quantity": 10,
-      "available": true,
-      "type": "type1",
+      "view": 250,
       "category": "idCategory2",
-      "description": "ffff",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727579531/tp8dmtvprs5g4y2lfbqu.jpg"
+      "content": "ggggdfgdfgdf",
+      "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539167/ve8oeqf4ozrvv9pavdoy.jpg",
+      "id": "1f96"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Nam",
+      "parentId": null
     },
     {
-      "name": "Product 4",
-      "price": 6666,
-      "quantity": 10,
-      "available": true,
-      "type": "type1",
-      "category": "idCategory1",
-      "description": "666",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727598408/nlkqv0bkiuakhlgjifwq.webp",
-      "id": "d9ac"
+      "id": 2,
+      "name": "Nữ",
+      "parentId": null
     },
     {
-      "name": "Máy giặt",
-      "price": 99999,
-      "quantity": 10,
-      "type": "type1",
-      "category": "idCategory1",
-      "description": "gfdfd",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572284/y8n1lddjdz1uawlbtn0y.jpg",
-      "id": "7ed1"
+      "name": "quần nam",
+      "parentId": "1",
+      "id": 3
     },
     {
-      "id": "dfe0",
-      "name": "hhhh",
-      "price": 6789,
-      "quantity": 10,
-      "available": true,
-      "type": "type2",
-      "category": "idCategory1",
-      "description": "535345",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727596897/tuquhyk2lupxzqgb0d7k.png"
+      "name": "váy",
+      "parentId": "2",
+      "id": 4
+    }
+  ],
+  "attributes": [
+    {
+      "id": "1",
+      "name": "Size"
     },
     {
-      "name": "quang quang",
-      "price": 3424,
-      "quantity": 10,
-      "category": "idCategory1",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572917/idgmqd6xgyasjpp67kva.jpg",
-      "id": "0f7d"
+      "id": "2",
+      "name": "Màu"
     },
     {
-      "id": "60e7",
-      "name": "MacBook",
-      "price": 43345,
-      "quantity": 10,
-      "available": true,
-      "category": "idCategory2",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727596988/hljmromhzzbafb0k0giw.jpg"
-    },
-    {
-      "name": "huy quang",
-      "price": 666,
-      "quantity": 10,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572202/y5fj3ejxxsps32pdv06m.png",
-      "available": true,
-      "type": "type1",
-      "category": "idCategory2",
-      "id": "9Gr7U6f"
-    },
-    {
-      "name": "Product ddddd",
-      "price": 9875,
-      "quantity": 10,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572563/h7rrprtxzq9ltmmduykn.webp",
-      "type": "type1",
-      "category": "idCategory2",
-      "id": "cPX2TUu"
-    },
-    {
-      "name": "jdasdasda",
-      "price": 64355,
-      "quantity": 10,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572738/enqe4scan211vps9gmzx.jpg",
-      "type": "type2",
-      "id": "ciJ1tSs"
-    },
-    {
-      "name": "Product ddddd",
-      "price": 6545,
-      "quantity": 10,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572781/kvcyy5yiklsc4og5grkn.webp",
-      "category": "idCategory2",
-      "description": "hgdgdf",
-      "id": "r02K4m0"
-    },
-    {
-      "name": "Product ddddd",
-      "price": 123456,
-      "quantity": 10,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1729525057/o7vvjju4lu4f7suf90k5.jpg",
-      "type": "type2",
-      "category": "idCategory2",
-      "id": "HFX7jke"
+      "id": "1736078654385",
+      "name": "dáng"
     }
   ],
   "users": [
@@ -139,6 +65,79 @@
       "password": "$2a$10$O0pBWKRBB.hpR.RRl2yB.eijOO2AiIYsW1derLN88Ob5R5R9mT.2K",
       "username": "quang",
       "id": "jfiuKyR"
+    }
+  ],
+  "bills": [
+    {
+      "id": 1,
+      "customerName": "Nguyen Van A",
+      "total": 1200000,
+      "date": "2025-01-01",
+      "items": [
+        {
+          "name": "Áo sơ mi trắng",
+          "quantity": 2,
+          "price": 300000
+        },
+        {
+          "name": "Quần jeans xanh",
+          "quantity": 1,
+          "price": 600000
+        }
+      ],
+      "address": "123 Đường ABC, Hà Nội"
+    },
+    {
+      "id": 2,
+      "customerName": "Le Thi B",
+      "total": 850000,
+      "date": "2025-01-02",
+      "items": [
+        {
+          "name": "Váy dạ hội",
+          "quantity": 1,
+          "price": 850000
+        }
+      ],
+      "address": "456 Đường DEF, TP. Hồ Chí Minh"
+    },
+    {
+      "id": 3,
+      "customerName": "Tran Van C",
+      "total": 1650000,
+      "date": "2025-01-03",
+      "items": [
+        {
+          "name": "Áo khoác nam",
+          "quantity": 1,
+          "price": 950000
+        },
+        {
+          "name": "Quần thể thao",
+          "quantity": 2,
+          "price": 350000
+        }
+      ],
+      "address": "789 Đường GHI, Đà Nẵng"
+    },
+    {
+      "id": 4,
+      "customerName": "Pham Thi D",
+      "total": 2000000,
+      "date": "2025-01-04",
+      "items": [
+        {
+          "name": "Áo len nữ",
+          "quantity": 3,
+          "price": 600000
+        },
+        {
+          "name": "Chân váy dài",
+          "quantity": 2,
+          "price": 400000
+        }
+      ],
+      "address": "101 Đường JKL, Cần Thơ"
     }
   ]
 }
