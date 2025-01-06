@@ -1,0 +1,66 @@
+{
+  "products": [
+    {
+      "name": "iphone",
+      "price": 555,
+      "sell_price": 555,
+      "sale_price": 555,
+      "sale_price_start_at": 555,
+      "sale_price_end_at": 555,
+      "created_at": "03/01/2025",
+      "updated_at": "03/01/2025",
+      "quantity": 10,
+      "view": 250,
+      "category": "idCategory2",
+      "content": "ggggdfgdfgdf",
+      "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539167/ve8oeqf4ozrvv9pavdoy.jpg",
+      "id": "1f96"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Nam",
+      "parentId": null
+    },
+    {
+      "id": 2,
+      "name": "Nữ",
+      "parentId": null
+    },
+    {
+      "name": "quần nam",
+      "parentId": "1",
+      "id": 3
+    },
+    {
+      "name": "váy",
+      "parentId": "2",
+      "id": 4
+    }
+  ],
+  "attributes": [
+    {
+      "id": "1",
+      "name": "Size"
+    },
+    {
+      "id": "2",
+      "name": "Màu"
+    }
+  ],
+  "users": [
+    {
+      "username": "nam long",
+      "email": "abc@gmail.com",
+      "password": 444,
+      "id": "1"
+    },
+    {
+      "email": "quang@gmail.com",
+      "password": "$2a$10$O0pBWKRBB.hpR.RRl2yB.eijOO2AiIYsW1derLN88Ob5R5R9mT.2K",
+      "username": "quang",
+      "id": "jfiuKyR"
+    }
+  ]
+}
