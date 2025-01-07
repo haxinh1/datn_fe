@@ -10,8 +10,7 @@ import categorySchema from './../../schemas/categorySchema';
 const Categories = () => {
     const [categories, setCategories] = useState([])
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [name, setName] = useState("");
-    const [parentId, setParentId] = useState("");
+   
 
 
     const {
@@ -59,13 +58,13 @@ const Categories = () => {
     }
 
     const getParentCategoryName = (parentId) => {
-        if (!parentId) return "Không có danh mục cha"; 
+        if (!parentId) return "Không có danh mục cha";
         const parent = categories.find(cat => cat.id === Number(parentId));
         return parent ? parent.name : "Không xác định";
     };
 
     const onSubmit = async (data) => {
-        
+
         const response = await categoryServices.createCategory(data)
         if (response) {
             setCategories([...categories, response])
@@ -132,6 +131,19 @@ const Categories = () => {
                                 {errors.parentId && (
                                     <p className="text-xs text-red-500 mt-1">{errors.parentId.message}</p>
                                 )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Thứ tự hiển thị</label>
+                                <select
+                                    {...register("ordinal", { valueAsNumber: true })}
+                                    className={`w-full p-2 rounded-md ${errors.ordinal ? "border border-red-500 outline-red-300" : "border border-gray-300"}`}
+                                >
+                                    <option value="">Chọn thứ tự</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                                {errors.ordinal && <p className="text-xs text-red-500 mt-1">{errors.ordinal.message}</p>}
                             </div>
 
                             <div className="flex justify-end">

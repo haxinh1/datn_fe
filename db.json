@@ -108,22 +108,33 @@
     {
       "id": 1,
       "name": "Nam",
-      "parentId": null
+      "parentId": null,
+      "ordinal": 1
     },
     {
       "id": 2,
       "name": "Nữ",
-      "parentId": null
+      "parentId": null,
+      "ordinal": 2
     },
     {
       "name": "quần nam",
       "parentId": "1",
-      "id": 3
+      "id": 3,
+      "ordinal": 3
     },
     {
       "name": "váy",
       "parentId": "2",
-      "id": 4
-    }
+      "id": 4,
+      "ordinal": null
+    },
+    {
+      "name": "vest",
+      "parentId": "1",
+      "ordinal": 1,
+      "id": 5
+    },
+
   ]
 }
