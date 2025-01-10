@@ -10,7 +10,7 @@ const fetchCategories = async () => {
 }
 const createCategory = async (payload) => {
     try {
-        const { data } = await instance.post('/categories', payload)
+        const { data } = await instance.post('/categories/create', payload)
         return data
     } catch (error) {
         console.log(error)

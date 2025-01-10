@@ -6,11 +6,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import categorySchema from './../../schemas/categorySchema';
+import formatDate from '../../utils/formatDate';
 
 const Categories = () => {
     const [categories, setCategories] = useState([])
     const [isModalVisible, setIsModalVisible] = useState(false);
-   
+
 
 
     const {
@@ -35,19 +36,36 @@ const Categories = () => {
             key: 'name',
         },
         {
-            title: 'parentId',
-            dataIndex: 'parentId',
-            key: 'parentId',
-            render: (parentId) => getParentCategoryName(parentId),
+            title: 'Slug',
+            dataIndex: 'slug',
+            key: 'slug',
         },
         {
-            title: 'Action',
-            key: 'action',
-            render: (_, record) => (
-                <Button type="primary" onClick={() => handleEdit(record)}>Edit</Button>
-            ),
+            title: 'Ordinal',
+            dataIndex: 'ordinal',
+            key: 'ordinal',
+        },
+        {
+            title: 'Active',
+            dataIndex: 'is_active',
+            key: 'is_active',
+            render: (isActive) => (<span
+                className={`px-2 py-1 rounded border ${isActive
+                        ? 'border-green-500 text-green-600'
+                        : 'border-red-500 text-red-600'
+                    }`}
+            >
+                {isActive ? 'Active' : 'Inactive'}
+            </span>),
+        },
+        {
+            title: 'Created At',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            render: (createdAt) => formatDate(createdAt),
         },
     ];
+
 
     const handleShowCreate = () => {
         setIsModalVisible(true);
@@ -58,14 +76,22 @@ const Categories = () => {
     }
 
     const getParentCategoryName = (parentId) => {
+        console.log(parentId);
+
         if (!parentId) return "Không có danh mục cha";
         const parent = categories.find(cat => cat.id === Number(parentId));
         return parent ? parent.name : "Không xác định";
     };
 
     const onSubmit = async (data) => {
+        const payload = {
+            name: data.name,
+            parent_id: Number(data.parentId),
+            slug: data.slug,
+            ordinal: Number(data.ordinal)
+        }
 
-        const response = await categoryServices.createCategory(data)
+        const response = await categoryServices.createCategory(payload)
         if (response) {
             setCategories([...categories, response])
         }
@@ -115,6 +141,19 @@ const Categories = () => {
                                 )}
                             </div>
                             <div>
+                                <label className="block text-sm font-semibold mb-2">Slug</label>
+                                <input
+                                    type="text"
+                                    {...register("slug")}
+                                    className={`w-full p-2  rounded-md ${errors.slug?.message ? " border border-red-500 outline-red-300 " : "border border-gray-300"
+                                        }`}
+                                    placeholder="Nhập tên danh mục"
+                                />
+                                {errors.slug && (
+                                    <p className="text-xs text-red-500 mt-1">{errors.slug.message}</p>
+                                )}
+                            </div>
+                            <div>
                                 <label className="block text-sm font-semibold mb-2">Danh mục cha</label>
                                 <select
                                     {...register("parentId")}
@@ -135,7 +174,7 @@ const Categories = () => {
                             <div>
                                 <label className="block text-sm font-semibold mb-2">Thứ tự hiển thị</label>
                                 <select
-                                    {...register("ordinal", { valueAsNumber: true })}
+                                    {...register("ordinal")}
                                     className={`w-full p-2 rounded-md ${errors.ordinal ? "border border-red-500 outline-red-300" : "border border-gray-300"}`}
                                 >
                                     <option value="">Chọn thứ tự</option>
@@ -160,7 +199,11 @@ const Categories = () => {
                     </>)}
             </Modal>
 
-            <Table dataSource={categories} columns={columns} />
+            <Table dataSource={categories} columns={columns} rowKey="id"
+                pagination={false}
+                expandable={{
+                    childrenColumnName: 'children',
+                }} />
         </>
     )
 }
