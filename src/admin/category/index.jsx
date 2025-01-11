@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button, Table, Modal } from "antd";
 import { categoryServices } from './../../services/categories';
 import { PlusOutlined } from '@ant-design/icons';
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import categorySchema from './../../schemas/categorySchema';
@@ -11,8 +11,7 @@ import formatDate from '../../utils/formatDate';
 const Categories = () => {
     const [categories, setCategories] = useState([])
     const [isModalVisible, setIsModalVisible] = useState(false);
-
-
+    const [editingCategory, setEditingCategory] = useState(null);
 
     const {
         register,
@@ -29,6 +28,7 @@ const Categories = () => {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
+            render: (_, __, index) => index + 1, 
         },
         {
             title: 'Name',
@@ -51,8 +51,8 @@ const Categories = () => {
             key: 'is_active',
             render: (isActive) => (<span
                 className={`px-2 py-1 rounded border ${isActive
-                        ? 'border-green-500 text-green-600'
-                        : 'border-red-500 text-red-600'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-red-500 text-red-600'
                     }`}
             >
                 {isActive ? 'Active' : 'Inactive'}
@@ -64,10 +64,27 @@ const Categories = () => {
             key: 'created_at',
             render: (createdAt) => formatDate(createdAt),
         },
+        {
+            title: 'Action',
+            dataIndex: 'action',
+            key: 'action',
+            render: (_, record) => (
+                <Button type="primary" onClick={() => handleShowModal(record)}>Update</Button>
+            )
+        }
     ];
 
 
-    const handleShowCreate = () => {
+    const handleShowModal = (category) => {
+        if (category) {
+            console.log(category);
+            
+            setEditingCategory(category);
+            setValue("name", category.name);
+            setValue("parentId", category.parent_id ? category.parent_id.toString() : "");
+            setValue("slug", category.slug);
+            setValue("ordinal", category.ordinal ? category.ordinal.toString() : "");  
+        }
         setIsModalVisible(true);
     }
     const handleCancel = () => {
@@ -75,25 +92,29 @@ const Categories = () => {
         reset();
     }
 
-    const getParentCategoryName = (parentId) => {
-        console.log(parentId);
-
-        if (!parentId) return "Không có danh mục cha";
-        const parent = categories.find(cat => cat.id === Number(parentId));
-        return parent ? parent.name : "Không xác định";
-    };
-
     const onSubmit = async (data) => {
+        
         const payload = {
             name: data.name,
-            parent_id: Number(data.parentId),
+            parent_id: data.parentId ? Number(data.parentId): null,
             slug: data.slug,
             ordinal: Number(data.ordinal)
         }
 
-        const response = await categoryServices.createCategory(payload)
-        if (response) {
-            setCategories([...categories, response])
+
+        let response;
+        if (editingCategory) {
+            response = await categoryServices.updateCategory(editingCategory.id, payload)
+            if (response) {
+                fetchData()
+            }
+        }
+        else {
+            response = await categoryServices.createCategory(payload)
+            if (response) {
+                fetchData()
+            }
+
         }
         setIsModalVisible(false);
         reset();
@@ -111,14 +132,14 @@ const Categories = () => {
         <>
             <h2 className="text-2xl font-semibold mb-4">Danh sách danh mục</h2>
             <Button
-                onClick={() => handleShowCreate()}
+                onClick={() => handleShowModal()}
                 type="primary"
                 className='mb-2'
             >
                 Create
             </Button>
             <Modal
-                title="Thêm Danh mục"
+                title={editingCategory ? "Cập nhật danh mục" : "Thêm danh mục"}
                 visible={isModalVisible}
                 onCancel={handleCancel}
                 width={600}
@@ -177,7 +198,7 @@ const Categories = () => {
                                     {...register("ordinal")}
                                     className={`w-full p-2 rounded-md ${errors.ordinal ? "border border-red-500 outline-red-300" : "border border-gray-300"}`}
                                 >
-                                    <option value="">Chọn thứ tự</option>
+                                    <option value="0">Chọn thứ tự</option>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
                                     <option value="3">3</option>
@@ -191,7 +212,7 @@ const Categories = () => {
                                     className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
 
                                 >
-                                    Thêm danh mục
+                                    {editingCategory ? "Cập nhật danh mục" : "Thêm danh mục"}
                                 </button>
                             </div>
                         </form>

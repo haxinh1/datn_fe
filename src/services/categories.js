@@ -16,8 +16,16 @@ const createCategory = async (payload) => {
         console.log(error)
     }
 }
-
+const updateCategory = async (id, payload) => {
+    try {
+        const { data } = await instance.put(`/categories/update/${id}`, payload)
+        return data
+    } catch (error) {
+        console.log(error)
+    }
+}
 export const categoryServices = {
     fetchCategories,
-    createCategory
+    createCategory,
+    updateCategory
 }
