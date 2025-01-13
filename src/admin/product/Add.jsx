@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Form, Input, InputNumber, Select, Upload, Row, Col, Table, Tag, Modal, notification } from "antd";
+import { Button, Form, Input, InputNumber, Select, Upload, Row, Col, Modal, notification, Radio, Tag, Table } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,10 +12,11 @@ const Add = () => {
     const queryClient = useQueryClient();
     const [newAttribute, setNewAttribute] = useState("");
     const [forms, setForms] = useState([]);
-    const [tableData, setTableData] = useState([]);
-    const [columns, setColumns] = useState([]);
+    const [variants, setVariants] = useState([]);
+    const [productType, setProductType] = useState("single"); // single hoặc variant
 
-    const { data } = useQuery({
+    // Lấy danh sách thuộc tính
+    const { data: attributes } = useQuery({
         queryKey: ["attributes"],
         queryFn: async () => {
             const response = await axios.get(`http://localhost:3000/attributes`);
@@ -23,6 +24,7 @@ const Add = () => {
         },
     });
 
+    // Tạo thuộc tính mới
     const addAttributeMutation = useMutation({
         mutationFn: async (newAttr) => {
             await axios.post(`http://localhost:3000/attributes`, newAttr);
@@ -46,57 +48,7 @@ const Add = () => {
         });
     };
 
-    const updateTable = (forms) => {
-        // Cập nhật cột
-        const dynamicColumns = forms
-            .filter((form) => form.name)
-            .map((form) => ({
-                title: form.name,
-                dataIndex: form.name,
-                align: "center",
-            }));
-
-        const updatedColumns = [
-            ...dynamicColumns,
-            {
-                title: "Số lượng",
-                dataIndex: "quantity",
-                align: "center",
-                render: (_, record) => (
-                    <InputNumber
-                        value={record.quantity || ""}
-                        onChange={(e) => handleUpdateQuantity(record.key, e.target.value)}
-                    />
-                ),
-            },
-            {
-                title: "Thao tác",
-                align: "center",
-                render: (_, record) => (
-                    <Button danger onClick={() => handleDeleteRow(record.key)}>
-                        Xóa
-                    </Button>
-                ),
-            },
-        ];
-        setColumns(updatedColumns);
-
-        // Cập nhật dữ liệu
-        const variants = forms.reduce((acc, form) => {
-            if (!form.values.length) return acc;
-            return acc.flatMap((variant) =>
-                form.values.map((value) => ({
-                    ...variant,
-                    [form.name]: value,
-                    key: `${variant.key || ""}-${form.name}-${value}`,
-                }))
-            );
-        }, [{}]);
-
-        const uniqueVariants = [...new Map(variants.map((v) => [v.key, v])).values()];
-        setTableData(uniqueVariants);
-    };
-
+    // Thêm giá trị vào thuộc tính
     const handleAddValue = (formId) => {
         const updatedForms = forms.map((form) => {
             if (form.id === formId) {
@@ -117,9 +69,10 @@ const Add = () => {
             return form;
         });
         setForms(updatedForms);
-        updateTable(updatedForms);
+        generateVariants(updatedForms); // Cập nhật biến thể
     };
 
+    // Xóa giá trị khỏi thuộc tính
     const handleDeleteTag = (formId, valueToDelete) => {
         const updatedForms = forms.map((form) => {
             if (form.id === formId) {
@@ -128,20 +81,38 @@ const Add = () => {
             return form;
         });
         setForms(updatedForms);
-        updateTable(updatedForms);
+        generateVariants(updatedForms); // Cập nhật biến thể
     };
 
-    const handleUpdateQuantity = (key, value) => {
-        const updatedTableData = tableData.map((row) => {
-            if (row.key === key) {
-                return { ...row, quantity: value };
-            }
-            return row;
+    // Thêm form biến thể
+    const handleAddVariantForm = () => {
+        setForms([...forms, { id: Date.now(), name: "", values: [], inputValue: "" }]);
+    };
+
+    // cột bảng động
+    const generateVariants = (forms) => {
+        if (forms.length === 0 || forms.some((form) => !form.name || form.values.length === 0)) {
+            setVariants([]);
+            return;
+        }
+
+        // Tạo tất cả các tổ hợp giá trị
+        const combine = (arr) => arr.reduce((a, b) => a.flatMap((x) => b.map((y) => [...x, y])), [[]]);
+        const combinations = combine(forms.map((form) => form.values));
+
+        const updatedVariants = combinations.map((combo, index) => {
+            const variant = {};
+            combo.forEach((value, i) => {
+                variant[forms[i].name] = value;
+            });
+            return { key: index, ...variant, quantity: 0 };
         });
-        setTableData(updatedTableData);
+
+        setVariants(updatedVariants);
     };
 
-    const handleDeleteRow = (key) => {
+    // Xóa biến thể
+    const handleRemoveVariant = (variantKey) => {
         Modal.confirm({
             title: "Xác nhận xóa",
             content: "Biến thể sau khi xóa sẽ không thể khôi phục",
@@ -149,16 +120,42 @@ const Add = () => {
             okType: "danger",
             cancelText: "Hủy",
             onOk: () => {
-                // Chỉ xóa dòng với key cụ thể
-                const updatedTableData = tableData.filter((row) => row.key !== key);
-                setTableData(updatedTableData);
+                const updatedVariants = variants.filter((variant) => variant.key !== variantKey);
+                setVariants(updatedVariants);
             },
         });
-    };    
-
-    const handleAddVariantForm = () => {
-        setForms([...forms, { id: Date.now(), name: "", values: [], inputValue: "" }]);
     };
+
+    // bảng biến thể
+    const columns = [
+        ...(forms.map((form) => ({
+            title: form.name,
+            dataIndex: form.name,
+            key: form.name,
+            align: "center",
+        }))),
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            key: "quantity",
+            render: (_, record) => <InputNumber min={0} />,
+            align: "center",
+        },
+        {
+            title: "Thao tác",
+            key: "action",
+            align: "center",
+            render: (_, record) => (
+                <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleRemoveVariant(record.key)}
+                >
+                    Xóa
+                </Button>
+            ),
+        },
+    ];
 
     return (
         <div className="container">
@@ -169,19 +166,30 @@ const Add = () => {
                         <Form.Item label="Tên sản phẩm" rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}>
                             <Input className="input-item" />
                         </Form.Item>
+
                         <Form.Item label="Giá nhập" rules={[{ required: true, message: "Vui lòng nhập giá nhập" }]}>
                             <InputNumber className="input-item" />
                         </Form.Item>
+
                         <Form.Item label="Giá bán" rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}>
                             <InputNumber className="input-item" />
                         </Form.Item>
+
+                        <Form.Item label="Thương hiệu sản phẩm" name="brands">
+                            <Select className="input-item">
+                                <Option>Nike</Option>
+                                <Option>Adidas</Option>
+                            </Select>
+                        </Form.Item>
+
                         <Form.Item label="Danh mục" name="category">
                             <Select className="input-item">
-                                <Option>Điện thoại</Option>
-                                <Option>Máy tính</Option>
+                                <Option>Áo</Option>
+                                <Option>Quần</Option>
                             </Select>
                         </Form.Item>
                     </Col>
+                    
                     <Col span={16} className="col-item">
                         <Form.Item label="Ảnh sản phẩm" valuePropName="fileList">
                             <Upload listType="picture-card" multiple>
@@ -191,103 +199,117 @@ const Add = () => {
                                 </button>
                             </Upload>
                         </Form.Item>
+
                         <Form.Item label="Mô tả sản phẩm" name="description">
                             <TextArea rows={8} className="input-item" />
+                        </Form.Item>
+
+                        <Form.Item label="Loại sản phẩm">
+                            <Radio.Group
+                                className="radio-group"
+                                value={productType}
+                                onChange={(e) => setProductType(e.target.value)}
+                                options={[
+                                    { label: "Sản phẩm đơn", value: "single" },
+                                    { label: "Sản phẩm có biến thể", value: "variant" },
+                                ]}
+                            />
                         </Form.Item>
                     </Col>
                 </Row>
             </Form>
 
-            <hr />
-
-            <h2>Thuộc tính</h2>
-            <div className="attribute">
-                <Input
-                    placeholder="Nhập tên thuộc tính mới"
-                    value={newAttribute}
-                    onChange={(e) => setNewAttribute(e.target.value)}
-                    className="input-attribute"
-                />
-                <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
-                    Tạo thuộc tính
-                </Button>
-            </div>
-
-            <hr />
-
-            <div>
-                <h2>Biến thể</h2>
-                {forms.map((form) => (
-                    <div key={form.id}>
-                        <div className="attribute">
-                            <Select
-                                className="input-attribute"
-                                placeholder="Chọn thuộc tính"
-                                allowClear
-                                onChange={(value) => {
-                                    if (forms.some((f) => f.name === value && f.id !== form.id)) {
-                                        notification.error({ message: `Thuộc tính "${value}" đã được chọn trước đó` });
-                                        return;
-                                    }
-                                    const updatedForms = forms.map((f) => (f.id === form.id ? { ...f, name: value } : f));
-                                    setForms(updatedForms);
-                                }}
-                            >
-                                {data && data.map((attr) => <Option key={attr.id} value={attr.name}>{attr.name}</Option>)}
-                            </Select>
-                            <Input
-                                className="input-attribute"
-                                placeholder="Nhập giá trị"
-                                value={form.inputValue}
-                                onChange={(e) => {
-                                    const updatedForms = forms.map((f) =>
-                                        f.id === form.id ? { ...f, inputValue: e.target.value } : f
-                                    );
-                                    setForms(updatedForms);
-                                }}
-                                onPressEnter={() => handleAddValue(form.id)}
-                            />
-                            <Button
-                                className="btn-item"
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={() => handleAddValue(form.id)}
-                            >
-                                Thêm giá trị
-                            </Button>
-                        </div>
-                        <div>
-                            {form.values.map((value) => (
-                                <Tag
-                                    key={value}
-                                    closable
-                                    onClose={() => handleDeleteTag(form.id, value)}
-                                    className="tag-list"
-                                >
-                                    {value}
-                                </Tag>
-                            ))}
-                        </div>
+            {productType === "variant" && (
+                <>
+                    <hr />
+                    <h2>Thuộc tính</h2>
+                    <div className="attribute">
+                        <Input
+                            placeholder="Nhập tên thuộc tính mới"
+                            value={newAttribute}
+                            onChange={(e) => setNewAttribute(e.target.value)}
+                            className="input-attribute"
+                        />
+                        <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
+                            Tạo thuộc tính
+                        </Button>
                     </div>
-                ))}
 
-                <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
-                    Thêm biến thể
-                </Button>
-            </div>
-            
+                    <hr />
+                    <h2>Biến thể</h2>
+                    {forms.map((form) => (
+                        <div key={form.id}>
+                            <div className="attribute">
+                                <Select
+                                    className="input-attribute"
+                                    placeholder="Chọn thuộc tính"
+                                    allowClear
+                                    onChange={(value) => {
+                                        if (forms.some((f) => f.name === value && f.id !== form.id)) {
+                                            notification.error({ message: `Thuộc tính \"${value}\" đã được chọn trước đó` });
+                                            return;
+                                        }
+                                        const updatedForms = forms.map((f) =>
+                                            f.id === form.id ? { ...f, name: value } : f
+                                        );
+                                        setForms(updatedForms);
+                                    }}
+                                >
+                                    {attributes && attributes.map((attr) => (
+                                        <Option key={attr.id} value={attr.name}>
+                                            {attr.name}
+                                        </Option>
+                                    ))}
+                                </Select>
 
-            <hr />
+                                <Input
+                                    className="input-attribute"
+                                    placeholder="Nhập giá trị"
+                                    value={form.inputValue}
+                                    onChange={(e) => {
+                                        const updatedForms = forms.map((f) =>
+                                            f.id === form.id ? { ...f, inputValue: e.target.value } : f
+                                        );
+                                        setForms(updatedForms);
+                                    }}
+                                    onPressEnter={() => handleAddValue(form.id)}
+                                />
 
-            <h2>Danh sách sản phẩm cùng loại</h2>
-            <Table columns={columns} dataSource={tableData} pagination={false} />
+                                <Button
+                                    className="btn-item"
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => handleAddValue(form.id)}
+                                >
+                                    Thêm giá trị
+                                </Button>
+                            </div>
+                            <div>
+                                {form.values.map((value) => (
+                                    <Tag
+                                        key={value}
+                                        closable
+                                        onClose={() => handleDeleteTag(form.id, value)}
+                                        className="tag-list"
+                                    >
+                                        {value}
+                                    </Tag>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
+                        Thêm biến thể
+                    </Button>
+
+                    <hr />
+                    <h2>Danh sách hàng hóa cùng loại</h2>
+                    <Table dataSource={variants} columns={columns} pagination={false} />
+                </>
+            )}
 
             <div className="add">
-                <Button 
-                    type="primary" 
-                    size="large" 
-                    htmlType="submit"
-                >
+                <Button type="primary" size="large" htmlType="submit">
                     Thêm sản phẩm
                 </Button>
             </div>

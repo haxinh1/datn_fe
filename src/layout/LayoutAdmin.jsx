@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Breadcrumb, Layout, Menu, theme } from "antd";
-import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, ShoppingCartOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
 
 const { Header, Content, Footer, Sider } = Layout;
 
