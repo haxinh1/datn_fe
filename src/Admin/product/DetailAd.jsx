@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./detailAd.css";
+import "./detailad.css";
 
 const ProductDetail = () => {
   const [currentImage, setCurrentImage] = useState(
@@ -62,7 +62,7 @@ const ProductDetail = () => {
                 <td>Áo phông nam</td>
               </tr>
               <tr>
-                <th>Danh mục sản phẩm:</th>
+                <th style={{ whiteSpace: "nowrap" }}>Danh mục sản phẩm:</th>
                 <td>Áo</td>
               </tr>
               <tr>
