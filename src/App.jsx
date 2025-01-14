@@ -18,7 +18,6 @@ import ProductDetail from "./admin/product/DetailAd";
 // import Signup from "./pages/Signup";
 // import Bill from "./admin/Bill";
 // import Inbox from "./admin/Inbox";
-// import LayoutPage from "./Layout/LayoutPage";
 
 function App() {
   const [products, setProducts] = useState([]);
