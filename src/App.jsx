@@ -7,7 +7,7 @@ import LayoutAdmin from "./Layout/LayoutAdmin";
 import List from "./admin/product/List";
 import Edit from "./admin/product/Edit";
 import Add from "./admin/product/Add";
-import ProductDetail from "./Admin/DetailAd";
+import ProductDetail from "./admin/product/DetailAd";
 // import Register from "./admin/Register";
 // import Login from "./admin/Login";
 // import HomePage from "./pages/HomePage";
