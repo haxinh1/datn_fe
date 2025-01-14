@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import api from "./axios";
 import LayoutAdmin from "./Layout/LayoutAdmin";
 
-import List from "./admin/product/List";
-import Edit from "./admin/product/Edit";
-import Add from "./admin/product/Add";
-import ProductDetail from "./admin/product/DetailAd";
+import List from "./Admin/product/List";
+import Edit from "./Admin/product/Edit";
+import Add from "./Admin/product/Add";
+import ProductDetail from "./Admin/product/DetailAd";
 // import Register from "./admin/Register";
 // import Login from "./admin/Login";
 // import HomePage from "./pages/HomePage";
