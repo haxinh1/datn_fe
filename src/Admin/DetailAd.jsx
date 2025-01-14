@@ -101,6 +101,9 @@ const ProductDetail = () => {
           </table>
         </div>
       </div>
+      <br />
+      <h2>Bảng biến thể sản phẩm</h2>
+      <br />
       <table className="table table-bordered table-striped">
         <thead>
           <tr>

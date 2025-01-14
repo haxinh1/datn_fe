@@ -25,6 +25,11 @@ const LayoutAdmin = () => {
       label: <Link to="/list-pr">Quản lý sản phẩm</Link>,
     },
     {
+      key: "category",
+      icon: <BilibiliFilled />,
+      label: <Link to="/categories">Thể Loại</Link>,
+    },
+    {
       key: "bill",
       icon: <BilibiliFilled />,
       label: <Link to="/bill">Hóa đơn</Link>,
@@ -84,7 +89,7 @@ const LayoutAdmin = () => {
       </Sider>
 
       {/* Main Layout */}
-      <Layout style={{ marginLeft: 100 }}>
+      <Layout style={{ marginLeft: 200 }}>
         {" "}
         {/* Bù lại chiều rộng của Sider */}
         <Header
@@ -95,13 +100,13 @@ const LayoutAdmin = () => {
         />
         <Content
           style={{
-            margin: "12px 12px 0",
+            margin: "24px 16px 0",
           }}
         >
-          <Breadcrumb style={{ margin: "12px 0" }} />
+          <Breadcrumb style={{ margin: "16px 0" }} />
           <div
             style={{
-              padding: 0,
+              padding: 24,
               minHeight: 360,
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
@@ -110,7 +115,7 @@ const LayoutAdmin = () => {
             <Outlet />
           </div>
         </Content>
-        <Footer style={{ textAlign: "center" }}>Design by quang0suy</Footer>
+        <Footer style={{ textAlign: "center" }}>Design by Group FE</Footer>
       </Layout>
     </Layout>
   );

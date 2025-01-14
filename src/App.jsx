@@ -3,10 +3,11 @@ import { Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "./axios";
 import LayoutAdmin from "./Layout/LayoutAdmin";
-import DetailAd from "./Admin/DetailAd";
-import List from "./Admin/product/List";
-import Edit from "./Admin/product/Edit";
-import Add from "./Admin/product/Add";
+
+import List from "./admin/product/List";
+import Edit from "./admin/product/Edit";
+import Add from "./admin/product/Add";
+import ProductDetail from "./Admin/DetailAd";
 // import Register from "./admin/Register";
 // import Login from "./admin/Login";
 // import HomePage from "./pages/HomePage";
@@ -37,7 +38,7 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
-          <Route path="/detailad" element={<DetailAd />} />
+          <Route path="/detailad" element={<ProductDetail />} />
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
@@ -47,17 +48,6 @@ function App() {
           <Route path="/login" element={<Login />} /> */}
         </Route>
       </Routes>
-
-      {/* <Routes>
-        <Route path="/" element={<LayoutPage />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/pay" element={<Pay />} />
-          <Route path="/detail-pr" element={<Detail />} />
-          <Route path="/signin" element={<Signin />} />
-          <Route path="/signup" element={<Signup />} />
-        </Route>
-      </Routes> */}
     </>
   );
 }
