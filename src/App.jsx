@@ -14,7 +14,6 @@ function App() {
 
   return (
     <>
-
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/list-pr" element={<List />} />
@@ -29,7 +28,6 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="pay" element={<Pay />} />
           <Route path="detail-pr" element={<Detail />} />
-
         </Route>
       </Routes>
     </>
