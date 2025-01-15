@@ -1,15 +1,8 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Breadcrumb, Layout, Menu, theme } from "antd";
-import {
-  HomeOutlined,
-  BookOutlined,
-  FormOutlined,
-  UserOutlined,
-  ShoppingCartOutlined,
-  BilibiliFilled,
-  MessageOutlined,
-} from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
+import "./layoutAdmin.css";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -57,57 +50,28 @@ const LayoutAdmin = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout className="layout-admin">
       {/* Sidebar */}
       <Sider
-        style={{
-          height: "100vh",
-          position: "fixed", // Cố định Sidebar
-          left: 0,
-          top: 0,
-          zIndex: 10,
-        }}
+        className="sider-admin"
         breakpoint="lg"
         collapsedWidth="0"
         onBreakpoint={(broken) => console.log(broken)}
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
-        <div
-          className="demo-logo-vertical"
-          style={{
-            height: "32px",
-            margin: "16px",
-            background: "rgba(255, 255, 255, 0.2)",
-          }}
-        />
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={["admin"]}
-          items={menuItems}
-        />
+        <div className="demo-logo-vertical" />
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={["admin"]} items={menuItems} />
       </Sider>
 
       {/* Main Layout */}
-      <Layout style={{ marginLeft: 200 }}>
-        {" "}
-        {/* Bù lại chiều rộng của Sider */}
-        <Header
-          style={{
-            padding: 0,
-            background: colorBgContainer,
-          }}
-        />
-        <Content
-          style={{
-            margin: "24px 16px 0",
-          }}
-        >
-          <Breadcrumb style={{ margin: "16px 0" }} />
+      <Layout className="main-layout">
+        <Header className="header-admin" style={{ background: colorBgContainer }} />
+        
+        <Content className="content-admin">
+          <Breadcrumb className="breadcrumb-admin" />
           <div
+            className="content-box"
             style={{
-              padding: 24,
-              minHeight: 360,
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
             }}
@@ -115,7 +79,8 @@ const LayoutAdmin = () => {
             <Outlet />
           </div>
         </Content>
-        <Footer style={{ textAlign: "center" }}>Design by Group FE</Footer>
+
+        <Footer className="footer-admin">Design by Group FE</Footer>
       </Layout>
     </Layout>
   );

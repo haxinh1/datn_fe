@@ -2,7 +2,7 @@ import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "./axios";
-import LayoutAdmin from "./Layout/LayoutAdmin";
+import LayoutAdmin from "./layout/LayoutAdmin";
 
 import ProductDetail from "./admin/product/DetailAd";
 
