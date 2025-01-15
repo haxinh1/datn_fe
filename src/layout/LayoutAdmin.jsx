@@ -90,7 +90,7 @@ const LayoutAdmin = () => {
             <Outlet />
           </div>
         </Content>
-        <Footer style={{ textAlign: "center" }}>Design by quang0suy</Footer>
+        <Footer style={{ textAlign: "center" }}>Design by team Front-End</Footer>
       </Layout>
     </Layout>
   );
