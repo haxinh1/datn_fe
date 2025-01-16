@@ -8,7 +8,7 @@ import Cart from './pages/Cart';
 import Pay from './pages/Pay';
 import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
-import LayoutClient from "./layout/LayoutClient";
+// import LayoutClient from "./layout/LayoutClient";
 
 function App() {
 
@@ -23,11 +23,11 @@ function App() {
       </Routes>
 
       <Routes>
-        <Route path="/client" element={<LayoutClient />}>
-          <Route path="home" element={<Home />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="pay" element={<Pay />} />
-          <Route path="detail-pr" element={<Detail />} />
+        <Route path="/" element={<LayoutAdmin />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/pay" element={<Pay />} />
+          <Route path="/detail-pr" element={<Detail />} />
         </Route>
       </Routes>
     </>
