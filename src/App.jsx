@@ -8,7 +8,7 @@ import Cart from './pages/Cart';
 import Pay from './pages/Pay';
 import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
-// import LayoutClient from "./layout/LayoutClient";
+import Brand from "./admin/Brand";
 
 function App() {
 
@@ -19,6 +19,7 @@ function App() {
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
+          <Route path="/brand" element={<Brand />} />
         </Route>
       </Routes>
 

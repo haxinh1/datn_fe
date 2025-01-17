@@ -19,6 +19,9 @@
 .action-link-blue {
     color: blue;
 }
+.action-link-red {
+    color: red;
+}
 .divider {
     height: 20px;
     width: 1.5px;

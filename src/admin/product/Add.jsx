@@ -5,29 +5,67 @@ import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import "./add.css";
+import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
 const Add = () => {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const [form] = Form.useForm();
+    const [thumbnail, setThumbnail] = useState(null);
     const [newAttribute, setNewAttribute] = useState("");
     const [forms, setForms] = useState([]);
     const [variants, setVariants] = useState([]);
     const [productType, setProductType] = useState("single"); // single hoặc variant
 
+    const { mutate } = useMutation({
+        mutationFn: async (product) => {
+            return await axios.post(`http://127.0.0.1:8000/api/products`, product);
+        },
+        onSuccess: () => {
+            form.resetFields();
+            notification.success({
+                message: "Thêm sản phẩm thành công!",
+                description: "Sản phẩm mới đã được thêm vào danh sách.",
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["products"],
+            });
+            navigate("/list-pr");
+        },
+    });
+
+    const normFile = (e) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e?.fileList;
+    };
+
+    const onHandleChange = (info) => {
+        if (info.file.status === "done") {
+            setThumbnail(info.file.response.secure_url);
+        }
+    };
+
+    const onFinish = (values) => {
+        mutate({ ...values, thumbnail });
+    };
+
     // Lấy danh sách thuộc tính
     const { data: attributes } = useQuery({
         queryKey: ["attributes"],
         queryFn: async () => {
-            const response = await axios.get(`http://localhost:3000/attributes`);
-            return response.data;
+            const response = await axios.get(`http://127.0.0.1:8000/api/attributes`);
+            return response.data.data;
         },
     });
 
     // Tạo thuộc tính mới
     const addAttributeMutation = useMutation({
         mutationFn: async (newAttr) => {
-            await axios.post(`http://localhost:3000/attributes`, newAttr);
+            await axios.post(`http://127.0.0.1:8000/api/attributes`, newAttr);
         },
         onSuccess: () => {
             queryClient.invalidateQueries(["attributes"]);
@@ -160,22 +198,48 @@ const Add = () => {
     return (
         <div className="container">
             <h1 className="mb-5">Thêm sản phẩm mới</h1>
-            <Form name="basic" labelCol={{ span: 24 }} wrapperCol={{ span: 24 }} labelAlign="top">
+            <Form 
+                name="basic" 
+                labelCol={{ span: 24 }} 
+                wrapperCol={{ span: 24 }} 
+                labelAlign="top"
+                form={form}
+                onFinish={onFinish}>
                 <Row gutter={24}>
                     <Col span={8} className="col-item">
-                        <Form.Item label="Tên sản phẩm" rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}>
+                        <Form.Item 
+                            label="Tên sản phẩm" 
+                            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
+                            name="name"
+                        >
                             <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item label="Giá nhập" rules={[{ required: true, message: "Vui lòng nhập giá nhập" }]}>
+                        <Form.Item 
+                            label="Giá bán" 
+                            rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                            name="sell_price"
+                        >
                             <InputNumber className="input-item" />
                         </Form.Item>
 
-                        <Form.Item label="Giá bán" rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}>
-                            <InputNumber className="input-item" />
+                        <Form.Item 
+                            label="Slug" 
+                            rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
+                            name="slug"
+                        >
+                            <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item label="Thương hiệu sản phẩm" name="brands">
+                        <Form.Item 
+                            label="Link" 
+                            rules={[{ required: true, message: "Vui lòng nhập link" }]}
+                            name="name_link"
+                        >
+                            <Input className="input-item" />
+                        </Form.Item>
+
+                        {/* <Form.Item label="Thương hiệu sản phẩm" name="brands">
                             <Select className="input-item">
                                 <Option>Nike</Option>
                                 <Option>Adidas</Option>
@@ -187,12 +251,28 @@ const Add = () => {
                                 <Option>Áo</Option>
                                 <Option>Quần</Option>
                             </Select>
-                        </Form.Item>
+                        </Form.Item> */}
                     </Col>
                     
                     <Col span={16} className="col-item">
-                        <Form.Item label="Ảnh sản phẩm" valuePropName="fileList">
-                            <Upload listType="picture-card" multiple>
+
+                        <Form.Item 
+                            label="Ảnh sản phẩm" 
+                            valuePropName="fileList"
+                            getValueFromEvent={normFile}
+                            rules={[
+                                {
+                                    validator: (_, value) =>
+                                    thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
+                                },
+                            ]}
+                        >
+                            <Upload 
+                                listType="picture-card" 
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{upload_preset: "quangOsuy"}}
+                                onChange={onHandleChange}
+                            >
                                 <button className="upload-button" type="button">
                                     <PlusOutlined />
                                     <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
@@ -200,7 +280,10 @@ const Add = () => {
                             </Upload>
                         </Form.Item>
 
-                        <Form.Item label="Mô tả sản phẩm" name="description">
+                        <Form.Item 
+                            label="Mô tả sản phẩm" 
+                            name="content"
+                        >
                             <TextArea rows={8} className="input-item" />
                         </Form.Item>
 
@@ -217,102 +300,103 @@ const Add = () => {
                         </Form.Item>
                     </Col>
                 </Row>
-            </Form>
+            
 
-            {productType === "variant" && (
-                <>
-                    <hr />
-                    <h2>Thuộc tính</h2>
-                    <div className="attribute">
-                        <Input
-                            placeholder="Nhập tên thuộc tính mới"
-                            value={newAttribute}
-                            onChange={(e) => setNewAttribute(e.target.value)}
-                            className="input-attribute"
-                        />
-                        <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
-                            Tạo thuộc tính
-                        </Button>
-                    </div>
-
-                    <hr />
-                    <h2>Biến thể</h2>
-                    {forms.map((form) => (
-                        <div key={form.id}>
-                            <div className="attribute">
-                                <Select
-                                    className="input-attribute"
-                                    placeholder="Chọn thuộc tính"
-                                    allowClear
-                                    onChange={(value) => {
-                                        if (forms.some((f) => f.name === value && f.id !== form.id)) {
-                                            notification.error({ message: `Thuộc tính \"${value}\" đã được chọn trước đó` });
-                                            return;
-                                        }
-                                        const updatedForms = forms.map((f) =>
-                                            f.id === form.id ? { ...f, name: value } : f
-                                        );
-                                        setForms(updatedForms);
-                                    }}
-                                >
-                                    {attributes && attributes.map((attr) => (
-                                        <Option key={attr.id} value={attr.name}>
-                                            {attr.name}
-                                        </Option>
-                                    ))}
-                                </Select>
-
-                                <Input
-                                    className="input-attribute"
-                                    placeholder="Nhập giá trị"
-                                    value={form.inputValue}
-                                    onChange={(e) => {
-                                        const updatedForms = forms.map((f) =>
-                                            f.id === form.id ? { ...f, inputValue: e.target.value } : f
-                                        );
-                                        setForms(updatedForms);
-                                    }}
-                                    onPressEnter={() => handleAddValue(form.id)}
-                                />
-
-                                <Button
-                                    className="btn-item"
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                    onClick={() => handleAddValue(form.id)}
-                                >
-                                    Thêm giá trị
-                                </Button>
-                            </div>
-                            <div>
-                                {form.values.map((value) => (
-                                    <Tag
-                                        key={value}
-                                        closable
-                                        onClose={() => handleDeleteTag(form.id, value)}
-                                        className="tag-list"
-                                    >
-                                        {value}
-                                    </Tag>
-                                ))}
-                            </div>
+                {productType === "variant" && (
+                    <>
+                        <hr />
+                        <h2>Thuộc tính</h2>
+                        <div className="attribute">
+                            <Input
+                                placeholder="Nhập tên thuộc tính mới"
+                                value={newAttribute}
+                                onChange={(e) => setNewAttribute(e.target.value)}
+                                className="input-attribute"
+                            />
+                            <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
+                                Tạo thuộc tính
+                            </Button>
                         </div>
-                    ))}
-                    <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
-                        Thêm biến thể
+
+                        <hr />
+                        <h2>Biến thể</h2>
+                        {forms.map((form) => (
+                            <div key={form.id}>
+                                <div className="attribute">
+                                    <Select
+                                        className="input-attribute"
+                                        placeholder="Chọn thuộc tính"
+                                        allowClear
+                                        onChange={(value) => {
+                                            if (forms.some((f) => f.name === value && f.id !== form.id)) {
+                                                notification.error({ message: `Thuộc tính \"${value}\" đã được chọn trước đó` });
+                                                return;
+                                            }
+                                            const updatedForms = forms.map((f) =>
+                                                f.id === form.id ? { ...f, name: value } : f
+                                            );
+                                            setForms(updatedForms);
+                                        }}
+                                    >
+                                        {attributes && attributes.map((attr) => (
+                                            <Option key={attr.id} value={attr.name}>
+                                                {attr.name}
+                                            </Option>
+                                        ))}
+                                    </Select>
+
+                                    <Input
+                                        className="input-attribute"
+                                        placeholder="Nhập giá trị"
+                                        value={form.inputValue}
+                                        onChange={(e) => {
+                                            const updatedForms = forms.map((f) =>
+                                                f.id === form.id ? { ...f, inputValue: e.target.value } : f
+                                            );
+                                            setForms(updatedForms);
+                                        }}
+                                        onPressEnter={() => handleAddValue(form.id)}
+                                    />
+
+                                    <Button
+                                        className="btn-item"
+                                        type="primary"
+                                        icon={<PlusOutlined />}
+                                        onClick={() => handleAddValue(form.id)}
+                                    >
+                                        Thêm giá trị
+                                    </Button>
+                                </div>
+                                <div>
+                                    {form.values.map((value) => (
+                                        <Tag
+                                            key={value}
+                                            closable
+                                            onClose={() => handleDeleteTag(form.id, value)}
+                                            className="tag-list"
+                                        >
+                                            {value}
+                                        </Tag>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                        <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
+                            Thêm biến thể
+                        </Button>
+
+                        <hr />
+                        <h2>Danh sách hàng hóa cùng loại</h2>
+                        <Table dataSource={variants} columns={columns} pagination={false} />
+                    </>
+                )}
+
+                <div className="add">
+                    <Button type="primary" size="large" htmlType="submit">
+                        Thêm sản phẩm
                     </Button>
-
-                    <hr />
-                    <h2>Danh sách hàng hóa cùng loại</h2>
-                    <Table dataSource={variants} columns={columns} pagination={false} />
-                </>
-            )}
-
-            <div className="add">
-                <Button type="primary" size="large" htmlType="submit">
-                    Thêm sản phẩm
-                </Button>
-            </div>
+                </div>
+            </Form>    
         </div>
     );
 };
