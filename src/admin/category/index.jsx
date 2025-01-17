@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Table, Modal } from "antd";
+import { Button, Table, Modal, Switch } from "antd";
 import { categoryServices } from './../../services/categories';
 import { PlusOutlined } from '@ant-design/icons';
 import { set, useForm } from "react-hook-form";
@@ -18,9 +18,13 @@ const Categories = () => {
         handleSubmit,
         formState: { errors },
         reset,
+        watch,
         setValue,
     } = useForm({
         resolver: zodResolver(categorySchema),
+        defaultValues: {
+            is_active: false,
+        },
     });
 
     const columns = [
@@ -28,7 +32,7 @@ const Categories = () => {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
-            render: (_, __, index) => index + 1, 
+            render: (_, __, index) => index + 1,
         },
         {
             title: 'Name',
@@ -78,12 +82,13 @@ const Categories = () => {
     const handleShowModal = (category) => {
         if (category) {
             console.log(category);
-            
+
             setEditingCategory(category);
             setValue("name", category.name);
             setValue("parentId", category.parent_id ? category.parent_id.toString() : "");
             setValue("slug", category.slug);
-            setValue("ordinal", category.ordinal ? category.ordinal.toString() : "");  
+            setValue("ordinal", category.ordinal ? category.ordinal.toString() : "");
+            setValue("is_active", category.is_active);
         }
         setIsModalVisible(true);
     }
@@ -93,14 +98,14 @@ const Categories = () => {
     }
 
     const onSubmit = async (data) => {
-        
+
         const payload = {
             name: data.name,
-            parent_id: data.parentId ? Number(data.parentId): null,
+            parent_id: data.parentId ? Number(data.parentId) : null,
             slug: data.slug,
-            ordinal: Number(data.ordinal)
+            ordinal: Number(data.ordinal),
+            is_active: data.is_active
         }
-
 
         let response;
         if (editingCategory) {
@@ -140,7 +145,7 @@ const Categories = () => {
             </Button>
             <Modal
                 title={editingCategory ? "Cập nhật danh mục" : "Thêm danh mục"}
-                visible={isModalVisible}
+                open={isModalVisible}
                 onCancel={handleCancel}
                 width={600}
                 footer={null}
@@ -205,6 +210,18 @@ const Categories = () => {
                                 </select>
                                 {errors.ordinal && <p className="text-xs text-red-500 mt-1">{errors.ordinal.message}</p>}
                             </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Status</label>
+                                <Switch
+                                    onChange={(checked) => setValue("is_active", checked)}
+                                    checked={watch("is_active")}
+                                    checkedChildren="Active"
+                                    unCheckedChildren="Inactive"
+                                />
+
+                                {errors.is_active && <p className="text-xs text-red-500 mt-1">{errors.is_active.message}</p>}
+                            </div>
+
 
                             <div className="flex justify-end">
                                 <button

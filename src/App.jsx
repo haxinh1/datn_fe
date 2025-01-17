@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import LayoutAdmin from "./Layout/LayoutAdmin";
+import LayoutAdmin from './layout/LayoutAdmin';
 import Categories from "./admin/category";
 
 function App() {
