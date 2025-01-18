@@ -3,8 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "./axios";
 import LayoutAdmin from "./layout/LayoutAdmin";
-
-import ProductDetail from "./admin/product/DetailAd";
+import ProductDetail from "./Admin/product/DetailAd";
 
 function App() {
   const [products, setProducts] = useState([]);

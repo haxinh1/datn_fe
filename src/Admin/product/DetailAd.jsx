@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useParams } from "react-router-dom";
 import "./detailad.css";
+import { productsServices } from "../../services/products";
 
 const ProductDetail = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState({});
   const [currentImage, setCurrentImage] = useState(
     "https://i.pinimg.com/736x/18/2d/88/182d8850ca2f6b1822ae82dd00ae08cd.jpg" // Ảnh sản phẩm mặc định
   );
