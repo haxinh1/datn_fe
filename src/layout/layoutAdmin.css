@@ -1,0 +1,36 @@
+.layout-admin {
+    min-height: 100vh;
+  }
+  .sider-admin {
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10;
+  }
+  .demo-logo-vertical {
+    height: 32px;
+    margin: 16px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .main-layout {
+    margin-left: 200px; /* Bù lại chiều rộng của Sider */
+  }
+  .header-admin {
+    padding: 0;
+  }
+  .content-admin {
+    margin: 24px 16px 0;
+  }
+  .breadcrumb-admin {
+    margin: 16px 0;
+  }
+  .content-box {
+    padding: 24px;
+    min-height: 360px;
+    background: var(--color-bg-container);
+    border-radius: var(--border-radius-lg);
+  }
+  .footer-admin {
+    text-align: center;
+  }
