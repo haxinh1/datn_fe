@@ -1,0 +1,35 @@
+.product-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+  
+.product-image {
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.soluong{
+  margin-top: 20px;
+  display: flex;
+  button{
+    width: 35px;
+    height: 35px;
+    outline: none;
+    background: none;
+    border: 1px solid #ececec;
+    cursor: pointer;
+    background-color: rgb(197, 228, 199);
+    font-size: 1.3vw;
+  }
+  button:hover{
+    background-color: #ececec;
+  }
+  input{
+    height: 35px;
+    width:35px;
+    text-align: center; 
+    border: 1px solid #ececec;
+  }  
+}
+  
