@@ -3,9 +3,11 @@ import { Button, Form, Input, InputNumber, Select, Upload, Row, Col, Modal, noti
 import TextArea from "antd/es/input/TextArea";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { AttributesServices } from './../../services/attributes';
+import { productsServices } from './../../services/product';
 import axios from "axios";
 import "./add.css";
-import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
@@ -14,14 +16,26 @@ const Add = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
     const [thumbnail, setThumbnail] = useState(null);
-    const [newAttribute, setNewAttribute] = useState("");
+    const [newAttribute, setNewAttribute] = useState({ name: "" });
     const [forms, setForms] = useState([]);
     const [variants, setVariants] = useState([]);
-    const [productType, setProductType] = useState("single"); // single hoặc variant
+    const [productType, setProductType] = useState("single"); 
 
+    // Thêm sản phẩm
     const { mutate } = useMutation({
         mutationFn: async (product) => {
-            return await axios.post(`http://127.0.0.1:8000/api/products`, product);
+            try {
+                const response = await productsServices.createProduct(product);
+                return response
+            } catch (error) {
+                throw new Error(error.response?.data?.message || "Đã xảy ra lỗi khi thêm sản phẩm.");
+            }
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Thêm sản phẩm thất bại",
+                description: error.message,
+            });
         },
         onSuccess: () => {
             form.resetFields();
@@ -29,29 +43,36 @@ const Add = () => {
                 message: "Thêm sản phẩm thành công!",
                 description: "Sản phẩm mới đã được thêm vào danh sách.",
             });
-            queryClient.invalidateQueries({
-                queryKey: ["products"],
-            });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
             navigate("/list-pr");
         },
     });
-
+    
     const normFile = (e) => {
         if (Array.isArray(e)) {
             return e;
         }
         return e?.fileList;
     };
-
+    
     const onHandleChange = (info) => {
-        if (info.file.status === "done") {
+        if (info.file.status === "done" && info.file.response) {
             setThumbnail(info.file.response.secure_url);
-        }
+        } 
     };
-
+    
     const onFinish = (values) => {
         mutate({ ...values, thumbnail });
     };
+
+    // Fetch danh sách thương hiệu
+    const { data: brands } = useQuery({
+        queryKey: ["brands"],
+        queryFn: async () => {
+            const response = await axios.get(`http://127.0.0.1:8000/api/brands`);
+            return response.data.data;
+        }
+    });
 
     // Lấy danh sách thuộc tính
     const { data: attributes } = useQuery({
@@ -62,28 +83,44 @@ const Add = () => {
         },
     });
 
-    // Tạo thuộc tính mới
-    const addAttributeMutation = useMutation({
-        mutationFn: async (newAttr) => {
-            await axios.post(`http://127.0.0.1:8000/api/attributes`, newAttr);
+    // Mutation để thêm mới thuộc tính
+    const { mutate: mutateAttr } = useMutation({
+        mutationFn: async (attribute) => {
+            return await AttributesServices.createAttribute(attribute); // Gọi service để thêm thuộc tính
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(["attributes"]);
-            setNewAttribute("");
+            setNewAttribute({ name: "" }); // Reset form sau khi thêm thành công
+            notification.success({ message: "Thêm thuộc tính thành công" }); // Thông báo thành công
+            queryClient.invalidateQueries(["attributes"]); // Làm mới danh sách thuộc tính
+        },
+        onError: (error) => {
+            const errorMessage =
+                error.response?.data?.message ||
+                error.message ||
+                "Đã xảy ra lỗi không xác định.";
+            notification.error({
+                message: "Thêm thuộc tính thất bại",
+                description: errorMessage,
+            });
         },
     });
 
+    // Xử lý khi nhập liệu
+    const onChange = (e) => {
+        const { name, value } = e.target;
+        setNewAttribute({
+            ...newAttribute,
+            [name]: value,
+        });
+    };
+
+    // Xử lý khi gửi form
     const handleAddAttribute = () => {
-        if (!newAttribute.trim()) {
-            notification.error({ message: "Tên thuộc tính không được để trống" });
+        if (!newAttribute.name.trim()) {
+            notification.error({ message: "Tên thuộc tính không được để trống!" });
             return;
         }
-        const newAttr = { id: Date.now().toString(), name: newAttribute.trim() };
-        addAttributeMutation.mutate(newAttr, {
-            onSuccess: () => {
-                notification.success({ message: "Thuộc tính đã được thêm vào phần biến thể" });
-            },
-        });
+        mutateAttr(newAttribute); // Gọi mutation để thêm thuộc tính
     };
 
     // Thêm giá trị vào thuộc tính
@@ -239,10 +276,17 @@ const Add = () => {
                             <Input className="input-item" />
                         </Form.Item>
 
-                        {/* <Form.Item label="Thương hiệu sản phẩm" name="brands">
+                        <Form.Item 
+                            label="Thương hiệu sản phẩm" 
+                            name="brands"
+                            rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
+                        >
                             <Select className="input-item">
-                                <Option>Nike</Option>
-                                <Option>Adidas</Option>
+                                {brands && brands.map((brand) => (
+                                    <Option key={brand.id} value={brand.name}>
+                                        {brand.name}
+                                    </Option>
+                                ))}
                             </Select>
                         </Form.Item>
 
@@ -251,13 +295,13 @@ const Add = () => {
                                 <Option>Áo</Option>
                                 <Option>Quần</Option>
                             </Select>
-                        </Form.Item> */}
+                        </Form.Item>
                     </Col>
                     
                     <Col span={16} className="col-item">
-
                         <Form.Item 
                             label="Ảnh sản phẩm" 
+                            name='thumbnail'
                             valuePropName="fileList"
                             getValueFromEvent={normFile}
                             rules={[
@@ -300,7 +344,6 @@ const Add = () => {
                         </Form.Item>
                     </Col>
                 </Row>
-            
 
                 {productType === "variant" && (
                     <>
@@ -308,12 +351,17 @@ const Add = () => {
                         <h2>Thuộc tính</h2>
                         <div className="attribute">
                             <Input
+                                name="name" // Đặt tên key cho input
                                 placeholder="Nhập tên thuộc tính mới"
-                                value={newAttribute}
-                                onChange={(e) => setNewAttribute(e.target.value)}
+                                value={newAttribute.name} // Lấy giá trị từ state
+                                onChange={onChange} // Gọi hàm xử lý khi thay đổi
                                 className="input-attribute"
                             />
-                            <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
+                            <Button
+                                className="btn-item"
+                                type="primary"
+                                onClick={handleAddAttribute}
+                            >
                                 Tạo thuộc tính
                             </Button>
                         </div>

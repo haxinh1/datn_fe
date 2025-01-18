@@ -1,59 +1,35 @@
-import instance from "../axios";
+import instance from "../axios"; // axios instance với base URL
 
-const getAllProduct = async () => {
-    try {
-        const { data } = await instance.get('/products');
-        return data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
+const fetchProducts = async () => {
+    const response = await instance.get("/products");
+    return response.data; // Trả về data từ BE
+};
+
+const fetchProductById = async (id) => {
+    const response = await instance.get(`/products/${id}`);
+    return response.data;
 };
 
 const createProduct = async (payload) => {
-    try {
-        const { data } = await instance.post('/products', payload);
-        return data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-};
-
-const getProductById = async (id) => {
-    try {
-        const { data } = await instance.get(`/products/${id}`);
-        return data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
+    const response = await instance.post("/products", payload);
+    return response.data;
 };
 
 const updateProduct = async (id, payload) => {
-    try {
-        const { data } = await instance.put(`/products/${id}`, payload);
-        return data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
+    const response = await instance.put(`/products/${id}`, payload);
+    return response.data;
 };
 
 const deleteProduct = async (id) => {
-    try {
-        const { data } = await instance.delete(`/products/${id}`);
-        return data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
+    const response = await instance.delete(`/products/${id}`);
+    return response.data;
 };
 
+// Xuất các hàm để dùng trong các component
 export const productsServices = {
-    getAllProduct,
+    fetchProducts,
+    fetchProductById,
     createProduct,
-    getProductById,
     updateProduct,
     deleteProduct,
 };

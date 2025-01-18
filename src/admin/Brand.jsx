@@ -1,71 +1,88 @@
 import React, { useState } from "react";
-import { Button, Form, Input, Skeleton, Table, notification, Modal } from "antd";
+import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import "../admin/product/add.css";
 import "../admin/product/list.css";
+import { BrandsServices } from "../services/brands";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
 const Brand = () => {
     const queryClient = useQueryClient();
     const [form] = Form.useForm();
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [logo, setLogo] = useState(null);
+
+    const showModal = () => setIsModalVisible(true);
+    const hideModal = () => setIsModalVisible(false);
 
     // Fetch danh sách thương hiệu
     const { data: brands, isLoading } = useQuery({
         queryKey: ["brands"],
         queryFn: async () => {
-            const response = await axios.get(`http://127.0.0.1:8000/api/brands`);
-            return response.data.data;
+            const response = await BrandsServices.fetchBrands();
+            return response.data;
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Không thể tải danh sách thương hiệu",
+                description: error.response?.data?.message || error.message,
+            });
         },
     });
 
     // Tạo thương hiệu mới
     const addBrandMutation = useMutation({
-        mutationFn: async (newBrand) => {
-            await axios.post(`http://127.0.0.1:8000/api/brands`, newBrand);
+        mutationFn: async (brand) => {
+            return await BrandsServices.createBrand(brand);
         },
         onSuccess: () => {
             queryClient.invalidateQueries(["brands"]);
             form.resetFields();
+            hideModal();
             notification.success({
                 message: "Thêm thương hiệu thành công!",
             });
-        }
-    });
-
-    // Xóa thương hiệu
-    const deleteBrandMutation = useMutation({
-        mutationFn: async (id) => {
-            await axios.delete(`http://127.0.0.1:8000/api/brands/${id}`);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(["brands"]);
-            notification.success({
-                message: "Xóa thương hiệu thành công!",
-            });
-        },
-        onError: () => {
+        onError: (error) => {
             notification.error({
-                message: "Xóa thương hiệu thất bại!",
+                message: "Thêm thương hiệu thất bại!",
+                description: error.response?.data?.message || error.message,
             });
         },
     });
 
-    const handleDeleteBrand = (id) => {
-        Modal.confirm({
-            title: "Xác nhận xóa",
-            content: "Bạn có chắc chắn muốn xóa thương hiệu này không?",
-            okText: "Xóa",
-            cancelText: "Hủy",
-            onOk: () => deleteBrandMutation.mutate(id),
-        });
+    const normFile = (e) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e?.fileList;
+    };
+    
+    const onHandleChange = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            setLogo(info.file.response.secure_url);
+        } 
     };
 
     const handleAddBrand = (values) => {
-        addBrandMutation.mutate(values);
+        addBrandMutation.mutate({ ...values, logo });
+    };
+
+    const handleNameChange = (e) => {
+        const name = e.target.value;
+        form.setFieldsValue({
+            name,
+            slug: name.toLowerCase().replace(/\s+/g, "-"),
+        });
     };
 
     const columns = [
+        {
+            title:"",
+            render:() => { return <input className="tick" type="checkbox" />},
+            align: "center"
+        },
         {
             title: "Tên thương hiệu",
             dataIndex: "name",
@@ -83,35 +100,24 @@ const Brand = () => {
             title: "Logo",
             dataIndex: "logo",
             key: "logo",
-            render: (logo) => (
-                <img
-                    src={logo}
-                    alt="Logo"
-                    style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                />
-            ),
+            render: (_, item) => {
+                return <Image width={60} src={item.logo} />;
+            },
             align: "center",
         },
         {
             title: "Thao tác",
             key: "action",
+            align: "center",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to="" className="action-link action-link-blue">
+                    <Link to='' className="action-link action-link-blue">
                         Cập nhật
                     </Link>
-
                     <div className="divider"></div>
-
-                    <span
-                        className="action-link action-link-red"
-                        onClick={() => handleDeleteBrand(item.id)}
-                    >
-                        Xóa
-                    </span>
+                    <span className="action-link action-link-red">Xóa</span>
                 </div>
             ),
-            align: "center",
         },
     ];
 
@@ -122,50 +128,100 @@ const Brand = () => {
     return (
         <div className="container">
             <h1 className="mb-5">Quản lý thương hiệu</h1>
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleAddBrand}
-                className="attribute"
-            >
-                <Form.Item
-                    label="Tên thương hiệu"
-                    name="name"
-                    rules={[
-                        { required: true, message: "Vui lòng nhập tên thương hiệu" },
-                    ]}
-                >
-                    <Input className="input-item" placeholder="Nhập tên thương hiệu" />
-                </Form.Item>
 
-                <Form.Item
-                    label="Slug"
-                    name="slug"
-                    rules={[
-                        { required: true, message: "Vui lòng nhập slug" },
-                    ]}
+            <div className="btn-group">
+                <Button
+                    color="primary" 
+                    variant="solid"
+                    icon={<PlusOutlined />}
+                    onClick={showModal}
                 >
-                    <Input className="input-item" placeholder="Nhập slug của thương hiệu" />
-                </Form.Item>
-
-                <Form.Item
-                    label="Logo"
-                    name="logo"
-                    rules={[
-                        { required: true, message: "Vui lòng nhập URL của logo" },
-                    ]}
-                >
-                    <Input className="input-item" placeholder="Nhập URL logo" />
-                </Form.Item>
-
-                <Button type="primary" htmlType="submit" className="btn-item">
-                    Tạo thương hiệu
+                    Thêm thương hiệu
                 </Button>
-            </Form>
+
+                <Button
+                    color="danger" 
+                    variant="solid"
+                    icon={<DeleteOutlined />}
+                >
+                    Xóa thương hiệu
+                </Button>
+            </div>
+
+            <Modal
+                title="Tạo thương hiệu mới"
+                visible={isModalVisible}
+                onCancel={hideModal}
+                footer={null}
+                bodyStyle={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleAddBrand}
+                >
+                    <Row gutter={24}>
+                        <Col span={12}>
+                            <Form.Item
+                                label="Tên thương hiệu"
+                                name="name"
+                                rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                            >
+                                <Input className="input-item" onChange={handleNameChange} />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Slug"
+                                name="slug"
+                                rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                            >
+                                <Input className="input-item" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                            <Form.Item 
+                                label="Logo" 
+                                name="logo"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[
+                                    {
+                                        validator: (_, value) =>
+                                            logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
+                                    },
+                                ]}
+                            >
+                                <Upload 
+                                    listType="picture-card" 
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{upload_preset: "quangOsuy"}}
+                                    onChange={onHandleChange}
+                                >
+                                    <button className="upload-button" type="button">
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </button>
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    
+                    <div className="add">
+                        <Button type="primary" size="large" htmlType="submit">
+                            Xác nhận
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
 
             <Table
                 columns={columns}
-                dataSource={brands}
+                dataSource={brands || []}
                 pagination={false}
                 rowKey={(record) => record.id}
             />
