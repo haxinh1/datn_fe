@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useParams } from "react-router-dom";
 import "./detailad.css";
-import { productsServices } from "../../services/products";
+// import { productsServices } from "../../services/products";
 
 const ProductDetail = () => {
   const { id } = useParams();
