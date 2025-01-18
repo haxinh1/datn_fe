@@ -9,8 +9,22 @@ import Pay from './pages/Pay';
 import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
+import ProductDetail from "./Admin/product/DetailAd";
+import Categories from "./Admin/category";
 
 function App() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/products");
+        setProducts(data);
+      } catch (error) {
+        console.log(error);
+      }
+    })();
+  }, []);
 
   return (
     <>
