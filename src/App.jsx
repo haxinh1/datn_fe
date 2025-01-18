@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import api from "./axios";
 import LayoutAdmin from "./layout/LayoutAdmin";
 import ProductDetail from "./Admin/product/DetailAd";
+import Categories from "./Admin/category";
+
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -24,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/detailad" element={<ProductDetail />} />
+          <Route path="/categories" element={<Categories />} />
           {/* <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} /> */}
@@ -33,6 +36,7 @@ function App() {
           <Route path="/login" element={<Login />} /> */}
         </Route>
       </Routes>
+
     </>
   );
 }
