@@ -18,7 +18,6 @@ function App() {
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/detailad" element={<ProductDetail />} />
-
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
