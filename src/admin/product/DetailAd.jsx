@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useParams } from "react-router-dom";
 import "./detailad.css";
+<<<<<<< HEAD
 import { productsServices } from "../../services/products";
+=======
+// import { productsServices } from "../../services/products";
+>>>>>>> 3a63a2de64c2005d0172a35217c934953484947d
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -133,4 +137,8 @@ const ProductDetail = () => {
   );
 };
 
+<<<<<<< HEAD
 export default ProductDetail;
+=======
+export default ProductDetail;
+>>>>>>> 3a63a2de64c2005d0172a35217c934953484947d
