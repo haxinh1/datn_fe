@@ -22,6 +22,7 @@ function App() {
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
           <Route path="/brand" element={<Brand />} />
+          <Route path="/categories" element={<Categories />} />
         </Route>
       </Routes>
 
