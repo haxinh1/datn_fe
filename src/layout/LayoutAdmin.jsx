@@ -25,6 +25,16 @@ const LayoutAdmin = () => {
       label: <Link to="/list-pr">Quản lý sản phẩm</Link>,
     },
     {
+      key: "brand",
+      icon: <BilibiliFilled/>,
+      label: <Link to="/brand">Thương hiệu</Link>
+    },
+    {
+      key: "category",
+      icon: <BilibiliFilled />,
+      label: <Link to="/categories">Thể Loại</Link>,
+    },
+    {
       key: "category",
       icon: <BilibiliFilled />,
       label: <Link to="/categories">Thể Loại</Link>,
