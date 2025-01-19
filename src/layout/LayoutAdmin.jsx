@@ -1,7 +1,14 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Breadcrumb, Layout, Menu, theme } from "antd";
-import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
+import {
+  HomeOutlined,
+  BookOutlined,
+  FormOutlined,
+  UserOutlined,
+  BilibiliFilled,
+  MessageOutlined,
+} from "@ant-design/icons";
 import "./layoutAdmin.css";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -60,13 +67,21 @@ const LayoutAdmin = () => {
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
         <div className="demo-logo-vertical" />
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={["admin"]} items={menuItems} />
+        <Menu
+          theme="dark"
+          mode="inline"
+          defaultSelectedKeys={["admin"]}
+          items={menuItems}
+        />
       </Sider>
 
       {/* Main Layout */}
       <Layout className="main-layout">
-        <Header className="header-admin" style={{ background: colorBgContainer }} />
-        
+        <Header
+          className="header-admin"
+          style={{ background: colorBgContainer }}
+        />
+
         <Content className="content-admin">
           <Breadcrumb className="breadcrumb-admin" />
           <div
