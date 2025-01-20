@@ -20,7 +20,7 @@ const Add = () => {
     const [newAttribute, setNewAttribute] = useState({ name: "" });
     const [forms, setForms] = useState([]);
     const [variants, setVariants] = useState([]);
-    const [productType, setProductType] = useState("single"); 
+    const [productType, setProductType] = useState("single");
 
     // Thêm sản phẩm
     const { mutate } = useMutation({
@@ -48,20 +48,20 @@ const Add = () => {
             navigate("/list-pr");
         },
     });
-    
+
     const normFile = (e) => {
         if (Array.isArray(e)) {
             return e;
         }
         return e?.fileList;
     };
-    
+
     const onHandleChange = (info) => {
         if (info.file.status === "done" && info.file.response) {
             setThumbnail(info.file.response.secure_url);
-        } 
+        }
     };
-    
+
     const onFinish = (values) => {
         mutate({ ...values, thumbnail });
     };
@@ -205,12 +205,12 @@ const Add = () => {
     const [categories, setCategories] = useState([]);
 
     const fetchData = async () => {
-           const response = await categoryServices.fetchCategories()
-           setCategories(response)
-       }
-       useEffect(() => {
-           fetchData()
-       }, [])
+        const response = await categoryServices.fetchCategories()
+        setCategories(response)
+    }
+    useEffect(() => {
+        fetchData()
+    }, [])
 
     // bảng biến thể
     const columns = [
@@ -246,49 +246,49 @@ const Add = () => {
     return (
         <div className="container">
             <h1 className="mb-5">Thêm sản phẩm mới</h1>
-            <Form 
-                name="basic" 
-                labelCol={{ span: 24 }} 
-                wrapperCol={{ span: 24 }} 
+            <Form
+                name="basic"
+                labelCol={{ span: 24 }}
+                wrapperCol={{ span: 24 }}
                 labelAlign="top"
                 form={form}
                 onFinish={onFinish}>
                 <Row gutter={24}>
                     <Col span={8} className="col-item">
-                        <Form.Item 
-                            label="Tên sản phẩm" 
+                        <Form.Item
+                            label="Tên sản phẩm"
                             rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
                             name="name"
                         >
                             <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item 
-                            label="Giá bán" 
+                        <Form.Item
+                            label="Giá bán"
                             rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                             name="sell_price"
                         >
                             <InputNumber className="input-item" />
                         </Form.Item>
 
-                        <Form.Item 
-                            label="Slug" 
+                        <Form.Item
+                            label="Slug"
                             rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
                             name="slug"
                         >
                             <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item 
-                            label="Link" 
+                        <Form.Item
+                            label="Link"
                             rules={[{ required: true, message: "Vui lòng nhập link" }]}
                             name="name_link"
                         >
                             <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item 
-                            label="Thương hiệu sản phẩm" 
+                        <Form.Item
+                            label="Thương hiệu sản phẩm"
                             name="brand_id"
                             rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
                         >
@@ -303,35 +303,45 @@ const Add = () => {
 
                         <Form.Item label="Danh mục" name="category">
                             <Select
-                                className="input-item">
-                                <Option value="">chon danh muc</Option>
-                                {categories && categories.map((category) => (
-                                    <Option key={category.id} value={category.name}>
-                                        {category.name}
-                                        </Option>
-                                ))}
+                                className="input-item"
+                                placeholder="Chọn danh mục"
+                                showSearch
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                <Option value="">Chọn danh mục</Option>
+                                {categories.flatMap((category) =>
+                                    category.children
+                                        .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
+                                        .map((child) => (
+                                            <Option key={child.id} value={child.name}>
+                                                {child.name}
+                                            </Option>
+                                        ))
+                                )}
                             </Select>
-                            
                         </Form.Item>
                     </Col>
-                    
+
                     <Col span={16} className="col-item">
-                        <Form.Item 
-                            label="Ảnh sản phẩm" 
+                        <Form.Item
+                            label="Ảnh sản phẩm"
                             name='thumbnail'
                             valuePropName="fileList"
                             getValueFromEvent={normFile}
                             rules={[
                                 {
                                     validator: (_, value) =>
-                                    thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
+                                        thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
                                 },
                             ]}
                         >
-                            <Upload 
-                                listType="picture-card" 
+                            <Upload
+                                listType="picture-card"
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                data={{upload_preset: "quangOsuy"}}
+                                data={{ upload_preset: "quangOsuy" }}
                                 onChange={onHandleChange}
                             >
                                 <button className="upload-button" type="button">
@@ -341,8 +351,8 @@ const Add = () => {
                             </Upload>
                         </Form.Item>
 
-                        <Form.Item 
-                            label="Mô tả sản phẩm" 
+                        <Form.Item
+                            label="Mô tả sản phẩm"
                             name="content"
                         >
                             <TextArea rows={8} className="input-item" />
@@ -461,7 +471,7 @@ const Add = () => {
                         Thêm sản phẩm
                     </Button>
                 </div>
-            </Form>    
+            </Form>
         </div>
     );
 };
