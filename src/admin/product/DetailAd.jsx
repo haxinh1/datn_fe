@@ -46,6 +46,15 @@ const ProductDetail = () => {
     }
   });
 
+  // tách số 
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0, // Không có số thập phân
+    });
+    return formatter.format(price);
+  };
+
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
   if (error) return <p>{error}</p>;
 
@@ -127,7 +136,7 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Giá bán:</th>
-                  <td>{product.sell_price || 0} VNĐ</td>
+                  <td>{formatPrice(product.sell_price || 0)} VNĐ</td>
                 </tr>
                 <tr>
                   <th>Giá bán khuyến mãi:</th>

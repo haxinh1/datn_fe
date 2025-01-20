@@ -58,7 +58,6 @@ const List = () => {
             title: "Tên sản phẩm",
             dataIndex: "name",
             key: "name",
-            render: (text) => <a>{text}</a>,
             align: "center",
         },
         {
@@ -128,12 +127,24 @@ const List = () => {
 
             <div className="btn">
             <Form.Item label="Danh mục" name="category" className="select-item">
-                    <Select>
-                    {categories && categories.map((category) => (
-                        <Option key={category.id} value={category.name}>
-                            {category.name}
-                        </Option>
-                    ))}
+                    <Select
+                        className="input-item"
+                        placeholder="Chọn danh mục"
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                            option.children.toLowerCase().includes(input.toLowerCase())
+                        }
+                    >
+                        {categories.flatMap((category) =>
+                            category.children
+                            .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
+                            .map((child) => (
+                                <Option key={child.id} value={child.name}>
+                                    {child.name}
+                                </Option>
+                            ))
+                        )}
                     </Select>
                 </Form.Item>
 
