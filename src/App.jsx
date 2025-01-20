@@ -3,24 +3,22 @@ import { Route, Routes } from "react-router-dom";
 import List from "./admin/product/List";
 import Edit from "./admin/product/Edit";
 import Add from "./admin/product/Add";
-import Home from './pages/Home';
-import Cart from './pages/Cart';
-import Pay from './pages/Pay';
-import Detail from './pages/Detail';
+import Home from "./pages/Home";
+import Cart from "./pages/Cart";
+import Pay from "./pages/Pay";
+import Detail from "./pages/Detail";
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
-import ProductDetail from "./Admin/product/DetailAd";
+import ProductDetail from "./admin/product/DetailAd";
 import Categories from "./Admin/category";
 
 function App() {
-  
-
   return (
     <>
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
-        <Route path="/detailad" element={<ProductDetail />} />
-        <Route path="/categories" element={<Categories />} />
+          <Route path="/detailad/:id" element={<ProductDetail />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
