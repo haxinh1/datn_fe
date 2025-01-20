@@ -9,7 +9,7 @@ import Pay from "./pages/Pay";
 import Detail from "./pages/Detail";
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
-import ProductDetail from "./Admin/product/DetailAd";
+import ProductDetail from "./admin/product/DetailAd";
 import Categories from "./Admin/category";
 
 function App() {
@@ -17,11 +17,12 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
-          <Route path="/detailad" element={<ProductDetail />} />
+          <Route path="/detailad/:id" element={<ProductDetail />} />
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
           <Route path="/brand" element={<Brand />} />
+          <Route path="/categories" element={<Categories />} />
         </Route>
       </Routes>
 

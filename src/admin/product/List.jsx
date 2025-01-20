@@ -1,64 +1,58 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Image, notification, Skeleton, Table, Modal, Form, Select } from "antd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import './list.css';
+import "./list.css";
+import { productsServices } from "../../services/product";
+import { BrandsServices } from './../../services/brands';
+import { categoryServices } from './../../services/categories';
+import { useEffect } from "react";
 
 const List = () => {
     const queryClient = useQueryClient();
-    const { data, isLoading } = useQuery({
+
+    const { data: products, isLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
-            const response = await axios.get(`http://localhost:3000/products`);
-            return response.data.map((product) => ({
-                key: product.id,
-                ...product,
-            }));
-        },
+            const response = await productsServices.fetchProducts();
+            return response.data;
+        }
     });
 
-    const { mutate } = useMutation({
-        mutationFn: async (id) => {
-            return await axios.delete(`http://localhost:3000/products/${id}`);
-        },
-        onSuccess: () => {
-            notification.success({
-                message: "Xóa sản phẩm thành công!",
-                description: "Sản phẩm đã được xóa khỏi danh sách.",
-            });
-            queryClient.invalidateQueries({
-                queryKey: ["products"],
-            });
-        },
-        onError: (error) => {
-            notification.error({
-                message: "Xóa sản phẩm thất bại!",
-                description: `Đã xảy ra lỗi: ${error.message}`,
-            });
-        },
+    // Fetch danh sách thương hiệu
+    const { data: brands } = useQuery({
+        queryKey: ["brands"],
+        queryFn: async () => {
+            const response = await BrandsServices.fetchBrands();
+            return response.data;
+        }
     });
 
-    const onDelete = (id) => {
-        mutate(id);
-    };
+    // Lấy danh sách danh mục
+    const [categories, setCategories] = useState([]);
+    const fetchData = async () => {
+        const response = await categoryServices.fetchCategories()
+        setCategories(response)
+    }
+    useEffect(() => {
+        fetchData()
+    }, [])
 
-    const deleteConfirm = (id) => {
-        Modal.confirm({
-            title: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
-            content: 'Hành động này sẽ không thể phục hồi!',
-            okText: 'Có',
-            cancelText: 'Không',
-            onOk: () => onDelete(id),
+    // tách số 
+    const formatPrice = (price) => {
+        const formatter = new Intl.NumberFormat("de-DE", {
+            style: "decimal",
+            maximumFractionDigits: 0, // Không có số thập phân
         });
+        return formatter.format(price);
     };
 
     const columns = [
         {
-            title:"",
-            render:() => { return <input className="tick" type="checkbox" />},
-            align: "center"
+            title: "",
+            render: () => <input className="tick" type="checkbox" />,
+            align: "center",
         },
         {
             title: "Tên sản phẩm",
@@ -81,6 +75,7 @@ const List = () => {
             key: "sell_price",
             dataIndex: "sell_price",
             align: "center",
+            render: (price) => formatPrice(price),
         },
         {
             title: "Số lượng",
@@ -89,34 +84,35 @@ const List = () => {
             align: "center",
         },
         {
-            title: "Danh mục",
-            dataIndex: "category",
-            key: "category",
-            render: (_, item) => {
-                return <span>{item.category === "idCategory1" ? "Điện thoại" : "Máy tính"}</span>;
-            },
+            title: "Thương hiệu",
+            dataIndex: "brand_id",
+            key: "brand_id",
             align: "center",
+            render: (brand_id) => {
+                if (!brands || !Array.isArray(brands)) return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
+                const brand = brands.find((b) => b.id === brand_id); // Tìm thương hiệu theo id
+                return brand ? brand.name : "Không xác định"; // Hiển thị tên thương hiệu hoặc fallback
+            },
         },
+        // {
+        //     title: "Danh mục",
+        //     dataIndex: "category",
+        //     key: "category",
+        //     align: "center",
+        // },
         {
             title: "Thao tác",
             key: "action",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to='/detailad' className="action-link action-link-purple">
+                    <Link to={`/detailad/${item.id}`} className="action-link action-link-purple">
                         Chi tiết
                     </Link>
                     <div className="divider"></div>
 
-                    <Link to='/edit-pr' className="action-link action-link-blue">
+                    <Link to="/edit-pr" className="action-link action-link-blue">
                         Cập nhật
                     </Link>
-
-                    {/* <span
-                        className="action-link action-link-red"
-                        onClick={() => deleteConfirm(item.id)}
-                    >
-                        Xóa
-                    </span> */}
                 </div>
             ),
             align: "center",
@@ -126,44 +122,38 @@ const List = () => {
     return (
         <>
             <h1 className="page-title">
-                <BookOutlined style={{ marginRight: '8px' }} />
+                <BookOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
             <div className="btn">
-                <Form.Item label="Danh mục" name="category" className="select-item">
+            <Form.Item label="Danh mục" name="category" className="select-item">
                     <Select>
-                        <Select.Option>Điện thoại</Select.Option>
-                        <Select.Option>Máy tính</Select.Option>
+                    {categories && categories.map((category) => (
+                        <Option key={category.id} value={category.name}>
+                            {category.name}
+                        </Option>
+                    ))}
                     </Select>
                 </Form.Item>
 
                 <div className="btn-group">
                     <Link to="/add-pr">
-                        <Button
-                            color="primary" 
-                            variant="solid"
-                            icon={<PlusOutlined />}
-                        >
+                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
                             Thêm sản phẩm
                         </Button>
                     </Link>
 
-                    <Button
-                        color="danger" 
-                        variant="solid"
-                        icon={<DeleteOutlined />}
-                    >
+                    <Button color="danger" variant="solid" icon={<DeleteOutlined />}>
                         Xóa sản phẩm
                     </Button>
                 </div>
             </div>
 
-            
             <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
-                    dataSource={data}
+                    dataSource={products || []}
                     pagination={{ pageSize: 6 }}
                 />
             </Skeleton>
