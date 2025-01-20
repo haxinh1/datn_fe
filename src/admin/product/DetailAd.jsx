@@ -1,135 +1,221 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useParams } from "react-router-dom";
+import { productsServices } from "../../services/product";
+import moment from "moment"; // Đảm bảo đã import đúng
 import "./detailad.css";
-// import { productsServices } from "../../services/products";
+import { BrandsServices } from "../../services/brands";
+import { useQuery } from "@tanstack/react-query";
 
 const ProductDetail = () => {
-  const { id } = useParams();
-  const [product, setProduct] = useState({});
-  const [currentImage, setCurrentImage] = useState(
-    "https://i.pinimg.com/736x/18/2d/88/182d8850ca2f6b1822ae82dd00ae08cd.jpg" // Ảnh sản phẩm mặc định
-  );
+  const { id } = useParams(); // Lấy ID sản phẩm từ URL
+  const [product, setProduct] = useState(null); // Dữ liệu chi tiết sản phẩm
+  const [images, setImages] = useState([]); // Mảng ảnh sản phẩm
+  const [currentImage, setCurrentImage] = useState(""); // Ảnh hiện tại
+  const [loading, setLoading] = useState(true); // Trạng thái tải
+  const [error, setError] = useState(null); // Trạng thái lỗi
 
-  const images = [
-    "https://i.pinimg.com/736x/18/2d/88/182d8850ca2f6b1822ae82dd00ae08cd.jpg",
-    "https://i.pinimg.com/736x/87/8a/86/878a86c075f68a8c32286d6733a45a35.jpg",
-    "https://i.pinimg.com/736x/11/02/61/110261491fca31809ae379c5e92ec8a9.jpg", // Ảnh chính
-  ];
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        setLoading(true);
+        const data = await productsServices.fetchProductById(id);
+        console.log("Dữ liệu sản phẩm:", data);
+        setProduct(data.data);
+        if (data?.images?.length > 0) {
+          setImages(data.images);
+          setCurrentImage(data.images[0]);
+        }
+      } catch (err) {
+        console.error("Lỗi khi lấy dữ liệu:", err);
+        setError("Lỗi khi lấy dữ liệu sản phẩm");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductDetails();
+  }, [id]);
+
+  // Fetch danh sách thương hiệu
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response = await BrandsServices.fetchBrands();
+      return response.data;
+    }
+  });
+
+  if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
-    <div className="container mt-5">
-      <h2 style={{ margin: "20px" }}>Thông tin chi tiết sản phẩm</h2>
-      <div className="row">
-        {/* Cột hình ảnh */}
-        <div className="col-md-4">
-          <div className="text-center">
-            <img
-              src={currentImage}
-              alt="Product"
-              className="img-fluid mb-2"
-              style={{ border: "1px solid #ddd", borderRadius: "5px" }}
-            />
-            <div className="d-flex justify-content-start mt-2">
-              {images.map((image, index) => (
+    product && (
+      <div className="container mt-5">
+        <h2 style={{ margin: "20px" }}>Thông tin chi tiết sản phẩm</h2>
+        <div className="row">
+          {/* Hình ảnh sản phẩm */}
+          <div className="col-md-4">
+            <div className="text-center">
+              {product.thumbnail ? (
                 <img
-                  key={index}
-                  src={image}
-                  alt={`Thumbnail ${index + 1}`}
-                  className="img-thumbnail me-2"
-                  style={{
-                    width: "70px",
-                    height: "70px",
-                    cursor: "pointer",
-                    border: currentImage === image ? "2px solid #007bff" : "",
-                  }}
-                  onClick={() => setCurrentImage(image)}
+                  src={product.thumbnail}
+                  alt="Thumbnail"
+                  className="img-fluid mb-2"
+                  style={{ border: "1px solid #ddd", borderRadius: "5px" }}
                 />
-              ))}
+              ) : (
+                <p>Không có ảnh sản phẩm</p>
+              )}
+              <div className="d-flex justify-content-start mt-2">
+                {images.map((image, index) => (
+                  <img
+                    key={index}
+                    src={image.url}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="img-thumbnail me-2"
+                    style={{
+                      width: "70px",
+                      height: "70px",
+                      cursor: "pointer",
+                      border:
+                        currentImage === image.url ? "2px solid #007bff" : "",
+                    }}
+                    onClick={() => setCurrentImage(image.url)}
+                  />
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Thông tin sản phẩm */}
+          <div className="col-md-8">
+            <table className="table table-striped">
+              <tbody>
+                <tr>
+                  <th>Mã sản phẩm:</th>
+                  <td>{product.code || "Không có mã"}</td>
+                </tr>
+                <tr>
+                  <th>Tên sản phẩm:</th>
+                  <td>{product.name || "Không có tên"}</td>
+                </tr>
+                <tr>
+                  <th>Thương hiệu sản phẩm:</th>
+                  <td>
+                  {(() => {
+                    if (!brands || !Array.isArray(brands)) return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
+                    const brand = brands.find((b) => b.id === product.brand_id); // Tìm thương hiệu theo id từ product.brand_id
+                    return brand ? brand.name : "Không xác định"; // Hiển thị tên thương hiệu hoặc fallback
+                  })()}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Danh mục sản phẩm:</th>
+                  <td>
+                    {(product.category && product.category.name) ||
+                      "Không có danh mục"}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Lượt xem:</th>
+                  <td>{product.views || 0} Views</td>
+                </tr>
+                <tr>
+                  <th>Giá nhập:</th>
+                  <td>{product.price || 0} VNĐ</td>
+                </tr>
+                <tr>
+                  <th>Giá bán:</th>
+                  <td>{product.sell_price || 0} VNĐ</td>
+                </tr>
+                <tr>
+                  <th>Giá bán khuyến mãi:</th>
+                  <td>{product.sale_price || 0} VNĐ</td>
+                </tr>
+                <tr>
+                  <th>Thời gian bắt đầu sale:</th>
+                  <td>
+                    {moment(product.sale_price_start_at).format(
+                      "DD/MM/YYYY HH:mm:ss"
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Thời gian kết thúc sale:</th>
+                  <td>
+                    {moment(product.sale_price_end_at).format(
+                      "DD/MM/YYYY HH:mm:ss"
+                    )}
+                  </td>
+                </tr>
+
+                <tr>
+                  <th>Đường dẫn sản phẩm:</th>
+                  <td>{product.slug} </td>
+                </tr>
+                <tr>
+                  <th>Link sản phẩm:</th>
+                  <td>
+                    {product.name_link ? (
+                      <a
+                        href={product.name_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {product.name_link}
+                      </a>
+                    ) : (
+                      "Không có"
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Mô tả:</th>
+                  <td>{product.content || "Không có mô tả"}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Cột thông tin sản phẩm */}
-        <div className="col-md-8">
-          <table className="table table-striped" style={{ textAlign: "left" }}>
-            <tbody>
-              <tr className="tr">
-                <th>Mã sản phẩm:</th>
-                <td>HA01</td>
-                {/* <th>Mã hàng:</th>
-                <td>NU011</td> */}
-              </tr>
-
+        {/* Bảng biến thể sản phẩm */}
+        <h2 className="mt-4">Bảng biến thể sản phẩm</h2>
+        <table className="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Size</th>
+              <th>Màu</th>
+              <th>Số lượng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {product.variants && product.variants.length > 0 ? (
+              product.variants.map((variant, index) => (
+                <tr key={index}>
+                  <td>{variant.size || "Không có"}</td>
+                  <td>{variant.color || "Không có"}</td>
+                  <td>{variant.quantity || 0}</td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <th>Tên sản phẩm:</th>
-                <td>Áo phông nam</td>
-              </tr>
-              <tr>
-                <th style={{ whiteSpace: "nowrap" }}>Danh mục sản phẩm:</th>
-                <td>Áo</td>
-              </tr>
-              <tr>
-                <th>Lượt xem:</th>
-                <td>350000 {"Views"}</td>
-              </tr>
-              <tr>
-                <th>Giá nhập</th>
-                <td>200000 {"VNĐ"}</td>
-              </tr>
-              <tr>
-                <th>Giá bán</th>
-                <td>250000 {"VNĐ"}</td>
-              </tr>
-              <tr>
-                <th>Giá bán khuyến mãi</th>
-                <td> {"VNĐ"}</td>
-              </tr>
-              <tr>
-                <th>Link sản phẩm</th>
-                <td></td>
-              </tr>
-              <tr>
-                <th>Đường dẫn</th>
-                <td></td>
-              </tr>
-              <tr>
-                <th>Mô tả</th>
-                <td>
-                  Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-                  Magni, doloremque eum perferendis deleniti hic veritatis
-                  mollitia neque repudiandae dolore explicabo?
+                <td colSpan="3" className="text-center">
+                  Không có biến thể
                 </td>
               </tr>
-            </tbody>
-          </table>
+            )}
+          </tbody>
+        </table>
+
+        {/* Các nút hành động */}
+        <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">
+          <button className="btn btn-success">Cập nhật</button>
+          <button className="btn btn-warning">Ngừng kinh doanh</button>
+          <button className="btn btn-danger">Xóa</button>
         </div>
       </div>
-      <br />
-      <h2>Bảng biến thể sản phẩm</h2>
-      <br />
-      <table className="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>Size</th>
-            <th>Màu</th>
-            <th>Số lượng</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>S</td>
-            <td>Đỏ</td>
-            <td>10</td>
-          </tr>
-        </tbody>
-      </table>
-      <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">
-        <button className="btn btn-success">Cập nhật</button>
-        <button className="btn btn-warning">Ngừng kinh doanh</button>
-        <button className="btn btn-danger">Xóa</button>
-      </div>
-    </div>
+    )
   );
 };
 
