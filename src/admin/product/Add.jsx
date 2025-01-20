@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Form, Input, InputNumber, Select, Upload, Row, Col, Modal, notification, Radio, Tag, Table } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
@@ -8,6 +8,7 @@ import { AttributesServices } from './../../services/attributes';
 import { productsServices } from './../../services/product';
 import axios from "axios";
 import "./add.css";
+import { categoryServices } from "../../services/categories";
 
 const { Option } = Select;
 
@@ -200,6 +201,16 @@ const Add = () => {
             },
         });
     };
+    // lay aip danh muc
+    const [categories, setCategories] = useState([]);
+
+    const fetchData = async () => {
+           const response = await categoryServices.fetchCategories()
+           setCategories(response)
+       }
+       useEffect(() => {
+           fetchData()
+       }, [])
 
     // bảng biến thể
     const columns = [
@@ -278,12 +289,12 @@ const Add = () => {
 
                         <Form.Item 
                             label="Thương hiệu sản phẩm" 
-                            name="brands"
+                            name="brand_id"
                             rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
                         >
                             <Select className="input-item">
                                 {brands && brands.map((brand) => (
-                                    <Option key={brand.id} value={brand.name}>
+                                    <Option key={brand.id} value={brand.id}>
                                         {brand.name}
                                     </Option>
                                 ))}
@@ -291,10 +302,16 @@ const Add = () => {
                         </Form.Item>
 
                         <Form.Item label="Danh mục" name="category">
-                            <Select className="input-item">
-                                <Option>Áo</Option>
-                                <Option>Quần</Option>
+                            <Select
+                                className="input-item">
+                                <Option value="">chon danh muc</Option>
+                                {categories && categories.map((category) => (
+                                    <Option key={category.id} value={category.name}>
+                                        {category.name}
+                                        </Option>
+                                ))}
                             </Select>
+                            
                         </Form.Item>
                     </Col>
                     
