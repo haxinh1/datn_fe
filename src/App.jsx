@@ -10,7 +10,7 @@ import Detail from "./pages/Detail";
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
 import ProductDetail from "./admin/product/DetailAd";
-import Categories from "./Admin/category";
+import Categories from "./admin/category";
 
 function App() {
   return (

@@ -91,7 +91,7 @@ const List = () => {
             render: (brand_id) => {
                 if (!brands || !Array.isArray(brands)) return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
                 const brand = brands.find((b) => b.id === brand_id); // Tìm thương hiệu theo id
-                return brand ? brand.name : "Không xác định"; // Hiển thị tên thương hiệu hoặc fallback
+                return brand ? brand.name : "Không xác định";// Hiển thị tên thương hiệu hoặc fallback
             },
         },
         // {
