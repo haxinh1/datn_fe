@@ -1,64 +1,33 @@
 import React from "react";
 import { Button, Image, notification, Skeleton, Table, Modal, Form, Select } from "antd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import './list.css';
+import "./list.css";
+import { productsServices } from "../../services/product";
 
 const List = () => {
     const queryClient = useQueryClient();
-    const { data, isLoading } = useQuery({
+
+    const { data: products, isLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
-            const response = await axios.get(`http://localhost:3000/products`);
-            return response.data.map((product) => ({
-                key: product.id,
-                ...product,
-            }));
-        },
-    });
-
-    const { mutate } = useMutation({
-        mutationFn: async (id) => {
-            return await axios.delete(`http://localhost:3000/products/${id}`);
-        },
-        onSuccess: () => {
-            notification.success({
-                message: "Xóa sản phẩm thành công!",
-                description: "Sản phẩm đã được xóa khỏi danh sách.",
-            });
-            queryClient.invalidateQueries({
-                queryKey: ["products"],
-            });
+            const response = await productsServices.fetchProducts();
+            return response.data;
         },
         onError: (error) => {
             notification.error({
-                message: "Xóa sản phẩm thất bại!",
-                description: `Đã xảy ra lỗi: ${error.message}`,
+                message: "Không thể tải danh sách thương hiệu",
+                description: error.response?.data?.message || error.message,
             });
         },
     });
 
-    const onDelete = (id) => {
-        mutate(id);
-    };
-
-    const deleteConfirm = (id) => {
-        Modal.confirm({
-            title: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
-            content: 'Hành động này sẽ không thể phục hồi!',
-            okText: 'Có',
-            cancelText: 'Không',
-            onOk: () => onDelete(id),
-        });
-    };
-
     const columns = [
         {
-            title:"",
-            render:() => { return <input className="tick" type="checkbox" />},
-            align: "center"
+            title: "",
+            render: () => <input className="tick" type="checkbox" />,
+            align: "center",
         },
         {
             title: "Tên sản phẩm",
@@ -89,12 +58,15 @@ const List = () => {
             align: "center",
         },
         {
+            title: "brand",
+            dataIndex: "brand_id",
+            key: "brand_id",
+            align: "center",
+        },
+        {
             title: "Danh mục",
             dataIndex: "category",
             key: "category",
-            render: (_, item) => {
-                return <span>{item.category === "idCategory1" ? "Điện thoại" : "Máy tính"}</span>;
-            },
             align: "center",
         },
         {
@@ -102,21 +74,14 @@ const List = () => {
             key: "action",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to='/detailad' className="action-link action-link-purple">
+                    <Link to="/detailad" className="action-link action-link-purple">
                         Chi tiết
                     </Link>
                     <div className="divider"></div>
 
-                    <Link to='/edit-pr' className="action-link action-link-blue">
+                    <Link to="/edit-pr" className="action-link action-link-blue">
                         Cập nhật
                     </Link>
-
-                    {/* <span
-                        className="action-link action-link-red"
-                        onClick={() => deleteConfirm(item.id)}
-                    >
-                        Xóa
-                    </span> */}
                 </div>
             ),
             align: "center",
@@ -126,12 +91,12 @@ const List = () => {
     return (
         <>
             <h1 className="page-title">
-                <BookOutlined style={{ marginRight: '8px' }} />
+                <BookOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
             <div className="btn">
-                <Form.Item label="Danh mục" name="category" className="select-item">
+            <Form.Item label="Danh mục" name="category" className="select-item">
                     <Select>
                         <Select.Option>Điện thoại</Select.Option>
                         <Select.Option>Máy tính</Select.Option>
@@ -140,30 +105,21 @@ const List = () => {
 
                 <div className="btn-group">
                     <Link to="/add-pr">
-                        <Button
-                            color="primary" 
-                            variant="solid"
-                            icon={<PlusOutlined />}
-                        >
+                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
                             Thêm sản phẩm
                         </Button>
                     </Link>
 
-                    <Button
-                        color="danger" 
-                        variant="solid"
-                        icon={<DeleteOutlined />}
-                    >
+                    <Button color="danger" variant="solid" icon={<DeleteOutlined />}>
                         Xóa sản phẩm
                     </Button>
                 </div>
             </div>
 
-            
             <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
-                    dataSource={data}
+                    dataSource={products || []}
                     pagination={{ pageSize: 6 }}
                 />
             </Skeleton>
