@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import { productsServices } from "../../services/product";
 import moment from "moment"; // Đảm bảo đã import đúng
 import "./detailad.css";
+import { BrandsServices } from "../../services/brands";
+import { useQuery } from "@tanstack/react-query";
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -34,6 +36,24 @@ const ProductDetail = () => {
 
     fetchProductDetails();
   }, [id]);
+
+  // Fetch danh sách thương hiệu
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response = await BrandsServices.fetchBrands();
+      return response.data;
+    },
+  });
+
+  // tách số
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0, // Không có số thập phân
+    });
+    return formatter.format(price);
+  };
 
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
   if (error) return <p>{error}</p>;
@@ -90,6 +110,19 @@ const ProductDetail = () => {
                   <td>{product.name || "Không có tên"}</td>
                 </tr>
                 <tr>
+                  <th>Thương hiệu sản phẩm:</th>
+                  <td>
+                    {(() => {
+                      if (!brands || !Array.isArray(brands))
+                        return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
+                      const brand = brands.find(
+                        (b) => b.id === product.brand_id
+                      ); // Tìm thương hiệu theo id từ product.brand_id
+                      return brand ? brand.name : "Không xác định"; // Hiển thị tên thương hiệu hoặc fallback
+                    })()}
+                  </td>
+                </tr>
+                <tr>
                   <th>Danh mục sản phẩm:</th>
                   <td>
                     {(product.category && product.category.name) ||
@@ -106,7 +139,7 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Giá bán:</th>
-                  <td>{product.sell_price || 0} VNĐ</td>
+                  <td>{formatPrice(product.sell_price || 0)} VNĐ</td>
                 </tr>
                 <tr>
                   <th>Giá bán khuyến mãi:</th>
@@ -172,9 +205,9 @@ const ProductDetail = () => {
             {product.variants && product.variants.length > 0 ? (
               product.variants.map((variant, index) => (
                 <tr key={index}>
-                  <td>{variant.size}</td>
-                  <td>{variant.color}</td>
-                  <td>{variant.quantity}</td>
+                  <td>{variant.size || "Không có"}</td>
+                  <td>{variant.color || "Không có"}</td>
+                  <td>{variant.quantity || 0}</td>
                 </tr>
               ))
             ) : (

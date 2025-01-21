@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Form,
@@ -22,6 +22,7 @@ import { AttributesServices } from "./../../services/attributes";
 import { productsServices } from "./../../services/product";
 import axios from "axios";
 import "./add.css";
+import { categoryServices } from "../../services/categories";
 
 const { Option } = Select;
 
@@ -63,6 +64,15 @@ const Add = () => {
       navigate("/list-pr");
     },
   });
+
+  // slug tạo tự động
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    form.setFieldsValue({
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, "-"),
+    });
+  };
 
   const normFile = (e) => {
     if (Array.isArray(e)) {
@@ -235,6 +245,17 @@ const Add = () => {
     });
   };
 
+  // lay aip danh muc
+  const [categories, setCategories] = useState([]);
+
+  const fetchData = async () => {
+    const response = await categoryServices.fetchCategories();
+    setCategories(response);
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   // bảng biến thể
   const columns = [
     ...forms.map((form) => ({
@@ -286,7 +307,7 @@ const Add = () => {
               ]}
               name="name"
             >
-              <Input className="input-item" />
+              <Input className="input-item" onChange={handleNameChange} />
             </Form.Item>
 
             <Form.Item
@@ -315,25 +336,42 @@ const Add = () => {
 
             <Form.Item
               label="Thương hiệu sản phẩm"
-              name="brands"
-              rules={[
-                { required: false, message: "Vui lòng chọn thương hiệu" },
-              ]}
+              name="brand_id"
+              rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
             >
               <Select className="input-item">
                 {brands &&
                   brands.map((brand) => (
-                    <Option key={brand.id} value={brand.name}>
+                    <Option key={brand.id} value={brand.id}>
                       {brand.name}
                     </Option>
                   ))}
               </Select>
             </Form.Item>
 
-            <Form.Item label="Danh mục" name="category">
-              <Select className="input-item">
-                <Option>Áo</Option>
-                <Option>Quần</Option>
+            <Form.Item
+              label="Danh mục"
+              name="category"
+              rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+            >
+              <Select
+                className="input-item"
+                placeholder="Chọn danh mục"
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {categories.flatMap((category) =>
+                  category.children
+                    .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
+                    .map((child) => (
+                      <Option key={child.id} value={child.name}>
+                        {child.name}
+                      </Option>
+                    ))
+                )}
               </Select>
             </Form.Item>
           </Col>

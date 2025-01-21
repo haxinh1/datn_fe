@@ -29,30 +29,35 @@ const Categories = () => {
 
     const columns = [
         {
-            title: 'ID',
+            title: 'STT',
             dataIndex: 'id',
             key: 'id',
+            align:"center",
             render: (_, __, index) => index + 1,
         },
         {
-            title: 'Name',
+            title: 'Tên danh mục',
             dataIndex: 'name',
             key: 'name',
+            align:"center",
         },
         {
             title: 'Slug',
             dataIndex: 'slug',
             key: 'slug',
+            align:"center",
         },
+        // {
+        //     title: 'Ordinal',
+        //     dataIndex: 'ordinal',
+        //     key: 'ordinal',
+        //     align:"center",
+        // },
         {
-            title: 'Ordinal',
-            dataIndex: 'ordinal',
-            key: 'ordinal',
-        },
-        {
-            title: 'Active',
+            title: 'Trạng thái',
             dataIndex: 'is_active',
             key: 'is_active',
+            align:"center",
             render: (isActive) => (<span
                 className={`px-2 py-1 rounded border ${isActive
                     ? 'border-green-500 text-green-600'
@@ -63,15 +68,17 @@ const Categories = () => {
             </span>),
         },
         {
-            title: 'Created At',
+            title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
+            align:"center",
             render: (createdAt) => formatDate(createdAt),
         },
         {
-            title: 'Action',
+            title: 'Thao tác',
             dataIndex: 'action',
             key: 'action',
+            align:"center",
             render: (_, record) => (
                 <Button type="primary" onClick={() => handleShowModal(record)}>Update</Button>
             )
