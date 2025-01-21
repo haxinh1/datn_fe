@@ -10,7 +10,7 @@ import Detail from "./pages/Detail";
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
 import ProductDetail from "./admin/product/DetailAd";
-import Categories from "./Admin/category";
+import Categories from "./admin/category";
 
 function App() {
   return (
@@ -18,11 +18,11 @@ function App() {
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/detailad/:id" element={<ProductDetail />} />
-          <Route path="/categories" element={<Categories />} />
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
           <Route path="/brand" element={<Brand />} />
+          <Route path="/categories" element={<Categories />} />
         </Route>
       </Routes>
 
