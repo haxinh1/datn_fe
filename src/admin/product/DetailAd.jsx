@@ -172,9 +172,9 @@ const ProductDetail = () => {
             {product.variants && product.variants.length > 0 ? (
               product.variants.map((variant, index) => (
                 <tr key={index}>
-                  <td>{variant.size || "Không có"}</td>
-                  <td>{variant.color || "Không có"}</td>
-                  <td>{variant.quantity || 0}</td>
+                  <td>{variant.size}</td>
+                  <td>{variant.color}</td>
+                  <td>{variant.quantity}</td>
                 </tr>
               ))
             ) : (
