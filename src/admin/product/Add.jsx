@@ -6,9 +6,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AttributesServices } from './../../services/attributes';
 import { productsServices } from './../../services/product';
-import axios from "axios";
+import { BrandsServices } from "../../services/brands";
+import { categoryServices } from './../../services/categories';
 import "./add.css";
-import { categoryServices } from "../../services/categories";
 
 const { Option } = Select;
 
@@ -21,6 +21,7 @@ const Add = () => {
     const [forms, setForms] = useState([]);
     const [variants, setVariants] = useState([]);
     const [productType, setProductType] = useState("single");
+    const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
 
     // Thêm sản phẩm
     const { mutate } = useMutation({
@@ -79,17 +80,27 @@ const Add = () => {
     const { data: brands } = useQuery({
         queryKey: ["brands"],
         queryFn: async () => {
-            const response = await axios.get(`http://127.0.0.1:8000/api/brands`);
-            return response.data.data;
+            const response = await BrandsServices.fetchBrands();
+            return response.data;
         }
     });
+
+    // lay api danh muc
+    const [categories, setCategories] = useState([]);
+    const fetchData = async () => {
+        const response = await categoryServices.fetchCategories()
+        setCategories(response)
+    }
+    useEffect(() => {
+        fetchData()
+    }, [])
 
     // Lấy danh sách thuộc tính
     const { data: attributes } = useQuery({
         queryKey: ["attributes"],
         queryFn: async () => {
-            const response = await axios.get(`http://127.0.0.1:8000/api/attributes`);
-            return response.data.data;
+            const response = await AttributesServices.fetchAttributes();
+            return response.data;
         },
     });
 
@@ -116,12 +127,8 @@ const Add = () => {
     });
 
     // Xử lý khi nhập liệu
-    const onChange = (e) => {
-        const { name, value } = e.target;
-        setNewAttribute({
-            ...newAttribute,
-            [name]: value,
-        });
+    const handleInputChange = (e) => {
+        setNewAttribute({ name: e.target.value }); // Cập nhật tên thuộc tính
     };
 
     // Xử lý khi gửi form
@@ -211,17 +218,6 @@ const Add = () => {
         });
     };
 
-    // lay aip danh muc
-    const [categories, setCategories] = useState([]);
-
-    const fetchData = async () => {
-        const response = await categoryServices.fetchCategories()
-        setCategories(response)
-    }
-    useEffect(() => {
-        fetchData()
-    }, [])
-
     // bảng biến thể
     const columns = [
         ...(forms.map((form) => ({
@@ -300,9 +296,13 @@ const Add = () => {
                         <Form.Item
                             label="Thương hiệu sản phẩm"
                             name="brand_id"
+                            showSearch
                             rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
                         >
-                            <Select className="input-item">
+                            <Select 
+                                className="input-item"
+                                placeholder="Chọn thương hiệu"
+                            >
                                 {brands && brands.map((brand) => (
                                     <Option key={brand.id} value={brand.id}>
                                         {brand.name}
@@ -388,26 +388,7 @@ const Add = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h2>Thuộc tính</h2>
-                        <div className="attribute">
-                            <Input
-                                name="name" // Đặt tên key cho input
-                                placeholder="Nhập tên thuộc tính mới"
-                                value={newAttribute.name} // Lấy giá trị từ state
-                                onChange={onChange} // Gọi hàm xử lý khi thay đổi
-                                className="input-attribute"
-                            />
-                            <Button
-                                className="btn-item"
-                                type="primary"
-                                onClick={handleAddAttribute}
-                            >
-                                Tạo thuộc tính
-                            </Button>
-                        </div>
-
-                        <hr />
-                        <h2>Biến thể</h2>
+                        <h2>Thuộc tính & Biến thể</h2>
                         {forms.map((form) => (
                             <div key={form.id}>
                                 <div className="attribute">
@@ -415,15 +396,20 @@ const Add = () => {
                                         className="input-attribute"
                                         placeholder="Chọn thuộc tính"
                                         allowClear
+                                        showSearch
                                         onChange={(value) => {
                                             if (forms.some((f) => f.name === value && f.id !== form.id)) {
                                                 notification.error({ message: `Thuộc tính \"${value}\" đã được chọn trước đó` });
                                                 return;
                                             }
-                                            const updatedForms = forms.map((f) =>
-                                                f.id === form.id ? { ...f, name: value } : f
-                                            );
-                                            setForms(updatedForms);
+                                            if (value === "create_attribute") {
+                                                setIsAttributeModalOpen(true);
+                                            } else {
+                                                const updatedForms = forms.map((f) =>
+                                                    f.id === form.id ? { ...f, name: value } : f
+                                                );
+                                                setForms(updatedForms);
+                                            }
                                         }}
                                     >
                                         {attributes && attributes.map((attr) => (
@@ -431,6 +417,9 @@ const Add = () => {
                                                 {attr.name}
                                             </Option>
                                         ))}
+                                        <Option value="create_attribute" style={{ color: "blue" }}>
+                                            + Tạo thuộc tính mới
+                                        </Option>
                                     </Select>
 
                                     <Input
@@ -469,9 +458,34 @@ const Add = () => {
                                 </div>
                             </div>
                         ))}
-                        <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
-                            Thêm biến thể
+                        <Button color="primary" variant="outlined" onClick={handleAddVariantForm}>
+                            Thêm thuộc tính
                         </Button>
+
+                        <Button type="primary">
+                            Tạo biến thể
+                        </Button>
+
+                        <Modal
+                            title="Tạo thuộc tính mới"
+                            visible={isAttributeModalOpen}
+                            onCancel={() => setIsAttributeModalOpen(false)}
+                            footer={[
+                                <Button key="cancel" onClick={() => setIsAttributeModalOpen(false)} color="danger" variant="outlined">
+                                    Hủy
+                                </Button>,
+                                <Button key="submit" type="primary" onClick={handleAddAttribute}>
+                                    Tạo
+                                </Button>,
+                            ]}
+                        >
+                            <Input
+                                value={newAttribute.name} 
+                                onChange={handleInputChange}
+                                placeholder="Nhập tên thuộc tính"
+                                className="input-item"
+                            />
+                        </Modal>
 
                         <hr />
                         <h2>Danh sách hàng hóa cùng loại</h2>

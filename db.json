@@ -57,6 +57,28 @@
       "name": "aaa"
     }
   ],
+  "attribute_values": [
+    {
+      "id": "1",
+      "name": "S"
+    },
+    {
+      "id": "2",
+      "name": "M"
+    },
+    {
+      "id": "3",
+      "name": "L"
+    },
+    {
+      "id": "4",
+      "name": "xanh"
+    },
+    {
+      "id": "5",
+      "name": "đỏ"
+    }
+  ],
   "users": [
     {
       "username": "nam long",

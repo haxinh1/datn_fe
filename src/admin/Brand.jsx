@@ -87,7 +87,6 @@ const Brand = () => {
             title: "Tên thương hiệu",
             dataIndex: "name",
             key: "name",
-            render: (text) => <a>{text}</a>,
             align: "center",
         },
         {
@@ -129,7 +128,7 @@ const Brand = () => {
         <div className="container">
             <h1 className="mb-5">Quản lý thương hiệu</h1>
 
-            <div className="btn-group">
+            <div className="btn-brand">
                 <Button
                     color="primary" 
                     variant="solid"
@@ -192,7 +191,7 @@ const Brand = () => {
                                 rules={[
                                     {
                                         validator: (_, value) =>
-                                            logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
+                                            logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh thương hiệu"),
                                     },
                                 ]}
                             >

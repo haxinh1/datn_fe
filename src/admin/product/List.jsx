@@ -12,6 +12,7 @@ import { useEffect } from "react";
 const List = () => {
     const queryClient = useQueryClient();
 
+    // Fetch danh sách sản phẩm
     const { data: products, isLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
@@ -126,11 +127,11 @@ const List = () => {
             </h1>
 
             <div className="btn">
-            <Form.Item label="Danh mục" name="category" className="select-item">
+                <Form.Item label="Danh mục" name="category">
                     <Select
-                        className="input-item"
                         placeholder="Chọn danh mục"
                         showSearch
+                        allowClear
                         optionFilterProp="children"
                         filterOption={(input, option) =>
                             option.children.toLowerCase().includes(input.toLowerCase())

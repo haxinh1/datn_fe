@@ -9,6 +9,7 @@ import Pay from './pages/Pay';
 import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
+import Test from './admin/Test';
 
 function App() {
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
           <Route path="/brand" element={<Brand />} />
+          <Route path="/test" element={<Test />} />
         </Route>
       </Routes>
 
