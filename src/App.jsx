@@ -10,6 +10,8 @@ import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
 import Test from './admin/Test';
+import ProductDetail from './admin/product/DetailAd';
+import Categories from './admin/category/index';
 
 function App() {
 
@@ -18,8 +20,10 @@ function App() {
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/list-pr" element={<List />} />
+          <Route path="/detailad/:id" element={<ProductDetail />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr" element={<Edit />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/brand" element={<Brand />} />
           <Route path="/test" element={<Test />} />
         </Route>
