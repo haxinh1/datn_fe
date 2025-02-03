@@ -60,13 +60,14 @@ const List = () => {
             dataIndex: "name",
             key: "name",
             align: "center",
+            width: 360
         },
         {
             title: "Ảnh sản phẩm",
             dataIndex: "thumbnail",
             key: "thumbnail",
             render: (_, item) => {
-                return <Image width={60} src={item.thumbnail} />;
+                return <Image width={60} height={90} src={item.thumbnail} />;
             },
             align: "center",
         },
@@ -121,15 +122,16 @@ const List = () => {
 
     return (
         <>
-            <h1 className="page-title">
+            <h1 className="mb-5">
                 <BookOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
             <div className="btn">
-                <Form.Item label="Danh mục" name="category">
+                <div className="btn-group">
                     <Select
                         placeholder="Chọn danh mục"
+                        className="select-item"
                         showSearch
                         allowClear
                         optionFilterProp="children"
@@ -147,7 +149,20 @@ const List = () => {
                             ))
                         )}
                     </Select>
-                </Form.Item>
+
+                    <Select 
+                        placeholder="Chọn thương hiệu"
+                        className="select-item"
+                        showSearch
+                        allowClear
+                    >
+                        {brands && brands.map((brand) => (
+                            <Option key={brand.id} value={brand.id}>
+                                {brand.name}
+                            </Option>
+                        ))}
+                    </Select>
+                </div>
 
                 <div className="btn-group">
                     <Link to="/add-pr">

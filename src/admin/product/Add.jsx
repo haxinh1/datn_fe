@@ -263,7 +263,7 @@ const Add = () => {
             render: (_, record) => {
                 // Hiển thị value nếu tồn tại
                 const attributeValue = record[form.name];
-                return attributeValue?.value || "N/A"; // Lấy giá trị value, nếu không có thì "N/A"
+                return attributeValue?.value; // Lấy giá trị value
             },
         })),
         {
@@ -312,7 +312,7 @@ const Add = () => {
                         </Form.Item>
 
                         <Form.Item
-                            label="Giá bán"
+                            label="Giá bán (VNĐ)"
                             rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                             name="sell_price"
                         >
@@ -410,7 +410,7 @@ const Add = () => {
                             label="Mô tả sản phẩm"
                             name="content"
                         >
-                            <TextArea rows={8} className="input-item" />
+                            <TextArea rows={12} className="input-item" />
                         </Form.Item>
 
                         <Form.Item label="Loại sản phẩm">
