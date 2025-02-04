@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio } from "antd";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
 import "./add.css";
@@ -20,6 +20,7 @@ const Add = () => {
     const [isValueModalOpen, setIsValueModalOpen] = useState(false);
     const [form] = Form.useForm();
     const [valueForm] = Form.useForm();
+    const [attForm] = Form.useForm();
     const [thumbnail, setThumbnail] = useState(null);
     const [productType, setProductType] = useState("single");
     const [selectedAttributeId, setSelectedAttributeId] = useState(null);
@@ -128,7 +129,7 @@ const Add = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(["attributes"]);
-            form.resetFields();
+            attForm.resetFields();
             setIsAttributeModalOpen(false);
             notification.success({
                 message: "Thêm thuộc tính thành công!",
@@ -161,7 +162,7 @@ const Add = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(["attributeValue"]);
-            form.resetFields();
+            valueForm.resetFields();
             setIsValueModalOpen(false);
             notification.success({
                 message: "Thêm giá trị thuộc tính thành công!",
@@ -180,7 +181,7 @@ const Add = () => {
             value: values.value,
             attribute_id: values.attribute_id, // Gửi attribute_id
         });
-    };    
+    };   
 
     // hiển thị biến thể ở bảng
     const generateVariants = () => {
@@ -190,15 +191,19 @@ const Add = () => {
     
         if (attributesWithValues.length === 0) {
             notification.warning({
-                message: "Chưa chọn giá trị",
-                description: "Vui lòng chọn thuộc tính và giá trị trước khi tạo biến thể.",
+                message: "Vui lòng chọn thuộc tính và giá trị trước khi tạo biến thể.",
             });
             return;
         }
     
         const generateCombinations = (index, currentVariant) => {
             if (index === attributesWithValues.length) {
-                variants.push({ ...currentVariant });
+                variants.push({
+                    ...currentVariant,
+                    thumbnail: null,  // Thêm trường thumbnail
+                    fileList: [],     // Thêm trường fileList để quản lý riêng ảnh cho mỗi biến thể
+                    key: Date.now() + Math.random(),  // Tạo key duy nhất
+                });
                 return;
             }
     
@@ -207,51 +212,34 @@ const Add = () => {
                 if (value && value.id !== null && value.id !== undefined) {
                     generateCombinations(index + 1, {
                         ...currentVariant,
-                        [attribute.name]: { id: value.id, value: value.value }, // Thêm cả id và value
+                        [attribute.name]: { id: value.id, value: value.value },
                     });
                 }
             });
         };
     
         generateCombinations(0, {});
-    
-        setTableData(variants); // Cập nhật tableData
-    };                         
+        setTableData(variants); // Cập nhật dữ liệu biến thể vào bảng
+    };                             
 
     const prepareProductData = (formValues) => {
-        // Lấy tất cả các giá trị thuộc tính được chọn
         const attributeValuesId = forms.flatMap((form) =>
             form.values
-                .filter((value) => value && value.id !== null && value.id !== undefined) // Lọc giá trị hợp lệ
-                .map((value) => Number(value.id)) // Ép kiểu sang number
+                .filter((value) => value && value.id !== null && value.id !== undefined)
+                .map((value) => Number(value.id))
         );
     
-        // Tạo tất cả các tổ hợp biến thể
-        const attributeCombinations = [];
-        const generateCombinations = (index, currentCombination) => {
-            if (index === forms.length) {
-                attributeCombinations.push([...currentCombination]);
-                return;
-            }
-    
-            forms[index].values.forEach((value) => {
-                if (value && value.id !== null && value.id !== undefined) {
-                    generateCombinations(index + 1, [...currentCombination, Number(value.id)]);
-                }
-            });
-        };
-    
-        generateCombinations(0, []);
-    
-        // Cấu trúc dữ liệu sản phẩm
         return {
             name: formValues.name,
-            attribute_values_id: attributeValuesId, // Danh sách id dạng number
-            product_variants: attributeCombinations.map((combination) => ({
-                attribute_values: combination, // Các tổ hợp id dạng number
+            attribute_values_id: attributeValuesId,
+            product_variants: tableData.map((variant) => ({
+                attribute_values: Object.values(variant)
+                    .filter((attr) => attr?.id !== undefined)
+                    .map((attr) => attr.id),
+                thumbnail: variant.thumbnail,  // Thêm trường thumbnail vào dữ liệu biến thể
             })),
         };
-    }; 
+    };    
 
     // bảng biến thể
     const columns = [
@@ -265,7 +253,79 @@ const Add = () => {
                 const attributeValue = record[form.name];
                 return attributeValue?.value; // Lấy giá trị value
             },
-        })),
+        })),  
+        {
+            title: "Ảnh",
+            dataIndex: "thumbnail",
+            key: "thumbnail",
+            align: "center",
+            width: 200,
+            render: (_, record) => (
+                <Form.Item
+                    name={`thumbnail_${record.key}`}
+                    valuePropName="fileList"
+                    getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                    rules={[
+                        {
+                            validator: (_, value) =>
+                                record.thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                        },
+                    ]}
+                >
+                    <Upload
+                        listType="picture"
+                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                        data={{ upload_preset: "quangOsuy" }}
+                        fileList={record.fileList || []}
+                        onChange={(info) => {
+                            if (info.file.status === "done" && info.file.response) {
+                                const newThumbnailUrl = info.file.response.secure_url;
+        
+                                // Cập nhật fileList và thumbnail cho biến thể hiện tại
+                                const updatedTableData = tableData.map((item) => {
+                                    if (item.key === record.key) {
+                                        return {
+                                            ...item,
+                                            thumbnail: newThumbnailUrl,
+                                            fileList: [
+                                                {
+                                                    uid: info.file.uid,
+                                                    name: info.file.name,
+                                                    status: 'done',
+                                                    url: newThumbnailUrl,
+                                                },
+                                            ],
+                                        };
+                                    }
+                                    return item;
+                                });
+        
+                                setTableData(updatedTableData);
+                            } else if (info.file.status === "removed") {
+                                // Xóa ảnh khi người dùng xóa
+                                const updatedTableData = tableData.map((item) => {
+                                    if (item.key === record.key) {
+                                        return {
+                                            ...item,
+                                            thumbnail: null,
+                                            fileList: [],
+                                        };
+                                    }
+                                    return item;
+                                });
+        
+                                setTableData(updatedTableData);
+                            }
+                        }}
+                        showUploadList
+                    >
+                        <Button icon={<UploadOutlined />} type="dashed">
+                            Tải ảnh lên
+                        </Button>
+                    </Upload>
+                </Form.Item>
+            ),
+        },                           
         {
             title: "Số lượng",
             dataIndex: "quantity",
@@ -283,7 +343,16 @@ const Add = () => {
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => {
-                        setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                        Modal.confirm({
+                            title: "Xác nhận xóa",
+                            content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
+                            okText: "Xóa",
+                            cancelText: "Hủy",
+                            okButtonProps: { danger: true },
+                            onOk: () => {
+                                setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                            },
+                        });
                     }}
                 />
             ),
@@ -381,31 +450,52 @@ const Add = () => {
                     </Col>
 
                     <Col span={16} className="col-item">
-                        <Form.Item
-                            label="Ảnh sản phẩm"
-                            name='thumbnail'
-                            valuePropName="fileList"
-                            getValueFromEvent={normFile}
-                            rules={[
-                                {
-                                    validator: (_, value) =>
-                                        thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
-                                },
-                            ]}
-                        >
-                            <Upload
-                                listType="picture-card"
-                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                data={{ upload_preset: "quangOsuy" }}
-                                onChange={onHandleChange}
-                            >
-                                <button className="upload-button" type="button">
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                </button>
-                            </Upload>
-                        </Form.Item>
+                        <Row gutter={24}>
+                            <Col span={5} className="col-item">
+                                <Form.Item
+                                    label="Ảnh đại diện"
+                                    name='thumnail'
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                    rules={[
+                                        {
+                                            validator: (_, value) =>
+                                            thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh đại diện"),
+                                        },
+                                    ]}
+                                >
+                                    <Upload
+                                        listType="picture"
+                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                        data={{ upload_preset: "quangOsuy" }}
+                                        onChange={onHandleChange}
+                                    >
+                                        <Button icon={<UploadOutlined />} color="default" variant="dashed">
+                                            Tải ảnh lên
+                                        </Button>
+                                    </Upload>
+                                </Form.Item>
+                            </Col>
 
+                            <Col span={19} className="col-item">
+                                <Form.Item
+                                    label="Ảnh sản phẩm"
+                                    name='image'
+                                >
+                                    <Upload
+                                        listType="picture-card"
+                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                        data={{ upload_preset: "quangOsuy" }}
+                                    >
+                                        <button className="upload-button" type="button">
+                                            <PlusOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                        </button>
+                                    </Upload>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        
                         <Form.Item
                             label="Mô tả sản phẩm"
                             name="content"
@@ -443,6 +533,13 @@ const Add = () => {
                                         if (value === "create_attribute") {
                                             setIsAttributeModalOpen(true);
                                         } else {
+                                            const isAlreadySelected = forms.some((f, i) => f.name === value && i !== index);
+                                            if (isAlreadySelected) {
+                                                notification.warning({
+                                                    message: "Thuộc tính này đã được chọn trước đó!",
+                                                });
+                                                return;
+                                            }
                                             forms[index].name = value;
                                             setForms([...forms]);
                                             const selectedAttribute = attributes.find(attr => attr.name === value);
@@ -515,9 +612,9 @@ const Add = () => {
                     footer={null}
                 >
                     <Form
-                        form={valueForm}
-                        onFinish={(values) => handleAddAttribute(values)}
+                        form={attForm}
                         layout="vertical"
+                        onFinish={(values) => handleAddAttribute(values)}
                     >
                         <Form.Item
                             label="Tên thuộc tính"
@@ -578,7 +675,7 @@ const Add = () => {
                             </Button>
                         </div>
                     </Form>
-                </Modal>
+                </Modal>    
 
                 <div className="add">
                     <Button htmlType="submit" type="primary" className="btn-item">
