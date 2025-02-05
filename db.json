@@ -3,91 +3,58 @@
     {
       "name": "iphone",
       "price": 555,
+      "sell_price": 555,
+      "sale_price": 555,
+      "sale_price_start_at": 555,
+      "sale_price_end_at": 555,
+      "created_at": "03/01/2025",
+      "updated_at": "03/01/2025",
       "quantity": 10,
+      "view": 250,
       "category": "idCategory2",
-      "description": "ggggdfgdfgdf",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539167/ve8oeqf4ozrvv9pavdoy.jpg",
+      "content": "ggggdfgdfgdf",
+      "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539167/ve8oeqf4ozrvv9pavdoy.jpg",
       "id": "1f96"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Nam",
+      "parentId": null
     },
     {
-      "id": "df6a",
-      "name": "iphone",
-      "price": 555,
-      "quantity": 10,
-      "category": "idCategory2",
-      "description": "ffff",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727579531/tp8dmtvprs5g4y2lfbqu.jpg"
+      "id": 2,
+      "name": "Nữ",
+      "parentId": null
     },
     {
-      "name": "Product 4",
-      "price": 6666,
-      "quantity": 10,
-      "category": "idCategory1",
-      "description": "666",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727598408/nlkqv0bkiuakhlgjifwq.webp",
-      "id": "d9ac"
+      "name": "quần nam",
+      "parentId": "1",
+      "id": 3
     },
     {
-      "name": "Máy giặt",
-      "price": 99999,
-      "quantity": 10,
-      "category": "idCategory1",
-      "description": "gfdfd",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572284/y8n1lddjdz1uawlbtn0y.jpg",
-      "id": "7ed1"
+      "name": "váy",
+      "parentId": "2",
+      "id": 4
+    }
+  ],
+  "attributes": [
+    {
+      "id": "1",
+      "name": "Size"
     },
     {
-      "id": "dfe0",
-      "name": "hhhh",
-      "price": 6789,
-      "quantity": 10,
-      "category": "idCategory1",
-      "description": "535345",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1727596897/tuquhyk2lupxzqgb0d7k.png"
+      "id": "2",
+      "name": "Màu"
     },
     {
-      "name": "quang quang",
-      "price": 3424,
-      "quantity": 10,
-      "category": "idCategory1",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1728572917/idgmqd6xgyasjpp67kva.jpg",
-      "id": "0f7d"
+      "id": "1737102636545",
+      "name": "hình"
     },
     {
-      "name": "Product jjj",
-      "price": 7654,
-      "quantity": 7,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734537544/m0gnfsqpxgf4uxk8cuwf.jpg",
-      "category": "idCategory2",
-      "description": "fgsdfghfhgfh",
-      "id": "7TC_7GZ"
-    },
-    {
-      "name": "aaaaaaa",
-      "price": 5,
-      "quantity": 4,
-      "category": "idCategory1",
-      "description": "fgsdhfgbdfgvd",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539414/anobdhzkcaaxhdf8lorq.webp",
-      "id": "MYm3Iq-"
-    },
-    {
-      "name": "bbbbbbb",
-      "price": 54645,
-      "quantity": 2,
-      "category": "idCategory2",
-      "description": "fdgfdhfghfg",
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539426/sicx1nm8w5t9tciylnqb.jpg",
-      "id": "5bMfEYu"
-    },
-    {
-      "name": "yyyyyyyyyyyyyy",
-      "price": 435,
-      "quantity": 4,
-      "imageUrl": "https://res.cloudinary.com/dzpr0epks/image/upload/v1734539385/b6hri5oyuppzixtlbbpk.webp",
-      "category": "idCategory2",
-      "description": "gfhhgfhf",
-      "id": "g2TWLWX"
+      "id": "1737102917585",
+      "name": "aaa"
     }
   ],
   "attribute_values": [
@@ -125,38 +92,5 @@
       "username": "quang",
       "id": "jfiuKyR"
     }
-  ],
-  "categories": [
-    {
-      "id": 1,
-      "name": "Nam",
-      "parentId": null,
-      "ordinal": 1
-    },
-    {
-      "id": 2,
-      "name": "Nữ",
-      "parentId": null,
-      "ordinal": 2
-    },
-    {
-      "name": "quần nam",
-      "parentId": "1",
-      "id": 3,
-      "ordinal": 3
-    },
-    {
-      "name": "váy",
-      "parentId": "2",
-      "id": 4,
-      "ordinal": null
-    },
-    {
-      "name": "vest",
-      "parentId": "1",
-      "ordinal": 1,
-      "id": 5
-    }
-
   ]
 }
