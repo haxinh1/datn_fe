@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Image, notification, Skeleton, Table, Modal, Form, Select } from "antd";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -7,10 +7,12 @@ import "./list.css";
 import { productsServices } from "../../services/product";
 import { BrandsServices } from './../../services/brands';
 import { categoryServices } from './../../services/categories';
-import { useEffect } from "react";
 
 const List = () => {
     const queryClient = useQueryClient();
+
+    // State lưu giá trị thương hiệu được chọn
+    const [selectedBrand, setSelectedBrand] = useState(null);
 
     // Fetch danh sách sản phẩm
     const { data: products, isLoading } = useQuery({
@@ -33,21 +35,26 @@ const List = () => {
     // Lấy danh sách danh mục
     const [categories, setCategories] = useState([]);
     const fetchData = async () => {
-        const response = await categoryServices.fetchCategories()
-        setCategories(response)
-    }
+        const response = await categoryServices.fetchCategories();
+        setCategories(response);
+    };
     useEffect(() => {
-        fetchData()
-    }, [])
+        fetchData();
+    }, []);
 
-    // tách số 
+    // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
-            maximumFractionDigits: 0, // Không có số thập phân
+            maximumFractionDigits: 0,
         });
         return formatter.format(price);
     };
+
+    // Dữ liệu sản phẩm đã được lọc theo thương hiệu
+    const filteredProducts = selectedBrand
+        ? products?.filter((product) => product.brand_id === selectedBrand)
+        : products;
 
     const columns = [
         {
@@ -90,17 +97,11 @@ const List = () => {
             key: "brand_id",
             align: "center",
             render: (brand_id) => {
-                if (!brands || !Array.isArray(brands)) return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
-                const brand = brands.find((b) => b.id === brand_id); // Tìm thương hiệu theo id
-                return brand ? brand.name : "Không xác định";// Hiển thị tên thương hiệu hoặc fallback
+                if (!brands || !Array.isArray(brands)) return "Đang tải...";
+                const brand = brands.find((b) => b.id === brand_id);
+                return brand ? brand.name : "Không xác định";
             },
         },
-        // {
-        //     title: "Danh mục",
-        //     dataIndex: "category",
-        //     key: "category",
-        //     align: "center",
-        // },
         {
             title: "Thao tác",
             key: "action",
@@ -110,8 +111,7 @@ const List = () => {
                         Chi tiết
                     </Link>
                     <div className="divider"></div>
-
-                    <Link to="/edit-pr" className="action-link action-link-blue">
+                    <Link to={`/edit-pr/${item.id}`} className="action-link action-link-blue">
                         Cập nhật
                     </Link>
                 </div>
@@ -141,7 +141,7 @@ const List = () => {
                     >
                         {categories.flatMap((category) =>
                             category.children
-                            .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
+                            .filter((child) => child.parent_id !== null)
                             .map((child) => (
                                 <Option key={child.id} value={child.name}>
                                     {child.name}
@@ -150,11 +150,12 @@ const List = () => {
                         )}
                     </Select>
 
-                    <Select 
+                    <Select
                         placeholder="Chọn thương hiệu"
                         className="select-item"
                         showSearch
                         allowClear
+                        onChange={(value) => setSelectedBrand(value)}  // Cập nhật thương hiệu được chọn
                     >
                         {brands && brands.map((brand) => (
                             <Option key={brand.id} value={brand.id}>
@@ -180,7 +181,7 @@ const List = () => {
             <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
-                    dataSource={products || []}
+                    dataSource={filteredProducts || []}
                     pagination={{ pageSize: 6 }}
                 />
             </Skeleton>

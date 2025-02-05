@@ -1,139 +1,349 @@
-import React, { useState } from "react";
-import { Button, Form, Input, InputNumber, Select, Upload, Row, Col, Modal, notification, Radio, Tag, Table } from "antd";
+import React, { useState, useEffect } from "react";
+import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio } from "antd";
+import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import "./add.css";
+import { productsServices } from './../../services/product';
+import { BrandsServices } from './../../services/brands';
+import { categoryServices } from './../../services/categories';
+import { AttributesServices } from './../../services/attributes';
+import { ValuesServices } from './../../services/attribute_value';
+import { useNavigate, useParams } from "react-router-dom";
 
 const { Option } = Select;
 
 const Edit = () => {
-    const queryClient = useQueryClient();
-    const [newAttribute, setNewAttribute] = useState("");
-    const [forms, setForms] = useState([]);
-    const [variants, setVariants] = useState([]);
-    const [productType, setProductType] = useState("single"); // single hoặc variant
+    const { id } = useParams(); 
+    const queryClient = useQueryClient(); 
+    const [forms, setForms] = useState([{ id: Date.now(), name: "", values: [] }]);
+    const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
+    const [isValueModalOpen, setIsValueModalOpen] = useState(false);
+    const [form] = Form.useForm();
+    const [valueForm] = Form.useForm();
+    const [attForm] = Form.useForm();
+    const [thumbnail, setThumbnail] = useState(null);
+    const [productType, setProductType] = useState("single");
+    const [selectedAttributeId, setSelectedAttributeId] = useState(null);
+    const [filteredValues, setFilteredValues] = useState([]); // Lưu giá trị thuộc tính được lọc
+    const [tableData, setTableData] = useState([]); // Dữ liệu bảng
+    const navigate = useNavigate()
 
-    // Lấy danh sách thuộc tính
+    // Lấy dữ liệu sản phẩm theo id
+    const { data: product } = useQuery({
+        queryKey: ["product", id],
+        queryFn: async () => {
+            const response = await productsServices.fetchProductById(id);
+            return response.data;
+        }
+    });
+
+    // Đổ dữ liệu sản phẩm vào form khi dữ liệu sẵn sàng
+    useEffect(() => {
+        if (product) {
+            form.setFieldsValue({
+                name: product.name,
+                sell_price: product.sell_price,
+                slug: product.slug,
+                name_link: product.name_link,
+                brand_id: product.brand_id,
+                content: product.content,
+                category: product.category,
+            });
+            setThumbnail(product.thumbnail);
+            setTableData(product.product_variants || []);  // Đổ dữ liệu biến thể vào bảng
+        }
+    }, [product, form]);   
+    
+    // cập nhật sản phẩm
+    const { mutate: updateProduct } = useMutation({
+        mutationFn: async (updatedData) => {
+            await productsServices.updateProduct(id, updatedData);
+        },
+        onSuccess: () => {
+            notification.success({
+                message: "Cập nhật sản phẩm thành công!",
+                description: "Thông tin của sản phẩm đã được cập nhật.",
+            });
+            queryClient.invalidateQueries(["product", id]);
+            navigate("/list-pr");
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Cập nhật sản phẩm thất bại",
+                description: error.response?.data?.message || error.message,
+            });
+        },
+    });
+    
+    const onFinish = (values) => {
+        const updatedData = {
+            ...prepareProductData(values),
+            thumbnail,  // Thêm thumbnail đã được tải lên
+            sell_price: values.sell_price,
+            slug: values.slug,
+            category: values.category,
+            brand_id: values.brand_id,
+            name_link: values.name_link,
+        };
+    
+        console.log("Dữ liệu gửi đi:", updatedData);
+        updateProduct(updatedData);  // Gọi API cập nhật sản phẩm
+    };        
+    
+    // slug tạo tự động
+    const handleNameChange = (e) => {
+        const name = e.target.value;
+        form.setFieldsValue({
+            name,
+            slug: name.toLowerCase().replace(/\s+/g, "-"),
+        });
+    };
+
+    const normFile = (e) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e?.fileList;
+    };
+
+    const onHandleChange = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            setThumbnail(info.file.response.secure_url);
+        }
+    };
+
+    // Fetch danh sách thương hiệu
+    const { data: brands } = useQuery({
+        queryKey: ["brands"],
+        queryFn: async () => {
+            const response = await BrandsServices.fetchBrands();
+            return response.data;
+        }
+    });
+
+    // danh sách danh mục
+    const [categories, setCategories] = useState([]);
+    const fetchData = async () => {
+        const response = await categoryServices.fetchCategories()
+        setCategories(response)
+    }
+    useEffect(() => {
+        fetchData()
+    }, [])
+
+    // danh sách thuộc tính
     const { data: attributes } = useQuery({
         queryKey: ["attributes"],
         queryFn: async () => {
-            const response = await axios.get(`http://localhost:3000/attributes`);
+            const response = await AttributesServices.fetchAttributes();
             return response.data;
         },
     });
 
-    // Tạo thuộc tính mới
-    const addAttributeMutation = useMutation({
-        mutationFn: async (newAttr) => {
-            await axios.post(`http://localhost:3000/attributes`, newAttr);
+    // tạo thuộc tính mới
+    const createAttribute = useMutation({
+        mutationFn: async (attribute) => {
+            return await AttributesServices.createAttribute(attribute);
         },
         onSuccess: () => {
             queryClient.invalidateQueries(["attributes"]);
-            setNewAttribute("");
+            attForm.resetFields();
+            setIsAttributeModalOpen(false);
+            notification.success({
+                message: "Thêm thuộc tính thành công!",
+            });
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Thêm thuộc tính thất bại!",
+                description: error.response?.data?.message || error.message,
+            });
+        },
+    });
+    const handleAddAttribute = (values) => {
+        createAttribute.mutate(values);
+    };
+
+    // danh sách giá trị thuộc tính
+    const { data: attributeValue } = useQuery({
+        queryKey: ["attributeValue"],
+        queryFn: async () => {
+            const response = await ValuesServices.fetchValues();
+            return response.data;
         },
     });
 
-    const handleAddAttribute = () => {
-        if (!newAttribute.trim()) {
-            notification.error({ message: "Tên thuộc tính không được để trống" });
-            return;
-        }
-        const newAttr = { id: Date.now().toString(), name: newAttribute.trim() };
-        addAttributeMutation.mutate(newAttr, {
-            onSuccess: () => {
-                notification.success({ message: "Thuộc tính đã được thêm vào phần biến thể" });
-            },
-        });
-    };
-
-    // Thêm giá trị vào thuộc tính
-    const handleAddValue = (formId) => {
-        const updatedForms = forms.map((form) => {
-            if (form.id === formId) {
-                if (!form.name) {
-                    notification.error({ message: "Vui lòng chọn thuộc tính trước khi thêm giá trị" });
-                    return form;
-                }
-                if (!form.inputValue.trim()) {
-                    notification.error({ message: "Giá trị không được để trống" });
-                    return form;
-                }
-                if (form.values.includes(form.inputValue)) {
-                    notification.error({ message: "Giá trị này đã được thêm trước đó" });
-                    return form;
-                }
-                return { ...form, values: [...form.values, form.inputValue], inputValue: "" };
-            }
-            return form;
-        });
-        setForms(updatedForms);
-        generateVariants(updatedForms); // Cập nhật biến thể
-    };
-
-    // Xóa giá trị khỏi thuộc tính
-    const handleDeleteTag = (formId, valueToDelete) => {
-        const updatedForms = forms.map((form) => {
-            if (form.id === formId) {
-                return { ...form, values: form.values.filter((value) => value !== valueToDelete) };
-            }
-            return form;
-        });
-        setForms(updatedForms);
-        generateVariants(updatedForms); // Cập nhật biến thể
-    };
-
-    // Thêm form biến thể
-    const handleAddVariantForm = () => {
-        setForms([...forms, { id: Date.now(), name: "", values: [], inputValue: "" }]);
-    };
-
-    // cột bảng động
-    const generateVariants = (forms) => {
-        if (forms.length === 0 || forms.some((form) => !form.name || form.values.length === 0)) {
-            setVariants([]);
-            return;
-        }
-
-        // Tạo tất cả các tổ hợp giá trị
-        const combine = (arr) => arr.reduce((a, b) => a.flatMap((x) => b.map((y) => [...x, y])), [[]]);
-        const combinations = combine(forms.map((form) => form.values));
-
-        const updatedVariants = combinations.map((combo, index) => {
-            const variant = {};
-            combo.forEach((value, i) => {
-                variant[forms[i].name] = value;
+    // tạo giá trị thuộc tính mới
+    const createAttributeVlue = useMutation({
+        mutationFn: async (attributeValue) => {
+            return await ValuesServices.createValue(attributeValue); // Truyền đúng tham số
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(["attributeValue"]);
+            valueForm.resetFields();
+            setIsValueModalOpen(false);
+            notification.success({
+                message: "Thêm giá trị thuộc tính thành công!",
             });
-            return { key: index, ...variant, quantity: 0 };
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Thêm giá trị thuộc tính thất bại!",
+                description: error.response?.data?.message || error.message,
+            });
+        },
+    });
+    
+    const handleAddValue = (values) => {
+        createAttributeVlue.mutate({
+            value: values.value,
+            attribute_id: values.attribute_id, // Gửi attribute_id
         });
+    };   
 
-        setVariants(updatedVariants);
-    };
+    // hiển thị biến thể ở bảng
+    const generateVariants = () => {
+        const variants = [];
+    
+        const attributesWithValues = forms.filter((form) => form.name && form.values.length > 0);
+    
+        if (attributesWithValues.length === 0) {
+            notification.warning({
+                message: "Vui lòng chọn thuộc tính và giá trị trước khi tạo biến thể.",
+            });
+            return;
+        }
+    
+        const generateCombinations = (index, currentVariant) => {
+            if (index === attributesWithValues.length) {
+                variants.push({
+                    ...currentVariant,
+                    thumbnail: null,  // Thêm trường thumbnail
+                    fileList: [],     // Thêm trường fileList để quản lý riêng ảnh cho mỗi biến thể
+                    key: Date.now() + Math.random(),  // Tạo key duy nhất
+                });
+                return;
+            }
+    
+            const attribute = attributesWithValues[index];
+            attribute.values.forEach((value) => {
+                if (value && value.id !== null && value.id !== undefined) {
+                    generateCombinations(index + 1, {
+                        ...currentVariant,
+                        [attribute.name]: { id: value.id, value: value.value },
+                    });
+                }
+            });
+        };
+    
+        generateCombinations(0, {});
+        setTableData(variants); // Cập nhật dữ liệu biến thể vào bảng
+    };                             
 
-    // Xóa biến thể
-    const handleRemoveVariant = (variantKey) => {
-        Modal.confirm({
-            title: "Xác nhận xóa",
-            content: "Biến thể sau khi xóa sẽ không thể khôi phục",
-            okText: "Xóa",
-            okType: "danger",
-            cancelText: "Hủy",
-            onOk: () => {
-                const updatedVariants = variants.filter((variant) => variant.key !== variantKey);
-                setVariants(updatedVariants);
-            },
-        });
-    };
+    const prepareProductData = (formValues) => {
+        const attributeValuesId = forms.flatMap((form) =>
+            form.values
+                .filter((value) => value && value.id !== null && value.id !== undefined)
+                .map((value) => Number(value.id))
+        );
+    
+        return {
+            name: formValues.name,
+            attribute_values_id: attributeValuesId,
+            product_variants: tableData.map((variant) => ({
+                attribute_values: Object.values(variant)
+                    .filter((attr) => attr?.id !== undefined)
+                    .map((attr) => attr.id),
+                thumbnail: variant.thumbnail,  // Thêm trường thumbnail vào dữ liệu biến thể
+            })),
+        };
+    };    
 
     // bảng biến thể
     const columns = [
-        ...(forms.map((form) => ({
-            title: form.name,
+        ...forms.map((form) => ({
+            title: form.name, // Tên cột là tên thuộc tính
             dataIndex: form.name,
             key: form.name,
             align: "center",
-        }))),
+            render: (_, record) => {
+                const attributeValue = record[form.name];
+                return attributeValue ? attributeValue.value : "Không có giá trị";  // Đổ đúng dữ liệu từ product_variants
+            }
+        })),  
+        {
+            title: "Ảnh",
+            dataIndex: "thumbnail",
+            key: "thumbnail",
+            align: "center",
+            width: 200,
+            render: (_, record) => (
+                <Form.Item
+                    name={`thumbnail_${record.key}`}
+                    valuePropName="fileList"
+                    getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                    rules={[
+                        {
+                            validator: (_, value) =>
+                                record.thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                        },
+                    ]}
+                >
+                    <Upload
+                        listType="picture"
+                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                        data={{ upload_preset: "quangOsuy" }}
+                        fileList={record.fileList || []}
+                        onChange={(info) => {
+                            if (info.file.status === "done" && info.file.response) {
+                                const newThumbnailUrl = info.file.response.secure_url;
+        
+                                // Cập nhật fileList và thumbnail cho biến thể hiện tại
+                                const updatedTableData = tableData.map((item) => {
+                                    if (item.key === record.key) {
+                                        return {
+                                            ...item,
+                                            thumbnail: newThumbnailUrl,
+                                            fileList: [
+                                                {
+                                                    uid: info.file.uid,
+                                                    name: info.file.name,
+                                                    status: 'done',
+                                                    url: newThumbnailUrl,
+                                                },
+                                            ],
+                                        };
+                                    }
+                                    return item;
+                                });
+        
+                                setTableData(updatedTableData);
+                            } else if (info.file.status === "removed") {
+                                // Xóa ảnh khi người dùng xóa
+                                const updatedTableData = tableData.map((item) => {
+                                    if (item.key === record.key) {
+                                        return {
+                                            ...item,
+                                            thumbnail: null,
+                                            fileList: [],
+                                        };
+                                    }
+                                    return item;
+                                });
+        
+                                setTableData(updatedTableData);
+                            }
+                        }}
+                        showUploadList
+                    >
+                        <Button icon={<UploadOutlined />} type="dashed">
+                            Tải ảnh lên
+                        </Button>
+                    </Upload>
+                </Form.Item>
+            ),
+        },                           
         {
             title: "Số lượng",
             dataIndex: "quantity",
@@ -142,66 +352,173 @@ const Edit = () => {
             align: "center",
         },
         {
-            title: "Thao tác",
+            title: "Hành động",
             key: "action",
             align: "center",
             render: (_, record) => (
                 <Button
+                    type="text"
                     danger
                     icon={<DeleteOutlined />}
-                    onClick={() => handleRemoveVariant(record.key)}
-                >
-                    Xóa
-                </Button>
+                    onClick={() => {
+                        Modal.confirm({
+                            title: "Xác nhận xóa",
+                            content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
+                            okText: "Xóa",
+                            cancelText: "Hủy",
+                            okButtonProps: { danger: true },
+                            onOk: () => {
+                                setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                            },
+                        });
+                    }}
+                />
             ),
         },
-    ];
+    ];    
 
     return (
         <div className="container">
             <h1 className="mb-5">Cập nhật sản phẩm</h1>
-            <Form name="basic" labelCol={{ span: 24 }} wrapperCol={{ span: 24 }} labelAlign="top">
+            <Form 
+                form={form} 
+                onFinish={onFinish}
+                name="basic"
+                labelCol={{ span: 24 }}
+                wrapperCol={{ span: 24 }}
+                labelAlign="top"
+            >
                 <Row gutter={24}>
                     <Col span={8} className="col-item">
-                        <Form.Item label="Tên sản phẩm" rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}>
+                        <Form.Item
+                            label="Tên sản phẩm"
+                            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
+                            name="name"
+                        >
+                            <Input className="input-item" onChange={handleNameChange} />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Giá bán (VNĐ)"
+                            rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                            name="sell_price"
+                        >
+                            <InputNumber className="input-item" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Slug"
+                            rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
+                            name="slug"
+                        >
                             <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item label="Giá nhập" rules={[{ required: true, message: "Vui lòng nhập giá nhập" }]}>
-                            <InputNumber className="input-item" />
+                        <Form.Item
+                            label="Link"
+                            rules={[{ required: true, message: "Vui lòng nhập link" }]}
+                            name="name_link"
+                        >
+                            <Input className="input-item" />
                         </Form.Item>
 
-                        <Form.Item label="Giá bán" rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}>
-                            <InputNumber className="input-item" />
-                        </Form.Item>
-
-                        <Form.Item label="Thương hiệu sản phẩm" name="brands">
-                            <Select className="input-item">
-                                <Option>Nike</Option>
-                                <Option>Adidas</Option>
+                        <Form.Item
+                            label="Thương hiệu sản phẩm"
+                            name="brand_id"
+                            rules={[{ required: true, message: "Vui lòng chọn thương hiệu" }]}
+                        >
+                            <Select 
+                                className="input-item"
+                                placeholder="Chọn thương hiệu"
+                                showSearch
+                            >
+                                {brands && brands.map((brand) => (
+                                    <Option key={brand.id} value={brand.id}>
+                                        {brand.name}
+                                    </Option>
+                                ))}
                             </Select>
                         </Form.Item>
 
-                        <Form.Item label="Danh mục" name="category">
-                            <Select className="input-item">
-                                <Option>Áo</Option>
-                                <Option>Quần</Option>
+                        <Form.Item 
+                            label="Danh mục" 
+                            name="category"
+                            // rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+                        >
+                            <Select
+                                className="input-item"
+                                placeholder="Chọn danh mục"
+                                showSearch
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                {categories.flatMap((category) =>
+                                    category.children
+                                    .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
+                                    .map((child) => (
+                                        <Option key={child.id} value={child.name}>
+                                            {child.name}
+                                        </Option>
+                                    ))
+                                )}
                             </Select>
                         </Form.Item>
                     </Col>
-                    
-                    <Col span={16} className="col-item">
-                        <Form.Item label="Ảnh sản phẩm" valuePropName="fileList">
-                            <Upload listType="picture-card" multiple>
-                                <button className="upload-button" type="button">
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                </button>
-                            </Upload>
-                        </Form.Item>
 
-                        <Form.Item label="Mô tả sản phẩm" name="description">
-                            <TextArea rows={8} className="input-item" />
+                    <Col span={16} className="col-item">
+                        <Row gutter={24}>
+                            <Col span={5} className="col-item">
+                                <Form.Item
+                                    label="Ảnh đại diện"
+                                    name='thumnail'
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                    rules={[
+                                        {
+                                            validator: (_, value) =>
+                                            thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh đại diện"),
+                                        },
+                                    ]}
+                                >
+                                    <Upload
+                                        listType="picture"
+                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                        data={{ upload_preset: "quangOsuy" }}
+                                        onChange={onHandleChange}
+                                    >
+                                        <Button icon={<UploadOutlined />} color="default" variant="dashed">
+                                            Tải ảnh lên
+                                        </Button>
+                                    </Upload>
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={19} className="col-item">
+                                <Form.Item
+                                    label="Ảnh sản phẩm"
+                                    name='image'
+                                >
+                                    <Upload
+                                        listType="picture-card"
+                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                        data={{ upload_preset: "quangOsuy" }}
+                                    >
+                                        <button className="upload-button" type="button">
+                                            <PlusOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                        </button>
+                                    </Upload>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        
+                        <Form.Item
+                            label="Mô tả sản phẩm"
+                            name="content"
+                        >
+                            <TextArea rows={12} className="input-item" />
                         </Form.Item>
 
                         <Form.Item label="Loại sản phẩm">
@@ -217,42 +534,38 @@ const Edit = () => {
                         </Form.Item>
                     </Col>
                 </Row>
-            </Form>
 
-            {productType === "variant" && (
-                <>
-                    <hr />
-                    <h2>Thuộc tính</h2>
-                    <div className="attribute">
-                        <Input
-                            placeholder="Nhập tên thuộc tính mới"
-                            value={newAttribute}
-                            onChange={(e) => setNewAttribute(e.target.value)}
-                            className="input-attribute"
-                        />
-                        <Button className="btn-item" type="primary" onClick={handleAddAttribute}>
-                            Tạo thuộc tính
-                        </Button>
-                    </div>
-
-                    <hr />
-                    <h2>Biến thể</h2>
-                    {forms.map((form) => (
-                        <div key={form.id}>
-                            <div className="attribute">
+                {productType === "variant" && (
+                    <>
+                        <hr />
+                        <h2>Thuộc tính & Biến thể</h2>
+                        {forms.map((form, index) => (
+                            <div key={form.id} className="attribute">
                                 <Select
                                     className="input-attribute"
-                                    placeholder="Chọn thuộc tính"
                                     allowClear
+                                    showSearch
+                                    placeholder="Chọn thuộc tính"
+                                    value={form.name || undefined}
                                     onChange={(value) => {
-                                        if (forms.some((f) => f.name === value && f.id !== form.id)) {
-                                            notification.error({ message: `Thuộc tính \"${value}\" đã được chọn trước đó` });
-                                            return;
+                                        if (value === "create_attribute") {
+                                            setIsAttributeModalOpen(true);
+                                        } else {
+                                            const isAlreadySelected = forms.some((f, i) => f.name === value && i !== index);
+                                            if (isAlreadySelected) {
+                                                notification.warning({
+                                                    message: "Thuộc tính này đã được chọn trước đó!",
+                                                });
+                                                return;
+                                            }
+                                            forms[index].name = value;
+                                            setForms([...forms]);
+                                            const selectedAttribute = attributes.find(attr => attr.name === value);
+                                            const valuesForAttribute = attributeValue.filter(
+                                                val => val.attribute_id === selectedAttribute.id
+                                            );
+                                            setFilteredValues(valuesForAttribute);
                                         }
-                                        const updatedForms = forms.map((f) =>
-                                            f.id === form.id ? { ...f, name: value } : f
-                                        );
-                                        setForms(updatedForms);
                                     }}
                                 >
                                     {attributes && attributes.map((attr) => (
@@ -260,59 +573,134 @@ const Edit = () => {
                                             {attr.name}
                                         </Option>
                                     ))}
+                                    <Option value="create_attribute" style={{ color: "blue" }}>
+                                        + Tạo thuộc tính mới
+                                    </Option>
                                 </Select>
 
-                                <Input
+                                <Select
+                                    mode="multiple"
                                     className="input-attribute"
-                                    placeholder="Nhập giá trị"
-                                    value={form.inputValue}
-                                    onChange={(e) => {
-                                        const updatedForms = forms.map((f) =>
-                                            f.id === form.id ? { ...f, inputValue: e.target.value } : f
-                                        );
-                                        setForms(updatedForms);
+                                    allowClear
+                                    placeholder="Chọn giá trị"
+                                    onChange={(values) => {
+                                        if (values.includes("create_value")) {
+                                            // Người dùng chọn "Tạo giá trị mới"
+                                            setIsValueModalOpen(true);
+                                            const filteredValues = values.filter((value) => value !== "create_value");
+                                            forms[index].values = filteredValues.map((value) => ({
+                                                id: Number(value),
+                                                value: filteredValues.find((val) => val.id === Number(value))?.value || "", // Lấy giá trị value
+                                            }));
+                                        } else {
+                                            forms[index].values = values.map((value) => ({
+                                                id: Number(value),
+                                                value: filteredValues.find((val) => val.id === Number(value))?.value || "", // Lấy giá trị value
+                                            }));
+                                        }
+                                        setForms([...forms]); // Cập nhật forms
                                     }}
-                                    onPressEnter={() => handleAddValue(form.id)}
-                                />
-
-                                <Button
-                                    className="btn-item"
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                    onClick={() => handleAddValue(form.id)}
                                 >
-                                    Thêm giá trị
-                                </Button>
+                                    {filteredValues.map((val) => (
+                                        <Option key={val.id} value={val.id}>
+                                            {val.value}
+                                        </Option>
+                                    ))}
+                                    <Option value="create_value" style={{ color: "blue" }}>
+                                        + Tạo giá trị mới
+                                    </Option>
+                                </Select>
                             </div>
-                            <div>
-                                {form.values.map((value) => (
-                                    <Tag
-                                        key={value}
-                                        closable
-                                        onClose={() => handleDeleteTag(form.id, value)}
-                                        className="tag-list"
-                                    >
-                                        {value}
-                                    </Tag>
-                                ))}
-                            </div>
+                        ))}
+
+                        <Button className="btn-item" onClick={() => setForms([...forms, { id: Date.now(), name: "", values: [] }])}>
+                            Thêm thuộc tính
+                        </Button>
+                        <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
+
+                        <hr />
+                        <Table columns={columns} dataSource={tableData} rowKey="id" />
+                    </>
+                )}
+
+                <Modal
+                    title="Tạo thuộc tính mới"
+                    visible={isAttributeModalOpen}
+                    onCancel={() => setIsAttributeModalOpen(false)}
+                    footer={null}
+                >
+                    <Form
+                        form={attForm}
+                        layout="vertical"
+                        onFinish={(values) => handleAddAttribute(values)}
+                    >
+                        <Form.Item
+                            label="Tên thuộc tính"
+                            name="name"
+                            rules={[{ required: true, message: "Vui lòng nhập tên thuộc tính!" }]}
+                        >
+                            <Input placeholder="Nhập tên thuộc tính" className="input-item" />
+                        </Form.Item>
+                        <div className="add">
+                            <Button type="primary" htmlType="submit">
+                                Tạo
+                            </Button>
                         </div>
-                    ))}
-                    <Button color="primary" variant="dashed" onClick={handleAddVariantForm}>
-                        Thêm biến thể
+                    </Form>
+                </Modal>
+
+                <Modal
+                    title="Tạo giá trị thuộc tính mới"
+                    visible={isValueModalOpen}
+                    onCancel={() => setIsValueModalOpen(false)}
+                    footer={null}
+                >
+                    <Form
+                        form={valueForm}
+                        layout="vertical"
+                        onFinish={(values) => handleAddValue(values)}                    
+                    >
+                        <Form.Item
+                            label="Tên giá trị"
+                            name="value"
+                            rules={[{ required: true, message: "Vui lòng nhập tên giá trị!" }]}
+                        >
+                            <Input placeholder="Nhập tên giá trị" className="input-item" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Thuộc tính"
+                            name="attribute_id"
+                            rules={[{ required: true, message: "Vui lòng chọn thuộc tính!" }]}
+                        >
+                            <Select
+                                className="input-attribute"
+                                allowClear
+                                placeholder="Chọn thuộc tính"
+                                onChange={(value) => setSelectedAttributeId(value)}
+                            >
+                                {attributes && attributes.map((attr) => (
+                                    <Option key={attr.id} value={attr.id}>
+                                        {attr.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+
+                        <div className="add">
+                            <Button type="primary" htmlType="submit">
+                                Tạo
+                            </Button>
+                        </div>
+                    </Form>
+                </Modal>    
+
+                <div className="add">
+                    <Button htmlType="submit" type="primary" className="btn-item">
+                        Cập nhật
                     </Button>
-
-                    <hr />
-                    <h2>Danh sách hàng hóa cùng loại</h2>
-                    <Table dataSource={variants} columns={columns} pagination={false} />
-                </>
-            )}
-
-            <div className="add">
-                <Button type="primary" size="large" htmlType="submit">
-                    Cập nhật
-                </Button>
-            </div>
+                </div>
+            </Form>
         </div>
     );
 };

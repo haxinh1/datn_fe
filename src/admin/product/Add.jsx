@@ -38,12 +38,6 @@ const Add = () => {
                 throw new Error(error.response?.data?.message || "Đã xảy ra lỗi khi thêm sản phẩm.");
             }
         },
-        onError: (error) => {
-            notification.error({
-                message: "Thêm sản phẩm thất bại",
-                description: error.message,
-            });
-        },
         onSuccess: () => {
             form.resetFields();
             notification.success({
@@ -53,7 +47,30 @@ const Add = () => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             navigate("/list-pr");
         },
+        onError: (error) => {
+            notification.error({
+                message: "Thêm sản phẩm thất bại",
+                description: error.message,
+            });
+        },
     });
+
+    const onFinish = (values) => {
+        const productData = prepareProductData(values);
+    
+        const finalData = {
+            ...productData,
+            thumbnail, // Thêm link ảnh đã upload
+            sell_price: values.sell_price, // Giá bán
+            slug: values.slug, // Slug
+            category: values.category, // Danh mục
+            brand_id: values.brand_id, // Thương hiệu
+            name_link: values.name_link, // Link
+        };
+    
+        console.log("Dữ liệu gửi đi:", finalData); // Log để kiểm tra
+        mutate(finalData); // Gửi dữ liệu tới API
+    };    
     
     // slug tạo tự động
     const handleNameChange = (e) => {
@@ -75,24 +92,7 @@ const Add = () => {
         if (info.file.status === "done" && info.file.response) {
             setThumbnail(info.file.response.secure_url);
         }
-    };
-
-    const onFinish = (values) => {
-        const productData = prepareProductData(values);
-    
-        const finalData = {
-            ...productData,
-            thumbnail, // Thêm link ảnh đã upload
-            sell_price: values.sell_price, // Giá bán
-            slug: values.slug, // Slug
-            category: values.category, // Danh mục
-            brand_id: values.brand_id, // Thương hiệu
-            name_link: values.name_link, // Link
-        };
-    
-        console.log("Dữ liệu gửi đi:", finalData); // Log để kiểm tra
-        mutate(finalData); // Gửi dữ liệu tới API
-    };            
+    };        
 
     // Fetch danh sách thương hiệu
     const { data: brands } = useQuery({
@@ -425,7 +425,7 @@ const Add = () => {
                         <Form.Item 
                             label="Danh mục" 
                             name="category"
-                            rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+                            // rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
                         >
                             <Select
                                 className="input-item"
@@ -520,7 +520,7 @@ const Add = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h2>Quản lý Thuộc tính & Biến thể</h2>
+                        <h2>Thuộc tính & Biến thể</h2>
                         {forms.map((form, index) => (
                             <div key={form.id} className="attribute">
                                 <Select

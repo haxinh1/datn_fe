@@ -19,7 +19,7 @@ function App() {
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/list-pr" element={<List />} />
           <Route path="/add-pr" element={<Add />} />
-          <Route path="/edit-pr" element={<Edit />} />
+          <Route path="/edit-pr/:id" element={<Edit />} />
           <Route path="/brand" element={<Brand />} />
           <Route path="/test" element={<Test />} />
         </Route>
