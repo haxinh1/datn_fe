@@ -22,6 +22,7 @@ const Add = () => {
     const [valueForm] = Form.useForm();
     const [attForm] = Form.useForm();
     const [thumbnail, setThumbnail] = useState(null);
+    const [images, setImages] = useState([]);
     const [productType, setProductType] = useState("single");
     const [selectedAttributeId, setSelectedAttributeId] = useState(null);
     const [filteredValues, setFilteredValues] = useState([]); // Lưu giá trị thuộc tính được lọc
@@ -57,13 +58,13 @@ const Add = () => {
 
     const onFinish = (values) => {
         const productData = prepareProductData(values);
-    
         const finalData = {
             ...productData,
             thumbnail, // Thêm link ảnh đã upload
+            product_images: images && images.map((img) => img.url),
             sell_price: values.sell_price, // Giá bán
             slug: values.slug, // Slug
-            category: values.category, // Danh mục
+            category_id: values.category, // Danh mục
             brand_id: values.brand_id, // Thương hiệu
             name_link: values.name_link, // Link
         };
@@ -92,7 +93,26 @@ const Add = () => {
         if (info.file.status === "done" && info.file.response) {
             setThumbnail(info.file.response.secure_url);
         }
-    };        
+    };  
+    
+    const onHandleImage = (info) => {
+        const { fileList } = info;
+    
+        // Nếu upload thành công, cập nhật URL vào danh sách ảnh
+        const updatedFileList = fileList.map((file) => {
+            if (file.response) {
+                return {
+                    ...file,
+                    url: file.response.secure_url,  // Lấy URL từ response Cloudinary
+                    status: 'done',
+                };
+            }
+            return file;
+        });
+    
+        // Cập nhật danh sách ảnh trong state
+        setImages(updatedFileList);
+    };     
 
     // Fetch danh sách thương hiệu
     const { data: brands } = useQuery({
@@ -425,7 +445,7 @@ const Add = () => {
                         <Form.Item 
                             label="Danh mục" 
                             name="category"
-                            // rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+                            rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
                         >
                             <Select
                                 className="input-item"
@@ -440,7 +460,7 @@ const Add = () => {
                                     category.children
                                     .filter((child) => child.parent_id !== null) // Lọc các mục con có parent_id khác null
                                     .map((child) => (
-                                        <Option key={child.id} value={child.name}>
+                                        <Option key={child.id} value={child.id}>
                                             {child.name}
                                         </Option>
                                     ))
@@ -480,12 +500,20 @@ const Add = () => {
                             <Col span={19} className="col-item">
                                 <Form.Item
                                     label="Ảnh sản phẩm"
-                                    name='image'
+                                    name="images"
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
                                 >
                                     <Upload
+                                        multiple
                                         listType="picture-card"
                                         action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                         data={{ upload_preset: "quangOsuy" }}
+                                        fileList={images}  // Hiển thị danh sách ảnh hiện tại
+                                        onChange={onHandleImage}
+                                        onRemove={(file) => {
+                                            setImages((prev) => prev.filter((img) => img.uid !== file.uid));
+                                        }}
                                     >
                                         <button className="upload-button" type="button">
                                             <PlusOutlined />

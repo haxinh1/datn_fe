@@ -10,6 +10,7 @@ import { categoryServices } from './../../services/categories';
 
 const List = () => {
     const queryClient = useQueryClient();
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     // State lưu giá trị thương hiệu được chọn
     const [selectedBrand, setSelectedBrand] = useState(null);
@@ -52,9 +53,13 @@ const List = () => {
     };
 
     // Dữ liệu sản phẩm đã được lọc theo thương hiệu
-    const filteredProducts = selectedBrand
-        ? products?.filter((product) => product.brand_id === selectedBrand)
-        : products;
+    const filteredProducts = products?.filter((product) => {
+        const matchesBrand = selectedBrand ? product.brand_id === selectedBrand : true;
+        const matchesCategory = selectedCategory
+            ? product.categories.some((cat) => cat.id === selectedCategory)
+            : true;
+        return matchesBrand && matchesCategory;
+    });    
 
     const columns = [
         {
@@ -134,6 +139,7 @@ const List = () => {
                         className="select-item"
                         showSearch
                         allowClear
+                        onChange={(value) => setSelectedCategory(value)}
                         optionFilterProp="children"
                         filterOption={(input, option) =>
                             option.children.toLowerCase().includes(input.toLowerCase())
@@ -143,7 +149,7 @@ const List = () => {
                             category.children
                             .filter((child) => child.parent_id !== null)
                             .map((child) => (
-                                <Option key={child.id} value={child.name}>
+                                <Option key={child.id} value={child.id}>
                                     {child.name}
                                 </Option>
                             ))
