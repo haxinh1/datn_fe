@@ -289,16 +289,16 @@ const Edit = () => {
             key: form.name,
             align: "center",
             render: (_, record) => {
+                // Hiển thị value nếu tồn tại
                 const attributeValue = record[form.name];
-                return attributeValue ? attributeValue.value : "Không có giá trị";  // Đổ đúng dữ liệu từ product_variants
-            }
+                return attributeValue?.value; // Lấy giá trị value
+            },
         })),  
         {
             title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 200,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -371,11 +371,13 @@ const Edit = () => {
             key: "quantity",
             render: (_, record) => <InputNumber min={0} />,
             align: "center",
+            width: 160
         },
         {
-            title: "Hành động",
+            title: "Thao tác",
             key: "action",
             align: "center",
+            width: 160,
             render: (_, record) => (
                 <Button
                     type="text"

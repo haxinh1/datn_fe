@@ -279,7 +279,6 @@ const Add = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 200,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -352,11 +351,13 @@ const Add = () => {
             key: "quantity",
             render: (_, record) => <InputNumber min={0} />,
             align: "center",
+            width: 160
         },
         {
-            title: "Hành động",
+            title: "Thao tác",
             key: "action",
             align: "center",
+            width: 160,
             render: (_, record) => (
                 <Button
                     type="text"
