@@ -3,6 +3,7 @@ import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, R
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
+import slugify from "slugify";
 import "./add.css";
 import { productsServices } from './../../services/product';
 import { BrandsServices } from './../../services/brands';
@@ -96,10 +97,8 @@ const Edit = () => {
     // slug tạo tự động
     const handleNameChange = (e) => {
         const name = e.target.value;
-        form.setFieldsValue({
-            name,
-            slug: name.toLowerCase().replace(/\s+/g, "-"),
-        });
+        const slug = slugify(name, { lower: true, strict: true, locale: "vi" });
+        form.setFieldsValue({ name, slug });
     };
 
     const normFile = (e) => {
@@ -289,16 +288,16 @@ const Edit = () => {
             key: form.name,
             align: "center",
             render: (_, record) => {
+                // Hiển thị value nếu tồn tại
                 const attributeValue = record[form.name];
-                return attributeValue ? attributeValue.value : "Không có giá trị";  // Đổ đúng dữ liệu từ product_variants
-            }
+                return attributeValue?.value; // Lấy giá trị value
+            },
         })),  
         {
             title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 200,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -371,11 +370,13 @@ const Edit = () => {
             key: "quantity",
             render: (_, record) => <InputNumber min={0} />,
             align: "center",
+            width: 160
         },
         {
-            title: "Hành động",
+            title: "Thao tác",
             key: "action",
             align: "center",
+            width: 160,
             render: (_, record) => (
                 <Button
                     type="text"
