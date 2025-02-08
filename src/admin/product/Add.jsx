@@ -400,26 +400,18 @@ const Add = () => {
                             <Input className="input-item" onChange={handleNameChange} />
                         </Form.Item>
 
-                        <Form.Item
+                        {/* <Form.Item
                             label="Giá bán (VNĐ)"
                             rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                             name="sell_price"
                         >
                             <InputNumber className="input-item" />
-                        </Form.Item>
+                        </Form.Item> */}
 
                         <Form.Item
                             label="Slug"
                             rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
                             name="slug"
-                        >
-                            <Input className="input-item" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Link"
-                            rules={[{ required: true, message: "Vui lòng nhập link" }]}
-                            name="name_link"
                         >
                             <Input className="input-item" />
                         </Form.Item>
@@ -467,68 +459,72 @@ const Add = () => {
                                 )}
                             </Select>
                         </Form.Item>
+
+                        <Form.Item
+                            label="Ảnh bìa"
+                            name='thumnail'
+                            valuePropName="fileList"
+                            getValueFromEvent={normFile}
+                            rules={[
+                                {
+                                    validator: (_, value) =>
+                                    thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh bìa"),
+                                },
+                            ]}
+                        >
+                            <Upload
+                                listType="picture"
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{ upload_preset: "quangOsuy" }}
+                                onChange={onHandleChange}
+                            >
+                                <Button icon={<UploadOutlined />} className="btn-item">
+                                    Tải ảnh lên
+                                </Button>
+                            </Upload>
+                        </Form.Item>
                     </Col>
 
                     <Col span={16} className="col-item">
-                        <Row gutter={24}>
-                            <Col span={5} className="col-item">
-                                <Form.Item
-                                    label="Ảnh đại diện"
-                                    name='thumnail'
-                                    valuePropName="fileList"
-                                    getValueFromEvent={normFile}
-                                    rules={[
-                                        {
-                                            validator: (_, value) =>
-                                            thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh đại diện"),
-                                        },
-                                    ]}
-                                >
-                                    <Upload
-                                        listType="picture"
-                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                        data={{ upload_preset: "quangOsuy" }}
-                                        onChange={onHandleChange}
-                                    >
-                                        <Button icon={<UploadOutlined />} color="default" variant="dashed">
-                                            Tải ảnh lên
-                                        </Button>
-                                    </Upload>
-                                </Form.Item>
-                            </Col>
-
-                            <Col span={19} className="col-item">
-                                <Form.Item
-                                    label="Ảnh sản phẩm"
-                                    name="images"
-                                    valuePropName="fileList"
-                                    getValueFromEvent={normFile}
-                                >
-                                    <Upload
-                                        multiple
-                                        listType="picture-card"
-                                        action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                        data={{ upload_preset: "quangOsuy" }}
-                                        fileList={images}  // Hiển thị danh sách ảnh hiện tại
-                                        onChange={onHandleImage}
-                                        onRemove={(file) => {
-                                            setImages((prev) => prev.filter((img) => img.uid !== file.uid));
-                                        }}
-                                    >
-                                        <button className="upload-button" type="button">
-                                            <PlusOutlined />
-                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                        </button>
-                                    </Upload>
-                                </Form.Item>
-                            </Col>
-                        </Row>
+                        <Form.Item
+                            label="Ảnh sản phẩm"
+                            name="images"
+                            valuePropName="fileList"
+                            getValueFromEvent={normFile}
+                            rules={[
+                                {
+                                    validator: (_, value) => {
+                                        if (value && value.length > 0) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject("Vui lòng tải lên ảnh sản phẩm");
+                                    },
+                                },
+                            ]}
+                        >
+                            <Upload
+                                multiple
+                                listType="picture-card"
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{ upload_preset: "quangOsuy" }}
+                                fileList={images}  // Hiển thị danh sách ảnh hiện tại
+                                onChange={onHandleImage}
+                                onRemove={(file) => {
+                                    setImages((prev) => prev.filter((img) => img.uid !== file.uid));
+                                }}
+                            >
+                                <button className="upload-button" type="button">
+                                    <PlusOutlined />
+                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                </button>
+                            </Upload>
+                        </Form.Item>
                         
                         <Form.Item
                             label="Mô tả sản phẩm"
                             name="content"
                         >
-                            <TextArea rows={12} className="input-item" />
+                            <TextArea rows={10} className="input-item" />
                         </Form.Item>
 
                         <Form.Item label="Loại sản phẩm">

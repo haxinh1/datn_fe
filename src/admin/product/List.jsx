@@ -62,9 +62,18 @@ const List = () => {
     });    
 
     const columns = [
+        // {
+        //     title: "",
+        //     render: () => <input className="tick" type="checkbox" />,
+        //     align: "center",
+        // },
         {
-            title: "",
-            render: () => <input className="tick" type="checkbox" />,
+            title: "Ảnh sản phẩm",
+            dataIndex: "thumbnail",
+            key: "thumbnail",
+            render: (_, item) => {
+                return <Image width={45} height={60} src={item.thumbnail} />;
+            },
             align: "center",
         },
         {
@@ -75,20 +84,18 @@ const List = () => {
             width: 360
         },
         {
-            title: "Ảnh sản phẩm",
-            dataIndex: "thumbnail",
-            key: "thumbnail",
-            render: (_, item) => {
-                return <Image width={60} height={90} src={item.thumbnail} />;
-            },
+            title: "Giá nhập (VNĐ)",
+            key: "price",
+            dataIndex: "price",
             align: "center",
+            render: (price) => formatPrice(price),
         },
         {
             title: "Giá bán (VNĐ)",
             key: "sell_price",
             dataIndex: "sell_price",
             align: "center",
-            render: (price) => formatPrice(price),
+            render: (sell_price) => formatPrice(sell_price),
         },
         {
             title: "Số lượng",
@@ -173,13 +180,17 @@ const List = () => {
 
                 <div className="btn-group">
                     <Link to="/add-pr">
-                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                        <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
                             Thêm sản phẩm
                         </Button>
                     </Link>
 
-                    <Button color="danger" variant="solid" icon={<DeleteOutlined />}>
+                    {/* <Button color="danger" variant="solid" icon={<DeleteOutlined />}>
                         Xóa sản phẩm
+                    </Button> */}
+
+                    <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                        Nhập hàng
                     </Button>
                 </div>
             </div>
