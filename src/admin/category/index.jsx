@@ -4,9 +4,9 @@ import { categoryServices } from './../../services/categories';
 import { PlusOutlined } from '@ant-design/icons';
 import { set, useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import categorySchema from './../../schemas/categorySchema';
 import formatDate from '../../utils/formatDate';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const Categories = () => {
     const [categories, setCategories] = useState([])

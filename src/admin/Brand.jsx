@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import "../admin/product/add.css";
 import "../admin/product/list.css";
 import { BrandsServices } from "../services/brands";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { BookOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import slugify from "slugify";
 
 const Brand = () => {
     const queryClient = useQueryClient();
@@ -69,12 +70,11 @@ const Brand = () => {
         addBrandMutation.mutate({ ...values, logo });
     };
 
+    // slug tạo tự động
     const handleNameChange = (e) => {
         const name = e.target.value;
-        form.setFieldsValue({
-            name,
-            slug: name.toLowerCase().replace(/\s+/g, "-"),
-        });
+        const slug = slugify(name, { lower: true, strict: true, locale: "vi" });
+        form.setFieldsValue({ name, slug });
     };
 
     const columns = [
@@ -82,6 +82,15 @@ const Brand = () => {
             title:"",
             render:() => { return <input className="tick" type="checkbox" />},
             align: "center"
+        },
+        {
+            title: "Logo",
+            dataIndex: "logo",
+            key: "logo",
+            render: (_, item) => {
+                return <Image width={45} src={item.logo} />;
+            },
+            align: "center",
         },
         {
             title: "Tên thương hiệu",
@@ -96,15 +105,6 @@ const Brand = () => {
             align: "center",
         },
         {
-            title: "Logo",
-            dataIndex: "logo",
-            key: "logo",
-            render: (_, item) => {
-                return <Image width={60} src={item.logo} />;
-            },
-            align: "center",
-        },
-        {
             title: "Thao tác",
             key: "action",
             align: "center",
@@ -114,6 +114,7 @@ const Brand = () => {
                         Cập nhật
                     </Link>
                     <div className="divider"></div>
+
                     <span className="action-link action-link-red">Xóa</span>
                 </div>
             ),
@@ -125,10 +126,13 @@ const Brand = () => {
     }
 
     return (
-        <div className="container">
-            <h1 className="mb-5">Quản lý thương hiệu</h1>
+        <div>
+            <h1 className="mb-5">
+                <BookOutlined style={{ marginRight: "8px" }} />
+                Quản lý thương hiệu
+            </h1>
 
-            <div className="btn-group">
+            <div className="btn-brand">
                 <Button
                     color="primary" 
                     variant="solid"
@@ -152,67 +156,57 @@ const Brand = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                bodyStyle={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
+                
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleAddBrand}
-                >
-                    <Row gutter={24}>
-                        <Col span={12}>
-                            <Form.Item
-                                label="Tên thương hiệu"
-                                name="name"
-                                rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
-                            >
-                                <Input className="input-item" onChange={handleNameChange} />
-                            </Form.Item>
+                >      
+                    <Form.Item
+                        label="Tên thương hiệu"
+                        name="name"
+                        rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                    >
+                        <Input className="input-item" onChange={handleNameChange} />
+                    </Form.Item>
 
-                            <Form.Item
-                                label="Slug"
-                                name="slug"
-                                rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                            >
-                                <Input className="input-item" />
-                            </Form.Item>
-                        </Col>
+                    <Form.Item
+                        label="Slug"
+                        name="slug"
+                        rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                    >
+                        <Input className="input-item" />
+                    </Form.Item>
 
-                        <Col span={12}>
-                            <Form.Item 
-                                label="Logo" 
-                                name="logo"
-                                valuePropName="fileList"
-                                getValueFromEvent={normFile}
-                                rules={[
-                                    {
-                                        validator: (_, value) =>
-                                            logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh sản phẩm"),
-                                    },
-                                ]}
-                            >
-                                <Upload 
-                                    listType="picture-card" 
-                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                    data={{upload_preset: "quangOsuy"}}
-                                    onChange={onHandleChange}
-                                >
-                                    <button className="upload-button" type="button">
-                                        <PlusOutlined />
-                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                    </button>
-                                </Upload>
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                
+                    <Form.Item 
+                        label="Logo thương hiệu" 
+                        name="logo"
+                        valuePropName="fileList"
+                        getValueFromEvent={normFile}
+                        rules={[
+                            {
+                                validator: (_, value) =>
+                                logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh thương hiệu"),
+                            },
+                        ]}
+                    >
+                        <Upload 
+                            listType="picture" 
+                            action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                            data={{upload_preset: "quangOsuy"}}
+                            onChange={onHandleChange}
+                        >
+                            <Button icon={<UploadOutlined />} className="btn-item">
+                                Tải ảnh lên
+                            </Button>
+                        </Upload>
+                    </Form.Item>
                     
                     <div className="add">
-                        <Button type="primary" size="large" htmlType="submit">
-                            Xác nhận
+                        <Button type="primary" htmlType="submit">
+                            Tạo
                         </Button>
                     </div>
                 </Form>

@@ -22,7 +22,12 @@ import { AttributesServices } from "./../../services/attributes";
 import { productsServices } from "./../../services/product";
 import axios from "axios";
 import "./add.css";
-import { categoryServices } from "../../services/categories";
+import { productsServices } from "./../../services/product";
+import { BrandsServices } from "./../../services/brands";
+import { categoryServices } from "./../../services/categories";
+import { AttributesServices } from "./../../services/attributes";
+import { ValuesServices } from "./../../services/attribute_value";
+import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
