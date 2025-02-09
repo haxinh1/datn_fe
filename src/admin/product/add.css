@@ -33,6 +33,9 @@ h2 {
     height: 40px;
     margin-right: 10px;
 }
+.btn-import{
+    height: 40px;
+}
 .attribute{
     display: flex;
     gap: 10px;
@@ -46,4 +49,15 @@ h2 {
     margin: 0 auto;
     transform: scale(1.2);
     cursor: pointer; 
+}
+.select-option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.product-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
 }
