@@ -12,6 +12,8 @@ import Brand from "./admin/Brand";
 import Test from './admin/Test';
 import ProductDetail from './admin/product/DetailAd';
 import Categories from './admin/category/index';
+import Import from "./admin/product/Import";
+import Creat from "./admin/product/Creat";
 
 function App() {
 
@@ -23,6 +25,8 @@ function App() {
           <Route path="/detailad/:id" element={<ProductDetail />} />
           <Route path="/add-pr" element={<Add />} />
           <Route path="/edit-pr/:id" element={<Edit />} />
+          <Route path="/import" element={<Import />} />
+          <Route path="/creat" element={<Creat />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/brand" element={<Brand />} />
           <Route path="/test" element={<Test />} />

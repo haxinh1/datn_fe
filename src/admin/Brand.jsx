@@ -6,6 +6,7 @@ import "../admin/product/add.css";
 import "../admin/product/list.css";
 import { BrandsServices } from "../services/brands";
 import { BookOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import slugify from "slugify";
 
 const Brand = () => {
     const queryClient = useQueryClient();
@@ -69,12 +70,11 @@ const Brand = () => {
         addBrandMutation.mutate({ ...values, logo });
     };
 
+    // slug tạo tự động
     const handleNameChange = (e) => {
         const name = e.target.value;
-        form.setFieldsValue({
-            name,
-            slug: name.toLowerCase().replace(/\s+/g, "-"),
-        });
+        const slug = slugify(name, { lower: true, strict: true, locale: "vi" });
+        form.setFieldsValue({ name, slug });
     };
 
     const columns = [
@@ -82,6 +82,15 @@ const Brand = () => {
             title:"",
             render:() => { return <input className="tick" type="checkbox" />},
             align: "center"
+        },
+        {
+            title: "Logo",
+            dataIndex: "logo",
+            key: "logo",
+            render: (_, item) => {
+                return <Image width={45} src={item.logo} />;
+            },
+            align: "center",
         },
         {
             title: "Tên thương hiệu",
@@ -93,15 +102,6 @@ const Brand = () => {
             title: "Slug",
             dataIndex: "slug",
             key: "slug",
-            align: "center",
-        },
-        {
-            title: "Logo",
-            dataIndex: "logo",
-            key: "logo",
-            render: (_, item) => {
-                return <Image width={60} src={item.logo} />;
-            },
             align: "center",
         },
         {
@@ -198,7 +198,7 @@ const Brand = () => {
                             data={{upload_preset: "quangOsuy"}}
                             onChange={onHandleChange}
                         >
-                            <Button icon={<UploadOutlined />}>
+                            <Button icon={<UploadOutlined />} className="btn-item">
                                 Tải ảnh lên
                             </Button>
                         </Upload>
