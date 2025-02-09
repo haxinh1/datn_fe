@@ -192,7 +192,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Bảng biến thể sản phẩm */}
-        <h2 className="mt-4">Bảng biến thể sản phẩm</h2>
+        {/* <h2 className="mt-4">Bảng biến thể sản phẩm</h2>
         <table className="table table-bordered table-striped">
           <thead>
             <tr>
@@ -218,7 +218,7 @@ const ProductDetail = () => {
               </tr>
             )}
           </tbody>
-        </table>
+        </table> */}
 
         {/* Các nút hành động */}
         <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">

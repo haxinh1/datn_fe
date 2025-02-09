@@ -20,8 +20,6 @@ const List = () => {
             return response.data;
         },
     });
-    return formatter.format(price);
-  };
 
     // Fetch danh sách thương hiệu
     const { data: brands } = useQuery({
@@ -246,6 +244,6 @@ const List = () => {
             </Skeleton>
         </>
     );
-
+};
 
 export default List;
