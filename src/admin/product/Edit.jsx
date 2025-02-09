@@ -53,6 +53,13 @@ const Edit = () => {
                 category: product.categories?.map((cat) => cat.id),            
             });
             setThumbnail(product.thumbnail);
+            const imageList = product.product_images?.map((url, index) => ({
+                uid: `img-${index}`,
+                name: `Image-${index + 1}`,
+                status: "done",
+                url,
+            })) || [];
+            setImages(imageList);  // Đổ ảnh sản phẩm vào state
             setTableData(product.product_variants || []);  // Đổ dữ liệu biến thể vào bảng
         }
     }, [product, form]);   
@@ -420,14 +427,6 @@ const Edit = () => {
                             <Input className="input-item" onChange={handleNameChange} />
                         </Form.Item>
 
-                        {/* <Form.Item
-                            label="Giá bán (VNĐ)"
-                            rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
-                            name="sell_price"
-                        >
-                            <InputNumber className="input-item" />
-                        </Form.Item> */}
-
                         <Form.Item
                             label="Slug"
                             rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
@@ -496,6 +495,11 @@ const Edit = () => {
                                 listType="picture"
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
+                                fileList={
+                                    thumbnail
+                                        ? [{ uid: "1", name: "thumbnail", status: "done", url: thumbnail }]
+                                        : []
+                                }
                                 onChange={onHandleChange}
                             >
                                 <Button icon={<UploadOutlined />} className="btn-item">
@@ -546,7 +550,7 @@ const Edit = () => {
                 </Row>
 
                 <hr />
-                <h2>Thuộc tính & Biến thể</h2>
+                <h2>Thuộc tính</h2>
                 {forms.map((form, index) => (
                     <div key={form.id} className="attribute">
                         <Select
@@ -627,6 +631,7 @@ const Edit = () => {
                 <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                 <hr />
+                <h2>Danh sách sản phẩm cùng loại</h2>
                 <Table columns={columns} dataSource={tableData} rowKey="id" />
                     
                 <Modal

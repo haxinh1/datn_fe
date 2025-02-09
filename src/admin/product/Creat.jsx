@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio } from "antd";
+import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
-const Add = () => {
+const Creat = () => {
     const queryClient = useQueryClient(); 
     const [forms, setForms] = useState([{ id: Date.now(), name: "", values: [] }]);
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
@@ -47,7 +47,7 @@ const Add = () => {
                 description: "Sản phẩm mới đã được thêm vào danh sách.",
             });
             queryClient.invalidateQueries({ queryKey: ["products"] });
-            navigate("/list-pr");
+            navigate("/import");
         },
         onError: (error) => {
             notification.error({
@@ -698,4 +698,4 @@ const Add = () => {
     );
 };
 
-export default Add;
+export default Creat;

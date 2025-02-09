@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, notification, Skeleton, Table, Modal, Form, Select } from "antd";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Image, Skeleton, Table, Select } from "antd";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { BookOutlined, PlusOutlined } from "@ant-design/icons";
 import "./list.css";
 import { productsServices } from "../../services/product";
-import { BrandsServices } from './../../services/brands';
-import { categoryServices } from './../../services/categories';
+import { BrandsServices } from "../../services/brands";
+import { categoryServices } from "../../services/categories";
 
 const List = () => {
-    const queryClient = useQueryClient();
     const [selectedCategory, setSelectedCategory] = useState(null);
-
-    // State lưu giá trị thương hiệu được chọn
     const [selectedBrand, setSelectedBrand] = useState(null);
 
-    // Fetch danh sách sản phẩm
-    const { data: products, isLoading } = useQuery({
+    // Fetch danh sách sản phẩm bao gồm biến thể
+    const { data: products, isLoading: isProductsLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
             const response = await productsServices.fetchProducts();
             return response.data;
-        }
+        },
     });
 
     // Fetch danh sách thương hiệu
@@ -30,18 +27,27 @@ const List = () => {
         queryFn: async () => {
             const response = await BrandsServices.fetchBrands();
             return response.data;
-        }
+        },
     });
 
     // Lấy danh sách danh mục
     const [categories, setCategories] = useState([]);
-    const fetchData = async () => {
-        const response = await categoryServices.fetchCategories();
-        setCategories(response);
-    };
     useEffect(() => {
-        fetchData();
+        const fetchCategories = async () => {
+            const response = await categoryServices.fetchCategories();
+            setCategories(response);
+        };
+        fetchCategories();
     }, []);
+
+    // Lọc sản phẩm theo thương hiệu và danh mục
+    const filteredProducts = products?.filter((product) => {
+        const matchesBrand = selectedBrand ? product.brand_id === selectedBrand : true;
+        const matchesCategory = selectedCategory
+            ? product.categories.some((cat) => cat.id === selectedCategory)
+            : true;
+        return matchesBrand && matchesCategory;
+    });
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -52,28 +58,12 @@ const List = () => {
         return formatter.format(price);
     };
 
-    // Dữ liệu sản phẩm đã được lọc theo thương hiệu
-    const filteredProducts = products?.filter((product) => {
-        const matchesBrand = selectedBrand ? product.brand_id === selectedBrand : true;
-        const matchesCategory = selectedCategory
-            ? product.categories.some((cat) => cat.id === selectedCategory)
-            : true;
-        return matchesBrand && matchesCategory;
-    });    
-
     const columns = [
-        // {
-        //     title: "",
-        //     render: () => <input className="tick" type="checkbox" />,
-        //     align: "center",
-        // },
         {
             title: "Ảnh sản phẩm",
             dataIndex: "thumbnail",
             key: "thumbnail",
-            render: (_, item) => {
-                return <Image width={45} height={60} src={item.thumbnail} />;
-            },
+            render: (_, item) => <Image width={45} height={60} src={item.thumbnail} />,
             align: "center",
         },
         {
@@ -81,7 +71,7 @@ const List = () => {
             dataIndex: "name",
             key: "name",
             align: "center",
-            width: 360
+            width: 350,
         },
         {
             title: "Giá nhập (VNĐ)",
@@ -104,19 +94,9 @@ const List = () => {
             align: "center",
         },
         {
-            title: "Thương hiệu",
-            dataIndex: "brand_id",
-            key: "brand_id",
-            align: "center",
-            render: (brand_id) => {
-                if (!brands || !Array.isArray(brands)) return "Đang tải...";
-                const brand = brands.find((b) => b.id === brand_id);
-                return brand ? brand.name : "Không xác định";
-            },
-        },
-        {
             title: "Thao tác",
             key: "action",
+            align: "center",
             render: (_, item) => (
                 <div className="action-container">
                     <Link to={`/detailad/${item.id}`} className="action-link action-link-purple">
@@ -128,7 +108,6 @@ const List = () => {
                     </Link>
                 </div>
             ),
-            align: "center",
         },
     ];
 
@@ -154,12 +133,12 @@ const List = () => {
                     >
                         {categories.flatMap((category) =>
                             category.children
-                            .filter((child) => child.parent_id !== null)
-                            .map((child) => (
-                                <Option key={child.id} value={child.id}>
-                                    {child.name}
-                                </Option>
-                            ))
+                                .filter((child) => child.parent_id !== null)
+                                .map((child) => (
+                                    <Select.Option key={child.id} value={child.id}>
+                                        {child.name}
+                                    </Select.Option>
+                                ))
                         )}
                     </Select>
 
@@ -168,12 +147,12 @@ const List = () => {
                         className="select-item"
                         showSearch
                         allowClear
-                        onChange={(value) => setSelectedBrand(value)}  // Cập nhật thương hiệu được chọn
+                        onChange={(value) => setSelectedBrand(value)}
                     >
                         {brands && brands.map((brand) => (
-                            <Option key={brand.id} value={brand.id}>
+                            <Select.Option key={brand.id} value={brand.id}>
                                 {brand.name}
-                            </Option>
+                            </Select.Option>
                         ))}
                     </Select>
                 </div>
@@ -185,21 +164,82 @@ const List = () => {
                         </Button>
                     </Link>
 
-                    {/* <Button color="danger" variant="solid" icon={<DeleteOutlined />}>
-                        Xóa sản phẩm
-                    </Button> */}
-
-                    <Button color="primary" variant="solid" icon={<PlusOutlined />}>
-                        Nhập hàng
-                    </Button>
+                    <Link to="/import">
+                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                            Nhập hàng
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
-            <Skeleton active loading={isLoading}>
+            <Skeleton active loading={isProductsLoading}>
                 <Table
                     columns={columns}
                     dataSource={filteredProducts || []}
+                    expandable={{
+                        expandedRowRender: (record) => {
+                            const variants = record.variants || [];
+                            return variants.length > 0 ? (
+                                <Table
+                                    columns={[
+                                        {
+                                            title: "Ảnh biến thể",
+                                            dataIndex: "thumbnail",
+                                            key: "thumbnail",
+                                            render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
+                                            align: "center",
+                                            width: 180,
+                                        },
+                                        {
+                                            title: "Tên biến thể",
+                                            key: "name",
+                                            render: (_, variant) => {
+                                                const attributeValues = variant.attribute_value_product_variants?.map(
+                                                    (attr) => attr.attribute_value?.value
+                                                ) || [];
+                                                return `${record.name} - ${attributeValues.join(" - ")}`;
+                                            },
+                                            align: "center",
+                                            width: 330,
+                                        },
+                                        {
+                                            title: "Giá nhập (VNĐ)",
+                                            dataIndex: "price",
+                                            key: "price",
+                                            render: (price) => formatPrice(price),
+                                            align: "center",
+                                            width: 200,
+                                        },
+                                        {
+                                            title: "Giá bán (VNĐ)",
+                                            dataIndex: "sell_price",
+                                            key: "sell_price",
+                                            render: (sell_price) => formatPrice(500000),
+                                            align: "center",
+                                            width: 130,
+                                        },
+                                        {
+                                            title: "Số lượng",
+                                            dataIndex: "quantity",
+                                            key: "quantity",
+                                            align: "center",
+                                            render: () => 50,
+                                            width: 140,
+                                        },
+                                        {},
+                                    ]}
+                                    dataSource={variants}
+                                    pagination={false}
+                                    showHeader={false} 
+                                    rowKey="id"
+                                />
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "10px 0" }}>Không có sản phẩm cùng loại</div>
+                            );
+                        },
+                    }}
                     pagination={{ pageSize: 6 }}
+                    rowKey="id"
                 />
             </Skeleton>
         </>
