@@ -19,12 +19,24 @@ const ProductDetail = () => {
     const fetchProductDetails = async () => {
       try {
         setLoading(true);
-        const data = await productsServices.fetchProductById(id);
-        console.log("Dữ liệu sản phẩm:", data);
-        setProduct(data.data);
-        if (data?.images?.length > 0) {
-          setImages(data.images);
-          setCurrentImage(data.images[0]);
+        const response = await productsServices.fetchProductById(id);
+        console.log("Dữ liệu sản phẩm API trả về:", response);
+
+        if (response?.data) {
+          setProduct(response.data);
+        }
+
+        // Kiểm tra nếu có galleries và nó là một mảng hợp lệ
+        if (Array.isArray(response.data?.galleries)) {
+          console.log("Danh sách ảnh từ galleries:", response.data.galleries);
+
+          // Lấy danh sách ảnh
+          const galleryImages = response.data.galleries.map((img) => img.image);
+
+          setImages(galleryImages);
+          setCurrentImage(galleryImages.length > 0 ? galleryImages[0] : "");
+        } else {
+          setImages([]);
         }
       } catch (err) {
         console.error("Lỗi khi lấy dữ liệu:", err);
@@ -66,33 +78,48 @@ const ProductDetail = () => {
           {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
             <div className="text-center">
-              {product.thumbnail ? (
+              {/* Hiển thị ảnh lớn */}
+              {currentImage ? (
                 <img
-                  src={product.thumbnail}
-                  alt="Thumbnail"
-                  className="img-fluid mb-2"
-                  style={{ border: "1px solid #ddd", borderRadius: "5px" }}
+                  src={currentImage}
+                  alt="Ảnh sản phẩm chính"
+                  className="img-fluid mb-2 main-image"
+                  style={{
+                    border: "1px solid #ddd",
+                    borderRadius: "5px",
+                    maxWidth: "100%",
+                    maxHeight: "400px", // Giới hạn kích thước ảnh lớn
+                    objectFit: "contain",
+                  }}
                 />
               ) : (
                 <p>Không có ảnh sản phẩm</p>
               )}
+
+              {/* Danh sách ảnh nhỏ */}
               <div className="d-flex justify-content-start mt-2">
-                {images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image.url}
-                    alt={`Thumbnail ${index + 1}`}
-                    className="img-thumbnail me-2"
-                    style={{
-                      width: "70px",
-                      height: "70px",
-                      cursor: "pointer",
-                      border:
-                        currentImage === image.url ? "2px solid #007bff" : "",
-                    }}
-                    onClick={() => setCurrentImage(image.url)}
-                  />
-                ))}
+                {images.length > 0 ? (
+                  images.map((img, index) => (
+                    <img
+                      key={index}
+                      src={img ? img : "https://via.placeholder.com/70"} // Kiểm tra nếu null thì thay thế
+                      alt={`Thumbnail ${index + 1}`}
+                      className="img-thumbnail me-2"
+                      style={{
+                        width: "70px",
+                        height: "70px",
+                        cursor: "pointer",
+                        border: currentImage === img ? "2px solid #007bff" : "",
+                      }}
+                      onClick={() => setCurrentImage(img)} // Cập nhật ảnh lớn khi click
+                      onError={(e) =>
+                        (e.target.src = "https://via.placeholder.com/70")
+                      }
+                    />
+                  ))
+                ) : (
+                  <p>Không có ảnh sản phẩm.</p>
+                )}
               </div>
             </div>
           </div>
@@ -190,35 +217,6 @@ const ProductDetail = () => {
             </table>
           </div>
         </div>
-
-        {/* Bảng biến thể sản phẩm */}
-        {/* <h2 className="mt-4">Bảng biến thể sản phẩm</h2>
-        <table className="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>Size</th>
-              <th>Màu</th>
-              <th>Số lượng</th>
-            </tr>
-          </thead>
-          <tbody>
-            {product.variants && product.variants.length > 0 ? (
-              product.variants.map((variant, index) => (
-                <tr key={index}>
-                  <td>{variant.size || "Không có"}</td>
-                  <td>{variant.color || "Không có"}</td>
-                  <td>{variant.quantity || 0}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="3" className="text-center">
-                  Không có biến thể
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table> */}
 
         {/* Các nút hành động */}
         <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">
