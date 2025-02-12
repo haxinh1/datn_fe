@@ -10,17 +10,19 @@
 }
 .action-link {
     text-decoration: none;
-    font-weight: bold;
     cursor: pointer;
 }
 .action-link-purple {
     color: purple;
+    font-weight: bold;
 }
 .action-link-blue {
     color: blue;
+    font-weight: bold;
 }
 .action-link-red {
     color: red;
+    font-weight: bold;
 }
 .divider {
     height: 20px;
