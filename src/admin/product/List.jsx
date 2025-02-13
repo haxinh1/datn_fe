@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch } from "antd";
+import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import "./list.css";
 import "./add.css";
 import { productsServices } from "../../services/product";
@@ -17,6 +17,7 @@ const List = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [currentVariant, setCurrentVariant] = useState(null);
     const [newPrice, setNewPrice] = useState(null);
+    const [newSalePrice, setNewSalePrice] = useState(null);
     const [newImage, setNewImage] = useState(null);
     const [isActive, setIsActive] = useState(1);
 
@@ -66,11 +67,37 @@ const List = () => {
         return formatter.format(price);
     };
 
-    const handleEditVariant = (variant) => {
+    const urlToFile = async (url, filename) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new File([blob], filename, { type: blob.type });
+    };
+    
+    const convertImageToFileObject = async (imageUrl) => {
+        if (!imageUrl) return null;
+        const file = await urlToFile(imageUrl, "variant-thumbnail.jpg");
+        return {
+            uid: "-1",
+            name: file.name,
+            status: "done",
+            url: imageUrl,
+            originFileObj: file,
+        };
+    };
+
+    const handleEditVariant = async (variant) => {
         setCurrentVariant(variant);
         setNewPrice(variant.sell_price);
-        setNewImage(variant.thumbnail);
+        setNewSalePrice(variant.sale_price);
         setIsActive(variant.is_active ?? 1);
+    
+        if (variant.thumbnail) {
+            const fileObject = await convertImageToFileObject(variant.thumbnail);
+            setNewImage(fileObject);
+        } else {
+            setNewImage(null);
+        }
+    
         setIsModalVisible(true);
     };
 
@@ -82,9 +109,20 @@ const List = () => {
     };
 
     const handleImageUpload = (info) => {
+        let fileList = [...info.fileList];
+    
+        // Nếu ảnh mới được upload thành công, cập nhật `thumbnail`
         if (info.file.status === "done" && info.file.response) {
-            setNewImage(info.file.response.secure_url); // Cập nhật ảnh mới
+            fileList = fileList.map((file) => ({
+                uid: file.uid,
+                name: file.name,
+                status: "done",
+                url: file.response.secure_url, // Lấy URL từ response Cloudinary
+            }));
         }
+    
+        // Cập nhật state
+        setNewImage(fileList.length > 0 ? fileList[0] : null);
     };
 
     const updateVariantMutation = useMutation({
@@ -103,6 +141,7 @@ const List = () => {
             setCurrentVariant((prevVariant) => ({
                 ...prevVariant,
                 sell_price: newPrice,
+                sale_price: newSalePrice,
                 thumbnail: newImage,
             }));
             queryClient.invalidateQueries(["products"]);
@@ -119,26 +158,25 @@ const List = () => {
 
     const handleSaveVariant = () => {
         if (!currentVariant) return;
-
+    
         const payload = {
             sell_price: newPrice,
-            thumbnail: newImage,
+            sale_price: newSalePrice,
+            thumbnail: newImage ? newImage.url : null, 
             is_active: isActive,
         };
-
+    
         console.log("Sending payload to API:", payload);
         updateVariantMutation.mutate(payload, {
             onSuccess: () => {
-                // Reset form sau khi cập nhật thành công
                 setNewImage(null);
                 setNewPrice(null);
                 setIsModalVisible(false);
             }
         });
-
-        // Cập nhật trạng thái riêng biệt
+    
         activeVariantMutation.mutate({ is_active: isActive });
-
+    
         setIsModalVisible(false);
     };
 
@@ -178,9 +216,16 @@ const List = () => {
             render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
         },
         {
+            title: "Giá khuyến mại (VNĐ)",
+            key: "sale_price",
+            dataIndex: "sale_price",
+            align: "center",
+            render: (sale_price) => (sale_price ? formatPrice(sale_price) : ""),
+        },
+        {
             title: "Tồn kho",
-            key: "quantity",
-            dataIndex: "quantity",
+            dataIndex: "stock",
+            key: "stock",
             align: "center",
         },
         {
@@ -200,13 +245,17 @@ const List = () => {
             align: "center",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to={`/detailad/${item.id}`} className="action-link action-link-purple">
-                        Chi tiết
-                    </Link>
-                    <div className="divider"></div>
-                    <Link to={`/edit-pr/${item.id}`} className="action-link action-link-blue">
-                        Cập nhật
-                    </Link>
+                    <Tooltip title="Chi tiết">
+                        <Link to={`/detailad/${item.id}`}>
+                            <Button color="purple" variant="solid" icon={<EyeOutlined />} />
+                        </Link>
+                    </Tooltip>
+                    
+                    <Tooltip title="Cập nhật">
+                        <Link to={`/edit-pr/${item.id}`}>
+                            <Button color="primary" variant="solid" icon={<EditOutlined />} />
+                        </Link>
+                    </Tooltip>
                 </div>
             ),
         },
@@ -289,7 +338,7 @@ const List = () => {
                                             key: "thumbnail",
                                             render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
                                             align: "center",
-                                            width: 170,
+                                            width: 150,
                                         },
                                         {
                                             title: "Tên biến thể",
@@ -301,7 +350,7 @@ const List = () => {
                                                 return `${record.name} - ${attributeValues.join(" - ")}`;
                                             },
                                             align: "center",
-                                            width: 340,
+                                            width: 400,
                                         },
                                         {
                                             title: "Giá bán (VNĐ)",
@@ -309,21 +358,29 @@ const List = () => {
                                             key: "sell_price",
                                             render: (sell_price) => formatPrice(sell_price),
                                             align: "center",
-                                            width: 180,
+                                            width: 160,
+                                        },
+                                        {
+                                            title: "Giá khuyến mại (VNĐ)",
+                                            dataIndex: "sale_price",
+                                            key: "sale_price",
+                                            render: (sale_price) => formatPrice(sale_price),
+                                            align: "center",
+                                            width: 160,
                                         },
                                         {
                                             title: "Tồn kho",
-                                            dataIndex: "quantity",
-                                            key: "quantity",
+                                            dataIndex: "stock",
+                                            key: "stock",
                                             align: "center",
-                                            render: () => 50, // Placeholder for stock
-                                            width: 90,
+                                            width: 150,
                                         },
                                         {
                                             title: 'Trạng thái',
                                             key: 'is_active',
                                             dataIndex: 'is_active',
                                             align: 'center',
+                                            width: 160,
                                             render: (isActive) => (
                                                 <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
                                                     {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
@@ -367,7 +424,9 @@ const List = () => {
                 footer={null}
             >
                 <Form layout="vertical">
-                    <Form.Item label="Giá bán">
+                    <Form.Item 
+                        label="Giá bán (VNĐ)"
+                    >
                         <InputNumber 
                             className="input-item" 
                             value={newPrice} 
@@ -376,10 +435,18 @@ const List = () => {
                     </Form.Item>
 
                     <Form.Item 
-                        label="Ảnh" 
+                        label="Giá khuyến mại (VNĐ)"
+                    >
+                        <InputNumber 
+                            className="input-item" 
+                            value={newSalePrice} 
+                            onChange={setNewSalePrice} 
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Ảnh"
                         name="newImage"
-                        valuePropName="fileList"
-                        getValueFromEvent={normFile}
                         rules={[
                             {
                                 validator: (_, value) =>
@@ -387,20 +454,23 @@ const List = () => {
                             },
                         ]}
                     >
-                        <Upload 
-                            listType="picture" 
+                        <Upload
+                            listType="picture"
                             action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                            data={{upload_preset: "quangOsuy"}}
+                            data={{ upload_preset: "quangOsuy" }}
+                            fileList={newImage ? [newImage] : []}
                             onChange={handleImageUpload}
-                            fileList={newImage ? [{ uid: '-1', name: 'current-image', status: 'done', url: newImage }] : []}
+                            onRemove={() => setNewImage(null)} 
                         >
-                            <Button icon={<UploadOutlined />} className="btn-item">
-                                Tải ảnh lên
-                            </Button>
+                            {!newImage && ( 
+                                <Button icon={<UploadOutlined />} className="btn-item">
+                                    Tải ảnh lên
+                                </Button>
+                            )}
                         </Upload>
                     </Form.Item>
 
-                    <Form.Item label="Trạng thái">
+                    <Form.Item label="Trạng thái kinh doanh">
                         <Switch checked={isActive === 1} onChange={(checked) => setIsActive(checked ? 1 : 0)} />
                         <span style={{ marginLeft: 10 }}>
                             {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}

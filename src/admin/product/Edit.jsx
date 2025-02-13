@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch } from "antd";
+import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
@@ -46,23 +46,52 @@ const Edit = () => {
             form.setFieldsValue({
                 name: product.name,
                 sell_price: product.sell_price,
+                sale_price: product.sale_price,
                 slug: product.slug,
                 name_link: product.name_link,
                 brand_id: product.brand_id,
                 content: product.content,
                 category: product.categories?.map((cat) => cat.id),            
             });
-            setThumbnail(product.thumbnail);
-            const imageList = product.product_images?.map((url, index) => ({
-                uid: `img-${index}`,
-                name: `Image-${index + 1}`,
-                status: "done",
-                url,
-            })) || [];
-            setImages(imageList);  // Đổ ảnh sản phẩm vào state
-            setTableData(product.product_variants || []);  // Đổ dữ liệu biến thể vào bảng
+    
+            // Chuyển đổi ảnh bìa từ URL thành file object để hiển thị
+            if (product.thumbnail) {
+                setThumbnail({
+                    uid: "-1",
+                    name: "thumbnail.jpg",
+                    status: "done",
+                    url: product.thumbnail,
+                });
+            }
+    
+            // Chuyển đổi ảnh sản phẩm từ URL thành fileList
+            if (product.galleries?.length) {
+                convertImagesToFileList(product.galleries.map(g => g.image)).then(setImages);
+            }
         }
-    }, [product, form]);   
+    }, [product, form]);    
+
+    const urlToFile = async (url, filename) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new File([blob], filename, { type: blob.type });
+    };
+    
+    const convertImagesToFileList = async (imageUrls) => {
+        const fileList = await Promise.all(
+            imageUrls.map(async (url, index) => {
+                const file = await urlToFile(url, `image-${index}.jpg`);
+                return {
+                    uid: `img-${index}`,
+                    name: file.name,
+                    status: "done",
+                    url, // Giữ lại URL để hiển thị
+                    originFileObj: file, // Chuyển đổi thành File object
+                };
+            })
+        );
+        return fileList;
+    };    
     
     // cập nhật sản phẩm
     const { mutate: updateProduct } = useMutation({
@@ -88,18 +117,19 @@ const Edit = () => {
     const onFinish = (values) => {
         const updatedData = {
             ...prepareProductData(values),
-            thumbnail,  // Thêm thumbnail đã được tải lên
-            product_images: images && images.map((img) => img.url),
+            thumbnail: thumbnail ? thumbnail.url : null,
+            product_images: images && images.map((img) => img.url), // Chỉ lấy danh sách URL ảnh
             sell_price: values.sell_price,
+            sale_price: values.sale_price,
             slug: values.slug,
-            category_id: values.category, // Danh mục
+            category_id: values.category,
             brand_id: values.brand_id,
             name_link: values.name_link,
             is_active: values.is_active ? 1 : 0,  
         };
     
         console.log("Dữ liệu gửi đi:", updatedData);
-        updateProduct(updatedData);  // Gọi API cập nhật sản phẩm
+        updateProduct(updatedData);
     };        
     
     // slug tạo tự động
@@ -117,10 +147,21 @@ const Edit = () => {
     };
 
     const onHandleChange = (info) => {
+        let fileList = [...info.fileList];
+    
+        // Nếu ảnh mới được upload thành công, cập nhật `thumbnail`
         if (info.file.status === "done" && info.file.response) {
-            setThumbnail(info.file.response.secure_url);
+            fileList = fileList.map((file) => ({
+                uid: file.uid,
+                name: file.name,
+                status: "done",
+                url: file.response.secure_url, // Lấy URL từ response Cloudinary
+            }));
         }
-    };
+    
+        // Cập nhật state
+        setThumbnail(fileList.length > 0 ? fileList[0] : null);
+    };       
 
     const onHandleImage = (info) => {
         const { fileList } = info;
@@ -249,6 +290,7 @@ const Edit = () => {
                     ...currentVariant,
                     thumbnail: null,  // Thêm trường thumbnail
                     sell_price: 0, 
+                    sale_price: 0, 
                     fileList: [],     // Thêm trường fileList để quản lý riêng ảnh cho mỗi biến thể
                     key: Date.now() + Math.random(),  // Tạo key duy nhất
                 });
@@ -285,6 +327,8 @@ const Edit = () => {
                     .filter((attr) => attr?.id !== undefined)
                     .map((attr) => attr.id),
                 thumbnail: variant.thumbnail,  // Thêm trường thumbnail vào dữ liệu biến thể
+                sell_price: variant.sell_price,  
+                sale_price: variant.sale_price, 
             })),
         };
     };    
@@ -307,6 +351,7 @@ const Edit = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
+            width: 350,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -315,7 +360,7 @@ const Edit = () => {
                     rules={[
                         {
                             validator: (_, value) =>
-                                record.thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                            record.thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
                         },
                     ]}
                 >
@@ -338,7 +383,7 @@ const Edit = () => {
                                                 {
                                                     uid: info.file.uid,
                                                     name: info.file.name,
-                                                    status: 'done',
+                                                    status: "done",
                                                     url: newThumbnailUrl,
                                                 },
                                             ],
@@ -347,7 +392,7 @@ const Edit = () => {
                                     return item;
                                 });
         
-                                setTableData(updatedTableData);
+                                setTableData(updatedTableData); // Cập nhật lại dữ liệu bảng
                             } else if (info.file.status === "removed") {
                                 // Xóa ảnh khi người dùng xóa
                                 const updatedTableData = tableData.map((item) => {
@@ -364,11 +409,27 @@ const Edit = () => {
                                 setTableData(updatedTableData);
                             }
                         }}
-                        showUploadList
+                        showUploadList={true} // Hiển thị danh sách ảnh
+                        onRemove={() => {
+                            // Xóa ảnh khỏi fileList
+                            const updatedTableData = tableData.map((item) => {
+                                if (item.key === record.key) {
+                                    return {
+                                        ...item,
+                                        thumbnail: null,
+                                        fileList: [],
+                                    };
+                                }
+                                return item;
+                            });
+                            setTableData(updatedTableData);
+                        }}
                     >
-                        <Button icon={<UploadOutlined />} type="dashed">
-                            Tải ảnh lên
-                        </Button>
+                        {!record.thumbnail && (
+                            <Button icon={<UploadOutlined />} type="dashed">
+                                Tải ảnh lên
+                            </Button>
+                        )}
                     </Upload>
                 </Form.Item>
             ),
@@ -393,30 +454,53 @@ const Edit = () => {
                     }}
                 />
             ),
-        },     
+        },    
+        {
+            title: "Giá khuyến mại (VNĐ)",
+            dataIndex: "sale_price",
+            key: "sale_price",
+            align: "center",
+            render: (text, record) => (
+                <InputNumber
+                    min={0}
+                    value={record.sale_price}
+                    onChange={(value) => {
+                        const updatedTableData = tableData.map((item) => {
+                            if (item.key === record.key) {
+                                return { ...item, sale_price: value };
+                            }
+                            return item;
+                        });
+                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
+                    }}
+                />
+            ),
+        },      
         {
             title: "Thao tác",
             key: "action",
             align: "center",
             width: 160,
             render: (_, record) => (
-                <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                        Modal.confirm({
-                            title: "Xác nhận xóa",
-                            content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
-                            okText: "Xóa",
-                            cancelText: "Hủy",
-                            okButtonProps: { danger: true },
-                            onOk: () => {
-                                setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
-                            },
-                        });
-                    }}
-                />
+                <Tooltip title="Xóa biến thể">
+                    <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                            Modal.confirm({
+                                title: "Xác nhận xóa",
+                                content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
+                                okText: "Xóa",
+                                cancelText: "Hủy",
+                                okButtonProps: { danger: true },
+                                onOk: () => {
+                                    setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                                },
+                            });
+                        }}
+                    />
+                </Tooltip>
             ),
         },
     ];    
@@ -494,11 +578,9 @@ const Edit = () => {
                             </Select>
                         </Form.Item>
 
-                        <Form.Item
+                        <Form.Item 
                             label="Ảnh bìa"
                             name='thumnail'
-                            valuePropName="fileList"
-                            getValueFromEvent={normFile}
                             rules={[
                                 {
                                     validator: (_, value) =>
@@ -510,56 +592,57 @@ const Edit = () => {
                                 listType="picture"
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
+                                fileList={thumbnail ? [thumbnail] : []} // ✅ Hiển thị ảnh đã tải lên
                                 onChange={onHandleChange}
-                                fileList={
-                                    thumbnail ? [{ uid: "1", name: "thumbnail", status: "done", url: thumbnail }] : []
-                                }
+                                onRemove={() => setThumbnail(null)}
                             >
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
+                                {!thumbnail && (
+                                    <Button icon={<UploadOutlined />} className="btn-item">
+                                        Tải ảnh lên
+                                    </Button>
+                                )}
                             </Upload>
                         </Form.Item>
 
+
                         {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
                         {productType === "single" && (
-                            <Form.Item
-                                label="Giá bán (VNĐ)"
-                                name="sell_price"
-                            >
-                                <InputNumber className="input-item" />
-                            </Form.Item>
+                            <>
+                                <Form.Item
+                                    label="Giá bán (VNĐ)"
+                                    name="sell_price"
+                                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+
+                                <Form.Item
+                                    label="Giá khuyến mại (VNĐ)"
+                                    name="sale_price"
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+                            </>
                         )}
                     </Col>
 
                     <Col span={16} className="col-item">
-                        <Form.Item
-                            label="Ảnh sản phẩm"
-                            name="images"
-                            valuePropName="fileList"
-                            getValueFromEvent={normFile}
-                            rules={[
-                                {
-                                    validator: (_, value) =>
-                                    images ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh đại diện"),
-                                },
-                            ]}
-                        >
+                        <Form.Item label="Ảnh sản phẩm">
                             <Upload
                                 multiple
                                 listType="picture-card"
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
-                                fileList={images}  // Hiển thị danh sách ảnh hiện tại
+                                fileList={images}
                                 onChange={onHandleImage}
-                                onRemove={(file) => {
-                                    setImages((prev) => prev.filter((img) => img.uid !== file.uid));
-                                }}
+                                onRemove={(file) => setImages(prev => prev.filter(img => img.uid !== file.uid))}
                             >
-                                <button className="upload-button" type="button">
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                </button>
+                                {images.length < 6 && (
+                                    <button className="upload-button" type="button">
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </button>
+                                )}
                             </Upload>
                         </Form.Item>
                         
