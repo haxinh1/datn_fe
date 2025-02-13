@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch } from "antd";
+import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
-const Import = () => {
+const Creat = () => {
     const queryClient = useQueryClient(); 
     const [forms, setForms] = useState([{ id: Date.now(), name: "", values: [] }]);
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
@@ -467,23 +467,25 @@ const Import = () => {
             key: "action",
             align: "center",
             render: (_, record) => (
-                <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                        Modal.confirm({
-                            title: "Xác nhận xóa",
-                            content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
-                            okText: "Xóa",
-                            cancelText: "Hủy",
-                            okButtonProps: { danger: true },
-                            onOk: () => {
-                                setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
-                            },
-                        });
-                    }}
-                />
+                <Tooltip title="Xóa biến thể">
+                    <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                            Modal.confirm({
+                                title: "Xác nhận xóa",
+                                content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
+                                okText: "Xóa",
+                                cancelText: "Hủy",
+                                okButtonProps: { danger: true },
+                                onOk: () => {
+                                    setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                                },
+                            });
+                        }}
+                    />
+                </Tooltip>
             ),
         },
     ];    
@@ -934,4 +936,4 @@ const Import = () => {
     );
 };
 
-export default Import;
+export default Creat;
