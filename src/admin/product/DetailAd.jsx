@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useParams } from "react-router-dom";
 import { productsServices } from "../../services/product";
-import moment from "moment"; // Đảm bảo đã import đúng
+import moment from "moment";
 import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
@@ -26,17 +26,17 @@ const ProductDetail = () => {
           setProduct(response.data);
         }
 
-        // Kiểm tra nếu có galleries và nó là một mảng hợp lệ
+        // Kiểm tra nếu có thumbnail và galleries
+        if (response?.data?.thumbnail) {
+          setCurrentImage(response.data.thumbnail); // Sử dụng thumbnail làm ảnh chính
+        }
+
+        // Nếu có galleries, lấy danh sách ảnh
         if (Array.isArray(response.data?.galleries)) {
-          console.log("Danh sách ảnh từ galleries:", response.data.galleries);
-
-          // Lấy danh sách ảnh
           const galleryImages = response.data.galleries.map((img) => img.image);
-
-          setImages(galleryImages);
-          setCurrentImage(galleryImages.length > 0 ? galleryImages[0] : "");
+          setImages([response.data.thumbnail, ...galleryImages]); // Đưa thumbnail vào đầu danh sách
         } else {
-          setImages([]);
+          setImages([response.data.thumbnail]); // Chỉ có thumbnail nếu không có galleries
         }
       } catch (err) {
         console.error("Lỗi khi lấy dữ liệu:", err);
@@ -47,7 +47,7 @@ const ProductDetail = () => {
     };
 
     fetchProductDetails();
-  }, [id]);
+  }, [id]); // Re-run khi id thay đổi
 
   // Fetch danh sách thương hiệu
   const { data: brands } = useQuery({
@@ -58,11 +58,11 @@ const ProductDetail = () => {
     },
   });
 
-  // tách số
+  // Hàm định dạng giá
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
-      maximumFractionDigits: 0, // Không có số thập phân
+      maximumFractionDigits: 0,
     });
     return formatter.format(price);
   };
@@ -73,12 +73,12 @@ const ProductDetail = () => {
   return (
     product && (
       <div className="container mt-5">
-        <h2 style={{ margin: "20px" }}>Thông tin chi tiết sản phẩm</h2>
+        <h2 style={{ margin: "20px" }}>Chi tiết sản phẩm</h2>
         <div className="row">
           {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
             <div className="text-center">
-              {/* Hiển thị ảnh lớn */}
+              {/* Hiển thị ảnh thumbnail đầu tiên */}
               {currentImage ? (
                 <img
                   src={currentImage}
@@ -88,7 +88,7 @@ const ProductDetail = () => {
                     border: "1px solid #ddd",
                     borderRadius: "5px",
                     maxWidth: "100%",
-                    maxHeight: "400px", // Giới hạn kích thước ảnh lớn
+                    maxHeight: "400px",
                     objectFit: "contain",
                   }}
                 />
@@ -96,24 +96,24 @@ const ProductDetail = () => {
                 <p>Không có ảnh sản phẩm</p>
               )}
 
-              {/* Danh sách ảnh nhỏ */}
+              {/* Danh sách ảnh nhỏ (galleries) */}
               <div className="d-flex justify-content-start mt-2">
                 {images.length > 0 ? (
                   images.map((img, index) => (
                     <img
                       key={index}
-                      src={img ? img : "https://via.placeholder.com/70"} // Kiểm tra nếu null thì thay thế
+                      src={img}
                       alt={`Thumbnail ${index + 1}`}
                       className="img-thumbnail me-2"
                       style={{
-                        width: "70px",
-                        height: "70px",
+                        width: "80px", // Giảm kích thước ảnh thumbnail
+                        height: "80px",
                         cursor: "pointer",
                         border: currentImage === img ? "2px solid #007bff" : "",
                       }}
                       onClick={() => setCurrentImage(img)} // Cập nhật ảnh lớn khi click
                       onError={(e) =>
-                        (e.target.src = "https://via.placeholder.com/70")
+                        (e.target.src = "https://via.placeholder.com/100")
                       }
                     />
                   ))
@@ -141,11 +141,11 @@ const ProductDetail = () => {
                   <td>
                     {(() => {
                       if (!brands || !Array.isArray(brands))
-                        return "Đang tải..."; // Kiểm tra nếu brands chưa sẵn sàng
+                        return "Đang tải...";
                       const brand = brands.find(
                         (b) => b.id === product.brand_id
-                      ); // Tìm thương hiệu theo id từ product.brand_id
-                      return brand ? brand.name : "Không xác định"; // Hiển thị tên thương hiệu hoặc fallback
+                      );
+                      return brand ? brand.name : "Không xác định";
                     })()}
                   </td>
                 </tr>
@@ -161,10 +161,6 @@ const ProductDetail = () => {
                   <td>{product.views || 0} Views</td>
                 </tr>
                 <tr>
-                  <th>Giá nhập:</th>
-                  <td>{product.price || 0} VNĐ</td>
-                </tr>
-                <tr>
                   <th>Giá bán:</th>
                   <td>{formatPrice(product.sell_price || 0)} VNĐ</td>
                 </tr>
@@ -173,11 +169,9 @@ const ProductDetail = () => {
                   <td>{product.sale_price || 0} VNĐ</td>
                 </tr>
                 <tr>
-                  <th>Thời gian bắt đầu sale:</th>
+                  <th>Thời gian tạo:</th>
                   <td>
-                    {moment(product.sale_price_start_at).format(
-                      "DD/MM/YYYY HH:mm:ss"
-                    )}
+                    {moment(product.create_at).format("DD/MM/YYYY HH:mm:ss")}
                   </td>
                 </tr>
                 <tr>
@@ -188,9 +182,8 @@ const ProductDetail = () => {
                     )}
                   </td>
                 </tr>
-
                 <tr>
-                  <th>Đường dẫn sản phẩm:</th>
+                  <th>Slug:</th>
                   <td>{product.slug} </td>
                 </tr>
                 <tr>
@@ -209,20 +202,35 @@ const ProductDetail = () => {
                     )}
                   </td>
                 </tr>
-                <tr>
-                  <th>Mô tả:</th>
-                  <td>{product.content || "Không có mô tả"}</td>
-                </tr>
               </tbody>
             </table>
+
+            {/* Phần mô tả sản phẩm */}
+            <div className="product-description mt-4">
+              <h4>Mô tả sản phẩm</h4>
+              {/* <p>{product.content || "Không có mô tả"}</p> */}
+              <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam
+                quos ad facere, illum exercitationem repellat esse excepturi
+                consequatur rerum? Sapiente id illum voluptate excepturi
+                architecto eius obcaecati odio nisi praesentium, explicabo iste
+                sint illo delectus doloribus impedit iure ipsum maxime totam
+                dolor fugit! Nisi voluptatibus, deleniti dignissimos natus
+                nihil, quia repellendus dolores voluptates cupiditate non nobis
+                corporis perspiciatis, quaerat cumque laborum ea fuga ipsa
+                fugiat excepturi? Cumque similique aliquid consectetur,
+                blanditiis aut voluptas quo, dolorum obcaecati quod sequi facere
+                recusandae sunt, laudantium repellat sed non illum fugiat magni
+                illo in sit explicabo totam? Delectus ab nobis cupiditate
+                molestias consectetur. Fuga?
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Các nút hành động */}
         <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">
           <button className="btn btn-success">Cập nhật</button>
-          <button className="btn btn-warning">Ngừng kinh doanh</button>
-          <button className="btn btn-danger">Xóa</button>
         </div>
       </div>
     )

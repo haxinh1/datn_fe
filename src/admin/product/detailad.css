@@ -1,6 +1,23 @@
 .container {
-    width: 100%;
-  }
-  .btn {
-    margin-bottom: 20px;
-  }
+  width: 100%;
+}
+.btn {
+  margin-bottom: 20px;
+}
+
+.image-list {
+  display: flex;
+  flex-wrap: wrap; /* Cho phép các ảnh xuống dòng khi vượt quá chiều rộng */
+}
+
+.image-list img {
+  width: 80px; /* Kích thước của ảnh */
+  height: 80px;
+  margin: 5px; /* Khoảng cách giữa các ảnh */
+  cursor: pointer;
+}
+
+.image-list img:nth-child(n + 5) {
+  /* Chỉ hiển thị 4 ảnh đầu tiên trong dòng, còn lại sẽ tự động xuống dòng dưới */
+  margin-left: 0;
+}
