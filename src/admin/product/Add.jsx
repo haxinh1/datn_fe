@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch } from "antd";
+import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip, DatePicker } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
@@ -11,6 +11,7 @@ import { categoryServices } from './../../services/categories';
 import { AttributesServices } from './../../services/attributes';
 import { ValuesServices } from './../../services/attribute_value';
 import { useNavigate } from "react-router-dom";
+import dayjs from 'dayjs';
 
 const { Option } = Select;
 
@@ -32,6 +33,22 @@ const Add = () => {
     const [filteredValues, setFilteredValues] = useState([]); // Lưu giá trị thuộc tính được lọc
     const [tableData, setTableData] = useState([]); // Dữ liệu bảng
     const navigate = useNavigate()
+    const [selectedDate, setSelectedDate] = useState(null);
+    
+    const handleDateChange = (date, type, record) => {
+        const updatedTableData = tableData.map((item) => {
+            if (item.key === record.key) {
+                if (type === "start") {
+                    return { ...item, sale_price_start_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+                if (type === "end") {
+                    return { ...item, sale_price_end_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+            }
+            return item;
+        });
+        setTableData(updatedTableData);
+    };    
 
     // Thêm sản phẩm
     const { mutate } = useMutation({
@@ -61,23 +78,22 @@ const Add = () => {
     });
 
     const onFinish = (values) => {
-        // Đảm bảo rằng brand_id đã được cập nhật nếu thương hiệu được tạo mới
-        if (!values.brand_id) {
-            setIsModalVisible(true);  // Hiển thị modal tạo thương hiệu mới
-            return;
-        }
-    
+        // Trước khi gửi lên API, ta đảm bảo các trường ngày đã được chuẩn hóa
         const productData = prepareProductData(values);
+    
         const finalData = {
             ...productData,
             thumbnail, // Thêm link ảnh đã upload
             product_images: images && images.map((img) => img.url),
-            sell_price: values.sell_price, // Giá bán
-            slug: values.slug, // Slug
-            category_id: values.category, // Danh mục
-            brand_id: values.brand_id, // Thương hiệu
-            name_link: values.name_link, // Link
-            is_active: values.is_active, // Trạng thái
+            sell_price: values.sell_price,
+            sale_price: values.sale_price,
+            slug: values.slug, 
+            category_id: values.category, 
+            brand_id: values.brand_id,
+            name_link: values.name_link,
+            is_active: values.is_active ? 1 : 0,  
+            sale_price_start_at: productData.sale_price_start_at, // Đảm bảo ngày đã được định dạng đúng
+            sale_price_end_at: productData.sale_price_end_at, // Đảm bảo ngày đã được định dạng đúng
         };
     
         console.log("Dữ liệu gửi đi:", finalData); // Log để kiểm tra
@@ -275,6 +291,7 @@ const Add = () => {
                     ...currentVariant,
                     thumbnail: null,  // Thêm trường thumbnail
                     sell_price: 0,  
+                    sale_price: 0,  
                     fileList: [],     // Thêm trường fileList để quản lý riêng ảnh cho mỗi biến thể
                     key: Date.now() + Math.random(),  // Tạo key duy nhất
                 });
@@ -303,6 +320,15 @@ const Add = () => {
                 .map((value) => Number(value.id))
         );
     
+        // Đảm bảo rằng ngày được format theo chuẩn "YYYY-MM-DD HH:mm:ss"
+        const formattedStartDate = formValues.sale_price_start_at
+            ? dayjs(formValues.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
+            : null;
+    
+        const formattedEndDate = formValues.sale_price_end_at
+            ? dayjs(formValues.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss")
+            : null;
+    
         return {
             name: formValues.name,
             attribute_values_id: attributeValuesId,
@@ -310,9 +336,18 @@ const Add = () => {
                 attribute_values: Object.values(variant)
                     .filter((attr) => attr?.id !== undefined)
                     .map((attr) => attr.id),
-                thumbnail: variant.thumbnail, // Thêm trường thumbnail vào dữ liệu biến thể
+                thumbnail: variant.thumbnail, 
                 sell_price: variant.sell_price,  
+                sale_price: variant.sale_price, 
+                sale_price_start_at: variant.sale_price_start_at
+                    ? dayjs(variant.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
+                sale_price_end_at: variant.sale_price_end_at
+                    ? dayjs(variant.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
             })),
+            sale_price_start_at: formattedStartDate, // Đảm bảo định dạng ngày đúng
+            sale_price_end_at: formattedEndDate, // Đảm bảo định dạng ngày đúng
         };
     };    
 
@@ -334,12 +369,18 @@ const Add = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 150,
+            width: 300,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
                     valuePropName="fileList"
                     getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                    rules={[
+                        {
+                            validator: (_, value) =>
+                            record.thumbnail ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                        },
+                    ]}
                 >
                     <Upload
                         listType="picture"
@@ -360,7 +401,7 @@ const Add = () => {
                                                 {
                                                     uid: info.file.uid,
                                                     name: info.file.name,
-                                                    status: 'done',
+                                                    status: "done",
                                                     url: newThumbnailUrl,
                                                 },
                                             ],
@@ -369,7 +410,7 @@ const Add = () => {
                                     return item;
                                 });
         
-                                setTableData(updatedTableData);
+                                setTableData(updatedTableData); // Cập nhật lại dữ liệu bảng
                             } else if (info.file.status === "removed") {
                                 // Xóa ảnh khi người dùng xóa
                                 const updatedTableData = tableData.map((item) => {
@@ -386,15 +427,31 @@ const Add = () => {
                                 setTableData(updatedTableData);
                             }
                         }}
-                        showUploadList
+                        showUploadList={true} // Hiển thị danh sách ảnh
+                        onRemove={() => {
+                            // Xóa ảnh khỏi fileList
+                            const updatedTableData = tableData.map((item) => {
+                                if (item.key === record.key) {
+                                    return {
+                                        ...item,
+                                        thumbnail: null,
+                                        fileList: [],
+                                    };
+                                }
+                                return item;
+                            });
+                            setTableData(updatedTableData);
+                        }}
                     >
-                        <Button icon={<UploadOutlined />} type="dashed">
-                            Tải ảnh lên
-                        </Button>
+                        {!record.thumbnail && (
+                            <Button icon={<UploadOutlined />} type="dashed">
+                                Tải ảnh lên
+                            </Button>
+                        )}
                     </Upload>
                 </Form.Item>
             ),
-        },      
+        },                     
         {
             title: "Giá bán (VNĐ)",
             dataIndex: "sell_price",
@@ -415,38 +472,78 @@ const Add = () => {
                     }}
                 />
             ),
-        },                             
-        // {
-        //     title: "Số lượng",
-        //     dataIndex: "quantity",
-        //     key: "quantity",
-        //     render: (_, record) => <InputNumber min={0} />,
-        //     align: "center",
-        //     width: 160
-        // },
+        },     
+        {
+            title: "Giá khuyến mại (VNĐ)",
+            dataIndex: "sale_price",
+            key: "sale_price",
+            align: "center",
+            render: (text, record) => (
+                <InputNumber
+                    min={0}
+                    value={record.sale_price}
+                    onChange={(value) => {
+                        const updatedTableData = tableData.map((item) => {
+                            if (item.key === record.key) {
+                                return { ...item, sale_price: value };
+                            }
+                            return item;
+                        });
+                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
+                    }}
+                />
+            ),
+        },   
+        {
+            title: "Ngày mở KM",
+            dataIndex: "sale_price_start_at",
+            key: "sale_price_start_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                    onChange={(date) => handleDateChange(date, "start", record)}
+                />
+            ),
+        },
+        {
+            title: "Ngày đóng KM",
+            dataIndex: "sale_price_end_at",
+            key: "sale_price_end_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                    onChange={(date) => handleDateChange(date, "end", record)}
+                />
+            ),
+        },                     
         {
             title: "Thao tác",
             key: "action",
             align: "center",
-            width: 160,
             render: (_, record) => (
-                <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                        Modal.confirm({
-                            title: "Xác nhận xóa",
-                            content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
-                            okText: "Xóa",
-                            cancelText: "Hủy",
-                            okButtonProps: { danger: true },
-                            onOk: () => {
-                                setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
-                            },
-                        });
-                    }}
-                />
+                <Tooltip title="Xóa biến thể">
+                    <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                            Modal.confirm({
+                                title: "Xác nhận xóa",
+                                content: "Biến thể sau khi xóa sẽ không thể khôi phục!",
+                                okText: "Xóa",
+                                cancelText: "Hủy",
+                                okButtonProps: { danger: true },
+                                onOk: () => {
+                                    setTableData(tableData.filter((item) => item !== record)); // Xóa dòng
+                                },
+                            });
+                        }}
+                    />
+                </Tooltip>
             ),
         },
     ];    
@@ -540,7 +637,7 @@ const Add = () => {
 
                         <Form.Item
                             label="Ảnh bìa"
-                            name='thumnail'
+                            name='thumbnail'
                             valuePropName="fileList"
                             getValueFromEvent={normFile}
                             rules={[
@@ -555,23 +652,16 @@ const Add = () => {
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
                                 onChange={onHandleChange}
+                                showUploadList={true} // Hiển thị danh sách ảnh đã tải lên
+                                fileList={thumbnail ? [{ url: thumbnail }] : []} // Nếu thumbnail có giá trị thì hiển thị ảnh
                             >
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
+                                {!thumbnail && (
+                                    <Button icon={<UploadOutlined />} className="btn-item">
+                                        Tải ảnh lên
+                                    </Button>
+                                )}
                             </Upload>
                         </Form.Item>
-
-                        {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
-                        {productType === "single" && (
-                            <Form.Item
-                                label="Giá bán (VNĐ)"
-                                name="sell_price"
-                                rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
-                            >
-                                <InputNumber className="input-item" />
-                            </Form.Item>
-                        )}
                     </Col>
 
                     <Col span={16} className="col-item">
@@ -602,10 +692,12 @@ const Add = () => {
                                     setImages((prev) => prev.filter((img) => img.uid !== file.uid));
                                 }}
                             >
-                                <button className="upload-button" type="button">
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                </button>
+                                {images.length < 6 && ( // Ẩn nút khi có đủ 6 ảnh
+                                    <button className="upload-button" type="button">
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </button>
+                                )}
                             </Upload>
                         </Form.Item>
                         
@@ -623,7 +715,11 @@ const Add = () => {
                         >
                             <Switch />
                         </Form.Item>
+                    </Col>
+                </Row>
 
+                <Row gutter={24}>
+                    <Col span={8} className="col-item">
                         <Form.Item label="Loại sản phẩm">
                             <Radio.Group
                                 className="radio-group"
@@ -636,6 +732,54 @@ const Add = () => {
                             />
                         </Form.Item>
                     </Col>
+                    
+                    {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
+                    {productType === "single" && (
+                        <>
+                            <Col span={8} className="col-item">
+                                <Form.Item
+                                    label="Giá bán (VNĐ)"
+                                    name="sell_price"
+                                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+
+                                <Form.Item
+                                    label="Ngày mở khuyến mại"
+                                    name="sale_price_start_at"
+                                >
+                                    <DatePicker 
+                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                        className="input-item"
+                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                    />
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={8} className="col-item">
+                                <Form.Item
+                                    label="Giá khuyến mại (VNĐ)"
+                                    name="sale_price"
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+
+                                <Form.Item
+                                    label="Ngày đóng khuyến mại"
+                                    name="sale_price_end_at"
+                                >
+                                    <DatePicker 
+                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                        className="input-item"
+                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </>
+                    )}
                 </Row>
 
                 {productType === "variant" && (
@@ -853,10 +997,14 @@ const Add = () => {
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
                                 onChange={onHandleBrand}
+                                showUploadList={true} // Hiển thị danh sách ảnh đã tải lên
+                                fileList={logo ? [{ url: logo }] : []}
                             >
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
+                                {!logo && (
+                                    <Button icon={<UploadOutlined />} className="btn-item">
+                                        Tải ảnh lên
+                                    </Button>
+                                )}
                             </Upload>
                         </Form.Item>
                         
