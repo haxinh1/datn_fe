@@ -68,7 +68,8 @@ const Edit = () => {
                 name_link: product.name_link,
                 brand_id: product.brand_id,
                 content: product.content,
-                category: product.categories?.map((cat) => cat.id),      
+                category: product.categories?.map((cat) => cat.id),   
+                is_active: product.is_active === 1,   
                 // Chuyển đổi ngày thành đối tượng dayjs để truyền vào DatePicker
                 sale_price_start_at: product.sale_price_start_at ? dayjs(product.sale_price_start_at) : null,
                 sale_price_end_at: product.sale_price_end_at ? dayjs(product.sale_price_end_at) : null,      
@@ -700,7 +701,7 @@ const Edit = () => {
                         <Form.Item 
                             label="Trạng thái kinh doanh" 
                             name="is_active" 
-                            initialValue={product?.is_active === 1}
+                            valuePropName="checked"
                         >
                             <Switch />
                         </Form.Item>

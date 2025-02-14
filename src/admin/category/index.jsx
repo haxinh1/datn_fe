@@ -54,7 +54,11 @@ const Categories = () => {
             title: 'Thao tác', 
             key: 'action', 
             align: "center",
-            render: (_, record) => <Button type="primary" onClick={() => handleShowModal(record)}>Update</Button>,
+            render: (_, record) => (
+                <span className="action-link action-link-blue" onClick={() => handleShowModal(record)}>
+                    Cập nhật
+                </span>
+            ),
         }
     ];
 
