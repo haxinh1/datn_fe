@@ -229,7 +229,7 @@ const Import = () => {
             key: "action",
             align: "center",
             render: (_, record) => (
-                <Tooltip title="Xóa biến thể">
+                <Tooltip title="Xóa sản phẩm">
                     <Button
                         type="text"
                         danger
@@ -292,7 +292,7 @@ const Import = () => {
                 pagination={false}
                 summary={() => (
                     <Table.Summary.Row>
-                        <Table.Summary.Cell colSpan={4} align="right">
+                        <Table.Summary.Cell colSpan={5} align="right">
                             <strong>Tổng giá trị (VNĐ):</strong>
                         </Table.Summary.Cell>
                         <Table.Summary.Cell align="center">

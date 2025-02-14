@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip } from "antd";
+import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
@@ -9,6 +9,7 @@ import { productsServices } from "../../services/product";
 import { variantsServices } from "../../services/variants";
 import { BrandsServices } from "../../services/brands";
 import { categoryServices } from "../../services/categories";
+import dayjs from "dayjs";
 
 const List = () => {
     const queryClient = useQueryClient();
@@ -20,6 +21,8 @@ const List = () => {
     const [newSalePrice, setNewSalePrice] = useState(null);
     const [newImage, setNewImage] = useState(null);
     const [isActive, setIsActive] = useState(1);
+    const [startDate, setStartDate] = useState(null); // Trạng thái ngày mở KM
+    const [endDate, setEndDate] = useState(null); // Trạng thái ngày đóng KM
 
     // Fetch danh sách sản phẩm
     const { data: products, isLoading: isProductsLoading } = useQuery({
@@ -72,7 +75,7 @@ const List = () => {
         const blob = await response.blob();
         return new File([blob], filename, { type: blob.type });
     };
-    
+
     const convertImageToFileObject = async (imageUrl) => {
         if (!imageUrl) return null;
         const file = await urlToFile(imageUrl, "variant-thumbnail.jpg");
@@ -89,8 +92,10 @@ const List = () => {
         setCurrentVariant(variant);
         setNewPrice(variant.sell_price);
         setNewSalePrice(variant.sale_price);
-        setIsActive(variant.is_active ?? 1);
-    
+        setIsActive(variant.is_active ?? 1); // Set đúng giá trị trạng thái ban đầu
+        setStartDate(variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null); // Lấy ngày bắt đầu
+        setEndDate(variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null); // Lấy ngày kết thúc
+        
         if (variant.thumbnail) {
             const fileObject = await convertImageToFileObject(variant.thumbnail);
             setNewImage(fileObject);
@@ -99,13 +104,6 @@ const List = () => {
         }
     
         setIsModalVisible(true);
-    };
-
-    const normFile = (e) => {
-        if (Array.isArray(e)) {
-            return e;
-        }
-        return e?.fileList;
     };
 
     const handleImageUpload = (info) => {
@@ -125,6 +123,7 @@ const List = () => {
         setNewImage(fileList.length > 0 ? fileList[0] : null);
     };
 
+    // cập nhật biến thể
     const updateVariantMutation = useMutation({
         mutationFn: async (payload) => {
             return await variantsServices.updateVariants(currentVariant.id, payload);
@@ -164,6 +163,8 @@ const List = () => {
             sale_price: newSalePrice,
             thumbnail: newImage ? newImage.url : null, 
             is_active: isActive,
+            sale_price_start_at: startDate ? startDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày bắt đầu được gửi
+            sale_price_end_at: endDate ? endDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày kết thúc được gửi
         };
     
         console.log("Sending payload to API:", payload);
@@ -175,7 +176,9 @@ const List = () => {
             }
         });
     
-        activeVariantMutation.mutate({ is_active: isActive });
+        if (currentVariant.is_active !== isActive) {
+            activeVariantMutation.mutate({ is_active: isActive });
+        }
     
         setIsModalVisible(false);
     };
@@ -195,7 +198,7 @@ const List = () => {
 
     const columns = [
         {
-            title: "Ảnh sản phẩm",
+            title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
             render: (_, item) => <Image width={45} height={60} src={item.thumbnail} />,
@@ -206,7 +209,7 @@ const List = () => {
             dataIndex: "name",
             key: "name",
             align: "center",
-            width: 350,
+            width: 320,
         },
         {
             title: "Giá bán (VNĐ)",
@@ -227,6 +230,22 @@ const List = () => {
             dataIndex: "stock",
             key: "stock",
             align: "center",
+        },
+        {
+            title: "Ngày khuyến mại",
+            key: "sale_price",
+            dataIndex: "sale_price",
+            align: "center",
+            render: (_, product) => {
+                const startDate = product.sale_price_start_at ? dayjs(product.sale_price_start_at) : null;
+                const endDate = product.sale_price_end_at ? dayjs(product.sale_price_end_at) : null;
+    
+                // Kiểm tra nếu có ngày bắt đầu và kết thúc, rồi hiển thị ngày trong định dạng "DD/MM"
+                if (startDate && endDate) {
+                    return `${startDate.format('DD/MM')} - ${endDate.format('DD/MM')}`;
+                }
+                return "";
+            },
         },
         {
             title: 'Trạng thái',
@@ -338,7 +357,7 @@ const List = () => {
                                             key: "thumbnail",
                                             render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
                                             align: "center",
-                                            width: 150,
+                                            width: 100,
                                         },
                                         {
                                             title: "Tên biến thể",
@@ -373,7 +392,23 @@ const List = () => {
                                             dataIndex: "stock",
                                             key: "stock",
                                             align: "center",
-                                            width: 150,
+                                            width: 140,
+                                        },
+                                        {
+                                            title: "Ngày khuyến mại",
+                                            key: "sale_price",
+                                            dataIndex: "sale_price",
+                                            align: "center",
+                                            width: 140,
+                                            render: (_, variant) => {
+                                                const startDate = variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null;
+                                                const endDate = variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null;
+                
+                                                if (startDate && endDate) {
+                                                    return `${startDate.format('DD/MM')} - ${endDate.format('DD/MM')}`;
+                                                }
+                                                return "";
+                                            },
                                         },
                                         {
                                             title: 'Trạng thái',
@@ -445,14 +480,34 @@ const List = () => {
                     </Form.Item>
 
                     <Form.Item
+                        label="Ngày mở khuyến mại"
+                    >
+                        <DatePicker
+                            value={startDate} 
+                            onChange={(date) => setStartDate(date)} 
+                            className="input-item"
+                            format="DD-MM-YYYY"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Ngày đóng khuyến mại"
+                    >
+                        <DatePicker
+                            value={endDate} 
+                            onChange={(date) => setEndDate(date)} 
+                            className="input-item"
+                            format="DD-MM-YYYY"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
                         label="Ảnh"
                         name="newImage"
-                        rules={[
-                            {
-                                validator: (_, value) =>
+                        rules={[{
+                            validator: (_, value) =>
                                 newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
-                            },
-                        ]}
+                        }]}
                     >
                         <Upload
                             listType="picture"
@@ -471,7 +526,10 @@ const List = () => {
                     </Form.Item>
 
                     <Form.Item label="Trạng thái kinh doanh">
-                        <Switch checked={isActive === 1} onChange={(checked) => setIsActive(checked ? 1 : 0)} />
+                        <Switch 
+                            checked={isActive === 1} 
+                            onChange={(checked) => setIsActive(checked ? 1 : 0)} 
+                        />
                         <span style={{ marginLeft: 10 }}>
                             {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
                         </span>

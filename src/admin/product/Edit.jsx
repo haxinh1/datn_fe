@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip } from "antd";
+import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip, DatePicker } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TextArea from "antd/es/input/TextArea";
@@ -11,6 +11,7 @@ import { categoryServices } from './../../services/categories';
 import { AttributesServices } from './../../services/attributes';
 import { ValuesServices } from './../../services/attribute_value';
 import { useNavigate, useParams } from "react-router-dom";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 
@@ -30,6 +31,22 @@ const Edit = () => {
     const [filteredValues, setFilteredValues] = useState([]); // Lưu giá trị thuộc tính được lọc
     const [tableData, setTableData] = useState([]); // Dữ liệu bảng
     const navigate = useNavigate()
+    const [selectedDate, setSelectedDate] = useState(null);
+        
+    const handleDateChange = (date, type, record) => {
+        const updatedTableData = tableData.map((item) => {
+            if (item.key === record.key) {
+                if (type === "start") {
+                    return { ...item, sale_price_start_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+                if (type === "end") {
+                    return { ...item, sale_price_end_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+            }
+            return item;
+        });
+        setTableData(updatedTableData);
+    };    
 
     // Lấy dữ liệu sản phẩm theo id
     const { data: product } = useQuery({
@@ -51,7 +68,10 @@ const Edit = () => {
                 name_link: product.name_link,
                 brand_id: product.brand_id,
                 content: product.content,
-                category: product.categories?.map((cat) => cat.id),            
+                category: product.categories?.map((cat) => cat.id),      
+                // Chuyển đổi ngày thành đối tượng dayjs để truyền vào DatePicker
+                sale_price_start_at: product.sale_price_start_at ? dayjs(product.sale_price_start_at) : null,
+                sale_price_end_at: product.sale_price_end_at ? dayjs(product.sale_price_end_at) : null,      
             });
     
             // Chuyển đổi ảnh bìa từ URL thành file object để hiển thị
@@ -125,7 +145,10 @@ const Edit = () => {
             category_id: values.category,
             brand_id: values.brand_id,
             name_link: values.name_link,
-            is_active: values.is_active ? 1 : 0,  
+            is_active: values.is_active,  
+            // Đảm bảo gửi ngày đã được chọn
+            sale_price_start_at: values.sale_price_start_at ? dayjs(values.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss") : null,
+            sale_price_end_at: values.sale_price_end_at ? dayjs(values.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss") : null,
         };
     
         console.log("Dữ liệu gửi đi:", updatedData);
@@ -318,6 +341,15 @@ const Edit = () => {
                 .filter((value) => value && value.id !== null && value.id !== undefined)
                 .map((value) => Number(value.id))
         );
+
+        // Đảm bảo rằng ngày được format theo chuẩn "YYYY-MM-DD HH:mm:ss"
+        const formattedStartDate = formValues.sale_price_start_at
+            ? dayjs(formValues.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
+            : null;
+    
+        const formattedEndDate = formValues.sale_price_end_at
+            ? dayjs(formValues.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss")
+            : null;
     
         return {
             name: formValues.name,
@@ -329,7 +361,15 @@ const Edit = () => {
                 thumbnail: variant.thumbnail,  // Thêm trường thumbnail vào dữ liệu biến thể
                 sell_price: variant.sell_price,  
                 sale_price: variant.sale_price, 
+                sale_price_start_at: variant.sale_price_start_at
+                    ? dayjs(variant.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
+                sale_price_end_at: variant.sale_price_end_at
+                    ? dayjs(variant.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
             })),
+            sale_price_start_at: formattedStartDate, // Đảm bảo định dạng ngày đúng
+            sale_price_end_at: formattedEndDate, // Đảm bảo định dạng ngày đúng
         };
     };    
 
@@ -351,7 +391,7 @@ const Edit = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 350,
+            width: 300,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -475,12 +515,37 @@ const Edit = () => {
                     }}
                 />
             ),
-        },      
+        },   
+        {
+            title: "Ngày mở KM",
+            dataIndex: "sale_price_start_at",
+            key: "sale_price_start_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                    onChange={(date) => handleDateChange(date, "start", record)}
+                />
+            ),
+        },
+        {
+            title: "Ngày đóng KM",
+            dataIndex: "sale_price_end_at",
+            key: "sale_price_end_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                    onChange={(date) => handleDateChange(date, "end", record)}
+                />
+            ),
+        },        
         {
             title: "Thao tác",
             key: "action",
             align: "center",
-            width: 160,
             render: (_, record) => (
                 <Tooltip title="Xóa biến thể">
                     <Button
@@ -603,27 +668,6 @@ const Edit = () => {
                                 )}
                             </Upload>
                         </Form.Item>
-
-
-                        {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
-                        {productType === "single" && (
-                            <>
-                                <Form.Item
-                                    label="Giá bán (VNĐ)"
-                                    name="sell_price"
-                                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
-                                >
-                                    <InputNumber className="input-item" />
-                                </Form.Item>
-
-                                <Form.Item
-                                    label="Giá khuyến mại (VNĐ)"
-                                    name="sale_price"
-                                >
-                                    <InputNumber className="input-item" />
-                                </Form.Item>
-                            </>
-                        )}
                     </Col>
 
                     <Col span={16} className="col-item">
@@ -660,7 +704,11 @@ const Edit = () => {
                         >
                             <Switch />
                         </Form.Item>
+                    </Col>
+                </Row>
 
+                <Row gutter={24}>
+                    <Col span={8} className="col-item">
                         <Form.Item label="Loại sản phẩm">
                             <Radio.Group
                                 className="radio-group"
@@ -673,6 +721,53 @@ const Edit = () => {
                             />
                         </Form.Item>
                     </Col>
+                    
+                    {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
+                    {productType === "single" && (
+                        <>
+                            <Col span={8} className="col-item">
+                                <Form.Item
+                                    label="Giá bán (VNĐ)"
+                                    name="sell_price"
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+
+                                <Form.Item
+                                    label="Ngày mở khuyến mại"
+                                    name="sale_price_start_at"
+                                >
+                                    <DatePicker 
+                                        value={product?.sale_price_start_at ? dayjs(product.sale_price_start_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
+                                        onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
+                                        className="input-item"
+                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                    />
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={8} className="col-item">
+                                <Form.Item
+                                    label="Giá khuyến mại (VNĐ)"
+                                    name="sale_price"
+                                >
+                                    <InputNumber className="input-item" />
+                                </Form.Item>
+
+                                <Form.Item
+                                    label="Ngày đóng khuyến mại"
+                                    name="sale_price_end_at"
+                                >
+                                    <DatePicker 
+                                        value={product?.sale_price_end_at ? dayjs(product.sale_price_end_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
+                                        onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
+                                        className="input-item"
+                                        format="DD-MM-YY"  // Định dạng ngày hiển thịnh dạng ngày hiển thị
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </>
+                    )}
                 </Row>
 
                 {productType === "variant" && (
