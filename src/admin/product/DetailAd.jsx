@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { productsServices } from "../../services/product";
 import moment from "moment";
 import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
+import { Button, Modal } from "antd";
+import { categoryServices } from "../../services/categories";
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -14,6 +16,7 @@ const ProductDetail = () => {
   const [currentImage, setCurrentImage] = useState(""); // Ảnh hiện tại
   const [loading, setLoading] = useState(true); // Trạng thái tải
   const [error, setError] = useState(null); // Trạng thái lỗi
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -49,6 +52,18 @@ const ProductDetail = () => {
     fetchProductDetails();
   }, [id]); // Re-run khi id thay đổi
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryServices.fetchCategories();
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh mục sản phẩm:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   // Fetch danh sách thương hiệu
   const { data: brands } = useQuery({
     queryKey: ["brands"],
@@ -65,6 +80,20 @@ const ProductDetail = () => {
       maximumFractionDigits: 0,
     });
     return formatter.format(price);
+  };
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleOk = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
   };
 
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
@@ -152,8 +181,11 @@ const ProductDetail = () => {
                 <tr>
                   <th>Danh mục sản phẩm:</th>
                   <td>
-                    {(product.category && product.category.name) ||
-                      "Không có danh mục"}
+                    {product.categories && Array.isArray(product.categories)
+                      ? product.categories
+                          .map((category) => category.name)
+                          .join(", ")
+                      : product.categories?.name || "Không có danh mục"}
                   </td>
                 </tr>
                 <tr>
@@ -166,20 +198,22 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Giá bán khuyến mãi:</th>
-                  <td>{product.sale_price || 0} VNĐ</td>
+                  <td>{formatPrice(product.sale_price || 0)}VNĐ</td>
                 </tr>
                 <tr>
                   <th>Thời gian tạo:</th>
+                  <td>{moment(product.created_at).format("DD/MM/YYYY")}</td>
+                </tr>
+                <tr>
+                  <th>Ngày mở khuyến mại :</th>
                   <td>
-                    {moment(product.create_at).format("DD/MM/YYYY HH:mm:ss")}
+                    {moment(product.sale_price_start_at).format("DD/MM/YYYY")}
                   </td>
                 </tr>
                 <tr>
-                  <th>Thời gian kết thúc sale:</th>
+                  <th>Ngày đóng khuyến mại:</th>
                   <td>
-                    {moment(product.sale_price_end_at).format(
-                      "DD/MM/YYYY HH:mm:ss"
-                    )}
+                    {moment(product.sale_price_end_at).format("DD/MM/YYYY")}
                   </td>
                 </tr>
                 <tr>
@@ -229,8 +263,24 @@ const ProductDetail = () => {
         </div>
 
         {/* Các nút hành động */}
-        <div className="btn mt-3 d-flex justify-content-end gap-2 flex-wrap">
-          <button className="btn btn-success">Cập nhật</button>
+        <div className=" mt-3 d-flex justify-content-end gap-2 flex-wrap">
+          <Link to={`/edit-pr/${id}`} className="btn">
+            <button className="btn btn-success">Cập nhật</button>
+          </Link>
+          {/* <Link className="btn">
+            <button className="btn btn-success">Lịch sử nhập hàng</button>
+          </Link> */}
+          <Link className="btn" onClick={showModal}>
+            <button className="btn btn-success">Lịch sử nhập hàng</button>
+          </Link>
+          <Modal
+            title="Modal Title"
+            open={isModalOpen}
+            onOk={handleOk}
+            onCancel={handleCancel}
+          >
+            <p>Không có gì </p>
+          </Modal>
         </div>
       </div>
     )
