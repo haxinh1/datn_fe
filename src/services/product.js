@@ -15,6 +15,11 @@ const createProduct = async (payload) => {
     return response.data;
 };
 
+const importProduct = async (payload) => {
+    const response = await instance.post("/postStock", payload);
+    return response.data;
+};
+
 const updateProduct = async (id, payload) => {
     const response = await instance.put(`/products/${id}`, payload);
     return response.data;
@@ -30,6 +35,7 @@ export const productsServices = {
     fetchProducts,
     fetchProductById,
     createProduct,
+    importProduct,
     updateProduct,
     deleteProduct,
 };
