@@ -121,23 +121,33 @@ const Add = () => {
     };  
     
     const onHandleImage = (info) => {
-        const { fileList } = info;
+        let { fileList } = info;
+    
+        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        if (fileList.length > 6) {
+            notification.warning({
+                message: "Giới hạn tải lên",
+                description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
+            });
+    
+            // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
+            fileList = fileList.slice(0, 6);
+        }
     
         // Nếu upload thành công, cập nhật URL vào danh sách ảnh
         const updatedFileList = fileList.map((file) => {
             if (file.response) {
                 return {
                     ...file,
-                    url: file.response.secure_url,  // Lấy URL từ response Cloudinary
-                    status: 'done',
+                    url: file.response.secure_url, // Lấy URL từ response Cloudinary
+                    status: "done",
                 };
             }
             return file;
         });
     
-        // Cập nhật danh sách ảnh trong state
         setImages(updatedFileList);
-    };     
+    };    
 
     // Fetch danh sách thương hiệu
     const { data: brands } = useQuery({
@@ -673,10 +683,13 @@ const Add = () => {
                             rules={[
                                 {
                                     validator: (_, value) => {
-                                        if (value && value.length > 0) {
-                                            return Promise.resolve();
+                                        if (!value || value.length === 0) {
+                                            return Promise.reject("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.");
                                         }
-                                        return Promise.reject("Vui lòng tải lên ảnh sản phẩm");
+                                        if (value.length > 6) {
+                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 6 ảnh.");
+                                        }
+                                        return Promise.resolve();
                                     },
                                 },
                             ]}
@@ -688,11 +701,21 @@ const Add = () => {
                                 data={{ upload_preset: "quangOsuy" }}
                                 fileList={images}  // Hiển thị danh sách ảnh hiện tại
                                 onChange={onHandleImage}
+                                beforeUpload={() => {
+                                    if (images.length >= 6) {
+                                        notification.warning({
+                                            message: "Giới hạn tải lên",
+                                            description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
+                                        });
+                                        return false; // Chặn upload file mới
+                                    }
+                                    return true; // Cho phép upload
+                                }}
                                 onRemove={(file) => {
                                     setImages((prev) => prev.filter((img) => img.uid !== file.uid));
                                 }}
                             >
-                                {images.length < 6 && ( // Ẩn nút khi có đủ 6 ảnh
+                                {images.length < 6 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>

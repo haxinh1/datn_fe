@@ -20,6 +20,11 @@ const importProduct = async (payload) => {
     return response.data;
 };
 
+const history = async () => {
+    const response = await instance.get("/stocks");
+    return response.data; // Trả về data từ BE
+};
+
 const updateProduct = async (id, payload) => {
     const response = await instance.put(`/products/${id}`, payload);
     return response.data;
@@ -36,6 +41,7 @@ export const productsServices = {
     fetchProductById,
     createProduct,
     importProduct,
+    history,
     updateProduct,
     deleteProduct,
 };

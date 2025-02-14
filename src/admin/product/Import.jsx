@@ -83,17 +83,18 @@ const Import = () => {
     };
 
     // Cập nhật giá trị trong danh sách
-    const updateItem = (id, field, value) => {
+    const updateItem = (id, productId, field, value) => {
         setAddedVariants(prevItems =>
             prevItems.map(item => 
-                item.id === id ? { 
+                (item.id === id && item.productId === productId) ? 
+                { 
                     ...item, 
                     [field]: value, 
                     total: (field === "price" ? value : item.price) * item.quantity 
                 } : item
             )
         );
-    };
+    };    
 
     // Xóa sản phẩm khỏi danh sách
     const removeItem = (id) => {
@@ -184,7 +185,7 @@ const Import = () => {
             align: "center",
         },
         {
-            title: "Tên biến thể",
+            title: "Tên sản phẩm",
             dataIndex: "variantName",
             align: "center",
         },
@@ -196,7 +197,7 @@ const Import = () => {
                 <InputNumber
                     min={0}
                     value={record.price}
-                    onChange={(value) => updateItem(record.id, "price", value)}
+                    onChange={(value) => updateItem(record.id, record.productId, "price", value)}
                 />
             ),
         },
@@ -214,7 +215,7 @@ const Import = () => {
                 <InputNumber
                     min={1}
                     value={record.quantity}
-                    onChange={(value) => updateItem(record.id, "quantity", value)}
+                    onChange={(value) => updateItem(record.id, record.productId, "quantity", value)}
                 />
             ),
         },
