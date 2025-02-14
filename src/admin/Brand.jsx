@@ -196,10 +196,14 @@ const Brand = () => {
                             action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                             data={{upload_preset: "quangOsuy"}}
                             onChange={onHandleChange}
+                            showUploadList={true} // Hiển thị danh sách ảnh đã tải lên
+                            fileList={logo ? [{ url: logo }] : []}
                         >
-                            <Button icon={<UploadOutlined />} className="btn-item">
-                                Tải ảnh lên
-                            </Button>
+                            {!logo && (
+                                <Button icon={<UploadOutlined />} className="btn-item">
+                                    Tải ảnh lên
+                                </Button>
+                            )}
                         </Upload>
                     </Form.Item>
                     

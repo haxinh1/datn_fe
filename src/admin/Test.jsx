@@ -1,36 +1,35 @@
-import React from 'react';
-import { Select } from 'antd';
+import React, { useState } from 'react';
+import { Select, Form, DatePicker, Input } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import "../admin/product/add.css";
 import { ValuesServices } from '../services/attribute_value';
 import { BrandsServices } from '../services/brands';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
 
 const Test = () => {
-    const { data: attributeValue } = useQuery({
-        queryKey: ["attributeValue"],
-        queryFn: async () => {
-            const response = await ValuesServices.fetchValues()
-            return response.data;
-        }
-    });
+    const [selectedDate, setSelectedDate] = useState(null);
+
+    const handleDateChange = (date, dateString) => {
+        setSelectedDate(dateString);
+    };
 
     return (
-        <div>
-            <Select
-                className="input-attribute"
-                placeholder="Chọn giá trị thuộc tính"
-                allowClear
-                notFoundContent="Không có dữ liệu"
+        <Form layout="vertical">
+            <Form.Item
+                label="Chọn ngày"
+                name="selected_date"
+                rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
             >
-                {attributeValue && attributeValue.map((val) => (
-                    <Option key={val.id} value={val.value}>
-                        {val.value}
-                    </Option>
-                ))}
-            </Select>
-        </div>
+                <DatePicker 
+                    value={selectedDate ? dayjs(selectedDate) : null} 
+                    onChange={handleDateChange} 
+                    className="input-item" 
+                    format="DD-MM-YY"
+                />
+            </Form.Item>
+        </Form>
     );
 };
 
