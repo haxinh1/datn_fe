@@ -175,11 +175,7 @@ const History = () => {
                 title="Chi tiết đơn nhập hàng"
                 visible={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
-                footer={[
-                    <Button key="close" danger onClick={() => setIsModalVisible(false)}>
-                        Đóng
-                    </Button>,
-                ]}
+                footer={null}
                 width={800}
             >
                 <Table
