@@ -157,6 +157,17 @@ const Import = () => {
 
     // Gửi dữ liệu nhập hàng
     const handleSubmit = async () => {
+        // Kiểm tra nếu giá nhập lớn hơn hoặc bằng giá bán
+        const invalidItems = addedVariants.filter(item => item.price >= item.sell_price);
+
+        if (invalidItems.length > 0) {
+            notification.error({
+                message: "Lỗi nhập hàng",
+                description: "Có sản phẩm có giá nhập lớn hơn hoặc bằng giá bán. Vui lòng kiểm tra lại!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+
         const payload = preparePayload();
         console.log("Payload to submit:", JSON.stringify(payload, null, 2)); // Log dữ liệu trước khi gửi
     
@@ -168,11 +179,11 @@ const Import = () => {
             });
             setAddedVariants([]);
         } catch (error) {
-            console.error("Lỗi khi nhập hàng:", error.response?.data);
-            notification.error({
-                message: "Lỗi nhập hàng",
-                description: error?.response?.data?.message || "Có lỗi xảy ra khi nhập hàng.",
-            });
+            // console.error("Lỗi khi nhập hàng:", error.response?.data);
+            // notification.error({
+            //     message: "Lỗi nhập hàng",
+            //     description: error?.response?.data?.message || "Có lỗi xảy ra khi nhập hàng.",
+            // });
         }
     };    
 

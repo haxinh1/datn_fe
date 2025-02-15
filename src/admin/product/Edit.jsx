@@ -136,6 +136,15 @@ const Edit = () => {
     });
     
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
+        if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Giá khuyến mại không thể cao hơn hoặc bằng giá bán!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         const updatedData = {
             ...prepareProductData(values),
             thumbnail: thumbnail ? thumbnail.url : null,
@@ -154,6 +163,14 @@ const Edit = () => {
     
         console.log("Dữ liệu gửi đi:", updatedData);
         updateProduct(updatedData);
+
+        // Nếu sản phẩm bị tắt kinh doanh, cập nhật tất cả biến thể về trạng thái ngừng kinh doanh
+        if (!values.is_active) {
+            tableData.forEach((variant) => {
+                variant.is_active = 0;
+            });
+            setTableData([...tableData]);
+        }
     };        
     
     // slug tạo tự động

@@ -78,6 +78,15 @@ const Creat = () => {
     });
 
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
+        if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Giá khuyến mại không thể cao hơn hoặc bằng giá bán!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         // Trước khi gửi lên API, ta đảm bảo các trường ngày đã được chuẩn hóa
         const productData = prepareProductData(values);
     
