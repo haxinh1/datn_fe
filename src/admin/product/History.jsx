@@ -1,14 +1,19 @@
-import { Button, Table, Modal, Row } from 'antd';
+import { Button, Table, Modal, Row, DatePicker, ConfigProvider, Form } from 'antd';
 import React, { useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
 import { BookOutlined, PlusOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import viVN from "antd/es/locale/vi_VN";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+dayjs.locale("vi");
 import { Link } from 'react-router-dom';
 
 const History = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedStock, setSelectedStock] = useState(null);
+    const [dateRange, setDateRange] = useState([null, null]); // ✅ Lưu khoảng ngày chọn
+    const { RangePicker } = DatePicker;
 
     // Fetch danh sách đơn nhập hàng
     const { data: stocks, isLoading: isProductsLoading } = useQuery({
@@ -41,6 +46,19 @@ const History = () => {
         setSelectedStock(record);
         setIsModalVisible(true);
     };
+
+    // lọc ngày nhập hàng
+    const adjustedStocks = stocks?.map(stock => ({
+        ...stock,
+        ngaytao: stock.ngaytao ? dayjs(stock.ngaytao).add(7, 'hour').format() : null, // Điều chỉnh sang GMT+7
+    }))
+    .filter(stock => {
+        if (!dateRange[0] || !dateRange[1]) return true; // ✅ Khi clear ngày, hiển thị tất cả
+        return (
+            dayjs(stock.ngaytao).isAfter(dateRange[0].startOf('day')) &&
+            dayjs(stock.ngaytao).isBefore(dateRange[1].endOf('day'))
+        );
+    });
 
     // Cột danh sách nhập hàng
     const columns = [
@@ -162,16 +180,31 @@ const History = () => {
                 <BookOutlined style={{ marginRight: "8px" }} />
                 Lịch sử nhập hàng
             </h1>
-            <div className="btn-brand">
+            <div className="btn">
+                <Form.Item label="Ngày nhập hàng">
+                    <ConfigProvider locale={viVN}>
+                        <RangePicker
+                            className="input-item"
+                            onChange={(dates) => setDateRange(dates && dates.length === 2 ? dates : [null, null])}
+                            format="DD-MM-YYYY"
+                            placeholder={["Từ ngày", "Đến ngày"]}
+                            style={{ marginRight: 10 }}
+                        />
+                    </ConfigProvider>
+                </Form.Item>
+
                 <Link to="/import">
-                    <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                    <Button 
+                        color="primary" variant="solid" 
+                        icon={<PlusOutlined />} className='btn-item'
+                    >
                         Nhập hàng
                     </Button>
                 </Link>
             </div>
             <Table 
                 columns={columns} 
-                dataSource={stocks} 
+                dataSource={adjustedStocks} 
                 rowKey="id"
                 loading={isProductsLoading} 
                 pagination={false} 
