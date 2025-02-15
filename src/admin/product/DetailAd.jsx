@@ -193,12 +193,12 @@ const ProductDetail = () => {
                   <td>{product.views || 0} Views</td>
                 </tr>
                 <tr>
-                  <th>Giá bán:</th>
-                  <td>{formatPrice(product.sell_price || 0)} VNĐ</td>
+                  <th>Giá bán (VNĐ):</th>
+                  <td>{formatPrice(product.sell_price)}</td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi:</th>
-                  <td>{formatPrice(product.sale_price || 0)}VNĐ</td>
+                  <th>Giá bán khuyến mãi (VNĐ):</th>
+                  <td>{formatPrice(product.sale_price)}</td>
                 </tr>
                 <tr>
                   <th>Thời gian tạo:</th>
