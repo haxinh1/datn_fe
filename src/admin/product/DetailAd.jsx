@@ -95,17 +95,21 @@ const ProductDetail = () => {
     console.log("Dữ liệu stocks trước khi lọc:", stocks);
 
     // Lọc stocks theo ID sản phẩm
-    const filteredStocks = stocks.filter(stock => stock.product_name === product.name);
+    const filteredStocks = stocks.filter(
+      (stock) => stock.product_name === product.name
+    );
 
     console.log("Dữ liệu stocks sau khi lọc:", filteredStocks);
 
     return filteredStocks.map((stock, index) => ({
-        key: stock.id,
-        stt: index + 1,
-        quantity: stock.quantity,
-        price: parseFloat(stock.price),
-        created_at: stock.created_at ? moment(stock.created_at).add(7, 'hour').format("DD/MM/YYYY") : "N/A",
-        total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
+      key: stock.id,
+      stt: index + 1,
+      quantity: stock.quantity,
+      price: parseFloat(stock.price),
+      created_at: stock.created_at
+        ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
+        : "N/A",
+      total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
     }));
   };
 
@@ -136,7 +140,7 @@ const ProductDetail = () => {
       render: (price) => formatPrice(price),
     },
     {
-      title: "Tổng tiền (VNĐ)", 
+      title: "Tổng tiền (VNĐ)",
       dataIndex: "total",
       align: "center",
       render: (total) => formatPrice(total),
@@ -159,9 +163,9 @@ const ProductDetail = () => {
                   style={{
                     border: "1px solid #ddd",
                     borderRadius: "5px",
-                    maxWidth: "100%",
-                    maxHeight: "400px",
-                    objectFit: "contain",
+                    width: "400px", // Đặt chiều rộng cố định
+                    height: "400px", // Đặt chiều cao cố định
+                    objectFit: "cover", // Ảnh sẽ luôn lấp đầy khung mà không bị méo
                   }}
                 />
               ) : (
@@ -169,7 +173,18 @@ const ProductDetail = () => {
               )}
 
               {/* Danh sách ảnh nhỏ (galleries) */}
-              <div className="d-flex justify-content-start mt-2">
+              <div
+                className="d-flex overflow-auto"
+                style={{
+                  whiteSpace: "nowrap",
+                  paddingBottom: "10px",
+
+                  msOverflowStyle: "none", // Ẩn thanh cuộn trên IE/Edge
+                }}
+              >
+                <style>
+                  {`.d-flex.overflow-auto::-webkit-scrollbar {display: none; /* Ẩn thanh cuộn trên Chrome, Safari */}`}
+                </style>
                 {images.length > 0 ? (
                   images.map((img, index) => (
                     <img
@@ -178,12 +193,12 @@ const ProductDetail = () => {
                       alt={`Thumbnail ${index + 1}`}
                       className="img-thumbnail me-2"
                       style={{
-                        width: "80px", // Giảm kích thước ảnh thumbnail
-                        height: "80px",
-                        cursor: "pointer",
+                        maxWidth: "80px",
+                        maxHeight: "80px",
+                        borderRadius: "10px",
                         border: currentImage === img ? "2px solid #007bff" : "",
                       }}
-                      onClick={() => setCurrentImage(img)} // Cập nhật ảnh lớn khi click
+                      onClick={() => setCurrentImage(img)}
                       onError={(e) =>
                         (e.target.src = "https://via.placeholder.com/100")
                       }
@@ -236,12 +251,12 @@ const ProductDetail = () => {
                   <td>{product.views || 0} Views</td>
                 </tr>
                 <tr>
-                  <th>Giá bán:</th>
-                  <td>{formatPrice(product.sell_price || 0)} VNĐ</td>
+                  <th>Giá bán (VNĐ):</th>
+                  <td>{formatPrice(product.sell_price)} </td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi:</th>
-                  <td>{formatPrice(product.sale_price || 0)} VNĐ</td>
+                  <th>Giá bán khuyến mãi (VNĐ):</th>
+                  <td>{formatPrice(product.sale_price)} </td>
                 </tr>
                 <tr>
                   <th>Thời gian tạo:</th>
@@ -306,11 +321,16 @@ const ProductDetail = () => {
         </div>
 
         {/* Các nút hành động */}
-        <div className=" mt-3 d-flex justify-content-end gap-2 flex-wrap">
-          <Link to={`/edit-pr/${id}`} className="btn">
-            <button className="btn btn-success">Cập nhật</button>
+        <div className="mt-2 d-flex justify-content-end flex-wrap gap-2">
+          <Link to={`/edit-pr/${id}`}>
+            <button className="btn btn-success same-size-btn">Cập nhật</button>
           </Link>
-          <Button type="primary" onClick={() => setIsModalOpen(true)}>Lịch sử nhập hàng</Button>  
+          <Button
+            className="btn btn-success same-size-btn"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Lịch sử nhập hàng
+          </Button>
         </div>
 
         {/* Modal hiển thị lịch sử nhập hàng */}
@@ -327,15 +347,18 @@ const ProductDetail = () => {
             pagination={false}
             bordered
             summary={(pageData) => {
-              const totalAmount = pageData.reduce((sum, item) => sum + item.total, 0);
+              const totalAmount = pageData.reduce(
+                (sum, item) => sum + item.total,
+                0
+              );
               return (
                 <Table.Summary.Row>
-                    <Table.Summary.Cell colSpan={4} align="right">
-                        <strong>Tổng giá trị (VNĐ):</strong>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="center">
-                        <strong>{formatPrice(totalAmount)}</strong>
-                    </Table.Summary.Cell>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    <strong>Tổng giá trị (VNĐ):</strong>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    <strong>{formatPrice(totalAmount)}</strong>
+                  </Table.Summary.Cell>
                 </Table.Summary.Row>
               );
             }}
