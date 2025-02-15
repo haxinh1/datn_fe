@@ -14,6 +14,7 @@ import ProductDetail from './admin/product/DetailAd';
 import Categories from './admin/category/index';
 import Import from "./admin/product/Import";
 import Creat from "./admin/product/Creat";
+import History from "./admin/product/History";
 
 function App() {
 
@@ -28,6 +29,7 @@ function App() {
           <Route path="/import" element={<Import />} />
           <Route path="/creat" element={<Creat />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/history" element={<History />} />
           <Route path="/brand" element={<Brand />} />
           <Route path="/test" element={<Test />} />
         </Route>

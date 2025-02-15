@@ -68,7 +68,8 @@ const Edit = () => {
                 name_link: product.name_link,
                 brand_id: product.brand_id,
                 content: product.content,
-                category: product.categories?.map((cat) => cat.id),      
+                category: product.categories?.map((cat) => cat.id),   
+                is_active: product.is_active === 1,   
                 // Chuyển đổi ngày thành đối tượng dayjs để truyền vào DatePicker
                 sale_price_start_at: product.sale_price_start_at ? dayjs(product.sale_price_start_at) : null,
                 sale_price_end_at: product.sale_price_end_at ? dayjs(product.sale_price_end_at) : null,      
@@ -135,6 +136,15 @@ const Edit = () => {
     });
     
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
+        if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Giá khuyến mại không thể cao hơn hoặc bằng giá bán!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         const updatedData = {
             ...prepareProductData(values),
             thumbnail: thumbnail ? thumbnail.url : null,
@@ -153,6 +163,14 @@ const Edit = () => {
     
         console.log("Dữ liệu gửi đi:", updatedData);
         updateProduct(updatedData);
+
+        // Nếu sản phẩm bị tắt kinh doanh, cập nhật tất cả biến thể về trạng thái ngừng kinh doanh
+        if (!values.is_active) {
+            tableData.forEach((variant) => {
+                variant.is_active = 0;
+            });
+            setTableData([...tableData]);
+        }
     };        
     
     // slug tạo tự động
@@ -700,7 +718,7 @@ const Edit = () => {
                         <Form.Item 
                             label="Trạng thái kinh doanh" 
                             name="is_active" 
-                            initialValue={product?.is_active === 1}
+                            valuePropName="checked"
                         >
                             <Switch />
                         </Form.Item>

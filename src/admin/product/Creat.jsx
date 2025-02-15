@@ -35,10 +35,20 @@ const Creat = () => {
     const navigate = useNavigate()
     const [selectedDate, setSelectedDate] = useState(null);
     
-    const handleDateChange = (date, dateString) => {
-        // Lưu lại giá trị ngày đã chọn
-        setSelectedDate(dateString);  // Lưu dưới dạng chuỗi ngày tháng chuẩn
-    };
+    const handleDateChange = (date, type, record) => {
+        const updatedTableData = tableData.map((item) => {
+            if (item.key === record.key) {
+                if (type === "start") {
+                    return { ...item, sale_price_start_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+                if (type === "end") {
+                    return { ...item, sale_price_end_at: date ? date.format("YYYY-MM-DD") : null };
+                }
+            }
+            return item;
+        });
+        setTableData(updatedTableData);
+    };    
 
     // Thêm sản phẩm
     const { mutate } = useMutation({
@@ -68,6 +78,15 @@ const Creat = () => {
     });
 
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
+        if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Giá khuyến mại không thể cao hơn hoặc bằng giá bán!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         // Trước khi gửi lên API, ta đảm bảo các trường ngày đã được chuẩn hóa
         const productData = prepareProductData(values);
     
@@ -77,13 +96,13 @@ const Creat = () => {
             product_images: images && images.map((img) => img.url),
             sell_price: values.sell_price,
             sale_price: values.sale_price,
-            sale_price_start_at: productData.sale_price_start_at, // Đảm bảo ngày đã được định dạng đúng
-            sale_price_end_at: productData.sale_price_end_at, // Đảm bảo ngày đã được định dạng đúng
             slug: values.slug, 
             category_id: values.category, 
             brand_id: values.brand_id,
             name_link: values.name_link,
-            is_active: values.is_active,
+            is_active: values.is_active ? 1 : 0,  
+            sale_price_start_at: productData.sale_price_start_at, // Đảm bảo ngày đã được định dạng đúng
+            sale_price_end_at: productData.sale_price_end_at, // Đảm bảo ngày đã được định dạng đúng
         };
     
         console.log("Dữ liệu gửi đi:", finalData); // Log để kiểm tra
@@ -111,23 +130,33 @@ const Creat = () => {
     };  
     
     const onHandleImage = (info) => {
-        const { fileList } = info;
+        let { fileList } = info;
+    
+        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        if (fileList.length > 6) {
+            notification.warning({
+                message: "Giới hạn tải lên",
+                description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
+            });
+    
+            // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
+            fileList = fileList.slice(0, 6);
+        }
     
         // Nếu upload thành công, cập nhật URL vào danh sách ảnh
         const updatedFileList = fileList.map((file) => {
             if (file.response) {
                 return {
                     ...file,
-                    url: file.response.secure_url,  // Lấy URL từ response Cloudinary
-                    status: 'done',
+                    url: file.response.secure_url, // Lấy URL từ response Cloudinary
+                    status: "done",
                 };
             }
             return file;
         });
     
-        // Cập nhật danh sách ảnh trong state
         setImages(updatedFileList);
-    };     
+    };    
 
     // Fetch danh sách thương hiệu
     const { data: brands } = useQuery({
@@ -329,6 +358,12 @@ const Creat = () => {
                 thumbnail: variant.thumbnail, 
                 sell_price: variant.sell_price,  
                 sale_price: variant.sale_price, 
+                sale_price_start_at: variant.sale_price_start_at
+                    ? dayjs(variant.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
+                sale_price_end_at: variant.sale_price_end_at
+                    ? dayjs(variant.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss")
+                    : null,
             })),
             sale_price_start_at: formattedStartDate, // Đảm bảo định dạng ngày đúng
             sale_price_end_at: formattedEndDate, // Đảm bảo định dạng ngày đúng
@@ -353,7 +388,7 @@ const Creat = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 350,
+            width: 300,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -477,7 +512,33 @@ const Creat = () => {
                     }}
                 />
             ),
-        },                             
+        },   
+        {
+            title: "Ngày mở KM",
+            dataIndex: "sale_price_start_at",
+            key: "sale_price_start_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                    onChange={(date) => handleDateChange(date, "start", record)}
+                />
+            ),
+        },
+        {
+            title: "Ngày đóng KM",
+            dataIndex: "sale_price_end_at",
+            key: "sale_price_end_at",
+            align: "center",
+            render: (text, record) => (
+                <DatePicker
+                    format="DD-MM-YYYY"
+                    value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                    onChange={(date) => handleDateChange(date, "end", record)}
+                />
+            ),
+        },                     
         {
             title: "Thao tác",
             key: "action",
@@ -631,10 +692,13 @@ const Creat = () => {
                             rules={[
                                 {
                                     validator: (_, value) => {
-                                        if (value && value.length > 0) {
-                                            return Promise.resolve();
+                                        if (!value || value.length === 0) {
+                                            return Promise.reject("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.");
                                         }
-                                        return Promise.reject("Vui lòng tải lên ảnh sản phẩm");
+                                        if (value.length > 6) {
+                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 6 ảnh.");
+                                        }
+                                        return Promise.resolve();
                                     },
                                 },
                             ]}
@@ -646,11 +710,21 @@ const Creat = () => {
                                 data={{ upload_preset: "quangOsuy" }}
                                 fileList={images}  // Hiển thị danh sách ảnh hiện tại
                                 onChange={onHandleImage}
+                                beforeUpload={() => {
+                                    if (images.length >= 6) {
+                                        notification.warning({
+                                            message: "Giới hạn tải lên",
+                                            description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
+                                        });
+                                        return false; // Chặn upload file mới
+                                    }
+                                    return true; // Cho phép upload
+                                }}
                                 onRemove={(file) => {
                                     setImages((prev) => prev.filter((img) => img.uid !== file.uid));
                                 }}
                             >
-                                {images.length < 6 && ( // Ẩn nút khi có đủ 6 ảnh
+                                {images.length < 6 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
@@ -725,7 +799,7 @@ const Creat = () => {
                                 </Form.Item>
 
                                 <Form.Item
-                                    label="Chọn đóng khuyến mại"
+                                    label="Ngày đóng khuyến mại"
                                     name="sale_price_end_at"
                                 >
                                     <DatePicker 

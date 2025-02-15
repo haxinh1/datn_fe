@@ -83,17 +83,18 @@ const Import = () => {
     };
 
     // Cập nhật giá trị trong danh sách
-    const updateItem = (id, field, value) => {
+    const updateItem = (id, productId, field, value) => {
         setAddedVariants(prevItems =>
             prevItems.map(item => 
-                item.id === id ? { 
+                (item.id === id && item.productId === productId) ? 
+                { 
                     ...item, 
                     [field]: value, 
                     total: (field === "price" ? value : item.price) * item.quantity 
                 } : item
             )
         );
-    };
+    };    
 
     // Xóa sản phẩm khỏi danh sách
     const removeItem = (id) => {
@@ -156,6 +157,17 @@ const Import = () => {
 
     // Gửi dữ liệu nhập hàng
     const handleSubmit = async () => {
+        // Kiểm tra nếu giá nhập lớn hơn hoặc bằng giá bán
+        const invalidItems = addedVariants.filter(item => item.price >= item.sell_price);
+
+        if (invalidItems.length > 0) {
+            notification.error({
+                message: "Lỗi nhập hàng",
+                description: "Có sản phẩm có giá nhập lớn hơn hoặc bằng giá bán. Vui lòng kiểm tra lại!",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+
         const payload = preparePayload();
         console.log("Payload to submit:", JSON.stringify(payload, null, 2)); // Log dữ liệu trước khi gửi
     
@@ -167,11 +179,11 @@ const Import = () => {
             });
             setAddedVariants([]);
         } catch (error) {
-            console.error("Lỗi khi nhập hàng:", error.response?.data);
-            notification.error({
-                message: "Lỗi nhập hàng",
-                description: error?.response?.data?.message || "Có lỗi xảy ra khi nhập hàng.",
-            });
+            // console.error("Lỗi khi nhập hàng:", error.response?.data);
+            // notification.error({
+            //     message: "Lỗi nhập hàng",
+            //     description: error?.response?.data?.message || "Có lỗi xảy ra khi nhập hàng.",
+            // });
         }
     };    
 
@@ -184,7 +196,7 @@ const Import = () => {
             align: "center",
         },
         {
-            title: "Tên biến thể",
+            title: "Tên sản phẩm",
             dataIndex: "variantName",
             align: "center",
         },
@@ -196,7 +208,7 @@ const Import = () => {
                 <InputNumber
                     min={0}
                     value={record.price}
-                    onChange={(value) => updateItem(record.id, "price", value)}
+                    onChange={(value) => updateItem(record.id, record.productId, "price", value)}
                 />
             ),
         },
@@ -214,7 +226,7 @@ const Import = () => {
                 <InputNumber
                     min={1}
                     value={record.quantity}
-                    onChange={(value) => updateItem(record.id, "quantity", value)}
+                    onChange={(value) => updateItem(record.id, record.productId, "quantity", value)}
                 />
             ),
         },
