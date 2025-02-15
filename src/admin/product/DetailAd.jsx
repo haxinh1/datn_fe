@@ -104,7 +104,7 @@ const ProductDetail = () => {
         stt: index + 1,
         quantity: stock.quantity,
         price: parseFloat(stock.price),
-        created_at: stock.created_at ? moment(stock.created_at).format("DD/MM/YYYY") : "N/A",
+        created_at: stock.created_at ? moment(stock.created_at).add(7, 'hour').format("DD/MM/YYYY") : "N/A",
         total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
     }));
   };
@@ -327,17 +327,17 @@ const ProductDetail = () => {
             pagination={false}
             bordered
             summary={(pageData) => {
-                const totalAmount = pageData.reduce((sum, item) => sum + item.total, 0);
-                return (
-                    <Table.Summary.Row>
-                        <Table.Summary.Cell colSpan={4} align="right">
-                            <strong>Tổng giá trị (VNĐ):</strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell align="center">
-                            <strong>{formatPrice(totalAmount)}</strong>
-                        </Table.Summary.Cell>
-                    </Table.Summary.Row>
-                );
+              const totalAmount = pageData.reduce((sum, item) => sum + item.total, 0);
+              return (
+                <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={4} align="right">
+                        <strong>Tổng giá trị (VNĐ):</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                        <strong>{formatPrice(totalAmount)}</strong>
+                    </Table.Summary.Cell>
+                </Table.Summary.Row>
+              );
             }}
           />
         </Modal>
