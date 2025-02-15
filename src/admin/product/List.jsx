@@ -95,6 +95,14 @@ const List = () => {
         setIsActive(variant.is_active ?? 1); // Set đúng giá trị trạng thái ban đầu
         setStartDate(variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null); // Lấy ngày bắt đầu
         setEndDate(variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null); // Lấy ngày kết thúc
+
+        // Lấy trạng thái sản phẩm chính
+        const parentProduct = products.find((p) => p.id === variant.product_id);
+        if (parentProduct && parentProduct.is_active === 0) {
+            setIsActive(0); // Nếu sản phẩm chính đã tắt, biến thể cũng phải hiển thị tắt
+        } else {
+            setIsActive(variant.is_active ?? 1); // Lấy trạng thái gốc của biến thể
+        }
         
         if (variant.thumbnail) {
             const fileObject = await convertImageToFileObject(variant.thumbnail);
@@ -157,6 +165,16 @@ const List = () => {
 
     const handleSaveVariant = () => {
         if (!currentVariant) return;
+
+        // Kiểm tra nếu sản phẩm chính đang dừng kinh doanh, không cho phép bật biến thể
+        const parentProduct = products.find((p) => p.id === currentVariant.product_id);
+        if (parentProduct && parentProduct.is_active === 0 && isActive === 1) {
+            notification.warning({
+                message: "Không thể thay đổi trạng thái",
+                description: "Sản phẩm đã dừng kinh doanh, không thể bật trạng thái biến thể.",
+            });
+            return;
+        }
     
         const payload = {
             sell_price: newPrice,
@@ -219,7 +237,7 @@ const List = () => {
             render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
         },
         {
-            title: "Giá khuyến mại (VNĐ)",
+            title: "Giá KM (VNĐ)",
             key: "sale_price",
             dataIndex: "sale_price",
             align: "center",
@@ -230,7 +248,12 @@ const List = () => {
             dataIndex: "stock",
             key: "stock",
             align: "center",
-        },
+            render: (stock) => (
+                <span style={stock <= 3 ? { color: "red", fontWeight: "bold" } : {}}>
+                    {stock}
+                </span>
+            ),
+        },            
         {
             title: "Ngày khuyến mại",
             key: "sale_price",
@@ -352,16 +375,16 @@ const List = () => {
                                 <Table
                                     columns={[
                                         {
-                                            title: "Ảnh biến thể",
+                                            title: "Ảnh",
                                             dataIndex: "thumbnail",
                                             key: "thumbnail",
                                             render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
                                             align: "center",
-                                            width: 100,
                                         },
                                         {
                                             title: "Tên biến thể",
                                             key: "name",
+                                            width: 320,
                                             render: (_, variant) => {
                                                 const attributeValues = variant.attribute_value_product_variants?.map(
                                                     (attr) => attr.attribute_value?.value
@@ -369,7 +392,6 @@ const List = () => {
                                                 return `${record.name} - ${attributeValues.join(" - ")}`;
                                             },
                                             align: "center",
-                                            width: 400,
                                         },
                                         {
                                             title: "Giá bán (VNĐ)",
@@ -377,29 +399,34 @@ const List = () => {
                                             key: "sell_price",
                                             render: (sell_price) => formatPrice(sell_price),
                                             align: "center",
-                                            width: 160,
+                                            width: 140,
                                         },
                                         {
-                                            title: "Giá khuyến mại (VNĐ)",
+                                            title: "Giá KM (VNĐ)",
                                             dataIndex: "sale_price",
                                             key: "sale_price",
                                             render: (sale_price) => formatPrice(sale_price),
                                             align: "center",
-                                            width: 160,
+                                            width: 130,
                                         },
                                         {
                                             title: "Tồn kho",
                                             dataIndex: "stock",
                                             key: "stock",
                                             align: "center",
-                                            width: 140,
-                                        },
+                                            width: 100,
+                                            render: (stock) => (
+                                                <span style={stock <= 3 ? { color: "red", fontWeight: "bold" } : {}}>
+                                                    {stock}
+                                                </span>
+                                            ),
+                                        },                                        
                                         {
                                             title: "Ngày khuyến mại",
                                             key: "sale_price",
                                             dataIndex: "sale_price",
                                             align: "center",
-                                            width: 140,
+                                            width: 150,
                                             render: (_, variant) => {
                                                 const startDate = variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null;
                                                 const endDate = variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null;
@@ -415,12 +442,18 @@ const List = () => {
                                             key: 'is_active',
                                             dataIndex: 'is_active',
                                             align: 'center',
-                                            width: 160,
-                                            render: (isActive) => (
-                                                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
-                                                    {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
-                                                </span>
-                                            ),
+                                            width: 150,
+                                            render: (isActive, variant) => {
+                                                // Nếu sản phẩm chính đã ngừng kinh doanh, buộc hiển thị trạng thái ngừng kinh doanh
+                                                const parentProduct = products.find((p) => p.id === variant.product_id);
+                                                const displayStatus = parentProduct && parentProduct.is_active === 0 ? 0 : isActive;
+                                        
+                                                return (
+                                                    <span className={displayStatus === 1 ? 'action-link-blue' : 'action-link-red'}>
+                                                        {displayStatus === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
+                                                    </span>
+                                                );
+                                            },
                                         },
                                         {
                                             title: "Thao tác",
@@ -506,7 +539,7 @@ const List = () => {
                         name="newImage"
                         rules={[{
                             validator: (_, value) =>
-                                newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                            newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
                         }]}
                     >
                         <Upload

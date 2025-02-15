@@ -6,7 +6,7 @@ import moment from "moment";
 import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Modal } from "antd";
+import { Button, Modal, Table } from "antd";
 import { categoryServices } from "../../services/categories";
 
 const ProductDetail = () => {
@@ -17,6 +17,8 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true); // Trạng thái tải
   const [error, setError] = useState(null); // Trạng thái lỗi
   const [categories, setCategories] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [stocks, setStocks] = useState([]); // Lưu stocks riêng biệt
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -27,6 +29,10 @@ const ProductDetail = () => {
 
         if (response?.data) {
           setProduct(response.data);
+        }
+
+        if (response?.stocks) {
+          setStocks(response.stocks); // Lưu stocks riêng
         }
 
         // Kiểm tra nếu có thumbnail và galleries
@@ -82,23 +88,64 @@ const ProductDetail = () => {
     return formatter.format(price);
   };
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Lấy dữ liệu từ `stocks` để hiển thị trong modal
+  const getStockData = () => {
+    if (!stocks || !Array.isArray(stocks)) return [];
 
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
+    console.log("Dữ liệu stocks trước khi lọc:", stocks);
 
-  const handleOk = () => {
-    setIsModalOpen(false);
-  };
+    // Lọc stocks theo ID sản phẩm
+    const filteredStocks = stocks.filter(
+      (stock) => stock.product_name === product.name
+    );
 
-  const handleCancel = () => {
-    setIsModalOpen(false);
+    console.log("Dữ liệu stocks sau khi lọc:", filteredStocks);
+
+    return filteredStocks.map((stock, index) => ({
+      key: stock.id,
+      stt: index + 1,
+      quantity: stock.quantity,
+      price: parseFloat(stock.price),
+      created_at: stock.created_at
+        ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
+        : "N/A",
+      total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
+    }));
   };
 
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
   if (error) return <p>{error}</p>;
 
+  // Cấu hình cột cho bảng trong modal
+  const stockColumns = [
+    {
+      title: "STT",
+      dataIndex: "stt",
+      align: "center",
+    },
+    {
+      title: "Ngày nhập hàng",
+      dataIndex: "created_at",
+      align: "center",
+    },
+    {
+      title: "Số lượng",
+      dataIndex: "quantity",
+      align: "center",
+    },
+    {
+      title: "Giá nhập (VNĐ)",
+      dataIndex: "price",
+      align: "center",
+      render: (price) => formatPrice(price),
+    },
+    {
+      title: "Tổng tiền (VNĐ)",
+      dataIndex: "total",
+      align: "center",
+      render: (total) => formatPrice(total),
+    },
+  ];
   return (
     product && (
       <div className="container mt-5">
@@ -197,8 +244,8 @@ const ProductDetail = () => {
                   <td>{formatPrice(product.sell_price)}</td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi (VNĐ):</th>
-                  <td>{formatPrice(product.sale_price)}</td>
+                  <th>Giá bán khuyến mãi:</th>
+                  <td>{formatPrice(product.sale_price || 0)} VNĐ</td>
                 </tr>
                 <tr>
                   <th>Thời gian tạo:</th>
@@ -267,21 +314,42 @@ const ProductDetail = () => {
           <Link to={`/edit-pr/${id}`} className="btn">
             <button className="btn btn-success">Cập nhật</button>
           </Link>
-          {/* <Link className="btn">
-            <button className="btn btn-success">Lịch sử nhập hàng</button>
-          </Link> */}
-          <Link className="btn" onClick={showModal}>
-            <button className="btn btn-success">Lịch sử nhập hàng</button>
-          </Link>
-          <Modal
-            title="Modal Title"
-            open={isModalOpen}
-            onOk={handleOk}
-            onCancel={handleCancel}
-          >
-            <p>Không có gì </p>
-          </Modal>
+          <Button type="primary" onClick={() => setIsModalOpen(true)}>
+            Lịch sử nhập hàng
+          </Button>
         </div>
+
+        {/* Modal hiển thị lịch sử nhập hàng */}
+        <Modal
+          title="Lịch sử nhập hàng"
+          open={isModalOpen}
+          onCancel={() => setIsModalOpen(false)}
+          footer={null}
+          width={800}
+        >
+          <Table
+            columns={stockColumns}
+            dataSource={getStockData()}
+            pagination={false}
+            bordered
+            summary={(pageData) => {
+              const totalAmount = pageData.reduce(
+                (sum, item) => sum + item.total,
+                0
+              );
+              return (
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    <strong>Tổng giá trị (VNĐ):</strong>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    <strong>{formatPrice(totalAmount)}</strong>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              );
+            }}
+          />
+        </Modal>
       </div>
     )
   );
