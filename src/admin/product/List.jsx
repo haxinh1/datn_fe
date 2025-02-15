@@ -491,6 +491,16 @@ const List = () => {
                 onCancel={() => setIsModalVisible(false)} 
                 footer={null}
             >
+                <h5 className="action-link-blue">
+                    {currentVariant
+                        ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
+                            currentVariant.attribute_value_product_variants
+                                ?.map(attr => attr.attribute_value?.value)
+                                .join(" - ") || "Không có thuộc tính"
+                        }`
+                        : ""}
+                </h5>
+
                 <Form layout="vertical">
                     <Form.Item 
                         label="Giá bán (VNĐ)"

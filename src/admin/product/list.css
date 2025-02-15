@@ -19,6 +19,7 @@
 .action-link-blue {
     color: blue;
     font-weight: bold;
+    text-align: center;
 }
 .action-link-red {
     color: red;

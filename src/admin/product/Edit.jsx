@@ -136,6 +136,19 @@ const Edit = () => {
     });
     
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại của biến thể lớn hơn hoặc bằng giá bán
+        const invalidVariants = tableData.filter(variant => 
+            variant.sale_price >= variant.sell_price
+        );
+    
+        if (invalidVariants.length > 0) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Có biến thể có giá khuyến mại lớn hơn hoặc bằng giá bán! Vui lòng kiểm tra lại.",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
         if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
             notification.error({
@@ -152,11 +165,11 @@ const Edit = () => {
             sell_price: values.sell_price,
             sale_price: values.sale_price,
             slug: values.slug,
+            content: values.content,
             category_id: values.category,
             brand_id: values.brand_id,
             name_link: values.name_link,
             is_active: values.is_active,  
-            // Đảm bảo gửi ngày đã được chọn
             sale_price_start_at: values.sale_price_start_at ? dayjs(values.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss") : null,
             sale_price_end_at: values.sale_price_end_at ? dayjs(values.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss") : null,
         };
