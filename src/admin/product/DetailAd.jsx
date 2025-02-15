@@ -217,7 +217,7 @@ const ProductDetail = () => {
               <tbody>
                 <tr>
                   <th>Mã sản phẩm:</th>
-                  <td>{product.code || "Không có mã"}</td>
+                  <td>{product.sku || "Không có mã"}</td>
                 </tr>
                 <tr>
                   <th>Tên sản phẩm:</th>
@@ -255,7 +255,7 @@ const ProductDetail = () => {
                   <td>{formatPrice(product.sell_price)} </td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi (VNĐ):</th>
+                  <th>Giá khuyến mãi (VNĐ):</th>
                   <td>{formatPrice(product.sale_price)} </td>
                 </tr>
                 <tr>
