@@ -163,9 +163,9 @@ const ProductDetail = () => {
                   style={{
                     border: "1px solid #ddd",
                     borderRadius: "5px",
-                    maxWidth: "100%",
-                    maxHeight: "400px",
-                    objectFit: "contain",
+                    width: "400px", // Đặt chiều rộng cố định
+                    height: "400px", // Đặt chiều cao cố định
+                    objectFit: "cover", // Ảnh sẽ luôn lấp đầy khung mà không bị méo
                   }}
                 />
               ) : (
@@ -173,7 +173,18 @@ const ProductDetail = () => {
               )}
 
               {/* Danh sách ảnh nhỏ (galleries) */}
-              <div className="d-flex justify-content-start mt-2">
+              <div
+                className="d-flex overflow-auto"
+                style={{
+                  whiteSpace: "nowrap",
+                  paddingBottom: "10px",
+
+                  msOverflowStyle: "none", // Ẩn thanh cuộn trên IE/Edge
+                }}
+              >
+                <style>
+                  {`.d-flex.overflow-auto::-webkit-scrollbar {display: none; /* Ẩn thanh cuộn trên Chrome, Safari */}`}
+                </style>
                 {images.length > 0 ? (
                   images.map((img, index) => (
                     <img
@@ -182,12 +193,12 @@ const ProductDetail = () => {
                       alt={`Thumbnail ${index + 1}`}
                       className="img-thumbnail me-2"
                       style={{
-                        width: "80px", // Giảm kích thước ảnh thumbnail
-                        height: "80px",
-                        cursor: "pointer",
+                        maxWidth: "80px",
+                        maxHeight: "80px",
+                        borderRadius: "10px",
                         border: currentImage === img ? "2px solid #007bff" : "",
                       }}
-                      onClick={() => setCurrentImage(img)} // Cập nhật ảnh lớn khi click
+                      onClick={() => setCurrentImage(img)}
                       onError={(e) =>
                         (e.target.src = "https://via.placeholder.com/100")
                       }
@@ -241,11 +252,11 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Giá bán (VNĐ):</th>
-                  <td>{formatPrice(product.sell_price)}</td>
+                  <td>{formatPrice(product.sell_price)} </td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi:</th>
-                  <td>{formatPrice(product.sale_price || 0)} VNĐ</td>
+                  <th>Giá bán khuyến mãi (VNĐ):</th>
+                  <td>{formatPrice(product.sale_price)} </td>
                 </tr>
                 <tr>
                   <th>Thời gian tạo:</th>
@@ -310,11 +321,14 @@ const ProductDetail = () => {
         </div>
 
         {/* Các nút hành động */}
-        <div className=" mt-3 d-flex justify-content-end gap-2 flex-wrap">
-          <Link to={`/edit-pr/${id}`} className="btn">
-            <button className="btn btn-success">Cập nhật</button>
+        <div className="mt-2 d-flex justify-content-end flex-wrap gap-2">
+          <Link to={`/edit-pr/${id}`}>
+            <button className="btn btn-success same-size-btn">Cập nhật</button>
           </Link>
-          <Button type="primary" onClick={() => setIsModalOpen(true)}>
+          <Button
+            className="btn btn-success same-size-btn"
+            onClick={() => setIsModalOpen(true)}
+          >
             Lịch sử nhập hàng
           </Button>
         </div>
