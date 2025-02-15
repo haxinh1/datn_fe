@@ -166,6 +166,15 @@ const List = () => {
     const handleSaveVariant = () => {
         if (!currentVariant) return;
 
+        // Kiểm tra giá khuyến mại phải nhỏ hơn giá bán
+        if (newSalePrice >= newPrice) {
+            notification.warning({
+                message: "Lỗi cập nhật",
+                description: "Giá khuyến mại phải nhỏ hơn giá bán.",
+            });
+            return;
+        }
+
         // Kiểm tra nếu sản phẩm chính đang dừng kinh doanh, không cho phép bật biến thể
         const parentProduct = products.find((p) => p.id === currentVariant.product_id);
         if (parentProduct && parentProduct.is_active === 0 && isActive === 1) {
@@ -504,6 +513,9 @@ const List = () => {
                 <Form layout="vertical">
                     <Form.Item 
                         label="Giá bán (VNĐ)"
+                        name="sell_price"
+                        initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
+                        rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                     >
                         <InputNumber 
                             className="input-item" 
