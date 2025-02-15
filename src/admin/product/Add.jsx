@@ -78,7 +78,20 @@ const Add = () => {
     });
 
     const onFinish = (values) => {
-        // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
+        // Kiểm tra nếu giá khuyến mại của biến thể lớn hơn hoặc bằng giá bán
+        const invalidVariants = tableData.filter(variant => 
+            variant.sale_price >= variant.sell_price
+        );
+    
+        if (invalidVariants.length > 0) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Có biến thể có giá khuyến mại lớn hơn hoặc bằng giá bán! Vui lòng kiểm tra lại.",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+    
+        // Kiểm tra giá sản phẩm đơn
         if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
             notification.error({
                 message: "Lỗi nhập liệu",
@@ -87,27 +100,28 @@ const Add = () => {
             return; // Dừng lại không gửi dữ liệu
         }
         
-        // Trước khi gửi lên API, ta đảm bảo các trường ngày đã được chuẩn hóa
+        // Chuẩn bị dữ liệu trước khi gửi
         const productData = prepareProductData(values);
-    
+        
         const finalData = {
             ...productData,
-            thumbnail, // Thêm link ảnh đã upload
-            product_images: images && images.map((img) => img.url),
+            thumbnail, 
+            product_images: images.map((img) => img.url),
             sell_price: values.sell_price,
             sale_price: values.sale_price,
             slug: values.slug, 
+            content: values.content,
             category_id: values.category, 
             brand_id: values.brand_id,
             name_link: values.name_link,
             is_active: values.is_active ? 1 : 0,  
-            sale_price_start_at: productData.sale_price_start_at, // Đảm bảo ngày đã được định dạng đúng
-            sale_price_end_at: productData.sale_price_end_at, // Đảm bảo ngày đã được định dạng đúng
+            sale_price_start_at: productData.sale_price_start_at,
+            sale_price_end_at: productData.sale_price_end_at,
         };
     
         console.log("Dữ liệu gửi đi:", finalData); // Log để kiểm tra
         mutate(finalData); // Gửi dữ liệu tới API
-    };    
+    };       
     
     // slug tạo tự động
     const handleNameChange = (e) => {
@@ -126,8 +140,10 @@ const Add = () => {
     const onHandleChange = (info) => {
         if (info.file.status === "done" && info.file.response) {
             setThumbnail(info.file.response.secure_url);
+        } else if (info.file.status === "removed") {
+            setThumbnail(null); // Đặt lại thumbnail về null khi ảnh bị xóa
         }
-    };  
+    };    
     
     const onHandleImage = (info) => {
         let { fileList } = info;
@@ -673,6 +689,7 @@ const Add = () => {
                                 onChange={onHandleChange}
                                 showUploadList={true} // Hiển thị danh sách ảnh đã tải lên
                                 fileList={thumbnail ? [{ url: thumbnail }] : []} // Nếu thumbnail có giá trị thì hiển thị ảnh
+                                onRemove={() => setThumbnail(null)} // Đặt lại thumbnail khi ảnh bị xóa
                             >
                                 {!thumbnail && (
                                     <Button icon={<UploadOutlined />} className="btn-item">

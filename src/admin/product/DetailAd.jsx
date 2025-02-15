@@ -8,6 +8,7 @@ import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Modal, Table } from "antd";
 import { categoryServices } from "../../services/categories";
+import { EyeOutlined } from "@ant-design/icons";
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -149,7 +150,11 @@ const ProductDetail = () => {
   return (
     product && (
       <div className="container mt-5">
-        <h2 style={{ margin: "20px" }}>Chi tiết sản phẩm</h2>
+        <h1 className='mb-5'>
+          <EyeOutlined style={{ marginRight: "8px" }} />
+          Chi tiết sản phẩm
+        </h1>
+
         <div className="row">
           {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
@@ -248,14 +253,14 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Lượt xem:</th>
-                  <td>{product.views || 0} Views</td>
+                  <td>{product.views || 0}</td>
                 </tr>
                 <tr>
                   <th>Giá bán (VNĐ):</th>
                   <td>{formatPrice(product.sell_price)} </td>
                 </tr>
                 <tr>
-                  <th>Giá khuyến mãi (VNĐ):</th>
+                  <th>Giá khuyến mại (VNĐ):</th>
                   <td>{formatPrice(product.sale_price)} </td>
                 </tr>
                 <tr>
@@ -300,22 +305,7 @@ const ProductDetail = () => {
             {/* Phần mô tả sản phẩm */}
             <div className="product-description mt-4">
               <h4>Mô tả sản phẩm</h4>
-              {/* <p>{product.content || "Không có mô tả"}</p> */}
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam
-                quos ad facere, illum exercitationem repellat esse excepturi
-                consequatur rerum? Sapiente id illum voluptate excepturi
-                architecto eius obcaecati odio nisi praesentium, explicabo iste
-                sint illo delectus doloribus impedit iure ipsum maxime totam
-                dolor fugit! Nisi voluptatibus, deleniti dignissimos natus
-                nihil, quia repellendus dolores voluptates cupiditate non nobis
-                corporis perspiciatis, quaerat cumque laborum ea fuga ipsa
-                fugiat excepturi? Cumque similique aliquid consectetur,
-                blanditiis aut voluptas quo, dolorum obcaecati quod sequi facere
-                recusandae sunt, laudantium repellat sed non illum fugiat magni
-                illo in sit explicabo totam? Delectus ab nobis cupiditate
-                molestias consectetur. Fuga?
-              </p>
+              <p>{product.content || "Không có mô tả"}</p>
             </div>
           </div>
         </div>
