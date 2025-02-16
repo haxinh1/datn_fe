@@ -13,8 +13,8 @@
     cursor: pointer;
 }
 .action-link-purple {
-    color: purple;
-    font-weight: bold;
+    color: blue;
+    text-align: center;
 }
 .action-link-blue {
     color: blue;
@@ -54,4 +54,3 @@
 .select-item {
     width: 160px;
 }
-

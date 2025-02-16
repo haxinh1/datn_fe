@@ -12,6 +12,8 @@ import { AttributesServices } from './../../services/attributes';
 import { ValuesServices } from './../../services/attribute_value';
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const { Option } = Select;
 
@@ -136,6 +138,19 @@ const Edit = () => {
     });
     
     const onFinish = (values) => {
+        // Kiểm tra nếu giá khuyến mại của biến thể lớn hơn hoặc bằng giá bán
+        const invalidVariants = tableData.filter(variant => 
+            variant.sale_price >= variant.sell_price
+        );
+    
+        if (invalidVariants.length > 0) {
+            notification.error({
+                message: "Lỗi nhập liệu",
+                description: "Có biến thể có giá khuyến mại lớn hơn hoặc bằng giá bán! Vui lòng kiểm tra lại.",
+            });
+            return; // Dừng lại không gửi dữ liệu
+        }
+        
         // Kiểm tra nếu giá khuyến mại cao hơn hoặc bằng giá bán
         if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
             notification.error({
@@ -152,11 +167,11 @@ const Edit = () => {
             sell_price: values.sell_price,
             sale_price: values.sale_price,
             slug: values.slug,
+            content: values.content,
             category_id: values.category,
             brand_id: values.brand_id,
             name_link: values.name_link,
             is_active: values.is_active,  
-            // Đảm bảo gửi ngày đã được chọn
             sale_price_start_at: values.sale_price_start_at ? dayjs(values.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss") : null,
             sale_price_end_at: values.sale_price_end_at ? dayjs(values.sale_price_end_at).format("YYYY-MM-DD HH:mm:ss") : null,
         };
@@ -497,43 +512,60 @@ const Edit = () => {
             dataIndex: "sell_price",
             key: "sell_price",
             align: "center",
-            render: (text, record) => (
-                <InputNumber
-                    min={0}
-                    value={record.sell_price}
-                    onChange={(value) => {
-                        const updatedTableData = tableData.map((item) => {
-                            if (item.key === record.key) {
-                                return { ...item, sell_price: value };
-                            }
-                            return item;
-                        });
-                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
-                    }}
-                />
+            render: (_, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sell_price"]}
+                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                    initialValue={record.sell_price}
+                >
+                    <InputNumber
+                        min={0}
+                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                        onChange={(value) => {
+                            const updatedTableData = [...tableData];
+                            updatedTableData[index] = { ...record, sell_price: value };
+                            setTableData(updatedTableData);
+                        }}
+                    />
+                </Form.Item>
             ),
-        },    
+        }, 
         {
             title: "Giá khuyến mại (VNĐ)",
             dataIndex: "sale_price",
             key: "sale_price",
             align: "center",
-            render: (text, record) => (
-                <InputNumber
-                    min={0}
-                    value={record.sale_price}
-                    onChange={(value) => {
-                        const updatedTableData = tableData.map((item) => {
-                            if (item.key === record.key) {
-                                return { ...item, sale_price: value };
-                            }
-                            return item;
-                        });
-                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
-                    }}
-                />
+            render: (_, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sale_price"]}
+                    rules={[
+                        { required: true, message: "Vui lòng nhập giá khuyến mại" },
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                const sellPrice = getFieldValue(["variants", index, "sell_price"]);
+                                if (!value || value < sellPrice) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán"));
+                            },
+                        }),
+                    ]}
+                    initialValue={record.sale_price}
+                >
+                    <InputNumber
+                        min={0}
+                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                        onChange={(value) => {
+                            const updatedTableData = [...tableData];
+                            updatedTableData[index] = { ...record, sale_price: value };
+                            setTableData(updatedTableData);
+                        }}
+                    />
+                </Form.Item>
             ),
-        },   
+        },  
         {
             title: "Ngày mở KM",
             dataIndex: "sale_price_start_at",
@@ -712,7 +744,23 @@ const Edit = () => {
                             label="Mô tả sản phẩm"
                             name="content"
                         >
-                            <TextArea rows={9} className="input-item" />
+                            <ReactQuill 
+                                theme="snow"
+                                style={{ height: "280px", paddingBottom: '50px' }} 
+                                modules={{
+                                    toolbar: [
+                                        [{ 'font': [] }], 
+                                        [{ 'size': ['small', false, 'large', 'huge'] }], 
+                                        [{ 'color': [] }, { 'background': [] }],
+                                        [{ 'align': [] }],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        ['blockquote', 'code-block'],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        ['link', 'image'],
+                                        ['clean']
+                                    ],
+                                }}
+                            />
                         </Form.Item>
 
                         <Form.Item 
@@ -748,7 +796,11 @@ const Edit = () => {
                                     label="Giá bán (VNĐ)"
                                     name="sell_price"
                                 >
-                                    <InputNumber className="input-item" />
+                                    <InputNumber 
+                                        className="input-item" 
+                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
@@ -768,8 +820,24 @@ const Edit = () => {
                                 <Form.Item
                                     label="Giá khuyến mại (VNĐ)"
                                     name="sale_price"
+                                    dependencies={["sell_price"]}
+                                    rules={[
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                const sellPrice = getFieldValue("sell_price");
+                                                if (!value || !sellPrice || value < sellPrice) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
+                                            }
+                                        })
+                                    ]}
                                 >
-                                    <InputNumber className="input-item" />
+                                    <InputNumber 
+                                        className="input-item" 
+                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
