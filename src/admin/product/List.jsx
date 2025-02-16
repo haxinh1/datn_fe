@@ -489,7 +489,7 @@ const List = () => {
                             );
                         },
                     }}
-                    pagination={{ pageSize: 6 }}
+                    pagination={{ pageSize: 8 }}
                     rowKey="id"
                 />
             </Skeleton>
@@ -500,7 +500,7 @@ const List = () => {
                 onCancel={() => setIsModalVisible(false)} 
                 footer={null}
             >
-                <h5 className="action-link-blue">
+                <h5 className="action-link-purple">
                     {currentVariant
                         ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
                             currentVariant.attribute_value_product_variants

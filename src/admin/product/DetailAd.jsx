@@ -6,9 +6,11 @@ import moment from "moment";
 import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Modal, Table } from "antd";
+import { Button, Modal, Table, DatePicker, ConfigProvider, Form } from "antd";
 import { categoryServices } from "../../services/categories";
 import { EyeOutlined } from "@ant-design/icons";
+import viVN from "antd/lib/locale/vi_VN"; // Import locale tiếng Việt
+import "moment/locale/vi"; // Chuyển moment sang tiếng Việt
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -20,6 +22,9 @@ const ProductDetail = () => {
   const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stocks, setStocks] = useState([]); // Lưu stocks riêng biệt
+  const [filterDates, setFilterDates] = useState([null, null]); // State lưu khoảng ngày bắt đầu và kết thúc
+
+  const { RangePicker } = DatePicker; // Sử dụng RangePicker để chọn khoảng ngày
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -95,18 +100,24 @@ const ProductDetail = () => {
 
     console.log("Dữ liệu stocks trước khi lọc:", stocks);
 
-    return stocks.map((stock, index) => {
-      // Tìm biến thể tương ứng với product_variant_id
-      const variant = product.variants.find(
-        (variant) => variant.id === stock.product_variant_id
-      );
+    return stocks
+      .filter(stock => {
+        if (!filterDates[0] || !filterDates[1]) return true; // Nếu chưa chọn khoảng ngày, hiển thị tất cả
+        const stockDate = moment(stock.created_at).format("YYYY-MM-DD");
+        return stockDate >= filterDates[0] && stockDate <= filterDates[1];
+      })
+      .map((stock, index) => {
+        // Tìm biến thể tương ứng với product_variant_id
+        const variant = product.variants.find(
+          (variant) => variant.id === stock.product_variant_id
+        );
 
       // Tạo tên biến thể từ thuộc tính
       const variantName = variant
         ? `${product.name} - ${variant.attribute_value_product_variants
             .map((attr) => attr.attribute_value.value)
             .join(" - ")}`
-        : "Không có biến thể";
+        : product.name;
 
       return {
         key: stock.id,
@@ -318,7 +329,7 @@ const ProductDetail = () => {
             {/* Phần mô tả sản phẩm */}
             <div className="product-description mt-4">
               <h4>Mô tả sản phẩm</h4>
-              <p>{product.content || "Không có mô tả"}</p>
+              <div dangerouslySetInnerHTML={{ __html: product.content || "Không có mô tả" }} />
             </div>
           </div>
         </div>
@@ -344,6 +355,25 @@ const ProductDetail = () => {
           footer={null}
           width={800}
         >
+          <Form.Item label="Ngày nhập hàng">
+            <ConfigProvider locale={viVN}>
+              <RangePicker
+                format="DD/MM/YYYY"
+                onChange={(dates, dateStrings) => {
+                  if (dates) {
+                    setFilterDates([
+                      moment(dateStrings[0], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                      moment(dateStrings[1], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                    ]);
+                  } else {
+                    setFilterDates([null, null]); // Nếu người dùng xóa bộ lọc, hiển thị toàn bộ dữ liệu
+                  }
+                }}
+                placeholder={["Từ ngày", "Đến ngày"]}
+              />
+            </ConfigProvider>
+          </Form.Item>
+
           <Table
             columns={stockColumns}
             dataSource={getStockData()}
