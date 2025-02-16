@@ -207,7 +207,7 @@ const History = () => {
                 dataSource={adjustedStocks} 
                 rowKey="id"
                 loading={isProductsLoading} 
-                pagination={false} 
+                pagination={{ pageSize: 10 }}
                 bordered 
             />
 
