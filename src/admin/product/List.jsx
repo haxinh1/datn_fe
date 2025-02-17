@@ -518,6 +518,8 @@ const List = () => {
                         rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                     >
                         <InputNumber 
+                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
                             className="input-item" 
                             value={newPrice} 
                             onChange={setNewPrice} 
@@ -528,6 +530,8 @@ const List = () => {
                         label="Giá khuyến mại (VNĐ)"
                     >
                         <InputNumber 
+                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
                             className="input-item" 
                             value={newSalePrice} 
                             onChange={setNewSalePrice} 

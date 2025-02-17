@@ -221,6 +221,12 @@ const Edit = () => {
 
     const onHandleImage = (info) => {
         const { fileList } = info;
+
+        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        if (fileList.length > 12) {
+            // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
+            fileList = fileList.slice(0, 12);
+        }
     
         // Nếu upload thành công, cập nhật URL vào danh sách ảnh
         const updatedFileList = fileList.map((file) => {
@@ -499,7 +505,7 @@ const Edit = () => {
                         }}
                     >
                         {!record.thumbnail && (
-                            <Button icon={<UploadOutlined />} type="dashed">
+                            <Button icon={<UploadOutlined />} type="dashed" className="input-form">
                                 Tải ảnh lên
                             </Button>
                         )}
@@ -515,10 +521,10 @@ const Edit = () => {
             render: (_, record, index) => (
                 <Form.Item
                     name={["variants", index, "sell_price"]}
-                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                     initialValue={record.sell_price}
                 >
                     <InputNumber
+                        className="input-form"
                         min={0}
                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
@@ -540,7 +546,6 @@ const Edit = () => {
                 <Form.Item
                     name={["variants", index, "sale_price"]}
                     rules={[
-                        { required: true, message: "Vui lòng nhập giá khuyến mại" },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 const sellPrice = getFieldValue(["variants", index, "sell_price"]);
@@ -554,6 +559,7 @@ const Edit = () => {
                     initialValue={record.sale_price}
                 >
                     <InputNumber
+                        className="input-form"
                         min={0}
                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
@@ -721,7 +727,23 @@ const Edit = () => {
                     </Col>
 
                     <Col span={16} className="col-item">
-                        <Form.Item label="Ảnh sản phẩm">
+                        <Form.Item 
+                            label="Ảnh sản phẩm"
+                            name='images'
+                            rules={[
+                                {
+                                    validator: (_, value) => {
+                                        if (!value || value.length === 0) {
+                                            return Promise.reject("Vui lòng tải lên ảnh sản phẩm.");
+                                        }
+                                        if (value.length > 12) {
+                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 12 ảnh.");
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]}
+                        >
                             <Upload
                                 multiple
                                 listType="picture-card"
@@ -729,9 +751,17 @@ const Edit = () => {
                                 data={{ upload_preset: "quangOsuy" }}
                                 fileList={images}
                                 onChange={onHandleImage}
-                                onRemove={(file) => setImages(prev => prev.filter(img => img.uid !== file.uid))}
+                                beforeUpload={() => {
+                                    if (images.length >= 12) {
+                                        return false; // Chặn upload file mới
+                                    }
+                                    return true; // Cho phép upload
+                                }}
+                                onRemove={(file) => {
+                                    setImages((prev) => prev.filter((img) => img.uid !== file.uid));
+                                }}
                             >
-                                {images.length < 6 && (
+                                {images.length < 12 && (
                                     <button className="upload-button" type="button">
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>

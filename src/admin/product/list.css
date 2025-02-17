@@ -24,6 +24,10 @@
     color: red;
     font-weight: bold;
 }
+.action-link-green {
+    color: green;
+    font-weight: bold;
+}
 .divider {
     height: 20px;
     width: 1.5px;
