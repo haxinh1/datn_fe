@@ -38,20 +38,24 @@ const Import = () => {
     
             const newVariants = selectedProduct.variants?.length 
                 ? selectedProduct.variants.map(variant => ({
+                    key: `V-${variant.id}`, // ✅ Unique key cho biến thể
                     id: variant.id,
                     productId: selectedProduct.id,
                     quantity: 1,
                     price: 0, 
                     sell_price: variant.sell_price || 0,
+                    sale_price: variant.sale_price || 0,
                     total: 0, 
                     variantName: `${selectedProduct.name} - ${variant.attribute_value_product_variants.map(attr => attr.attribute_value.value).join(" - ")}`,
                 }))
                 : [{
+                    key: `P-${selectedProduct.id}`, // ✅ Unique key cho sản phẩm chính
                     id: selectedProduct.id,
                     productId: selectedProduct.id,
                     quantity: 1,
                     price: 0, 
                     sell_price: selectedProduct.sell_price || 0,
+                    sale_price: selectedProduct.sale_price || 0,
                     total: 0,
                     variantName: selectedProduct.name,
                 }];
@@ -70,22 +74,23 @@ const Import = () => {
     };
 
     // Cập nhật giá trị trong danh sách
-    const updateItem = (id, productId, field, value) => {
+    const updateItem = (key, field, value) => {
         setAddedVariants(prevItems =>
-            prevItems.map(item => 
-                (item.id === id && item.productId === productId) ? 
-                { 
-                    ...item, 
-                    [field]: value, 
-                    total: (field === "price" ? value : item.price) * item.quantity 
-                } : item
+            prevItems.map(item =>
+                item.key === key // ✅ So sánh theo key để tránh trùng ID
+                    ? { 
+                        ...item, 
+                        [field]: value, 
+                        total: (field === "price" ? value : item.price) * item.quantity 
+                    }
+                    : item
             )
         );
     };    
 
     // Xóa sản phẩm khỏi danh sách
-    const removeItem = (id) => {
-        setAddedVariants(prevItems => prevItems.filter(item => item.id !== id));
+    const removeItem = (key) => {
+        setAddedVariants(prevItems => prevItems.filter(item => item.key !== key));
     };
 
     // Tính tổng giá trị nhập hàng
@@ -176,8 +181,8 @@ const Import = () => {
     
             const response = await productsServices.importProduct(payload);
             notification.success({
-                message: "Nhập hàng thành công!",
-                description: "Sản phẩm đã được nhập vào kho.",
+                message: "Đơn hàng đã được thêm!",
+                description: "Đợi sự xác nhận từ quản lý.",
             });
     
             setAddedVariants([]); // Reset danh sách sản phẩm sau khi nhập hàng thành công
@@ -227,7 +232,7 @@ const Import = () => {
             >
                 <Table
                     dataSource={addedVariants}
-                    rowKey="id"
+                    rowKey="key"
                     pagination={false}
                     columns={[
                         {
@@ -240,6 +245,7 @@ const Import = () => {
                             title: "Tên sản phẩm",
                             dataIndex: "variantName",
                             align: "center",
+                            width: 300
                         },
                         {
                             title: "Giá nhập (VNĐ)",
@@ -247,7 +253,7 @@ const Import = () => {
                             align: "center",
                             render: (_, record) => (
                                 <Form.Item
-                                    name={`price_${record.id}`}
+                                    name={`price_${record.key}`}
                                     initialValue={record.price}
                                     rules={[
                                         {
@@ -273,23 +279,103 @@ const Import = () => {
                                     ]}
                                 >
                                     <InputNumber
+                                        className="input-form"
                                         min={1}
                                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
                                         onChange={(value) => {
-                                            form.setFieldsValue({ [`price_${record.id}`]: value }); // Cập nhật giá vào form
-                                            updateItem(record.id, record.productId, "price", value); // Cập nhật giá vào danh sách
+                                            form.setFieldsValue({ [`price_${record.key}`]: value }); // Cập nhật giá vào form
+                                            updateItem(record.key, "price", value); // ✅ Cập nhật giá vào danh sách
                                         }}
                                     />
                                 </Form.Item>
                             ),
-                        },                        
+                        },  
                         {
-                            title: "Giá bán (VNĐ)", // Hiển thị giá bán từ DB
+                            title: "Giá bán (VNĐ)",
                             dataIndex: "sell_price",
                             align: "center",
-                            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
-                        },
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
+                        
+                                return (
+                                    <Form.Item
+                                        name={`sell_price_${uniqueKey}`}
+                                        initialValue={record.sell_price} // Truyền giá bán từ DB vào input
+                                        // rules={[
+                                        //     {
+                                        //         required: true,
+                                        //         message: "Vui lòng nhập giá bán!",
+                                        //     },
+                                        //     {
+                                        //         type: "number",
+                                        //         min: 1,
+                                        //         message: "Giá bán phải lớn hơn 0!",
+                                        //     },
+                                        // ]}
+                                    >
+                                        <InputNumber
+                                            className="input-form"
+                                            min={1}
+                                            disabled 
+                                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            parser={value => value?.replace(/\./g, "")}
+                                            onChange={(value) => {
+                                                form.setFieldsValue({ [`sell_price_${uniqueKey}`]: value });
+                                                updateItem(record.id, record.productId, "sell_price", value);
+                                            }}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },         
+                        {
+                            title: "Giá KM (VNĐ)",
+                            dataIndex: "sale_price",
+                            align: "center",
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
+                        
+                                return (
+                                    <Form.Item
+                                        name={`sale_price_${uniqueKey}`}
+                                        initialValue={record.sale_price || 0} // Truyền giá khuyến mại từ DB vào input
+                                        // rules={[
+                                        //     {
+                                        //         required: true,
+                                        //         message: "Vui lòng nhập giá khuyến mại!",
+                                        //     },
+                                        //     {
+                                        //         type: "number",
+                                        //         min: 1,
+                                        //         message: "Giá khuyến mại phải lớn hơn 0!",
+                                        //     },
+                                        //     ({ getFieldValue }) => ({
+                                        //         validator(_, value) {
+                                        //             const sellPrice = form.getFieldValue(`sell_price_${uniqueKey}`);
+                                        //             if (value && sellPrice && value >= sellPrice) {
+                                        //                 return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
+                                        //             }
+                                        //             return Promise.resolve();
+                                        //         },
+                                        //     }),
+                                        // ]}
+                                    >
+                                        <InputNumber
+                                            className="input-form"
+                                            min={1}
+                                            disabled 
+                                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            parser={value => value?.replace(/\./g, "")}
+                                            onChange={(value) => {
+                                                form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
+                                                updateItem(record.id, record.productId, "sale_price", value);
+                                            }}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },            
                         {
                             title: "Số lượng",
                             dataIndex: "quantity",
@@ -298,7 +384,7 @@ const Import = () => {
                                 <InputNumber
                                     min={1}
                                     value={record.quantity}
-                                    onChange={(value) => updateItem(record.id, record.productId, "quantity", value)}
+                                    onChange={(value) => updateItem(record.key, "quantity", value)}
                                 />
                             ),
                         },
@@ -318,7 +404,7 @@ const Import = () => {
                                         type="text"
                                         danger
                                         icon={<DeleteOutlined />}
-                                        onClick={() => removeItem(record.id)}
+                                        onClick={() => removeItem(record.key)}
                                     />
                                 </Tooltip>
                             ),
@@ -326,7 +412,7 @@ const Import = () => {
                     ]}
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={3} align="right">
+                            <Table.Summary.Cell colSpan={6} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">

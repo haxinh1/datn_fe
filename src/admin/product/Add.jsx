@@ -151,14 +151,9 @@ const Add = () => {
         let { fileList } = info;
     
         // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
-        if (fileList.length > 6) {
-            notification.warning({
-                message: "Giới hạn tải lên",
-                description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
-            });
-    
+        if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
-            fileList = fileList.slice(0, 6);
+            fileList = fileList.slice(0, 12);
         }
     
         // Nếu upload thành công, cập nhật URL vào danh sách ảnh
@@ -481,7 +476,7 @@ const Add = () => {
                         }}
                     >
                         {!record.thumbnail && (
-                            <Button icon={<UploadOutlined />} type="dashed">
+                            <Button icon={<UploadOutlined />} type="dashed" className="input-form">
                                 Tải ảnh lên
                             </Button>
                         )}
@@ -497,10 +492,10 @@ const Add = () => {
             render: (_, record, index) => (
                 <Form.Item
                     name={["variants", index, "sell_price"]}
-                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                     initialValue={record.sell_price}
                 >
                     <InputNumber
+                        className="input-form"
                         min={0}
                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
@@ -522,7 +517,6 @@ const Add = () => {
                 <Form.Item
                     name={["variants", index, "sale_price"]}
                     rules={[
-                        { required: true, message: "Vui lòng nhập giá khuyến mại" },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 const sellPrice = getFieldValue(["variants", index, "sell_price"]);
@@ -536,6 +530,7 @@ const Add = () => {
                     initialValue={record.sale_price}
                 >
                     <InputNumber
+                        className="input-form"
                         min={0}
                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
@@ -729,10 +724,10 @@ const Add = () => {
                                 {
                                     validator: (_, value) => {
                                         if (!value || value.length === 0) {
-                                            return Promise.reject("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.");
+                                            return Promise.reject("Vui lòng tải lên ảnh sản phẩm.");
                                         }
-                                        if (value.length > 6) {
-                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 6 ảnh.");
+                                        if (value.length > 12) {
+                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 12 ảnh.");
                                         }
                                         return Promise.resolve();
                                     },
@@ -747,11 +742,7 @@ const Add = () => {
                                 fileList={images}  // Hiển thị danh sách ảnh hiện tại
                                 onChange={onHandleImage}
                                 beforeUpload={() => {
-                                    if (images.length >= 6) {
-                                        notification.warning({
-                                            message: "Giới hạn tải lên",
-                                            description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
-                                        });
+                                    if (images.length >= 12) {
                                         return false; // Chặn upload file mới
                                     }
                                     return true; // Cho phép upload
@@ -760,7 +751,7 @@ const Add = () => {
                                     setImages((prev) => prev.filter((img) => img.uid !== file.uid));
                                 }}
                             >
-                                {images.length < 6 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
+                                {images.length < 12 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
