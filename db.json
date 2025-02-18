@@ -4,7 +4,7 @@
     "total_amount": 1200000,
     "created_at": "2022-01-01",
     "products": [ 
-        { // sản phẩm có biến thể
+        { 
             "id": 1, 
             "name" : "Product 1",
             "variants": [
@@ -22,7 +22,7 @@
                 }
             ]
         },
-        { // sản phẩm đơn
+        { 
             "id": 2, 
             "price": 350000,
             "quantity": 10,
