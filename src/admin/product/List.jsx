@@ -319,7 +319,7 @@ const List = () => {
                 Danh sách sản phẩm
             </h1>
 
-            <div className="btn">
+            <div className="group1">
                 <div className="group1">
                     <Select
                         placeholder="Chọn danh mục"

@@ -537,7 +537,7 @@ const History = () => {
                 Lịch sử nhập hàng
             </h1>
 
-            <div className="btn">
+            <div className="group1">
                 <div className="group1">
                     <ConfigProvider locale={viVN}>
                         <RangePicker
@@ -653,7 +653,7 @@ const History = () => {
                     bordered
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={4} align="right">
+                            <Table.Summary.Cell colSpan={6} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">
