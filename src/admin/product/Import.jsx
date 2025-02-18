@@ -89,8 +89,8 @@ const Import = () => {
     };    
 
     // Xóa sản phẩm khỏi danh sách
-    const removeItem = (id) => {
-        setAddedVariants(prevItems => prevItems.filter(item => item.id !== id));
+    const removeItem = (key) => {
+        setAddedVariants(prevItems => prevItems.filter(item => item.key !== key));
     };
 
     // Tính tổng giá trị nhập hàng
@@ -245,6 +245,7 @@ const Import = () => {
                             title: "Tên sản phẩm",
                             dataIndex: "variantName",
                             align: "center",
+                            width: 300
                         },
                         {
                             title: "Giá nhập (VNĐ)",
@@ -329,7 +330,7 @@ const Import = () => {
                             },
                         },         
                         {
-                            title: "Giá khuyến mại (VNĐ)",
+                            title: "Giá KM (VNĐ)",
                             dataIndex: "sale_price",
                             align: "center",
                             render: (_, record) => {

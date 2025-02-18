@@ -538,7 +538,7 @@ const History = () => {
             </h1>
 
             <div className="btn">
-                <div className="btn-group">
+                <div className="group1">
                     <ConfigProvider locale={viVN}>
                         <RangePicker
                             
@@ -563,7 +563,7 @@ const History = () => {
                     </Select>
                 </div>
 
-                <Link to="/import">
+                <Link to="/import" className='group2'>
                     <Button 
                         color="primary" variant="solid" 
                         icon={<PlusOutlined />} 

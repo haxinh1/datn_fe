@@ -320,7 +320,7 @@ const List = () => {
             </h1>
 
             <div className="btn">
-                <div className="btn-group">
+                <div className="group1">
                     <Select
                         placeholder="Chọn danh mục"
                         className="select-item"
@@ -358,7 +358,7 @@ const List = () => {
                     </Select>
                 </div>
 
-                <div className="btn-group">
+                <div className="group2">
                     <Link to="/add-pr">
                         <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
                             Thêm sản phẩm
