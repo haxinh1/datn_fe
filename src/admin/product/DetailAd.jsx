@@ -217,7 +217,7 @@ const ProductDetail = () => {
               <tbody>
                 <tr>
                   <th>Mã sản phẩm:</th>
-                  <td>{product.code || "Không có mã"}</td>
+                  <td>{product.sku || "Không có mã"}</td>
                 </tr>
                 <tr>
                   <th>Tên sản phẩm:</th>
