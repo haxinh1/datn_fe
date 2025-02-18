@@ -6,8 +6,11 @@ import moment from "moment";
 import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Modal, Table } from "antd";
+import { Button, Modal, Table, DatePicker, ConfigProvider, Form } from "antd";
 import { categoryServices } from "../../services/categories";
+import { EyeOutlined } from "@ant-design/icons";
+import viVN from "antd/lib/locale/vi_VN"; // Import locale tiếng Việt
+import "moment/locale/vi"; // Chuyển moment sang tiếng Việt
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -19,6 +22,9 @@ const ProductDetail = () => {
   const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stocks, setStocks] = useState([]); // Lưu stocks riêng biệt
+  const [filterDates, setFilterDates] = useState([null, null]); // State lưu khoảng ngày bắt đầu và kết thúc
+
+  const { RangePicker } = DatePicker; // Sử dụng RangePicker để chọn khoảng ngày
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -90,27 +96,41 @@ const ProductDetail = () => {
 
   // Lấy dữ liệu từ `stocks` để hiển thị trong modal
   const getStockData = () => {
-    if (!stocks || !Array.isArray(stocks)) return [];
+    if (!stocks || !Array.isArray(stocks) || !product?.variants) return [];
 
     console.log("Dữ liệu stocks trước khi lọc:", stocks);
 
-    // Lọc stocks theo ID sản phẩm
-    const filteredStocks = stocks.filter(
-      (stock) => stock.product_name === product.name
-    );
+    return stocks
+      .filter(stock => {
+        if (!filterDates[0] || !filterDates[1]) return true; // Nếu chưa chọn khoảng ngày, hiển thị tất cả
+        const stockDate = moment(stock.created_at).format("YYYY-MM-DD");
+        return stockDate >= filterDates[0] && stockDate <= filterDates[1];
+      })
+      .map((stock, index) => {
+        // Tìm biến thể tương ứng với product_variant_id
+        const variant = product.variants.find(
+          (variant) => variant.id === stock.product_variant_id
+        );
 
-    console.log("Dữ liệu stocks sau khi lọc:", filteredStocks);
+      // Tạo tên biến thể từ thuộc tính
+      const variantName = variant
+        ? `${product.name} - ${variant.attribute_value_product_variants
+            .map((attr) => attr.attribute_value.value)
+            .join(" - ")}`
+        : product.name;
 
-    return filteredStocks.map((stock, index) => ({
-      key: stock.id,
-      stt: index + 1,
-      quantity: stock.quantity,
-      price: parseFloat(stock.price),
-      created_at: stock.created_at
-        ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
-        : "N/A",
-      total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
-    }));
+      return {
+        key: stock.id,
+        stt: index + 1,
+        variant_name: variantName,
+        quantity: stock.quantity,
+        price: parseFloat(stock.price),
+        created_at: stock.created_at
+          ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
+          : "N/A",
+        total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
+      };
+    });
   };
 
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
@@ -121,6 +141,11 @@ const ProductDetail = () => {
     {
       title: "STT",
       dataIndex: "stt",
+      align: "center",
+    },
+    {
+      title: "Tên sản phẩm",
+      dataIndex: "variant_name",
       align: "center",
     },
     {
@@ -149,7 +174,11 @@ const ProductDetail = () => {
   return (
     product && (
       <div className="container mt-5">
-        <h2 style={{ margin: "20px" }}>Chi tiết sản phẩm</h2>
+        <h1 className='mb-5'>
+          <EyeOutlined style={{ marginRight: "8px" }} />
+          Chi tiết sản phẩm
+        </h1>
+
         <div className="row">
           {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
@@ -248,14 +277,14 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Lượt xem:</th>
-                  <td>{product.views || 0} Views</td>
+                  <td>{product.views || 0}</td>
                 </tr>
                 <tr>
                   <th>Giá bán (VNĐ):</th>
                   <td>{formatPrice(product.sell_price)} </td>
                 </tr>
                 <tr>
-                  <th>Giá bán khuyến mãi (VNĐ):</th>
+                  <th>Giá khuyến mại (VNĐ):</th>
                   <td>{formatPrice(product.sale_price)} </td>
                 </tr>
                 <tr>
@@ -300,22 +329,7 @@ const ProductDetail = () => {
             {/* Phần mô tả sản phẩm */}
             <div className="product-description mt-4">
               <h4>Mô tả sản phẩm</h4>
-              {/* <p>{product.content || "Không có mô tả"}</p> */}
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam
-                quos ad facere, illum exercitationem repellat esse excepturi
-                consequatur rerum? Sapiente id illum voluptate excepturi
-                architecto eius obcaecati odio nisi praesentium, explicabo iste
-                sint illo delectus doloribus impedit iure ipsum maxime totam
-                dolor fugit! Nisi voluptatibus, deleniti dignissimos natus
-                nihil, quia repellendus dolores voluptates cupiditate non nobis
-                corporis perspiciatis, quaerat cumque laborum ea fuga ipsa
-                fugiat excepturi? Cumque similique aliquid consectetur,
-                blanditiis aut voluptas quo, dolorum obcaecati quod sequi facere
-                recusandae sunt, laudantium repellat sed non illum fugiat magni
-                illo in sit explicabo totam? Delectus ab nobis cupiditate
-                molestias consectetur. Fuga?
-              </p>
+              <div dangerouslySetInnerHTML={{ __html: product.content || "Không có mô tả" }} />
             </div>
           </div>
         </div>
@@ -341,6 +355,25 @@ const ProductDetail = () => {
           footer={null}
           width={800}
         >
+          <Form.Item label="Ngày nhập hàng">
+            <ConfigProvider locale={viVN}>
+              <RangePicker
+                format="DD/MM/YYYY"
+                onChange={(dates, dateStrings) => {
+                  if (dates) {
+                    setFilterDates([
+                      moment(dateStrings[0], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                      moment(dateStrings[1], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                    ]);
+                  } else {
+                    setFilterDates([null, null]); // Nếu người dùng xóa bộ lọc, hiển thị toàn bộ dữ liệu
+                  }
+                }}
+                placeholder={["Từ ngày", "Đến ngày"]}
+              />
+            </ConfigProvider>
+          </Form.Item>
+
           <Table
             columns={stockColumns}
             dataSource={getStockData()}
@@ -353,7 +386,7 @@ const ProductDetail = () => {
               );
               return (
                 <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
+                  <Table.Summary.Cell colSpan={5} align="right">
                     <strong>Tổng giá trị (VNĐ):</strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">

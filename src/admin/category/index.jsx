@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Modal, Switch, Form, Input, Select, notification } from "antd";
 import { categoryServices } from './../../services/categories';
-import { PlusOutlined } from '@ant-design/icons';
+import { BookOutlined, PlusOutlined } from '@ant-design/icons';
 import formatDate from '../../utils/formatDate';
 import slugify from 'slugify';
 
@@ -128,7 +128,10 @@ const Categories = () => {
 
     return (
         <>
-            <h1 className="mb-5">Danh sách danh mục</h1>
+            <h1 className="mb-5">
+                <BookOutlined style={{ marginRight: "8px" }} />
+                Danh sách danh mục
+            </h1>
             <div className="btn-brand">
                 <Button 
                     type="primary" 

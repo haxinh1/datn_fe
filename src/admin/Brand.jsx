@@ -128,7 +128,7 @@ const Brand = () => {
         <div>
             <h1 className="mb-5">
                 <BookOutlined style={{ marginRight: "8px" }} />
-                Quản lý thương hiệu
+                Danh sách thương hiệu
             </h1>
 
             <div className="btn-brand">

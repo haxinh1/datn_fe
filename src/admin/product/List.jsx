@@ -166,6 +166,15 @@ const List = () => {
     const handleSaveVariant = () => {
         if (!currentVariant) return;
 
+        // Kiểm tra giá khuyến mại phải nhỏ hơn giá bán
+        if (newSalePrice >= newPrice) {
+            notification.warning({
+                message: "Lỗi cập nhật",
+                description: "Giá khuyến mại phải nhỏ hơn giá bán.",
+            });
+            return;
+        }
+
         // Kiểm tra nếu sản phẩm chính đang dừng kinh doanh, không cho phép bật biến thể
         const parentProduct = products.find((p) => p.id === currentVariant.product_id);
         if (parentProduct && parentProduct.is_active === 0 && isActive === 1) {
@@ -310,8 +319,8 @@ const List = () => {
                 Danh sách sản phẩm
             </h1>
 
-            <div className="btn">
-                <div className="btn-group">
+            <div className="group1">
+                <div className="group1">
                     <Select
                         placeholder="Chọn danh mục"
                         className="select-item"
@@ -349,7 +358,7 @@ const List = () => {
                     </Select>
                 </div>
 
-                <div className="btn-group">
+                <div className="group2">
                     <Link to="/add-pr">
                         <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
                             Thêm sản phẩm
@@ -480,7 +489,7 @@ const List = () => {
                             );
                         },
                     }}
-                    pagination={{ pageSize: 6 }}
+                    pagination={{ pageSize: 8 }}
                     rowKey="id"
                 />
             </Skeleton>
@@ -491,11 +500,26 @@ const List = () => {
                 onCancel={() => setIsModalVisible(false)} 
                 footer={null}
             >
+                <h5 className="action-link-purple">
+                    {currentVariant
+                        ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
+                            currentVariant.attribute_value_product_variants
+                                ?.map(attr => attr.attribute_value?.value)
+                                .join(" - ") || "Không có thuộc tính"
+                        }`
+                        : ""}
+                </h5>
+
                 <Form layout="vertical">
                     <Form.Item 
                         label="Giá bán (VNĐ)"
+                        name="sell_price"
+                        initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
+                        rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                     >
                         <InputNumber 
+                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
                             className="input-item" 
                             value={newPrice} 
                             onChange={setNewPrice} 
@@ -506,6 +530,8 @@ const List = () => {
                         label="Giá khuyến mại (VNĐ)"
                     >
                         <InputNumber 
+                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
                             className="input-item" 
                             value={newSalePrice} 
                             onChange={setNewSalePrice} 
