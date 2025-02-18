@@ -17,7 +17,7 @@ import "react-quill/dist/quill.snow.css";
 
 const { Option } = Select;
 
-const Add = () => {
+const Creat = () => {
     const queryClient = useQueryClient(); 
     const [forms, setForms] = useState([{ id: Date.now(), name: "", values: [] }]);
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
@@ -69,7 +69,7 @@ const Add = () => {
                 description: "Sản phẩm mới đã được thêm vào danh sách.",
             });
             queryClient.invalidateQueries({ queryKey: ["products"] });
-            navigate("/list-pr");
+            navigate("/import");
         },
         onError: (error) => {
             notification.error({
@@ -1120,4 +1120,4 @@ const Add = () => {
     );
 };
 
-export default Add;
+export default Creat;

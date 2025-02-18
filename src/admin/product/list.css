@@ -1,4 +1,4 @@
-.page-title {
+.mb-5 {
     font-size: 2rem;
     color: blue;
 }
@@ -10,17 +10,23 @@
 }
 .action-link {
     text-decoration: none;
-    font-weight: bold;
     cursor: pointer;
 }
 .action-link-purple {
-    color: purple;
+    color: blue;
+    text-align: center;
 }
 .action-link-blue {
     color: blue;
+    font-weight: bold;
 }
 .action-link-red {
     color: red;
+    font-weight: bold;
+}
+.action-link-green {
+    color: green;
+    font-weight: bold;
 }
 .divider {
     height: 20px;
@@ -30,21 +36,29 @@
 }
 .action-container {
     display: flex;
+    gap: 10px;
     align-items: center;
     justify-content: center;
 }
 .btn {
     display: flex;
-    justify-content: space-between;
     align-items: center; 
     gap: 10px;
 }
-.btn-group {
+.group1 {
     display: flex;
     gap: 10px;
 }
-.select-item {
-    margin-bottom: 0;
-    width: 200px;
+.group2 {
+    display: flex;
+    margin-left: auto;
+    gap: 10px;
 }
-
+.btn-brand{
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.select-item {
+    width: 160px;
+}

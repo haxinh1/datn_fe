@@ -3,26 +3,35 @@ import { Route, Routes } from "react-router-dom";
 import List from "./admin/product/List";
 import Edit from "./admin/product/Edit";
 import Add from "./admin/product/Add";
-import Home from "./pages/Home";
-import Cart from "./pages/Cart";
-import Pay from "./pages/Pay";
-import Detail from "./pages/Detail";
+import Home from './pages/Home';
+import Cart from './pages/Cart';
+import Pay from './pages/Pay';
+import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
-import ProductDetail from "./Admin/product/DetailAd";
-import Categories from "./Admin/category";
+import Test from './admin/Test';
+import ProductDetail from './admin/product/DetailAd';
+import Categories from './admin/category/index';
+import Import from "./admin/product/Import";
+import Creat from "./admin/product/Creat";
+import History from "./admin/product/History";
 
 function App() {
+
   return (
     <>
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
-          <Route path="/detailad" element={<ProductDetail />} />
           <Route path="/list-pr" element={<List />} />
+          <Route path="/detailad/:id" element={<ProductDetail />} />
           <Route path="/add-pr" element={<Add />} />
-          <Route path="/edit-pr" element={<Edit />} />
-          <Route path="/brand" element={<Brand />} />
+          <Route path="/edit-pr/:id" element={<Edit />} />
+          <Route path="/import" element={<Import />} />
+          <Route path="/creat" element={<Creat />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/brand" element={<Brand />} />
+          <Route path="/test" element={<Test />} />
         </Route>
       </Routes>
 
@@ -34,6 +43,8 @@ function App() {
           <Route path="/detail-pr" element={<Detail />} />
         </Route>
       </Routes>
+
+      
     </>
   );
 }
