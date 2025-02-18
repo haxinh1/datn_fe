@@ -1,6 +1,15 @@
 .container {
-    width: 100%;
-  }
-  .btn {
-    margin-bottom: 20px;
-  }
+  width: 100%;
+}
+.btn {
+  margin-bottom: 20px;
+}
+
+.same-size-btn {
+  min-width: 150px; /* Đảm bảo các nút có cùng chiều rộng */
+  height: 40px; /* Đảm bảo cùng chiều cao */
+  font-size: 16px; /* Đồng nhất kích thước chữ */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

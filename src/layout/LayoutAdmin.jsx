@@ -1,14 +1,7 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Breadcrumb, Layout, Menu, theme } from "antd";
-import {
-  HomeOutlined,
-  BookOutlined,
-  FormOutlined,
-  UserOutlined,
-  BilibiliFilled,
-  MessageOutlined,
-} from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -25,16 +18,20 @@ const LayoutAdmin = () => {
       label: <Link to="/list-pr">Quản lý sản phẩm</Link>,
     },
     {
-      key: "brand",
-      icon: <BilibiliFilled />,
-      label: <Link to="/brand">Thương hiệu</Link>,
+      key: "history",
+      icon: <BookOutlined />,
+      label: <Link to='history'>Quản lý nhập hàng</Link>,
     },
     {
       key: "category",
       icon: <BilibiliFilled />,
-      label: <Link to="/categories">Thể Loại</Link>,
+      label: <Link to="/categories">Danh mục</Link>,
     },
-
+    {
+      key: "brand",
+      icon: <BilibiliFilled />,
+      label: <Link to="/brand">Thương hiệu</Link>,
+    },
     {
       key: "bill",
       icon: <BilibiliFilled />,
@@ -73,21 +70,13 @@ const LayoutAdmin = () => {
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
         <div className="demo-logo-vertical" />
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={["admin"]}
-          items={menuItems}
-        />
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={["admin"]} items={menuItems} />
       </Sider>
 
       {/* Main Layout */}
       <Layout className="main-layout">
-        <Header
-          className="header-admin"
-          style={{ background: colorBgContainer }}
-        />
-
+        <Header className="header-admin" style={{ background: colorBgContainer }} />
+        
         <Content className="content-admin">
           <Breadcrumb className="breadcrumb-admin" />
           <div
