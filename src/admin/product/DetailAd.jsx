@@ -144,7 +144,7 @@ const ProductDetail = () => {
       align: "center",
     },
     {
-      title: "Tên biến thể",
+      title: "Tên sản phẩm",
       dataIndex: "variant_name",
       align: "center",
     },

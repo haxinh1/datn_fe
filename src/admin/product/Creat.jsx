@@ -12,6 +12,8 @@ import { AttributesServices } from './../../services/attributes';
 import { ValuesServices } from './../../services/attribute_value';
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const { Option } = Select;
 
@@ -149,14 +151,9 @@ const Creat = () => {
         let { fileList } = info;
     
         // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
-        if (fileList.length > 6) {
-            notification.warning({
-                message: "Giới hạn tải lên",
-                description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
-            });
-    
+        if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
-            fileList = fileList.slice(0, 6);
+            fileList = fileList.slice(0, 12);
         }
     
         // Nếu upload thành công, cập nhật URL vào danh sách ảnh
@@ -479,7 +476,7 @@ const Creat = () => {
                         }}
                     >
                         {!record.thumbnail && (
-                            <Button icon={<UploadOutlined />} type="dashed">
+                            <Button icon={<UploadOutlined />} type="dashed" className="input-form">
                                 Tải ảnh lên
                             </Button>
                         )}
@@ -492,43 +489,60 @@ const Creat = () => {
             dataIndex: "sell_price",
             key: "sell_price",
             align: "center",
-            render: (text, record) => (
-                <InputNumber
-                    min={0}
-                    value={record.sell_price}
-                    onChange={(value) => {
-                        const updatedTableData = tableData.map((item) => {
-                            if (item.key === record.key) {
-                                return { ...item, sell_price: value };
-                            }
-                            return item;
-                        });
-                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
-                    }}
-                />
+            render: (_, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sell_price"]}
+                    initialValue={record.sell_price}
+                >
+                    <InputNumber
+                        className="input-form"
+                        min={0}
+                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                        onChange={(value) => {
+                            const updatedTableData = [...tableData];
+                            updatedTableData[index] = { ...record, sell_price: value };
+                            setTableData(updatedTableData);
+                        }}
+                    />
+                </Form.Item>
             ),
-        },     
+        },
         {
             title: "Giá khuyến mại (VNĐ)",
             dataIndex: "sale_price",
             key: "sale_price",
             align: "center",
-            render: (text, record) => (
-                <InputNumber
-                    min={0}
-                    value={record.sale_price}
-                    onChange={(value) => {
-                        const updatedTableData = tableData.map((item) => {
-                            if (item.key === record.key) {
-                                return { ...item, sale_price: value };
-                            }
-                            return item;
-                        });
-                        setTableData(updatedTableData);  // Cập nhật lại dữ liệu bảng
-                    }}
-                />
+            render: (_, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sale_price"]}
+                    rules={[
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                const sellPrice = getFieldValue(["variants", index, "sell_price"]);
+                                if (!value || value < sellPrice) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán"));
+                            },
+                        }),
+                    ]}
+                    initialValue={record.sale_price}
+                >
+                    <InputNumber
+                        className="input-form"
+                        min={0}
+                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                        onChange={(value) => {
+                            const updatedTableData = [...tableData];
+                            updatedTableData[index] = { ...record, sale_price: value };
+                            setTableData(updatedTableData);
+                        }}
+                    />
+                </Form.Item>
             ),
-        },   
+        },
         {
             title: "Ngày mở KM",
             dataIndex: "sale_price_start_at",
@@ -710,10 +724,10 @@ const Creat = () => {
                                 {
                                     validator: (_, value) => {
                                         if (!value || value.length === 0) {
-                                            return Promise.reject("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.");
+                                            return Promise.reject("Vui lòng tải lên ảnh sản phẩm.");
                                         }
-                                        if (value.length > 6) {
-                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 6 ảnh.");
+                                        if (value.length > 12) {
+                                            return Promise.reject("Bạn chỉ có thể tải lên tối đa 12 ảnh.");
                                         }
                                         return Promise.resolve();
                                     },
@@ -728,11 +742,7 @@ const Creat = () => {
                                 fileList={images}  // Hiển thị danh sách ảnh hiện tại
                                 onChange={onHandleImage}
                                 beforeUpload={() => {
-                                    if (images.length >= 6) {
-                                        notification.warning({
-                                            message: "Giới hạn tải lên",
-                                            description: "Bạn chỉ có thể tải lên tối đa 6 ảnh sản phẩm.",
-                                        });
+                                    if (images.length >= 12) {
                                         return false; // Chặn upload file mới
                                     }
                                     return true; // Cho phép upload
@@ -741,7 +751,7 @@ const Creat = () => {
                                     setImages((prev) => prev.filter((img) => img.uid !== file.uid));
                                 }}
                             >
-                                {images.length < 6 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
+                                {images.length < 12 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
@@ -749,12 +759,28 @@ const Creat = () => {
                                 )}
                             </Upload>
                         </Form.Item>
-                        
-                        <Form.Item
-                            label="Mô tả sản phẩm"
+
+                        <Form.Item 
+                            label="Mô tả sản phẩm" 
                             name="content"
                         >
-                            <TextArea rows={9} className="input-item" />
+                            <ReactQuill 
+                                theme="snow"
+                                style={{ height: "280px", paddingBottom: '50px' }} 
+                                modules={{
+                                    toolbar: [
+                                        [{ 'font': [] }], 
+                                        [{ 'size': ['small', false, 'large', 'huge'] }], 
+                                        [{ 'color': [] }, { 'background': [] }],
+                                        [{ 'align': [] }],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        ['blockquote', 'code-block'],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        ['link', 'image'],
+                                        ['clean']
+                                    ],
+                                }}
+                            />
                         </Form.Item>
 
                         <Form.Item 
@@ -789,9 +815,12 @@ const Creat = () => {
                                 <Form.Item
                                     label="Giá bán (VNĐ)"
                                     name="sell_price"
-                                    rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
                                 >
-                                    <InputNumber className="input-item" />
+                                    <InputNumber
+                                        className="input-item" 
+                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
@@ -811,8 +840,24 @@ const Creat = () => {
                                 <Form.Item
                                     label="Giá khuyến mại (VNĐ)"
                                     name="sale_price"
+                                    dependencies={["sell_price"]}
+                                    rules={[
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                const sellPrice = getFieldValue("sell_price");
+                                                if (!value || !sellPrice || value < sellPrice) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
+                                            }
+                                        })
+                                    ]}
                                 >
-                                    <InputNumber className="input-item" />
+                                    <InputNumber 
+                                        className="input-item" 
+                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    />
                                 </Form.Item>
 
                                 <Form.Item

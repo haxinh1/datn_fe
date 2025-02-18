@@ -12,6 +12,9 @@
     width: 100%;
     height: 40px;
 }
+.input-form {
+    margin-top: 25px;
+}
 .input-attribute {
     width: 30%;
     height: 40px;
