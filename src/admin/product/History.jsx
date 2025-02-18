@@ -552,7 +552,6 @@ const History = () => {
                     <Select
                         placeholder="Trạng thái"
                         className="select-item"
-                        showSearch
                         allowClear
                         value={filterStatus}
                         onChange={(value) => setFilterStatus(value ?? null)}
