@@ -13,8 +13,8 @@
     cursor: pointer;
 }
 .action-link-purple {
-    color: purple;
-    font-weight: bold;
+    color: blue;
+    text-align: center;
 }
 .action-link-blue {
     color: blue;
@@ -22,6 +22,10 @@
 }
 .action-link-red {
     color: red;
+    font-weight: bold;
+}
+.action-link-green {
+    color: green;
     font-weight: bold;
 }
 .divider {
@@ -38,12 +42,16 @@
 }
 .btn {
     display: flex;
-    justify-content: space-between;
     align-items: center; 
     gap: 10px;
 }
-.btn-group {
+.group1 {
     display: flex;
+    gap: 10px;
+}
+.group2 {
+    display: flex;
+    margin-left: auto;
     gap: 10px;
 }
 .btn-brand{
