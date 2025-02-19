@@ -71,6 +71,6 @@ export const AuthServices = {
   register,
   login,
   loginad,
-  logout,
+  logoutclient,
   logoutad,
 };
