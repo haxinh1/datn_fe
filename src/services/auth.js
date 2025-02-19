@@ -39,7 +39,7 @@ const loginad = async (phone_number, password) => {
   return response.data;
 };
 
-const logout = async () => {
+const logoutclient = async () => {
   const token = localStorage.getItem("clientToken");
   const response = await instance.post(
     "/client/logout",
