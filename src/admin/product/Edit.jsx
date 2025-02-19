@@ -220,9 +220,9 @@ const Edit = () => {
     };       
 
     const onHandleImage = (info) => {
-        const { fileList } = info;
+        let { fileList } = info;
 
-        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        // Nếu tổng số ảnh vượt quá 12, không cho phép upload thêm
         if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
             fileList = fileList.slice(0, 12);
@@ -240,7 +240,6 @@ const Edit = () => {
             return file;
         });
     
-        // Cập nhật danh sách ảnh trong state
         setImages(updatedFileList);
     };    
 
@@ -730,6 +729,7 @@ const Edit = () => {
                         <Form.Item 
                             label="Ảnh sản phẩm"
                             name='images'
+                            getValueFromEvent={normFile}
                             rules={[
                                 {
                                     validator: (_, value) => {

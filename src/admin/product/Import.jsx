@@ -143,7 +143,6 @@ const Import = () => {
             products: productsArray
         };
     
-        console.log("Payload to submit:", JSON.stringify(payload, null, 2));
         return payload;
     };    
 
