@@ -377,7 +377,7 @@ const ProductDetail = () => {
           <Table
             columns={stockColumns}
             dataSource={getStockData()}
-            pagination={false}
+            pagination={{ pageSize: 8 }}
             bordered
             summary={(pageData) => {
               const totalAmount = pageData.reduce(
