@@ -879,7 +879,7 @@ const Creat = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h2>Thuộc tính</h2>
+                        <h1 className="mb-5">Thuộc tính</h1>
                         {forms.map((form, index) => (
                             <div key={form.id} className="attribute">
                                 <Select
@@ -970,7 +970,7 @@ const Creat = () => {
                         <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                         <hr />
-                        <h2>Danh sách sản phẩm cùng loại</h2>
+                        <h1 className="mb-5">Danh sách sản phẩm cùng loại</h1>
                         <Table columns={columns} dataSource={tableData} rowKey="id" />
                     </>
                 )}
