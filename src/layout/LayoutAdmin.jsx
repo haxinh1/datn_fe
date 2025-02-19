@@ -90,6 +90,11 @@ const LayoutAdmin = () => {
       label: <Link to="/brand">Thương hiệu</Link>,
     },
     {
+      key: "account",
+      icon: <BilibiliFilled />,
+      label: <Link to="/account">Quản lý tài khoản</Link>,
+    },
+    {
       key: "bill",
       icon: <BilibiliFilled />,
       label: <Link to="/bill">Hóa đơn</Link>,

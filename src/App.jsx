@@ -17,6 +17,7 @@ import Creat from "./admin/product/Creat";
 import History from "./admin/product/History";
 import LoginAd from "./admin/LoginAd";
 import PrivateRoute from "./admin/PrivateRAd";
+import Account from "./admin/Account";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/history" element={<History />} />
             <Route path="/brand" element={<Brand />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/test" element={<Test />} />
           </Route>
         </Route>
