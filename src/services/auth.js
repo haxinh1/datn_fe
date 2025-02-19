@@ -41,30 +41,40 @@ const loginad = async (phone_number, password) => {
 
 const logoutclient = async () => {
   const token = localStorage.getItem("clientToken");
-  const response = await instance.post(
-    "/client/logout",
-    {},
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
 
-  localStorage.removeItem("clientToken");
-  return response.data;
+  // Xóa token client trước khi gửi yêu cầu logout
+  if (token) {
+    const response = await instance.post(
+      "/client/logout",
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    // Xóa token client
+    localStorage.removeItem("clientToken");
+  }
+
+  return { message: "Client logged out successfully" };
 };
 
 const logoutad = async () => {
   const token = localStorage.getItem("adminToken");
-  const response = await instance.post(
-    "/admin/logout",
-    {},
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
 
-  localStorage.removeItem("adminToken");
-  return response.data;
+  // Xóa token admin trước khi gửi yêu cầu logout
+  if (token) {
+    const response = await instance.post(
+      "/admin/logout",
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    // Xóa token admin
+    localStorage.removeItem("adminToken");
+  }
+
+  return { message: "Admin logged out and adminToken cleared" };
 };
 
 export const AuthServices = {

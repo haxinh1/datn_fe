@@ -32,11 +32,6 @@ const LoginAd = () => {
 
   return (
     <div className="login-container d-flex justify-content-center align-items-center vh-100">
-      <script
-        src="https://kit.fontawesome.com/d821c6c513.js"
-        crossorigin="anonymous"
-      ></script>
-      ;
       <div className="login-box bg-white p-4 rounded shadow-lg">
         <h2 className="text-center mb-3">Admin Login</h2>
         {error && <p className="text-danger text-center">{error}</p>}
