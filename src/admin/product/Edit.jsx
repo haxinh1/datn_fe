@@ -635,6 +635,9 @@ const Edit = () => {
                 labelCol={{ span: 24 }}
                 wrapperCol={{ span: 24 }}
                 labelAlign="top"
+                initialValues={{
+                    images: images, // Gán danh sách ảnh vào initialValues
+                }}
             >
                 <Row gutter={24}>
                     <Col span={8} className="col-item">
@@ -733,7 +736,7 @@ const Edit = () => {
                             rules={[
                                 {
                                     validator: (_, value) => {
-                                        if (!value || value.length === 0) {
+                                        if ((!value || value.length === 0) && images.length === 0) {
                                             return Promise.reject("Vui lòng tải lên ảnh sản phẩm.");
                                         }
                                         if (value.length > 12) {
