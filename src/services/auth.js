@@ -68,6 +68,7 @@ const logoutad = async () => {
 };
 
 export const AuthServices = {
+  fetchAuth,
   register,
   login,
   loginad,
