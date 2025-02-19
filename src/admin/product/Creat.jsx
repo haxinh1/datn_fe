@@ -150,7 +150,7 @@ const Creat = () => {
     const onHandleImage = (info) => {
         let { fileList } = info;
     
-        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        // Nếu tổng số ảnh vượt quá 12, không cho phép upload thêm
         if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
             fileList = fileList.slice(0, 12);
