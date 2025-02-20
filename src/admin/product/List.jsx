@@ -500,7 +500,7 @@ const List = () => {
                 onCancel={() => setIsModalVisible(false)} 
                 footer={null}
             >
-                <h5 className="action-link-purple">
+                <h5 className="action">
                     {currentVariant
                         ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
                             currentVariant.attribute_value_product_variants
