@@ -3,6 +3,7 @@ import { AuthServices } from "./../services/auth";
 import { useNavigate } from "react-router-dom"; // Thêm useNavigate
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginAd.css"; // Import CSS tùy chỉnh
+import { message } from "antd";
 
 const LoginAd = () => {
   const [phone_number, setPhoneNumber] = useState("");
@@ -22,9 +23,9 @@ const LoginAd = () => {
       localStorage.setItem("user", JSON.stringify({ role: "admin" }));
       console.log("User sau khi đăng nhập:", localStorage.getItem("user")); // Debug
       navigate("/list-pr"); // Dùng navigate thay cho window.location.href
-      alert("Đăng nhập thành công");
+      message.success("Đăng nhập thành công!");
     } catch (err) {
-      setError(err.response?.data?.message || "Đăng nhập thất bại");
+      message.error(err.response?.data?.message || "Đăng nhập thất bại");
     }
 
     setLoading(false);

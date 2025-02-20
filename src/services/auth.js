@@ -5,6 +5,16 @@ const fetchAuth = async () => {
   return response.data;
 };
 
+const getAUser = async (id) => {
+  const response = await instance.get(`/users/${id}`);
+  return response.data;
+};
+
+const updateUser = async (id, payload) => {
+  const response = await instance.put(`/users/${id}`, payload);
+  return response.data;
+};
+
 const register = async (phone_number, password) => {
   const response = await instance.post("/client/register", {
     phone_number,
@@ -79,6 +89,8 @@ const logoutad = async () => {
 
 export const AuthServices = {
   fetchAuth,
+  updateUser,
+  getAUser,
   register,
   login,
   loginad,
