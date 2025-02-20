@@ -101,7 +101,7 @@ const ProductDetail = () => {
     console.log("Dữ liệu stocks trước khi lọc:", stocks);
 
     return stocks
-      .filter(stock => {
+      .filter((stock) => {
         if (!filterDates[0] || !filterDates[1]) return true; // Nếu chưa chọn khoảng ngày, hiển thị tất cả
         const stockDate = moment(stock.created_at).format("YYYY-MM-DD");
         return stockDate >= filterDates[0] && stockDate <= filterDates[1];
@@ -112,25 +112,25 @@ const ProductDetail = () => {
           (variant) => variant.id === stock.product_variant_id
         );
 
-      // Tạo tên biến thể từ thuộc tính
-      const variantName = variant
-        ? `${product.name} - ${variant.attribute_value_product_variants
-            .map((attr) => attr.attribute_value.value)
-            .join(" - ")}`
-        : product.name;
+        // Tạo tên biến thể từ thuộc tính
+        const variantName = variant
+          ? `${product.name} - ${variant.attribute_value_product_variants
+              .map((attr) => attr.attribute_value.value)
+              .join(" - ")}`
+          : product.name;
 
-      return {
-        key: stock.id,
-        stt: index + 1,
-        variant_name: variantName,
-        quantity: stock.quantity,
-        price: parseFloat(stock.price),
-        created_at: stock.created_at
-          ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
-          : "N/A",
-        total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
-      };
-    });
+        return {
+          key: stock.id,
+          stt: index + 1,
+          variant_name: variantName,
+          quantity: stock.quantity,
+          price: parseFloat(stock.price),
+          created_at: stock.created_at
+            ? moment(stock.created_at).add(7, "hour").format("DD/MM/YYYY")
+            : "N/A",
+          total: parseFloat(stock.price) * stock.quantity, // Tính tổng tiền nhập
+        };
+      });
   };
 
   if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
@@ -174,7 +174,7 @@ const ProductDetail = () => {
   return (
     product && (
       <div className="container mt-5">
-        <h1 className='mb-5'>
+        <h1 className="mb-5">
           <EyeOutlined style={{ marginRight: "8px" }} />
           Chi tiết sản phẩm
         </h1>
@@ -281,7 +281,9 @@ const ProductDetail = () => {
                 </tr>
                 <tr>
                   <th>Giá bán (VNĐ):</th>
-                  <td>{formatPrice(product.sell_price)} </td>
+                  <td>
+                    {product.sell_price > 0 && formatPrice(product.sell_price)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Giá khuyến mại (VNĐ):</th>
@@ -329,7 +331,11 @@ const ProductDetail = () => {
             {/* Phần mô tả sản phẩm */}
             <div className="product-description mt-4">
               <h4>Mô tả sản phẩm</h4>
-              <div dangerouslySetInnerHTML={{ __html: product.content || "Không có mô tả" }} />
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: product.content || "Không có mô tả",
+                }}
+              />
             </div>
           </div>
         </div>

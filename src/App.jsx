@@ -26,7 +26,7 @@ function App() {
 
         {/* Các trang cần đăng nhập */}
         <Route element={<PrivateRoute />}>
-          <Route path="/" element={<LayoutAdmin />}>
+          <Route path="/admin" element={<LayoutAdmin />}>
             <Route path="/list-pr" element={<List />} />
             <Route path="/detailad/:id" element={<ProductDetail />} />
             <Route path="/add-pr" element={<Add />} />
@@ -43,6 +43,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LayoutAdmin />}>
           <Route path="/home" element={<Home />} />
+
           <Route path="/cart" element={<Cart />} />
           <Route path="/pay" element={<Pay />} />
           <Route path="/detail-pr" element={<Detail />} />
