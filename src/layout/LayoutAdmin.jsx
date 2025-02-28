@@ -1,8 +1,17 @@
-import React from "react";
-import { Link, Outlet } from "react-router-dom";
-import { Breadcrumb, Layout, Menu, theme } from "antd";
-import { HomeOutlined, BookOutlined, FormOutlined, UserOutlined, BilibiliFilled, MessageOutlined } from "@ant-design/icons";
+import React, { useEffect, useState } from "react";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Breadcrumb, Layout, Menu, theme, Modal } from "antd"; // Import Modal từ Ant Design
+import {
+  HomeOutlined,
+  BookOutlined,
+  FormOutlined,
+  UserOutlined,
+  BilibiliFilled,
+  MessageOutlined,
+  LogoutOutlined,
+} from "@ant-design/icons";
 import "./layoutAdmin.css";
+import { AuthServices } from "../services/auth";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -11,7 +20,55 @@ const LayoutAdmin = () => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  const nav = useNavigate();
+
+  const logoutad = async () => {
+    // Hiển thị Modal xác nhận trước khi logout
+    Modal.confirm({
+      title: "Bạn chắc chắn muốn đăng xuất?",
+      content:
+        "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
+      okText: "Đăng xuất",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const tokenBefore = localStorage.getItem("adminToken");
+          console.log("Token before logout:", tokenBefore); // Kiểm tra token trước khi logout
+
+          // Gửi yêu cầu logout cho admin
+          await AuthServices.logoutad(
+            "/admin/logout",
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${tokenBefore}`,
+              },
+            }
+          );
+
+          // Xóa token admin và user khỏi localStorage
+          localStorage.removeItem("adminToken");
+          localStorage.removeItem("user"); // Xóa token "user"
+          console.log(
+            "Token after logout:",
+            localStorage.getItem("adminToken")
+          );
+        } catch (error) {
+          console.error("Lỗi khi logout:", error);
+        } finally {
+          nav("/loginad"); // Điều hướng về trang đăng nhập
+        }
+      },
+    });
+  };
+
   const menuItems = [
+    {
+      key: "",
+      icon: <UserOutlined />,
+      label: `Xin chào Admin`,
+      disabled: true,
+    },
     {
       key: "list-pr",
       icon: <BookOutlined />,
@@ -20,7 +77,7 @@ const LayoutAdmin = () => {
     {
       key: "history",
       icon: <BookOutlined />,
-      label: <Link to='history'>Quản lý nhập hàng</Link>,
+      label: <Link to="history">Quản lý nhập hàng</Link>,
     },
     {
       key: "category",
@@ -33,6 +90,11 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/brand">Thương hiệu</Link>,
     },
     {
+      key: "account",
+      icon: <BilibiliFilled />,
+      label: <Link to="/account">Quản lý tài khoản</Link>,
+    },
+    {
       key: "bill",
       icon: <BilibiliFilled />,
       label: <Link to="/admin/bill">Hóa đơn</Link>,
@@ -43,19 +105,14 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/inbox">Tin nhắn</Link>,
     },
     {
-      key: "register",
-      icon: <FormOutlined />,
-      label: <Link to="/admin/register">Đăng ký</Link>,
-    },
-    {
-      key: "login",
-      icon: <UserOutlined />,
-      label: <Link to="/admin/login">Đăng nhập</Link>,
-    },
-    {
       key: "home",
       icon: <HomeOutlined />,
       label: <Link to="/admin/home">Trang chủ</Link>,
+    },
+    {
+      key: "logoutad",
+      icon: <LogoutOutlined />,
+      label: <span onClick={logoutad}>Đăng xuất</span>,
     },
   ];
 
@@ -70,13 +127,21 @@ const LayoutAdmin = () => {
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
         <div className="demo-logo-vertical" />
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={["admin"]} items={menuItems} />
+        <Menu
+          theme="dark"
+          mode="inline"
+          defaultSelectedKeys={["admin"]}
+          items={menuItems}
+        />
       </Sider>
 
       {/* Main Layout */}
       <Layout className="main-layout">
-        <Header className="header-admin" style={{ background: colorBgContainer }} />
-        
+        <Header
+          className="header-admin"
+          style={{ background: colorBgContainer }}
+        />
+
         <Content className="content-admin">
           <Breadcrumb className="breadcrumb-admin" />
           <div

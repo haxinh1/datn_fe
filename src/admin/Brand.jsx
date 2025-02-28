@@ -120,10 +120,6 @@ const Brand = () => {
         },
     ];
 
-    if (isLoading) {
-        return <Skeleton active />;
-    }
-
     return (
         <div>
             <h1 className="mb-5">
@@ -215,12 +211,14 @@ const Brand = () => {
                 </Form>
             </Modal>
 
-            <Table
-                columns={columns}
-                dataSource={brands || []}
-                pagination={false}
-                rowKey={(record) => record.id}
-            />
+            <Skeleton active loading={isLoading}>
+                <Table
+                    columns={columns}
+                    dataSource={brands || []}
+                    pagination={false}
+                    rowKey={(record) => record.id}
+                />
+            </Skeleton>
         </div>
     );
 };
