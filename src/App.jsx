@@ -3,10 +3,6 @@ import { Route, Routes } from "react-router-dom";
 import List from "./admin/product/List";
 import Edit from "./admin/product/Edit";
 import Add from "./admin/product/Add";
-import Home from './pages/Home';
-import Cart from './pages/Cart';
-import Pay from './pages/Pay';
-import Detail from './pages/Detail';
 import LayoutAdmin from "./layout/LayoutAdmin";
 import Brand from "./admin/Brand";
 import Test from './admin/Test';
@@ -15,14 +11,17 @@ import Categories from './admin/category/index';
 import Import from "./admin/product/Import";
 import Creat from "./admin/product/Creat";
 import History from "./admin/product/History";
-import HomePage from './pages/HomePage';
+import Home from './pages/Home';
 import LayoutClient from "./layout/LayoutClient";
+import ProductDetailClient from "./components/client/product/ProductDetailClient";
+import Cart from './components/client/cart';
 
 function App() {
 
+
   return (
     <>
-      <Routes>
+    <Routes>
         <Route path="/admin" element={<LayoutAdmin />}>
           <Route path="list-pr" element={<List />} />
           <Route path="detailad/:id" element={<ProductDetail />} />
@@ -34,17 +33,15 @@ function App() {
           <Route path="history" element={<History />} />
           <Route path="brand" element={<Brand />} />
           <Route path="test" element={<Test />} />
-          <Route path="home" element={<Home />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="pay" element={<Pay />} />
-          <Route path="detail-pr" element={<Detail />} />
         </Route>
       </Routes>
+      
 
       <Routes>
         <Route path="/" element={<LayoutClient />}>
-          <Route index element={<HomePage />} />
-
+          <Route index element={<Home />} />
+          <Route path="product-detail/:id" element={<ProductDetailClient />} />
+          <Route path="cart" element={<Cart />} />
         </Route>
       </Routes>
 
