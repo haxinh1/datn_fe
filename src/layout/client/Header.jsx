@@ -10,6 +10,7 @@ import '../../assets/css/demos/demo-8.css';
 import logo from '../../assets/images/demos/demo-8/logo.png';
 import product1 from '../../assets/images/products/cart/product1.jpg';
 import product2 from '../../assets/images/products/cart/product2.jpg';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
     return (
@@ -23,7 +24,7 @@ const Header = () => {
                                 <i className="icon-bars"></i>
                             </button>
 
-                            <a href="index.html" className="logo">
+                            <a href="#" className="logo">
                                 <Image src={logo} style={{ width: "80px", height: "20px" }} />
                             </a>
                         </div>
@@ -31,7 +32,7 @@ const Header = () => {
                             <nav className="main-nav">
                                 <ul className="menu sf-arrows">
                                     <li className="megamenu-container active">
-                                        <a href="index.html" className="sf-with-ul">Home</a>
+                                        <Link to="/" href="" className="sf-with-ul">Home</Link>
                                     </li>
                                     <li>
                                         <a href="category.html" className="sf-with-ul">Shop</a>
@@ -78,8 +79,7 @@ const Header = () => {
                             </a>
 
                             <div className="dropdown cart-dropdown">
-                                <a
-                                    href="#"
+                                <Link to={"/cart"}
                                     className="dropdown-toggle"
                                     role="button"
                                     data-toggle="dropdown"
@@ -90,7 +90,7 @@ const Header = () => {
                                     <i className="icon-shopping-cart"></i>
                                     <span className="cart-count">2</span>
                                     <span className="cart-txt">$164.00</span>
-                                </a>
+                                </Link>
 
                                 <div className="dropdown-menu dropdown-menu-right">
                                     <div className="dropdown-cart-products">
@@ -139,9 +139,9 @@ const Header = () => {
                                     </div>
 
                                     <div className="dropdown-cart-action">
-                                        <a href="cart.html" className="btn btn-primary">
+                                        <Link to={"/cart"} className="btn btn-primary">
                                             View Cart
-                                        </a>
+                                        </Link>
                                         <a href="checkout.html" className="btn btn-outline-primary-2">
                                             <span>Checkout</span>
                                             <i className="icon-long-arrow-right"></i>
