@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from "react-router-dom";
 import { productsServices } from '../../../services/product';
 import { message, Modal } from 'antd';
+import { CartServices } from '../../../services/cart';
 
 const ProductDetailClient = () => {
     const navigate = useNavigate();
@@ -56,42 +57,30 @@ const ProductDetailClient = () => {
         }
     };
 
-    const handleAddToCart = () => {
-        if (!selectedVariant) {
-            message.error("Lỗi khi thêm sản phẩm vào giỏ hàng!");
+
+    const handleAddToCart = async () => {
+        if (!selectedVariant && product.variants.length > 0) {
+            message.error("Vui lòng chọn một biến thể trước khi thêm vào giỏ hàng!");
             return;
         }
+        try {
+            const payload = product.variants.length > 0
+                ? { quantity, product_variant_id: selectedVariant.id }
+                : { quantity, product_id: product.id };
 
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const existingItem = cart.find(item => item.variant_id === selectedVariant.id);
+            const data = await CartServices.createCart(payload);
 
-        let totalQuantity = quantity;
-        if (existingItem) {
-            totalQuantity += existingItem.quantity;
+            if (!data) {
+                message.error("Lỗi khi thêm sản phẩm vào giỏ hàng!");
+                return;
+            }
+
+            message.success("Sản phẩm được thêm vào giỏ hàng!");
+            navigate("/cart");
+        } catch (error) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", error);
+            message.error("Đã xảy ra lỗi! Vui lòng thử lại.");
         }
-
-        if (totalQuantity > selectedVariant.stock) {
-            message.warning(`Số lượng trong giỏ hàng đã đạt giới hạn! (Tối đa: ${selectedVariant.stock})`);
-            return;
-        }
-
-        if (existingItem) {
-            existingItem.quantity += quantity;
-        } else {
-            cart.push({
-                variant_id: selectedVariant.id,
-                name: product.name,
-                thumbnail: selectedVariant.thumbnail || product.thumbnail,
-                price: selectedVariant.sale_price || selectedVariant.sell_price,
-                quantity,
-                color: product.atribute_value_product.find(attr => attr.attribute_value_id === selectedColor)?.attribute_value.value,
-                size: product.atribute_value_product.find(attr => attr.attribute_value_id === selectedSize)?.attribute_value.value
-            });
-        }
-
-        localStorage.setItem("cart", JSON.stringify(cart));
-        message.success("Sản phẩm được thêm vào giỏ hàng!");
-        navigate("/cart");
 
     };
 
@@ -208,9 +197,11 @@ const ProductDetailClient = () => {
 
                                             <div className="product-nav product-nav-dots">
                                                 {product.atribute_value_product
-                                                    .filter(attr => attr.attribute_value.attribute_id === 2).map((item, index) => {
+                                                    .filter(attr => attr.attribute_value.attribute_id === 1).map((item, index) => {
+
                                                         const colorName = item.attribute_value.value;
-                                                        const colorCode = colorMap[colorName] || "#000";
+                                                        const colorCode = colorMap[colorName];
+
                                                         return (
                                                             <a key={index} href="#" style={{ background: colorCode }} onClick={(e) => {
                                                                 e.preventDefault();
@@ -221,7 +212,6 @@ const ProductDetailClient = () => {
                                                         );
                                                     })}
                                             </div>
-
                                         </div>
                                     )}
                                     {product.atribute_value_product?.length > 0 && (
@@ -231,7 +221,7 @@ const ProductDetailClient = () => {
                                                 <select name="size" id="size" className="form-control" value={selectedSize} onChange={(e) => handleSizeSelect(e.target.value)}>
                                                     <option value="">Select a size</option>
                                                     {product.atribute_value_product
-                                                        .filter(attr => attr.attribute_value.attribute_id === 1).map((item) => {
+                                                        .filter(attr => attr.attribute_value.attribute_id === 2).map((item) => {
                                                             return (
                                                                 <option key={item.attribute_value_id} value={item.attribute_value_id}>{item.attribute_value.value}</option>
                                                             )
