@@ -1,19 +1,19 @@
 import React from 'react'
 import formatVND from '../../../utils/formatPrice';
+import { Link } from 'react-router-dom';
 
 const Product = (props) => {
     const { product } = props
-    console.log(product.variants);
 
     return (
         <>
             <div className="product product-2 text-center">
                 <figure className="product-media">
                     <span className="product-label label-sale">Sale</span>
-                    <a href="product.html">
+                    <Link to={`/product-detail/${product.id}`} >
                         <img src={product.thumbnail} alt="Product image" className="product-image" />
                         {product.variants.length > 0 && <img src={product.variants[0].thumbnail} alt="Product image" className="product-image-hover" />}
-                    </a>
+                    </Link >
 
                     <div className="product-action-vertical">
                         <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
