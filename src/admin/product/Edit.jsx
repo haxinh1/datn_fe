@@ -222,7 +222,7 @@ const Edit = () => {
     const onHandleImage = (info) => {
         let { fileList } = info;
 
-        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        // Nếu tổng số ảnh vượt quá 12, không cho phép upload thêm
         if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
             fileList = fileList.slice(0, 12);
@@ -240,7 +240,6 @@ const Edit = () => {
             return file;
         });
     
-        // Cập nhật danh sách ảnh trong state
         setImages(updatedFileList);
     };    
 
@@ -636,6 +635,9 @@ const Edit = () => {
                 labelCol={{ span: 24 }}
                 wrapperCol={{ span: 24 }}
                 labelAlign="top"
+                initialValues={{
+                    images: images, // Gán danh sách ảnh vào initialValues
+                }}
             >
                 <Row gutter={24}>
                     <Col span={8} className="col-item">
@@ -730,10 +732,11 @@ const Edit = () => {
                         <Form.Item 
                             label="Ảnh sản phẩm"
                             name='images'
+                            getValueFromEvent={normFile}
                             rules={[
                                 {
                                     validator: (_, value) => {
-                                        if (!value || value.length === 0) {
+                                        if ((!value || value.length === 0) && images.length === 0) {
                                             return Promise.reject("Vui lòng tải lên ảnh sản phẩm.");
                                         }
                                         if (value.length > 12) {

@@ -1,4 +1,4 @@
-import { Button, Table, Modal, Row, DatePicker, ConfigProvider, Form, Select, Input, InputNumber, notification, Tooltip } from 'antd';
+import { Button, Table, Modal, Row, DatePicker, ConfigProvider, Form, Select, Input, InputNumber, notification, Tooltip, Skeleton } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
@@ -148,16 +148,16 @@ const History = () => {
             align: "center",
         },
         {
-            title: "Người nhập hàng",
-            dataIndex: "created_by", 
-            key: "created_by",
-            align: "center",
-        },
-        {
             title: "Ngày nhập hàng",
             dataIndex: "ngaytao",
             key: "ngaytao",
             render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD-MM-YYYY") : ""),
+            align: "center",
+        },
+        {
+            title: "Người nhập hàng",
+            dataIndex: "created_by", 
+            key: "created_by",
             align: "center",
         },
         {
@@ -256,77 +256,85 @@ const History = () => {
 
     const handleConfirm = async () => {
         if (!selectedStock) return;
-        
-        // Kiểm tra xem có đang trong quá trình gửi dữ liệu không để tránh gửi nhiều lần
-        if (isModalVisible) {
-            // Kiểm tra trạng thái của đơn hàng, nếu đã hoàn thành rồi thì không làm gì nữa
-            if (selectedStock.status === confirmStatus) {
-                notification.warning({
-                    message: "Thông báo",
-                    description: "Trạng thái không thay đổi!",
-                });
-                return;
-            }
     
-            const groupedProducts = {}; // Nhóm sản phẩm theo ID
-        
-            modalData.forEach(item => {
-                const productId = item.originalProductId || item.key.replace(/^V-|^P-/, ""); 
-        
-                if (!groupedProducts[productId]) {
-                    groupedProducts[productId] = { id: Number(productId), variants: [] };
-                }
-        
-                if (item.isVariant) {
-                    groupedProducts[productId].variants.push({
-                        id: Number(item.key.replace("V-", "")), 
-                        quantity: item.quantity,
-                        price: item.price,
-                        sell_price: item.sell_price,
-                        sale_price: item.sale_price,
-                    });
-                } else {
-                    groupedProducts[productId] = {
-                        id: Number(productId),
-                        quantity: item.quantity,
-                        price: item.price,
-                        sell_price: item.sell_price,
-                        sale_price: item.sale_price,
-                    };
-                }
+        // Nếu chưa chọn trạng thái, mặc định là 0 (Chờ xác nhận)
+        const updatedStatus = confirmStatus ?? 0;
+    
+        // Nếu chọn "Hủy" hoặc "Hoàn thành", hiển thị hộp thoại xác nhận trước khi gửi
+        if (updatedStatus === -1 || updatedStatus === 1) {
+            Modal.confirm({
+                title: "Xác nhận cập nhật",
+                content: `Bạn có chắc chắn muốn ${updatedStatus === -1 ? "hủy" : "hoàn thành"} đơn nhập hàng này không?`,
+                onOk: async () => {
+                    await processUpdate(updatedStatus, true);
+                },
             });
+        } else {
+            await processUpdate(updatedStatus, false);
+        }
+    };
     
-            const payload = {
-                status: confirmStatus ?? 0, 
-                reason: "Nhập hàng bổ sung",
-                products: Object.values(groupedProducts) 
-            };
-
-            console.log("Dữ liệu gửi đi:", JSON.stringify(payload, null, 2));
+    const processUpdate = async (status, showNotification) => {
+        if (!isModalVisible) return;
     
-            try {
-                const response = await productsServices.confirm(selectedStock.id, payload);
-                if (response) {
-                    notification.success({
-                        message: "Cập nhật thành công",
-                        description: "Đơn nhập hàng đã được cập nhật!",
-                    });
+        const groupedProducts = {};
     
-                    // Đảm bảo chỉ gọi một lần và reset lại mọi thứ
-                    setIsModalVisible(false);
-                    setSelectedStock(null);
-                    setConfirmStatus(null);
-                    refetchStocks();
-                }
-            } catch (error) {
-                console.error("Lỗi khi xác nhận đơn hàng:", error);
-                notification.error({
-                    message: "Cập nhật thất bại",
-                    description: "Có lỗi xảy ra khi cập nhật đơn nhập hàng.",
+        modalData.forEach(item => {
+            const productId = item.originalProductId || item.key.replace(/^V-|^P-/, "");
+    
+            if (!groupedProducts[productId]) {
+                groupedProducts[productId] = { id: Number(productId), variants: [] };
+            }
+    
+            if (item.isVariant) {
+                groupedProducts[productId].variants.push({
+                    id: Number(item.key.replace("V-", "")),
+                    quantity: item.quantity,
+                    price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
+                });
+            } else {
+                groupedProducts[productId] = {
+                    id: Number(productId),
+                    quantity: item.quantity,
+                    price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
+                };
+            }
+        });
+    
+        const payload = {
+            status: status, // ✅ Gửi trạng thái được cập nhật (mặc định là 0 nếu chưa chọn)
+            reason: "Nhập hàng bổ sung",
+            products: Object.values(groupedProducts),
+        };
+    
+        console.log("Dữ liệu gửi đi:", JSON.stringify(payload, null, 2));
+    
+        try {
+            await productsServices.confirm(selectedStock.id, payload);
+    
+            // ✅ Hiển thị thông báo nếu chọn trạng thái -1 hoặc 1
+            if (showNotification) {
+                notification.success({
+                    message: `Đơn nhập hàng đã được ${status === -1 ? "hủy" : "hoàn thành"}!`,
                 });
             }
+    
+            setIsModalVisible(false);
+            setSelectedStock(null);
+            setConfirmStatus(null);
+            refetchStocks();
+        } catch (error) {
+            console.error("Lỗi khi xác nhận đơn hàng:", error);
+            notification.error({
+                message: "Cập nhật thất bại",
+                description: "Có lỗi xảy ra khi cập nhật đơn nhập hàng.",
+            });
         }
-    };   
+    };
 
     // bảng cập nhật đơn nhập hàng
     const detailColumns = [
@@ -541,7 +549,6 @@ const History = () => {
                 <div className="group1">
                     <ConfigProvider locale={viVN}>
                         <RangePicker
-                            
                             onChange={(dates) => setDateRange(dates && dates.length === 2 ? dates : [null, null])}
                             format="DD-MM-YYYY"
                             placeholder={["Từ ngày", "Đến ngày"]}
@@ -572,14 +579,15 @@ const History = () => {
                 </Link>
             </div>
 
-            <Table 
-                columns={columns} 
-                dataSource={adjustedStocks} 
-                rowKey="id"
-                loading={isProductsLoading} 
-                pagination={{ pageSize: 10 }}
-                bordered 
-            />
+            <Skeleton active loading={isProductsLoading}>
+                <Table 
+                    columns={columns} 
+                    dataSource={adjustedStocks} 
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    bordered 
+                />
+            </Skeleton>
 
             <Modal
                 title="Cập nhật đơn nhập hàng"
@@ -625,9 +633,9 @@ const History = () => {
                             value={confirmStatus}
                             onChange={(value) => setConfirmStatus(value)} // Lưu đúng giá trị vào confirmStatus
                         >
-                            <Select.Option value={-1}>Hủy</Select.Option>
-                            <Select.Option value={0}>Chờ xác nhận</Select.Option>
-                            <Select.Option value={1}>Hoàn thành</Select.Option>
+                            <Select.Option value={-1}><span className='action-link-red'>Hủy</span></Select.Option>
+                            <Select.Option value={0}><span className='action-link-blue'>Chờ xác nhận</span></Select.Option>
+                            <Select.Option value={1}><span className='action-link-green'>Hoàn thành</span></Select.Option>
                         </Select>
 
                         <Button type="primary" htmlType="submit">

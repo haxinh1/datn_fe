@@ -150,7 +150,7 @@ const Creat = () => {
     const onHandleImage = (info) => {
         let { fileList } = info;
     
-        // Nếu tổng số ảnh vượt quá 6, không cho phép upload thêm
+        // Nếu tổng số ảnh vượt quá 12, không cho phép upload thêm
         if (fileList.length > 12) {
             // Giữ nguyên danh sách ảnh hiện tại, không cập nhật ảnh mới
             fileList = fileList.slice(0, 12);
@@ -879,7 +879,7 @@ const Creat = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h2>Thuộc tính</h2>
+                        <h1 className="mb-5">Thuộc tính</h1>
                         {forms.map((form, index) => (
                             <div key={form.id} className="attribute">
                                 <Select
@@ -970,7 +970,7 @@ const Creat = () => {
                         <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                         <hr />
-                        <h2>Danh sách sản phẩm cùng loại</h2>
+                        <h1 className="mb-5">Danh sách sản phẩm cùng loại</h1>
                         <Table columns={columns} dataSource={tableData} rowKey="id" />
                     </>
                 )}
