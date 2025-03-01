@@ -11,19 +11,26 @@ import Categories from "./admin/category/index";
 import Import from "./admin/product/Import";
 import Creat from "./admin/product/Creat";
 import History from "./admin/product/History";
+import Home from './pages/Home';
+import LayoutClient from "./layout/LayoutClient";
+import ProductDetailClient from "./components/client/product/ProductDetailClient";
+import Cart from './components/client/cart';
 import LoginAd from "./admin/LoginAd";
 import PrivateRoute from "./admin/PrivateRAd";
 import Account from "./admin/Account";
-import LayoutClient from './layout/LayoutClient';
 import Signup from "./pages/Signup";
 import Order from './admin/Order';
-import Edit_order from "./admin/Edit_order";
+import Edit_order from './admin/Edit_order';
 
 function App() {
   return (
     <>
+
       <Routes>
         <Route path="/" element={<LayoutClient />}>
+          <Route index element={<Home />} />
+          <Route path="product-detail/:id" element={<ProductDetailClient />} />
+          <Route path="cart" element={<Cart />} />
           <Route path="signup" element={<Signup />} />
         </Route>
       </Routes>
