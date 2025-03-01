@@ -17,19 +17,34 @@ const LoginAd = () => {
     setError(null);
 
     try {
-      const response = await AuthServices.loginad(phone_number, password);
-      localStorage.setItem("admin_token", response.access_token);
-      localStorage.setItem("user", JSON.stringify({ role: "admin" }));
-      console.log("User sau khi đăng nhập:", localStorage.getItem("user")); // Debug
-      navigate("/list-pr"); // Dùng navigate thay cho window.location.href
-      alert("Đăng nhập thành công");
+      // Kiểm tra xem bạn đã có token hay chưa, nếu có thì thêm vào header
+      const adminToken = localStorage.getItem("admin_token");
+
+      const response = await AuthServices.loginad(phone_number, password, {
+        headers: {
+          Authorization: adminToken ? `Bearer ${adminToken}` : "", // Thêm token vào header nếu có
+        },
+      });
+
+      console.log("Phản hồi từ server:", response); // Kiểm tra phản hồi từ API
+
+      if (response && response.access_token) {
+        // Lưu access_token và thông tin người dùng vào localStorage
+        localStorage.setItem("admin_token", response.access_token); // Lưu `access_token`
+        localStorage.setItem("user", JSON.stringify(response.admin)); // Lưu thông tin user
+
+        navigate("/list-pr"); // Điều hướng sau khi đăng nhập thành công
+        alert("Đăng nhập thành công");
+      } else {
+        setError("Không nhận được access_token từ server");
+      }
     } catch (err) {
+      console.log("Lỗi:", err.response); // Kiểm tra thông tin lỗi
       setError(err.response?.data?.message || "Đăng nhập thất bại");
     }
 
     setLoading(false);
   };
-
   return (
     <div className="login-container d-flex justify-content-center align-items-center vh-100">
       <div className="login-box bg-white p-4 rounded shadow-lg">
