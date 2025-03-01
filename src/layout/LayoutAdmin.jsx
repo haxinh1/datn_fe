@@ -102,18 +102,17 @@ const LayoutAdmin = () => {
     {
       key: "bill",
       icon: <BilibiliFilled />,
-      label: <Link to="/bill">Hóa đơn</Link>,
+      label: <Link to="/admin/bill">Hóa đơn</Link>,
     },
     {
       key: "inbox",
       icon: <MessageOutlined />,
-      label: <Link to="/inbox">Tin nhắn</Link>,
+      label: <Link to="/admin/inbox">Tin nhắn</Link>,
     },
-
     {
       key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/">Trang chủ</Link>,
+      label: <Link to="/admin/home">Trang chủ</Link>,
     },
     {
       key: "logoutad",
