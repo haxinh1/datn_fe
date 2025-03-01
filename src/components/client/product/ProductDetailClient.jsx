@@ -35,7 +35,14 @@ const ProductDetailClient = () => {
         findVariant(selectedColor, sizeId);
     };
 
-
+    // Tách số thành định dạng tiền tệ
+    const formatPrice = (price) => {
+        const formatter = new Intl.NumberFormat("de-DE", {
+            style: "decimal",
+            maximumFractionDigits: 0,
+        });
+        return formatter.format(price);
+    };
 
     const findVariant = (colorId, sizeId) => {
 
@@ -164,7 +171,7 @@ const ProductDetailClient = () => {
                                     </div>
 
                                     <div className="product-price">
-                                        {product.sell_price}
+                                        {formatPrice(product.sell_price)}
                                     </div>
 
                                     <div className="product-content">
