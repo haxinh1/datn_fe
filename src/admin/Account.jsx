@@ -1,5 +1,5 @@
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, InputNumber, DatePicker, Switch, Input, Select, notification } from 'antd';
+import { Button, Table, Tooltip, Modal, Form, InputNumber, DatePicker, Switch, Input, Select, notification, Skeleton } from 'antd';
 import React, { useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -9,9 +9,10 @@ const Account = () => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
+    const [filteredUsers, setFilteredUsers] = useState(null);
     const [form] = Form.useForm();
 
-    const { data: users, refetch  } = useQuery({
+    const { data: users, isLoading, refetch  } = useQuery({
         queryKey: ["users"],
         queryFn: async () => {
             const response = await AuthServices.fetchAuth();
@@ -166,12 +167,10 @@ const Account = () => {
             key: "status",
             align: "center",
             render: (status) => (
-                <span className={
-                    status === "active" ? "action-link-green" : status === "inactive" ? "action-link-blue" : "action-link-red"
-                }>
-                    {status === "active" ? "Hoạt động" : status === "inactive" ? "Dừng hoạt động" : "Khóa"}
+                <span className={status === "active" ? "action-link-blue" : "action-link-red"}>
+                    {status === "active" ? "Hoạt động" : "Dừng hoạt động"}
                 </span>
-            ),
+            )            
         },
         {
             title: "Thao tác",
@@ -209,11 +208,29 @@ const Account = () => {
                 Danh sách tài khoản
             </h1>
 
-            <Table
-                columns={columns}
-                dataSource={users}
-                pagination={{ pageSize: 10 }}
-            />
+            <div className="group1">
+                <Select
+                    placeholder="Chức năng"
+                    className="select-item"
+                    allowClear
+                    onChange={(value) => {
+                        const filteredUsers = value ? users.filter(user => user.role === value) : users;
+                        setFilteredUsers(filteredUsers);
+                    }}
+                >
+                    <Select.Option value="customer">Khách hàng</Select.Option>
+                    <Select.Option value="manager">Nhân viên</Select.Option>
+                    <Select.Option value="admin">Quản trị viên</Select.Option>
+                </Select>
+            </div>
+
+            <Skeleton active loading={isLoading}>
+                <Table
+                    columns={columns}
+                    dataSource={filteredUsers || users}
+                    pagination={{ pageSize: 10 }}
+                />
+            </Skeleton>
 
             {/* Modal Chi Tiết */}
             <Modal
@@ -241,75 +258,6 @@ const Account = () => {
                     layout="vertical"
                     form={form}
                 >
-                    {/* <Form.Item
-                        label="Tên người dùng"
-                        rules={[{ required: true, message: "Vui lòng nhập tên người dùng" }]}
-                        name="fullname"
-                    >
-                        <Input className="input-item" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Email"
-                        rules={[{ required: true, message: "Vui lòng nhập Email" }]}
-                        name="email"
-                    >
-                        <Input type="email" className="input-item" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Số điện thoại"
-                        rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
-                        name="phone_number"
-                    >
-                        <Input className="input-item" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Mật khẩu"
-                        rules={[
-                            { required: true, message: "Vui lòng nhập mật khẩu" },
-                            { min: 8, message: "Mật khẩu phải có tối thiểu 8 ký tự" },
-                        ]}
-                        name="password"
-                    >
-                        <Input.Password className="input-item" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Xác nhận mật khẩu"
-                        rules={[
-                            { required: true, message: "Vui lòng nhập lại mật khẩu" },
-                            { min: 8, message: "Mật khẩu phải có tối thiểu 8 ký tự" },
-                        ]}
-                        name="confirm_password"
-                    >
-                        <Input.Password type="password" className="input-item" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Giới tính"
-                        name="gender"
-                        rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
-                    >
-                        <Select
-                            placeholder="Chọn giới tính"
-                            className="input-item"
-                        >
-                            <Select.Option value="male">Nam</Select.Option>
-                            <Select.Option value="female">Nữ</Select.Option>
-                            <Select.Option value="other">Khác</Select.Option>
-                        </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Ngày sinh"
-                        name="birthday"
-                        rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
-                    >
-                        <DatePicker format="DD/MM/YYYY" className="input-item" />
-                    </Form.Item> */}
-
                     <Form.Item
                         label="Chức năng"
                         name="role"
@@ -336,7 +284,6 @@ const Account = () => {
                         >
                             <Select.Option value="active">Hoạt động</Select.Option>
                             <Select.Option value="inactive">Dừng hoạt động</Select.Option>
-                            <Select.Option value="banned">Khóa</Select.Option>
                         </Select>
                     </Form.Item>
 
