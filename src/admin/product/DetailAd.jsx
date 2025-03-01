@@ -336,7 +336,7 @@ const ProductDetail = () => {
 
         {/* Các nút hành động */}
         <div className="mt-2 d-flex justify-content-end flex-wrap gap-2">
-          <Link to={`/edit-pr/${id}`}>
+          <Link to={`/admin/edit-pr/${id}`}>
             <button className="btn btn-success same-size-btn">Cập nhật</button>
           </Link>
           <Button

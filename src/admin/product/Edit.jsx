@@ -127,7 +127,7 @@ const Edit = () => {
                 description: "Thông tin của sản phẩm đã được cập nhật.",
             });
             queryClient.invalidateQueries(["product", id]);
-            navigate("/list-pr");
+            navigate("/admin/list-pr");
         },
         onError: (error) => {
             notification.error({
