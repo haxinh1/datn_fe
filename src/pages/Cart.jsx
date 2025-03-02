@@ -1,26 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { orderServices } from "../services/order";
-import { cartServices } from "../services/cart";
+import { cartServices } from "./../services/cart";
+import { message, Modal } from "antd";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [shippingCost, setShippingCost] = useState(0);
-  const [fullname, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone_number, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-
   const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   fetchCart();
-  // }, []);
-
-  // const fetchCart = async () => {
-  //   const data = await cartServices.fetchCart();
-  //   setCartItems(data);
-  // };
 
   useEffect(() => {
     const getCart = async () => {
@@ -46,82 +32,46 @@ const Cart = () => {
 
   const total = subtotal + shippingCost;
 
-  // ✅ Xử lý thay đổi số lượng
   const handleQuantityChange = async (index, newQuantity) => {
-    if (newQuantity < 1) return; // Không cho phép số lượng nhỏ hơn 1
-
+    if (newQuantity < 1) return;
     const updatedCartItems = [...cartItems];
     updatedCartItems[index].quantity = newQuantity;
-    setCartItems(updatedCartItems); // Cập nhật UI trước để có trải nghiệm tốt hơn
-
+    setCartItems(updatedCartItems);
     try {
       await cartServices.updateCartItem(
         updatedCartItems[index].product_id,
         newQuantity
       );
-      console.log("Cập nhật số lượng thành công");
+      message.success("Cập nhật số lượng thành công");
     } catch (error) {
       console.error(
         "Lỗi khi cập nhật số lượng:",
         error.response?.data || error
       );
-      alert("Lỗi khi cập nhật số lượng, vui lòng thử lại!");
+      message.error("Lỗi khi cập nhật số lượng, vui lòng thử lại!");
     }
   };
 
-  // ✅ Xử lý xóa sản phẩm
   const handleRemoveItem = async (productId) => {
-    const confirmDelete = window.confirm("Bạn có chắc muốn xóa sản phẩm này?");
-    if (!confirmDelete) return;
-
-    try {
-      await cartServices.removeCartItem(productId); // Gọi API xóa
-      setCartItems(cartItems.filter((item) => item.product_id !== productId)); // Cập nhật UI
-      alert("Xóa sản phẩm thành công!");
-    } catch (error) {
-      console.error("Lỗi khi xóa sản phẩm:", error.response?.data || error);
-      alert("Lỗi khi xóa sản phẩm, vui lòng thử lại!");
-    }
+    Modal.confirm({
+      title: "Xác nhận xóa",
+      content: "Bạn có chắc muốn xóa sản phẩm này?",
+      okText: "Xóa",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          await cartServices.removeCartItem(productId);
+          setCartItems(
+            cartItems.filter((item) => item.product_id !== productId)
+          );
+          message.success("Xóa sản phẩm thành công!");
+        } catch (error) {
+          console.error("Lỗi khi xóa sản phẩm:", error.response?.data || error);
+          message.error("Lỗi khi xóa sản phẩm, vui lòng thử lại!");
+        }
+      },
+    });
   };
-
-  // const handlePayment = async () => {
-  //   if (cartItems.length === 0) {
-  //     alert("Giỏ hàng của bạn đang trống!");
-  //     return;
-  //   }
-
-  //   const validCartItems = cartItems.map((item) => ({
-  //     product_id: item.product_id,
-  //     product_variant_id: item.product_variant_id || null,
-  //     quantity: item.quantity || 1,
-  //     price: item.product_variant
-  //       ? parseFloat(
-  //           item.product_variant.sale_price || item.product_variant.price
-  //         )
-  //       : parseFloat(item.price),
-  //   }));
-
-  //   const orderData = {
-  //     fullname,
-  //     email,
-  //     phone_number,
-  //     address,
-  //     total_amount: total,
-  //     cart_items: validCartItems,
-  //   };
-
-  //   try {
-  //     await orderServices.placeOrder(orderData);
-  //     alert("Đặt hàng thành công!");
-  //     navigate("/client/checkout");
-  //   } catch (error) {
-  //     console.error("Lỗi khi tạo đơn hàng:", error.response?.data || error);
-  //     alert(
-  //       "Đặt hàng thất bại: " +
-  //         (error.response?.data?.message || "Vui lòng thử lại.")
-  //     );
-  //   }
-  // };
 
   return (
     <div>
@@ -221,20 +171,21 @@ const Cart = () => {
                               <td>
                                 <input
                                   type="number"
-                                  value={item.quantity}
+                                  value={cartItems[index]?.quantity || 1} // Đảm bảo lấy đúng số lượng
                                   min="1"
-                                  onChange={(e) =>
-                                    handleQuantityChange(
-                                      index,
-                                      parseInt(e.target.value)
-                                    )
-                                  }
-                                  className="form-control text-center fs-4"
+                                  onChange={(e) => {
+                                    const newQuantity =
+                                      parseInt(e.target.value) || 1;
+                                    handleQuantityChange(index, newQuantity);
+                                  }}
+                                  className=" text-center fs-4"
                                   style={{
                                     width: "55px",
                                     height: "35px",
                                     fontSize: "16px",
+                                    color: "black",
                                     borderRadius: "5px",
+                                    borderColor: "black",
                                   }}
                                 />
                               </td>
@@ -290,7 +241,7 @@ const Cart = () => {
                       Thanh toán
                     </button> */}
                     <Link
-                      to="/client/checkout"
+                      to="/checkout"
                       className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                     >
                       Checkout<i className="icon-long-arrow-right"></i>

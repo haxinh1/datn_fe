@@ -12,9 +12,13 @@
     text-decoration: none;
     cursor: pointer;
 }
-.action-link-purple {
+.action {
     color: blue;
     text-align: center;
+}
+.action-link-purple {
+    color: purple;
+    font-weight: bold;
 }
 .action-link-blue {
     color: blue;

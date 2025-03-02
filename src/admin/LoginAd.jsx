@@ -33,7 +33,7 @@ const LoginAd = () => {
         localStorage.setItem("admin_token", response.access_token); // Lưu `access_token`
         localStorage.setItem("user", JSON.stringify(response.admin)); // Lưu thông tin user
 
-        navigate("/list-pr"); // Điều hướng sau khi đăng nhập thành công
+        navigate("/admin/list-pr"); // Điều hướng sau khi đăng nhập thành công
         alert("Đăng nhập thành công");
       } else {
         setError("Không nhận được access_token từ server");

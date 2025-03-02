@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
-import { orderServices } from "../services/order";
+import { OrderService } from "../services/order";
 import { Modal } from "antd";
 import { useNavigate } from "react-router-dom";
 
@@ -69,7 +69,7 @@ const Checkout = () => {
       console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
 
       // Gọi API đặt hàng
-      const orderResponse = await orderServices.placeOrder(orderData);
+      const orderResponse = await OrderService.placeOrder(orderData);
       console.log("✅ Kết quả phản hồi từ API:", orderResponse);
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
@@ -84,7 +84,7 @@ const Checkout = () => {
             const phoneNumber = userData.phone_number;
             const Address = userData.address;
             console.log("orderId from API response:", orderId);
-            nav("/client/payments", {
+            nav("/payments", {
               state: {
                 orderId,
                 totalAmount,

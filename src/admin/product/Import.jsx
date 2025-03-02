@@ -213,7 +213,7 @@ const Import = () => {
                     ))}
                 </AutoComplete>
 
-                <Link to="/creat">
+                <Link to="/admin/creat">
                     <Button
                         className='btn-import'
                         type="primary"

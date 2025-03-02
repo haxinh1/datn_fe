@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
-import { cartServices } from "../services/cart";
+import { cartServices } from "../services/Cart";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -60,14 +60,6 @@ const ListProduct = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const rawToken = localStorage.getItem("client_token");
     const sessionId = sessionStorage.getItem("session_id");
-
-    // if (!rawToken && !sessionId) {
-    //   setMessage(
-    //     "Bạn cần đăng nhập hoặc có session để thêm sản phẩm vào giỏ hàng."
-    //   );
-    //   setMessageType("error");
-    //   return;
-    // }
 
     const itemToAdd = {
       user_id: user && user.id ? user.id : null,

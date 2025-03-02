@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { paymentServices } from "../services/payment";
+import { paymentServices } from './../services/payments';
+
 
 const Payments = () => {
   const location = useLocation();

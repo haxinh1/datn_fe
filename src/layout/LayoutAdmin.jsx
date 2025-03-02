@@ -72,38 +72,47 @@ const LayoutAdmin = () => {
     {
       key: "list-pr",
       icon: <BookOutlined />,
-      label: <Link to="/list-pr">Quản lý sản phẩm</Link>,
+      label: <Link to="/admin/list-pr">Quản lý sản phẩm</Link>,
     },
     {
       key: "history",
       icon: <BookOutlined />,
-      label: <Link to="history">Quản lý nhập hàng</Link>,
+      label: <Link to="/admin/history">Quản lý nhập hàng</Link>,
+    },
+    {
+      key: "order",
+      icon: <BilibiliFilled />,
+      label: <Link to="/admin/order">Quản lý đơn hàng</Link>,
+    },
+    {
+      key: "account",
+      icon: <BilibiliFilled />,
+      label: <Link to="/admin/account">Quản lý tài khoản</Link>,
     },
     {
       key: "category",
       icon: <BilibiliFilled />,
-      label: <Link to="/categories">Danh mục</Link>,
+      label: <Link to="/admin/categories">Danh mục</Link>,
     },
     {
       key: "brand",
       icon: <BilibiliFilled />,
-      label: <Link to="/brand">Thương hiệu</Link>,
+      label: <Link to="/admin/brand">Thương hiệu</Link>,
     },
     {
       key: "bill",
       icon: <BilibiliFilled />,
-      label: <Link to="/bill">Hóa đơn</Link>,
+      label: <Link to="/admin/bill">Hóa đơn</Link>,
     },
     {
       key: "inbox",
       icon: <MessageOutlined />,
-      label: <Link to="/inbox">Tin nhắn</Link>,
+      label: <Link to="/admin/inbox">Tin nhắn</Link>,
     },
-
     {
-      key: "home",
+      key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/home">Trang chủ</Link>,
+      label: <Link to="/admin/home">Trang chủ</Link>,
     },
     {
       key: "logoutad",
