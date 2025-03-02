@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
 import { message, Modal } from "antd";
-import { cartServices } from "../../../services/Cart";
+import { cartServices } from "./../../../services/cart";
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
