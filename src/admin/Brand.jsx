@@ -109,9 +109,8 @@ const Brand = () => {
             align: "center",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to='' className="action-link action-link-blue">
-                        Cập nhật
-                    </Link>
+                    <span className="action-link action-link-blue">Cập nhật</span>
+                    
                     <div className="divider"></div>
 
                     <span className="action-link action-link-red">Xóa</span>
