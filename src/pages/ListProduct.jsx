@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
-import { cartServices } from "../services/Cart";
+import { cartServices } from "./../services/cart";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
