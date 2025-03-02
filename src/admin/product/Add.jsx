@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip, DatePicker } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import TextArea from "antd/es/input/TextArea";
 import slugify from "slugify";
 import "./add.css";
 import { productsServices } from './../../services/product';
@@ -807,73 +806,67 @@ const Add = () => {
                             />
                         </Form.Item>
                     </Col>
-                    
-                    {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
-                    {productType === "single" && (
-                        <>
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá bán (VNĐ)"
-                                    name="sell_price"
-                                >
-                                    <InputNumber
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá bán (VNĐ)"
+                            name="sell_price"
+                        >
+                            <InputNumber
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày mở khuyến mại"
-                                    name="sale_price_start_at"
-                                >
-                                    <DatePicker 
-                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
-                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
+                        <Form.Item
+                            label="Ngày mở khuyến mại"
+                            name="sale_price_start_at"
+                        >
+                            <DatePicker 
+                                value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
 
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá khuyến mại (VNĐ)"
-                                    name="sale_price"
-                                    dependencies={["sell_price"]}
-                                    rules={[
-                                        ({ getFieldValue }) => ({
-                                            validator(_, value) {
-                                                const sellPrice = getFieldValue("sell_price");
-                                                if (!value || !sellPrice || value < sellPrice) {
-                                                    return Promise.resolve();
-                                                }
-                                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
-                                            }
-                                        })
-                                    ]}
-                                >
-                                    <InputNumber 
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá khuyến mại (VNĐ)"
+                            name="sale_price"
+                            dependencies={["sell_price"]}
+                            rules={[
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const sellPrice = getFieldValue("sell_price");
+                                        if (!value || !sellPrice || value < sellPrice) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
+                                    }
+                                })
+                            ]}
+                        >
+                            <InputNumber 
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày đóng khuyến mại"
-                                    name="sale_price_end_at"
-                                >
-                                    <DatePicker 
-                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
-                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </>
-                    )}
+                        <Form.Item
+                            label="Ngày đóng khuyến mại"
+                            name="sale_price_end_at"
+                        >
+                            <DatePicker 
+                                value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
                 </Row>
 
                 {productType === "variant" && (

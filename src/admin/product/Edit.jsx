@@ -821,78 +821,73 @@ const Edit = () => {
                         </Form.Item>
                     </Col>
                     
-                    {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
-                    {productType === "single" && (
-                        <>
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá bán (VNĐ)"
-                                    name="sell_price"
-                                >
-                                    <InputNumber 
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá bán (VNĐ)"
+                            name="sell_price"
+                        >
+                            <InputNumber 
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày mở khuyến mại"
-                                    name="sale_price_start_at"
-                                >
-                                    <DatePicker 
-                                        value={product?.sale_price_start_at ? dayjs(product.sale_price_start_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
-                                        onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
+                        <Form.Item
+                            label="Ngày mở khuyến mại"
+                            name="sale_price_start_at"
+                        >
+                            <DatePicker 
+                                value={product?.sale_price_start_at ? dayjs(product.sale_price_start_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
+                                onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
 
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá khuyến mại (VNĐ)"
-                                    name="sale_price"
-                                    dependencies={["sell_price"]}
-                                    rules={[
-                                        ({ getFieldValue }) => ({
-                                            validator(_, value) {
-                                                const sellPrice = getFieldValue("sell_price");
-                                                if (!value || !sellPrice || value < sellPrice) {
-                                                    return Promise.resolve();
-                                                }
-                                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
-                                            }
-                                        })
-                                    ]}
-                                >
-                                    <InputNumber 
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá khuyến mại (VNĐ)"
+                            name="sale_price"
+                            dependencies={["sell_price"]}
+                            rules={[
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const sellPrice = getFieldValue("sell_price");
+                                        if (!value || !sellPrice || value < sellPrice) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
+                                    }
+                                })
+                            ]}
+                        >
+                            <InputNumber 
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày đóng khuyến mại"
-                                    name="sale_price_end_at"
-                                >
-                                    <DatePicker 
-                                        value={product?.sale_price_end_at ? dayjs(product.sale_price_end_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
-                                        onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thịnh dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </>
-                    )}
+                        <Form.Item
+                            label="Ngày đóng khuyến mại"
+                            name="sale_price_end_at"
+                        >
+                            <DatePicker 
+                                value={product?.sale_price_end_at ? dayjs(product.sale_price_end_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
+                                onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thịnh dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
                 </Row>
 
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h2>Thuộc tính</h2>
+                        <h1 className="mb-5">Thuộc tính</h1>
                         {forms.map((form, index) => (
                             <div key={form.id} className="attribute">
                                 <Select
@@ -983,7 +978,7 @@ const Edit = () => {
                         <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                         <hr />
-                        <h2>Danh sách sản phẩm cùng loại</h2>
+                        <h1 className="mb-5">Danh sách sản phẩm cùng loại</h1>
                         <Table columns={columns} dataSource={tableData} rowKey="id" />
                     </>
                 )}
