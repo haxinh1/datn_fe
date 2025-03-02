@@ -1,25 +1,115 @@
-import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Modal, Select, Skeleton, Table, Tooltip } from 'antd';
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Col, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from 'antd';
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { OrderService } from './../services/order';
 import dayjs from 'dayjs';
-import { Link } from 'react-router-dom';
 
 const Order = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [isModal, setIsModal] = useState(false);
+    const showModal = () => setIsModalVisible(true);
+    const hideModal = () => setIsModalVisible(false)
+    const [selectedOrderId, setSelectedOrderId] = useState(null);    
+    const hideEdit = () => setIsModal(false)
+    const [form] = Form.useForm();
+    const [image, setImage] = useState("");
 
-    const { data: ordersData, isLoading } = useQuery({
+    const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
         queryKey: ["orders"],
         queryFn: async () => {
             const response = await OrderService.getAllOrder();
-            console.log("API Response:", response); // Kiểm tra dữ liệu
-            return response.orders || { data: [] }; // Đảm bảo orders không bị undefined
+            return response.orders || { data: [] }
         },
     });
 
+    // danh sách trạng thái
+    const { data: statusData } = useQuery({
+        queryKey: ["status"],
+        queryFn: async () => {
+            const response = await OrderService.getAllStatus();
+            return response.data
+        },
+    });
+    const status = statusData ? [...statusData].sort((a, b) => a.id - b.id) : [];
+
+    // lấy ra đơn hàng theo ID
+    const { data: orderStatuses = [] } = useQuery({
+        queryKey: ["orderStatuses", selectedOrderId], // Dùng selectedOrderId thay vì id từ URL
+        queryFn: async () => {
+            if (!selectedOrderId) return [];
+            const response = await OrderService.getOrderStatus(selectedOrderId);
+            return response?.data || [];
+        },
+        enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
+    });    
+
+    const orderStatusesData = orderStatuses.map((item, index) => ({
+        key: index,
+        index: index + 1,
+        status: item.status?.name,
+        note: item.note,
+        employee_evidence: item.employee_evidence,
+        modified_by: item.modified_by?.fullname,
+        created_at: dayjs(item.created_at).format("DD/MM/YYYY - HH:mm")
+    }));      
+
+    const showEdit = (order) => {
+        setSelectedOrderId(order.id); // Lưu ID đơn hàng
+        form.setFieldsValue({
+            status_id: order.status?.id,
+            note: "",
+            employee_evidence: "",
+        });
+        setIsModal(true);
+    };
+
     const orders = ordersData || { data: [] };
+
+    const { mutate: updateOrderStatus } = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await OrderService.updateOrderStatus(id, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            notification.success({
+                message: "Cập nhật trạng thái đơn hàng thành công!",
+            });
+        },
+        onError: (error) => {
+            console.error("Lỗi cập nhật:", error);
+            notification.error({
+                message: "Lỗi cập nhật",
+            });
+        }
+    });
+    
+    // ✅ Hàm cập nhật trạng thái đơn hàng
+    const handleUpdateOrder = async (values) => {
+        if (!selectedOrderId) {
+            notification.error({ message: "Không tìm thấy đơn hàng để cập nhật!" });
+            return;
+        }
+    
+        const payload = {
+            order_status_id: values.status_id,
+            note: values.note || "",
+            employee_evidence: values.employee_evidence || image || ""
+        };
+    
+        console.log("Dữ liệu gửi đi:", payload); // Debug
+        updateOrderStatus(
+            { id: selectedOrderId, data: payload },
+            {
+                onSuccess: () => {
+                    hideEdit(); // Đóng modal sau khi cập nhật
+                    form.resetFields(); // Reset form về trạng thái ban đầu
+                    setSelectedOrderId(null); // Xóa ID đã chọn
+                    refetchOrders();
+                },
+            }
+        );
+    };
 
     // Chuyển đổi dữ liệu thành dataSource cho bảng
     const dataSource = orders.data.map((order, index) => ({
@@ -37,15 +127,13 @@ const Order = () => {
         return formatter.format(price);
     };
 
-    const showModal = (order) => {
-        setSelectedOrder(order);
-        setIsModalVisible(true);
-    };
-
-    const handleCancel = () => {
-        setIsModalVisible(false);
-        setSelectedOrder(null);
-    };
+    const onHandleChange = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+        }
+    }; 
 
     const columns = [
         {
@@ -106,16 +194,56 @@ const Order = () => {
                         />
                     </Tooltip>
                     <Tooltip title="Cập nhật">
-                        <Link to={`/admin/edit_order/${item.id}`}>
-                            <Button
-                                color="primary"
-                                variant="solid"
-                                icon={<EditOutlined/>}
-                            />
-                        </Link>
+                        <Button
+                            color="primary"
+                            variant="solid"
+                            icon={<EditOutlined/>}
+                            onClick={() => showEdit(item)}
+                        />
                     </Tooltip>
                 </div>
             ),
+        },
+    ];
+
+    const editcolumns = [
+        { 
+            title: "STT", 
+            dataIndex: "index", 
+            key: "index", 
+            align: "center" 
+        },
+        { 
+            title: "Trạng thái", 
+            dataIndex: "status", 
+            key: "status", 
+            align: "center",
+            render: (status) => <div className='action-link-blue'>{status}</div>
+        },
+        { 
+            title: "Ghi chú", 
+            dataIndex: "note", 
+            key: "note", 
+            align: "center" 
+        },
+        {
+            title: "Ảnh xác nhận",
+            dataIndex: "employee_evidence",
+            key: "employee_evidence",
+            align: "center",
+            render: (employee_evidence) => employee_evidence ? <Image width={60} height={90} src={employee_evidence} /> : null,
+        },
+        { 
+            title: "Người cập nhật", 
+            dataIndex: "modified_by", 
+            key: "modified_by", 
+            align: "center" 
+        },
+        { 
+            title: "Ngày cập nhật", 
+            dataIndex: "created_at", 
+            key: "created_at", 
+            align: "center" 
         },
     ];
 
@@ -138,10 +266,87 @@ const Order = () => {
             <Modal 
                 title="Chi tiết đơn hàng" 
                 visible={isModalVisible} 
-                onCancel={handleCancel} 
+                onCancel={hideModal} 
                 footer={null}
             >
                 
+            </Modal>  
+
+            <Modal 
+                title="Cập nhật trạng thái đơn hàng" 
+                visible={isModal} 
+                onCancel={hideEdit} 
+                footer={null}
+                width={1000}
+            >
+                <Form
+                    form={form}
+                    layout='vertical'
+                    onFinish={handleUpdateOrder}
+                >
+                    <Row gutter={24}>
+                        <Col span={8} className="col-item">
+                            <Form.Item 
+                                label="Trạng thái đơn hàng" 
+                                name="status_id"
+                            >
+                                <Select
+                                    className="input-item"
+                                    placeholder="Trạng thái"
+                                    showSearch
+                                    value={form.getFieldValue("status_id")}
+                                    onChange={(value) => form.setFieldsValue({ status_id: value })}
+                                >
+                                    {status.map((item) => (
+                                        <Select.Option key={item.id} value={item.id}>
+                                            {item.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Ghi chú"
+                                name="note"
+                            >
+                                <Input className="input-item" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={8} className="col-item">
+                            <Form.Item
+                                label="Ảnh xác nhận"
+                                name="employee_evidence"
+                                getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
+                            >
+                                <Upload
+                                    listType="picture-card"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    onChange={onHandleChange}
+                                >
+                                    <button className="upload-button" type="button">
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </button>
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Button htmlType="submit" type="primary" className="btn-item">
+                        Cập nhật
+                    </Button>
+                </Form>
+
+                <hr />
+                <h1 className="mb-5">Lịch sử cập nhật</h1>
+                <Table
+                    columns={editcolumns}
+                    dataSource={orderStatusesData}
+                    pagination={{ pageSize: 5 }}
+                    bordered
+                />
             </Modal>  
         </div>
     );

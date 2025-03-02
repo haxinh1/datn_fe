@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Modal, Switch, Form, Input, Select, notification } from "antd";
+import { Button, Table, Modal, Switch, Form, Input, Select, notification, Row, Col } from "antd";
 import { categoryServices } from './../../services/categories';
 import { BookOutlined, PlusOutlined } from '@ant-design/icons';
 import formatDate from '../../utils/formatDate';
@@ -142,7 +142,6 @@ const Categories = () => {
                 </Button>
             </div>
 
-            {/* Modal */}
             <Modal 
                 title={editingCategory ? "Cập nhật danh mục" : "Thêm danh mục"}
                 open={isModalVisible}
@@ -154,46 +153,52 @@ const Categories = () => {
                     layout="vertical" 
                     onFinish={onSubmit}
                 >
-                    <Form.Item 
-                        label="Tên danh mục" 
-                        name="name" 
-                        rules={[{ required: true, message: "Vui lòng nhập tên danh mục" }]}
-                    >
-                        <Input className='input-item' onChange={handleNameChange}/>
-                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className='col-item'>
+                            <Form.Item 
+                                label="Tên danh mục" 
+                                name="name" 
+                                rules={[{ required: true, message: "Vui lòng nhập tên danh mục" }]}
+                            >
+                                <Input className='input-item' onChange={handleNameChange}/>
+                            </Form.Item>
 
-                    <Form.Item 
-                        label="Slug" 
-                        name="slug" 
-                        rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                    >
-                        <Input className='input-item'/>
-                    </Form.Item>
+                            <Form.Item label="Danh mục cha" name="parentId">
+                                <Select 
+                                    placeholder="Chọn danh mục cha" 
+                                    className='input-item'
+                                    allowClear
+                                >
+                                    {categories.map(category => (
+                                        <Option key={category.id} value={category.id.toString()}>
+                                            {category.name}
+                                        </Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
 
-                    <Form.Item label="Danh mục cha" name="parentId">
-                        <Select 
-                            placeholder="Chọn danh mục cha" 
-                            className='input-item'
-                            allowClear
-                        >
-                            {categories.map(category => (
-                                <Option key={category.id} value={category.id.toString()}>
-                                    {category.name}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
+                        <Col span={12} className='col-item'>
+                            <Form.Item 
+                                label="Slug" 
+                                name="slug" 
+                                rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                            >
+                                <Input className='input-item'/>
+                            </Form.Item>
 
-                    <Form.Item label="Thứ tự hiển thị" name="ordinal">
-                        <Select 
-                            placeholder="Chọn thứ tự"
-                            className='input-item'
-                        >
-                            <Option value="1">1</Option>
-                            <Option value="2">2</Option>
-                            <Option value="3">3</Option>
-                        </Select>
-                    </Form.Item>
+                            <Form.Item label="Thứ tự hiển thị" name="ordinal">
+                                <Select 
+                                    placeholder="Chọn thứ tự"
+                                    className='input-item'
+                                >
+                                    <Option value="1">1</Option>
+                                    <Option value="2">2</Option>
+                                    <Option value="3">3</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
 
                     <Form.Item label="Trạng thái" name="is_active" valuePropName="checked">
                         <Switch checkedChildren="Active" unCheckedChildren="Inactive" />

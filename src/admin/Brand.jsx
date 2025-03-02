@@ -150,29 +150,32 @@ const Brand = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleAddBrand}
                 >      
-                    <Form.Item
-                        label="Tên thương hiệu"
-                        name="name"
-                        rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
-                    >
-                        <Input className="input-item" onChange={handleNameChange} />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Slug"
-                        name="slug"
-                        rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                    >
-                        <Input className="input-item" />
-                    </Form.Item>
-
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Tên thương hiệu"
+                                name="name"
+                                rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                            >
+                                <Input className="input-item" onChange={handleNameChange} />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Slug"
+                                name="slug"
+                                rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                            >
+                                <Input className="input-item" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
                 
                     <Form.Item 
                         label="Logo thương hiệu" 
