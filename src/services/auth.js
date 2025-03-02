@@ -1,16 +1,28 @@
 import instance from "../axios"; // axios instance với base URL
 
 const fetchAuth = async () => {
-  const response = await instance.get("/users");
+  const response = await instance.get("/admin/users");
   return response.data;
 };
 
-const register = async (phone_number, password) => {
-  const response = await instance.post("/client/register", {
-    phone_number,
-    password,
-  });
+const getAUser = async (id) => {
+  const response = await instance.get(`/admin/users/${id}`);
   return response.data;
+};
+
+const updateUser = async (id, payload) => {
+  const response = await instance.put(`/admin/users/${id}`, payload);
+  return response.data;
+};
+
+const register = async (userData) => {
+  try {
+    const response = await instance.post("/register", userData);
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi đăng ký:', error.response?.data);
+    throw new Error(error.response?.data?.message || "Đăng ký thất bại");
+  }
 };
 
 const login = async (phone_number, password) => {
@@ -79,6 +91,8 @@ const logoutad = async () => {
 
 export const AuthServices = {
   fetchAuth,
+  updateUser,
+  getAUser,
   register,
   login,
   loginad,

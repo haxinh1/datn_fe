@@ -69,7 +69,7 @@ const Creat = () => {
                 description: "Sản phẩm mới đã được thêm vào danh sách.",
             });
             queryClient.invalidateQueries({ queryKey: ["products"] });
-            navigate("/import");
+            navigate("/admin/import");
         },
         onError: (error) => {
             notification.error({

@@ -70,6 +70,7 @@ const List = () => {
         return formatter.format(price);
     };
 
+    // sửa url ảnh thành file
     const urlToFile = async (url, filename) => {
         const response = await fetch(url);
         const blob = await response.blob();
@@ -88,6 +89,7 @@ const List = () => {
         };
     };
 
+    // sửa biến thể
     const handleEditVariant = async (variant) => {
         setCurrentVariant(variant);
         setNewPrice(variant.sell_price);
@@ -297,13 +299,13 @@ const List = () => {
             render: (_, item) => (
                 <div className="action-container">
                     <Tooltip title="Chi tiết">
-                        <Link to={`/detailad/${item.id}`}>
+                        <Link to={`/admin/detailad/${item.id}`}>
                             <Button color="purple" variant="solid" icon={<EyeOutlined />} />
                         </Link>
                     </Tooltip>
                     
                     <Tooltip title="Cập nhật">
-                        <Link to={`/edit-pr/${item.id}`}>
+                        <Link to={`/admin/edit-pr/${item.id}`}>
                             <Button color="primary" variant="solid" icon={<EditOutlined />} />
                         </Link>
                     </Tooltip>
@@ -359,13 +361,13 @@ const List = () => {
                 </div>
 
                 <div className="group2">
-                    <Link to="/add-pr">
+                    <Link to="/admin/add-pr">
                         <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
                             Thêm sản phẩm
                         </Button>
                     </Link>
 
-                    <Link to="/import">
+                    <Link to="/admin/import">
                         <Button color="primary" variant="solid" icon={<PlusOutlined />}>
                             Nhập hàng
                         </Button>
@@ -500,7 +502,7 @@ const List = () => {
                 onCancel={() => setIsModalVisible(false)} 
                 footer={null}
             >
-                <h5 className="action-link-purple">
+                <h5 className="action">
                     {currentVariant
                         ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
                             currentVariant.attribute_value_product_variants

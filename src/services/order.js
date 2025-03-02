@@ -1,12 +1,14 @@
-import instance from "../axios";
+import instance from "../axios"; // axios instance với base URL
 
-const getOrders = async () => {
+// danh sách đơn hàng
+const getAllOrder = async () => {
   const response = await instance.get("/orders");
   return response.data;
 };
 
-const getOrdersByUserId = async (userId) => {
-  const response = await instance.get(`/orders/user/${userId}`);
+// danh sách trạng thái
+const getAllStatus = async () => {
+  const response = await instance.get("/order-statuses");
   return response.data;
 };
 
@@ -26,23 +28,30 @@ const placeOrder = async (orderData) => {
   return response.data;
 };
 
+
 const getOrderById = async (orderId) => {
   const response = await instance.get(`/orders/${orderId}`);
   return response.data;
 };
 
-const updateOrderStatus = async (orderId, statusData) => {
-  const response = await instance.post(
-    `/orders/${orderId}/update-status`,
-    statusData
-  );
+// danh sách quản lý đơn hàng
+const getOrderStatus = async (id) => {
+  const response = await instance.get(`/orders/${id}/statuses`);
   return response.data;
 };
 
-export const orderServices = {
-  getOrders,
-  placeOrder,
+// cập nhật trạng thái đơn hàng
+const updateOrderStatus = async (id, payload) => {
+  const response = await instance.put(`/orders/${id}/update-status`, payload);
+  return response.data;
+};
+
+// Xuất các hàm để dùng trong các component
+export const OrderService = {
   getOrderById,
+  placeOrder,
+  getAllOrder,
+  getAllStatus,
+  getOrderStatus,
   updateOrderStatus,
-  getOrdersByUserId,
 };
