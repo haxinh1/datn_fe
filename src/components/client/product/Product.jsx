@@ -15,6 +15,11 @@ const Product = (props) => {
               src={product.thumbnail}
               alt="Product image"
               className="product-image"
+              style={{
+                width: "300px",
+                height: "380px",
+                objectFit: "cover",
+              }}
             />
             {product.variants.length > 0 && (
               <img
