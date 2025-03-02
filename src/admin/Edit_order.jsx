@@ -96,9 +96,9 @@ const Edit_order = () => {
         if (info.file.status === "done" && info.file.response) {
             const imageUrl = info.file.response.secure_url;
             setImage(imageUrl);
-            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form
+            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
         }
-    };    
+    }; 
 
     const columns = [
         { 
@@ -125,7 +125,7 @@ const Edit_order = () => {
             dataIndex: "employee_evidence",
             key: "employee_evidence",
             align: "center",
-            render: (employee_evidence) => <Image width={80} src={employee_evidence} />,
+            render: (employee_evidence) => <Image width={60} height={90} src={employee_evidence} />,
         },
         { 
             title: "Người cập nhật", 
@@ -176,18 +176,15 @@ const Edit_order = () => {
                     </Col>
 
                     <Col span={8} className="col-item">
-                        <Form.Item
+                    <Form.Item
                             label="Ảnh xác nhận"
                             name="employee_evidence"
-                            valuePropName="fileList"
-                            getValueFromEvent={normFile}
-                            fileList={image ? [{ url: image }] : []}
+                            getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
                         >
                             <Upload
                                 listType="picture-card"
                                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                 data={{ upload_preset: "quangOsuy" }}
-                                fileList={image}  // Hiển thị danh sách ảnh hiện tại
                                 onChange={onHandleChange}
                             >
                                 <button className="upload-button" type="button">

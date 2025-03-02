@@ -112,7 +112,7 @@ const LayoutAdmin = () => {
     {
       key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/admin/home">Trang chủ</Link>,
+      label: <Link to="/">Trang chủ</Link>,
     },
     {
       key: "logoutad",
