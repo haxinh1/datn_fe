@@ -171,6 +171,66 @@ const ProductDetail = () => {
       render: (total) => formatPrice(total),
     },
   ];
+
+  const productColumns = [
+    {
+      title: "Thông tin",
+      dataIndex: "label",
+      key: "label",
+      width: 200,
+    },
+    {
+      title: "Chi tiết",
+      dataIndex: "value",
+      key: "value",
+    },
+  ];
+  
+  const productData = [
+    { key: "sku", label: "Mã sản phẩm:", value: product.sku || "Không có mã" },
+    { key: "name", label: "Tên sản phẩm:", value: product.name || "Không có tên" },
+    {
+      key: "brand",
+      label: "Thương hiệu sản phẩm:",
+      value: brands?.find((b) => b.id === product.brand_id)?.name || "Không xác định",
+    },
+    {
+      key: "categories",
+      label: "Danh mục sản phẩm:",
+      value: product.categories?.map((cat) => cat.name).join(", ") || "Không có danh mục",
+    },
+    { key: "views", label: "Lượt xem:", value: product.views || 0 },
+    { key: "sell_price", label: "Giá bán (VNĐ):", value: formatPrice(product.sell_price) },
+    { key: "sale_price", label: "Giá khuyến mại (VNĐ):", value: formatPrice(product.sale_price) },
+    {
+      key: "created_at",
+      label: "Thời gian tạo:",
+      value: moment(product.created_at).format("DD/MM/YYYY"),
+    },
+    {
+      key: "sale_price_start",
+      label: "Ngày mở khuyến mại:",
+      value: moment(product.sale_price_start_at).format("DD/MM/YYYY"),
+    },
+    {
+      key: "sale_price_end",
+      label: "Ngày đóng khuyến mại:",
+      value: moment(product.sale_price_end_at).format("DD/MM/YYYY"),
+    },
+    { key: "slug", label: "Slug:", value: product.slug },
+    {
+      key: "link",
+      label: "Link sản phẩm:",
+      value: product.name_link ? (
+        <a href={product.name_link} target="_blank" rel="noopener noreferrer">
+          {product.name_link}
+        </a>
+      ) : (
+        "Không có"
+      ),
+    },
+  ];
+
   return (
     product && (
       <div className="container mt-5">
@@ -179,7 +239,7 @@ const ProductDetail = () => {
           Chi tiết sản phẩm
         </h1>
 
-        <div className="row">
+        <div className="group1">
           {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
             <div className="text-center">
@@ -240,113 +300,41 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Thông tin sản phẩm */}
-          <div className="col-md-8">
-            <table className="table table-striped">
-              <tbody>
-                <tr>
-                  <th>Mã sản phẩm:</th>
-                  <td>{product.sku || "Không có mã"}</td>
-                </tr>
-                <tr>
-                  <th>Tên sản phẩm:</th>
-                  <td>{product.name || "Không có tên"}</td>
-                </tr>
-                <tr>
-                  <th>Thương hiệu sản phẩm:</th>
-                  <td>
-                    {(() => {
-                      if (!brands || !Array.isArray(brands))
-                        return "Đang tải...";
-                      const brand = brands.find(
-                        (b) => b.id === product.brand_id
-                      );
-                      return brand ? brand.name : "Không xác định";
-                    })()}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Danh mục sản phẩm:</th>
-                  <td>
-                    {product.categories && Array.isArray(product.categories)
-                      ? product.categories
-                          .map((category) => category.name)
-                          .join(", ")
-                      : product.categories?.name || "Không có danh mục"}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Lượt xem:</th>
-                  <td>{product.views || 0}</td>
-                </tr>
-                <tr>
-                  <th>Giá bán (VNĐ):</th>
-                  <td>
-                    {product.sell_price > 0 && formatPrice(product.sell_price)}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Giá khuyến mại (VNĐ):</th>
-                  <td>{formatPrice(product.sale_price)} </td>
-                </tr>
-                <tr>
-                  <th>Thời gian tạo:</th>
-                  <td>{moment(product.created_at).format("DD/MM/YYYY")}</td>
-                </tr>
-                <tr>
-                  <th>Ngày mở khuyến mại :</th>
-                  <td>
-                    {moment(product.sale_price_start_at).format("DD/MM/YYYY")}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Ngày đóng khuyến mại:</th>
-                  <td>
-                    {moment(product.sale_price_end_at).format("DD/MM/YYYY")}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Slug:</th>
-                  <td>{product.slug} </td>
-                </tr>
-                <tr>
-                  <th>Link sản phẩm:</th>
-                  <td>
-                    {product.name_link ? (
-                      <a
-                        href={product.name_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {product.name_link}
-                      </a>
-                    ) : (
-                      "Không có"
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <Table
+            columns={productColumns}
+            dataSource={productData}
+            pagination={false}
+            bordered
+            style={{ width: "100%"}} // Tăng chiều rộng, giảm font size để giảm chiều cao hàng
+            size="small" // Giảm chiều cao của hàng
+          />
+        </div>
 
-            {/* Phần mô tả sản phẩm */}
-            <div className="product-description mt-4">
-              <h4>Mô tả sản phẩm</h4>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: product.content || "Không có mô tả",
-                }}
-              />
-            </div>
-          </div>
+        <div className="product-description mt-4">
+          <h4>Mô tả sản phẩm</h4>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: product.content || "Không có mô tả",
+            }}
+          />
         </div>
 
         {/* Các nút hành động */}
-        <div className="mt-2 d-flex justify-content-end flex-wrap gap-2">
+        <div className="btn-brand">
           <Link to={`/admin/edit-pr/${id}`}>
-            <button className="btn btn-success same-size-btn">Cập nhật</button>
+            <Button
+              className="btn-import"
+              color="primary" 
+              variant="solid"
+            >
+              Cập nhật sản phẩm
+            </Button>
           </Link>
+
           <Button
-            className="btn btn-success same-size-btn"
+            className="btn-import"
+            color="primary" 
+            variant="solid"
             onClick={() => setIsModalOpen(true)}
           >
             Lịch sử nhập hàng
