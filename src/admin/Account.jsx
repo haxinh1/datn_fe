@@ -1,5 +1,5 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, InputNumber, DatePicker, Switch, Input, Select, notification, Skeleton } from 'antd';
+import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col } from 'antd';
 import React, { useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -258,34 +258,39 @@ const Account = () => {
                     layout="vertical"
                     form={form}
                 >
-                    <Form.Item
-                        label="Chức năng"
-                        name="role"
-                        rules={[{ required: true, message: "Vui lòng chọn chức năng" }]}
-                    >
-                        <Select
-                            placeholder="Chức năng"
-                            className="input-item"
-                        >
-                            <Select.Option value="customer">Khách hàng</Select.Option>
-                            <Select.Option value="manager">Nhân viên</Select.Option>
-                            <Select.Option value="admin">Quản trị viên</Select.Option>
-                        </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Trạng thái tài khoản"
-                        name="status"
-                        rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-                    >
-                        <Select
-                            placeholder="Trạng thái"
-                            className="input-item"
-                        >
-                            <Select.Option value="active">Hoạt động</Select.Option>
-                            <Select.Option value="inactive">Dừng hoạt động</Select.Option>
-                        </Select>
-                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Chức năng"
+                                name="role"
+                                rules={[{ required: true, message: "Vui lòng chọn chức năng" }]}
+                            >
+                                <Select
+                                    placeholder="Chức năng"
+                                    className="input-item"
+                                >
+                                    <Select.Option value="customer">Khách hàng</Select.Option>
+                                    <Select.Option value="manager">Nhân viên</Select.Option>
+                                    <Select.Option value="admin">Quản trị viên</Select.Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Trạng thái tài khoản"
+                                name="status"
+                                rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+                            >
+                                <Select
+                                    placeholder="Trạng thái"
+                                    className="input-item"
+                                >
+                                    <Select.Option value="active">Hoạt động</Select.Option>
+                                    <Select.Option value="inactive">Dừng hoạt động</Select.Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
 
                     <div className="add">
                         <Button key="submit" type="primary" onClick={handleUpdateUser}>Cập nhật</Button>

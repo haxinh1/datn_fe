@@ -646,14 +646,15 @@ const Add = () => {
                                     ))}
                                 </Select>
 
-                                <Button 
-                                    className="btn-import"
-                                    color="primary" 
-                                    variant="outlined"
-                                    icon={<PlusOutlined />}
-                                    onClick={setIsModalVisible}
-                                >     
-                                </Button>
+                                <Tooltip title='Thêm thương hiệu mới'>
+                                    <Button 
+                                        className="btn-import"
+                                        color="primary" 
+                                        variant="outlined"
+                                        icon={<PlusOutlined />}
+                                        onClick={setIsModalVisible}
+                                    />   
+                                </Tooltip>
                             </div>
                         </Form.Item>
 
@@ -904,15 +905,16 @@ const Add = () => {
                                         </Option>
                                     ))}
                                 </Select>
-                            
-                                <Button 
-                                    color="primary" 
-                                    variant="outlined"
-                                    className="btn-item" 
-                                    icon={<PlusOutlined />} 
-                                    onClick={() => setIsAttributeModalOpen(true)} // Mở modal tạo thuộc tính mới
-                                >
-                                </Button>
+
+                                <Tooltip title='Thêm thuộc tính mới'>
+                                    <Button 
+                                        color="primary" 
+                                        variant="outlined"
+                                        className="btn-item" 
+                                        icon={<PlusOutlined />} 
+                                        onClick={() => setIsAttributeModalOpen(true)} // Mở modal tạo thuộc tính mới
+                                    />
+                                </Tooltip>
                             
                                 <Select
                                     mode="multiple"
@@ -943,14 +945,15 @@ const Add = () => {
                                     ))}
                                 </Select>
 
-                                <Button 
-                                    color="primary" 
-                                    variant="outlined"
-                                    className="btn-item" 
-                                    icon={<PlusOutlined />} 
-                                    onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
-                                >
-                                </Button>
+                                <Tooltip title='Thêm giá trị mới'>
+                                    <Button 
+                                        color="primary" 
+                                        variant="outlined"
+                                        className="btn-item" 
+                                        icon={<PlusOutlined />} 
+                                        onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
+                                    />
+                                </Tooltip>
                             </div>
                         ))}
 
@@ -1005,32 +1008,37 @@ const Add = () => {
                         layout="vertical"
                         onFinish={(values) => handleAddValue(values)}                    
                     >
-                        <Form.Item
-                            label="Tên giá trị"
-                            name="value"
-                            rules={[{ required: true, message: "Vui lòng nhập tên giá trị!" }]}
-                        >
-                            <Input placeholder="Nhập tên giá trị" className="input-item" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Thuộc tính"
-                            name="attribute_id"
-                            rules={[{ required: true, message: "Vui lòng chọn thuộc tính!" }]}
-                        >
-                            <Select
-                                className="input-attribute"
-                                allowClear
-                                placeholder="Chọn thuộc tính"
-                                onChange={(value) => setSelectedAttributeId(value)}
-                            >
-                                {attributes && attributes.map((attr) => (
-                                    <Option key={attr.id} value={attr.id}>
-                                        {attr.name}
-                                    </Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
+                        <Row gutter={24}>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Tên giá trị"
+                                    name="value"
+                                    rules={[{ required: true, message: "Vui lòng nhập tên giá trị!" }]}
+                                >
+                                    <Input placeholder="Nhập tên giá trị" className="input-item" />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Thuộc tính"
+                                    name="attribute_id"
+                                    rules={[{ required: true, message: "Vui lòng chọn thuộc tính!" }]}
+                                >
+                                    <Select
+                                        className="input-attribute"
+                                        allowClear
+                                        placeholder="Chọn thuộc tính"
+                                        onChange={(value) => setSelectedAttributeId(value)}
+                                    >
+                                        {attributes && attributes.map((attr) => (
+                                            <Option key={attr.id} value={attr.id}>
+                                                {attr.name}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <div className="add">
                             <Button type="primary" htmlType="submit">
@@ -1051,21 +1059,26 @@ const Add = () => {
                         layout="vertical"
                         onFinish={handleAddBrand}
                     >      
-                        <Form.Item
-                            label="Tên thương hiệu"
-                            name="brand_name"
-                            rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
-                        >
-                            <Input className="input-item" onChange={handleNameBrand} />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Slug"
-                            name="brand_slug"
-                            rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                        >
-                            <Input className="input-item" />
-                        </Form.Item>
+                        <Row gutter={24}>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Tên thương hiệu"
+                                    name="brand_name"
+                                    rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                                >
+                                    <Input className="input-item" onChange={handleNameBrand} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Slug"
+                                    name="brand_slug"
+                                    rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                                >
+                                    <Input className="input-item" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <Form.Item 
                             label="Logo thương hiệu" 
