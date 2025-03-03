@@ -42,9 +42,9 @@ const Order = () => {
             return response?.data || [];
         },
         enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
-    });    
-
-    const orderStatusesData = orderStatuses.map((item, index) => ({
+    });   
+    
+    const orderStatusesData = (orderStatuses || []).map((item, index) => ({
         key: index,
         index: index + 1,
         status: item.status?.name,
@@ -52,7 +52,7 @@ const Order = () => {
         employee_evidence: item.employee_evidence,
         modified_by: item.modified_by?.fullname,
         created_at: dayjs(item.created_at).format("DD/MM/YYYY - HH:mm")
-    }));      
+    }));  
 
     const showEdit = (order) => {
         setSelectedOrderId(order.id); // Lưu ID đơn hàng
@@ -112,11 +112,11 @@ const Order = () => {
     };
 
     // Chuyển đổi dữ liệu thành dataSource cho bảng
-    const dataSource = orders.data.map((order, index) => ({
+    const dataSource = Array.isArray(orders) ? orders.map((order, index) => ({
         ...order,
         key: order.id,
-        index: index + 1, // STT (số thứ tự)
-    }));
+        index: index + 1,
+    })) : [];
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
