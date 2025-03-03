@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker } from "antd";
+import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
@@ -513,54 +513,60 @@ const List = () => {
                 </h5>
 
                 <Form layout="vertical">
-                    <Form.Item 
-                        label="Giá bán (VNĐ)"
-                        name="sell_price"
-                        initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
-                        rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
-                    >
-                        <InputNumber 
-                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                            className="input-item" 
-                            value={newPrice} 
-                            onChange={setNewPrice} 
-                        />
-                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item 
+                                label="Giá bán (VNĐ)"
+                                name="sell_price"
+                                initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
+                                rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                            >
+                                <InputNumber 
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    className="input-item" 
+                                    value={newPrice} 
+                                    onChange={setNewPrice} 
+                                />
+                            </Form.Item>
 
-                    <Form.Item 
-                        label="Giá khuyến mại (VNĐ)"
-                    >
-                        <InputNumber 
-                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                            className="input-item" 
-                            value={newSalePrice} 
-                            onChange={setNewSalePrice} 
-                        />
-                    </Form.Item>
+                            <Form.Item
+                                label="Ngày mở khuyến mại"
+                            >
+                                <DatePicker
+                                    value={startDate} 
+                                    onChange={(date) => setStartDate(date)} 
+                                    className="input-item"
+                                    format="DD-MM-YYYY"
+                                />
+                            </Form.Item>
+                        </Col>
 
-                    <Form.Item
-                        label="Ngày mở khuyến mại"
-                    >
-                        <DatePicker
-                            value={startDate} 
-                            onChange={(date) => setStartDate(date)} 
-                            className="input-item"
-                            format="DD-MM-YYYY"
-                        />
-                    </Form.Item>
+                        <Col span={12} className="col-item">
+                            <Form.Item 
+                                label="Giá khuyến mại (VNĐ)"
+                            >
+                                <InputNumber 
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    className="input-item" 
+                                    value={newSalePrice} 
+                                    onChange={setNewSalePrice} 
+                                />
+                            </Form.Item>
 
-                    <Form.Item
-                        label="Ngày đóng khuyến mại"
-                    >
-                        <DatePicker
-                            value={endDate} 
-                            onChange={(date) => setEndDate(date)} 
-                            className="input-item"
-                            format="DD-MM-YYYY"
-                        />
-                    </Form.Item>
+                            <Form.Item
+                                label="Ngày đóng khuyến mại"
+                            >
+                                <DatePicker
+                                    value={endDate} 
+                                    onChange={(date) => setEndDate(date)} 
+                                    className="input-item"
+                                    format="DD-MM-YYYY"
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
 
                     <Form.Item
                         label="Ảnh"
