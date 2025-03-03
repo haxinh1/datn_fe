@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartServices } from "./../services/cart";
 import { message, Modal } from "antd";
+import { ValuesServices } from "../services/attribute_value";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [shippingCost, setShippingCost] = useState(0);
+  const [attributeValues, setAttributeValues] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,6 +73,36 @@ const Cart = () => {
         }
       },
     });
+  };
+
+  useEffect(() => {
+    const fetchAttributeValues = async () => {
+      try {
+        const data = await ValuesServices.fetchValues(); // Gọi API từ services
+        setAttributeValues(data);
+        console.log("Dữ liệu attributeValues từ API:", data); // ✅ Log ra console
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu attribute values:", error);
+      }
+    };
+
+    fetchAttributeValues();
+  }, []);
+
+  const getAttributeValue = (product) => {
+    const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
+    console.log("Dữ liệu từ localStorage:", attributes);
+    console.log("Dữ liệu từ API attributeValues:", attributeValues);
+
+    return attributes
+      .map((attr) => {
+        if (!attributeValues?.data) return "Không xác định"; // Kiểm tra nếu API chưa load
+        const attribute = attributeValues.data.find(
+          (av) => String(av.id) === String(attr.attribute_value_id)
+        );
+        return attribute ? attribute.value : "Không xác định";
+      })
+      .join(", ");
   };
 
   return (
@@ -164,7 +196,13 @@ const Cart = () => {
                                   }}
                                 />
                               </td>
-                              <td className="fs-4 text-start">{productName}</td>
+                              <td className="fs-4 text-start">
+                                {productName}
+                                <span className="text-muted">
+                                  ({getAttributeValue(item)})
+                                </span>
+                              </td>
+
                               <td className="fs-4">
                                 {formatCurrency(productPrice)}
                               </td>
