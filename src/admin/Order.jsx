@@ -8,12 +8,12 @@ import dayjs from 'dayjs';
 const Order = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isModal, setIsModal] = useState(false);
-    const showModal = () => setIsModalVisible(true);
     const hideModal = () => setIsModalVisible(false)
     const [selectedOrderId, setSelectedOrderId] = useState(null);    
     const hideEdit = () => setIsModal(false)
     const [form] = Form.useForm();
     const [image, setImage] = useState("");
+    const [orderDetails, setOrderDetails] = useState([]); 
 
     const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
         queryKey: ["orders"],
@@ -135,6 +135,15 @@ const Order = () => {
         }
     }; 
 
+    const showModal = (order) => {
+        setIsModalVisible(true);
+        setSelectedOrderId(order.id);
+    
+        // Lọc danh sách sản phẩm của đơn hàng từ ordersData
+        const orderDetails = order.order_items || []; 
+        setOrderDetails(orderDetails);
+    };  
+
     const columns = [
         {
             title: "STT",
@@ -204,7 +213,7 @@ const Order = () => {
                 </div>
             ),
         },
-    ];
+    ];  
 
     const editcolumns = [
         { 
@@ -247,6 +256,37 @@ const Order = () => {
         },
     ];
 
+    const detailColumns = [
+        {
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => index + 1,
+        },
+        {
+            title: "Tên sản phẩm",
+            dataIndex: "product_name",
+            align: "center",
+        },
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            align: "center",
+        },
+        {
+            title: "Giá bán (VNĐ)",
+            dataIndex: "sell_price",
+            align: "center",
+            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+        },
+        {
+            title: "Tổng tiền (VNĐ)",  // ✅ Thêm cột tổng tiền
+            dataIndex: "total",
+            align: "center",
+            render: (_, record) => formatPrice(record.quantity * record.sell_price),
+        },
+    ]
+
     return (
         <div>
             <h1 className="mb-5">
@@ -268,8 +308,31 @@ const Order = () => {
                 visible={isModalVisible} 
                 onCancel={hideModal} 
                 footer={null}
+                width={800}
             >
-                
+                <Table
+                    columns={detailColumns}
+                    dataSource={orderDetails.map((item, index) => ({
+                        ...item,
+                        key: index,
+                        index: index + 1,
+                        product_name: item.product?.name, 
+                    }))}
+                    bordered
+                    summary={() => {
+                        const totalAmount = orderDetails.reduce((sum, item) => sum + item.quantity * item.sell_price, 0);
+                        return (
+                            <Table.Summary.Row>
+                                <Table.Summary.Cell colSpan={4} align="right">
+                                    <strong>Tổng giá trị (VNĐ):</strong>
+                                </Table.Summary.Cell>
+                                <Table.Summary.Cell align="center">
+                                    <strong>{formatPrice(totalAmount)}</strong>
+                                </Table.Summary.Cell>
+                            </Table.Summary.Row>
+                        );
+                    }}
+                />
             </Modal>  
 
             <Modal 
@@ -341,12 +404,14 @@ const Order = () => {
 
                 <hr />
                 <h1 className="mb-5">Lịch sử cập nhật</h1>
-                <Table
-                    columns={editcolumns}
-                    dataSource={orderStatusesData}
-                    pagination={{ pageSize: 5 }}
-                    bordered
-                />
+                <Skeleton active loading={isLoading}>
+                    <Table
+                        columns={editcolumns}
+                        dataSource={orderStatusesData}
+                        pagination={{ pageSize: 5 }}
+                        bordered
+                    />
+                </Skeleton>
             </Modal>  
         </div>
     );
