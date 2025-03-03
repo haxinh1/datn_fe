@@ -14,7 +14,9 @@ const ProductDetailClient = () => {
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(product.thumbnail || "");
   const [modal2Open, setModal2Open] = useState(false);
-
+  const [selectedColorId, setSelectedColorId] = useState(null);
+  const [selectedSizeId, setSelectedSizeId] = useState("");
+  const [attributes, setAttributes] = useState([]);
   const colorMap = {
     đen: "#333333",
     trắng: "#ffffff",
@@ -25,12 +27,14 @@ const ProductDetailClient = () => {
 
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
+    setSelectedColorId(colorId); // Store the selected color ID
     setSelectedSize("");
     setSelectedVariant(null);
   };
 
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
+    setSelectedSizeId(sizeId); // Store the selected size ID
     findVariant(selectedColor, sizeId);
   };
 
@@ -45,12 +49,6 @@ const ProductDetailClient = () => {
 
   const findVariant = (colorId, sizeId) => {
     const variant = product.variants.find((v) => {
-      if (
-        !Array.isArray(v.attribute_value_product_variants) ||
-        v.attribute_value_product_variants.length === 0
-      ) {
-        return false;
-      }
       const variantAttributes = v.attribute_value_product_variants.map(
         (attr) => attr.attribute_value_id
       );
@@ -59,7 +57,7 @@ const ProductDetailClient = () => {
         variantAttributes.includes(Number(sizeId))
       );
     });
-    setQuantity(1);
+    setQuantity(1); // Reset quantity when variant changes
     setSelectedVariant(variant || null);
   };
 
@@ -69,14 +67,7 @@ const ProductDetailClient = () => {
       setQuantity(value);
     }
   };
-
   const handleAddToCart = async () => {
-    let variantId = selectedVariant ? selectedVariant.id : null;
-    let productId = product.id;
-    let finalPrice = selectedVariant
-      ? selectedVariant.price
-      : product.sell_price;
-
     if (product.variants?.length > 0 && !selectedVariant) {
       message.error(
         "Vui lòng chọn màu sắc và kích thước trước khi thêm vào giỏ hàng."
@@ -84,20 +75,31 @@ const ProductDetailClient = () => {
       return;
     }
 
+    const newAttributes = [
+      { attribute_id: 1, attribute_value_id: selectedColorId },
+      { attribute_id: 2, attribute_value_id: selectedSizeId },
+    ];
+
+    // Lưu vào localStorage
+    localStorage.setItem("cartAttributes", JSON.stringify(newAttributes));
+
     const user = JSON.parse(localStorage.getItem("user"));
     const sessionId = sessionStorage.getItem("session_id");
 
     const itemToAdd = {
       user_id: user?.id || null,
       session_id: user ? null : sessionId,
-      product_id: productId,
-      product_variant_id: variantId,
+      product_id: product.id,
+      product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
-      price: finalPrice,
+      price: selectedVariant ? selectedVariant.price : product.sell_price,
+      attributes: newAttributes,
     };
 
+    console.log(itemToAdd);
+
     try {
-      const response = await cartServices.addCartItem(productId, itemToAdd);
+      const response = await cartServices.addCartItem(product.id, itemToAdd);
       if (response?.message?.includes("Sản phẩm đã thêm vào giỏ hàng")) {
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
       } else {
@@ -108,11 +110,12 @@ const ProductDetailClient = () => {
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
     }
   };
-
   if (!product) return <p>Đang tải...</p>;
 
   const fetchProduct = async () => {
     const { data } = await productsServices.fetchProductById(id);
+    console.log(data);
+
     setProduct(data);
   };
 
@@ -232,9 +235,12 @@ const ProductDetailClient = () => {
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
                       <label>Stock:</label>
-
                       <div className="product-nav product-nav-dots">
-                        <div>{selectedVariant.stock}</div>
+                        <div>
+                          {selectedVariant
+                            ? selectedVariant.stock
+                            : product.stock}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -249,20 +255,19 @@ const ProductDetailClient = () => {
 
                   {product.atribute_value_product?.length > 0 && (
                     <div className="details-filter-row details-row-size">
-                      <label>Color:</label>
+                      <label htmlFor="Color">Màu:</label>
 
                       <div className="product-nav product-nav-dots">
                         {product.atribute_value_product
                           .filter(
                             (attr) => attr.attribute_value.attribute_id === 1
                           )
-                          .map((item, index) => {
+                          .map((item) => {
                             const colorName = item.attribute_value.value;
                             const colorCode = colorMap[colorName];
-
                             return (
                               <a
-                                key={index}
+                                key={item}
                                 href="#"
                                 style={{ background: colorCode }}
                                 onClick={(e) => {
@@ -277,6 +282,7 @@ const ProductDetailClient = () => {
                       </div>
                     </div>
                   )}
+
                   {product.atribute_value_product?.length > 0 && (
                     <div className="details-filter-row details-row-size">
                       <label htmlFor="size">Size:</label>

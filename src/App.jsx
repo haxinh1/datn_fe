@@ -11,24 +11,24 @@ import Categories from "./admin/category/index";
 import Import from "./admin/product/Import";
 import Creat from "./admin/product/Creat";
 import History from "./admin/product/History";
-import Home from './pages/Home';
+import Home from "./pages/Home";
 import LayoutClient from "./layout/LayoutClient";
 import ProductDetailClient from "./components/client/product/ProductDetailClient";
 import LoginAd from "./admin/LoginAd";
 import PrivateRoute from "./admin/PrivateRAd";
 import Account from "./admin/Account";
 import Signup from "./pages/Signup";
-import Order from './admin/Order';
-import Edit_order from './admin/Edit_order';
-import Checkout from './pages/Checkout';
-import Cart from './pages/Cart';
-import Payments from './pages/Payments';
-import LoginCl from './pages/LoginCl';
-import ListProduct from './pages/ListProduct';
+import Order from "./admin/Order";
+import Edit_order from "./admin/Edit_order";
+import Checkout from "./pages/Checkout";
+import Cart from "./pages/Cart";
+import Payments from "./pages/Payments";
+import LoginCl from "./pages/LoginCl";
+import ListProduct from "./pages/ListProduct";
+import Thankyoupage from "./pages/Thankyou";
 function App() {
   return (
     <>
-
       <Routes>
         <Route path="/" element={<LayoutClient />}>
           <Route index element={<Home />} />
@@ -39,7 +39,7 @@ function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
-          
+          <Route path="thanks" element={<Thankyoupage />} />
         </Route>
       </Routes>
 

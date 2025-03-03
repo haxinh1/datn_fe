@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
-import { cartServices } from "./../services/cart";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -114,6 +113,15 @@ const ListProduct = () => {
     return product.sell_price;
   };
 
+  // Tách số thành định dạng tiền tệ
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
@@ -178,7 +186,7 @@ const ListProduct = () => {
                       <div className="col-6 col-md-4 col-lg-4" key={product.id}>
                         <div className="product product-7 text-center">
                           <figure className="product-media">
-                            <Link to={`/product/${product.id}`}>
+                            <Link to={`/product-detail/${product.id}`}>
                               <img
                                 alt={product.name}
                                 className="product-image"
@@ -203,12 +211,12 @@ const ListProduct = () => {
                           </figure>
                           <div className="product-body">
                             <h3 className="product-title">
-                              <Link to={`/product/${product.id}`}>
+                              <Link to={`/product-detail/${product.id}`}>
                                 {product.name}
                               </Link>
                             </h3>
                             <div className="product-price">
-                              {getDisplayedPrice(product)} VNĐ
+                              {formatPrice(getDisplayedPrice(product))} VNĐ
                             </div>
                             <div className="product-nav product-nav-thumbs">
                               {product.variants?.map((variant) => (

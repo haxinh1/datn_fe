@@ -3,10 +3,13 @@ import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
 import { Modal } from "antd";
 import { useNavigate } from "react-router-dom";
+import { ValuesServices } from "../services/attribute_value";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
   const nav = useNavigate();
+  const [attributeValues, setAttributeValues] = useState([]);
+
   const [userData, setUserData] = useState({
     fullname: "",
     email: "",
@@ -110,6 +113,38 @@ const Checkout = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchAttributeValues = async () => {
+      try {
+        const data = await ValuesServices.fetchValues(); // Gọi API từ services
+        setAttributeValues(data);
+        console.log("Dữ liệu attributeValues từ API:", data); // ✅ Log ra console
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu attribute values:", error);
+      }
+    };
+
+    fetchAttributeValues();
+  }, []);
+
+  const getAttributeValue = (product) => {
+    const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
+    console.log("Dữ liệu từ localStorage:", attributes);
+    console.log("Dữ liệu từ API attributeValues:", attributeValues);
+
+    return attributes
+      .map((attr) => {
+        if (!attributeValues?.data) return "Không xác định"; // Kiểm tra nếu API chưa load
+        const attribute = attributeValues.data.find(
+          (av) => String(av.id) === String(attr.attribute_value_id)
+        );
+        return attribute ? attribute.value : "Không xác định";
+      })
+      .join(", ");
+  };
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("vi-VN", {}).format(value);
+  };
   return (
     <div>
       <main className="main">
@@ -284,12 +319,16 @@ const Checkout = () => {
                             <tr key={item.id}>
                               <td style={{ padding: "10px" }}>
                                 {item.product?.name || `Sản phẩm #${item.id}`}{" "}
+                                <span className="text-muted">
+                                  ({getAttributeValue(item)})
+                                </span>
                                 (x{item.quantity})
                               </td>
                               <td
                                 style={{ textAlign: "right", padding: "10px" }}
                               >
-                                {item.price.toLocaleString()} VND
+                                {formatCurrency(item.price)}VNĐ
+                                {/* {item.price.toLocaleString()} VND */}
                               </td>
                             </tr>
                           ))}
@@ -320,68 +359,6 @@ const Checkout = () => {
                               Free shipping
                             </td>
                           </tr>
-
-                          {/* Phương thức thanh toán */}
-                          {/* <tr>
-                            <td
-                              colSpan="2"
-                              style={{
-                                fontSize: "1.3rem",
-                                fontWeight: "bold",
-                                padding: "15px 10px",
-                                textAlign: "left",
-                                backgroundColor: "#f1f1f1",
-                              }}
-                            >
-                              Phương thức thanh toán
-                            </td>
-                          </tr>
-                          {paymentMethods.length > 0 ? (
-                            paymentMethods.map((method) => (
-                              <tr
-                                key={method.id}
-                                style={{
-                                  cursor: "pointer",
-                                  backgroundColor:
-                                    selectedPayment === method.id
-                                      ? "#eef7ff"
-                                      : "white",
-                                }}
-                              >
-                                <td
-                                  style={{ textAlign: "left", padding: "10px" }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="paymentMethod"
-                                    value={method.id}
-                                    checked={selectedPayment === method.id}
-                                    onChange={() =>
-                                      setSelectedPayment(method.id)
-                                    }
-                                    style={{
-                                      transform: "scale(1.3)",
-                                      marginRight: "10px",
-                                    }}
-                                  />
-                                  {method.name}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan="2"
-                                style={{
-                                  textAlign: "center",
-                                  padding: "10px",
-                                  fontStyle: "italic",
-                                }}
-                              >
-                                Loading payment methods...
-                              </td>
-                            </tr>
-                          )} */}
 
                           {/* Tổng tiền */}
                           <tr

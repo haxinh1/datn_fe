@@ -1,10 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import formatVND from "../../../utils/formatPrice";
 import { Link } from "react-router-dom";
 
 const Product = (props) => {
-  const { product } = props;
+  const [products, setProducts] = useState([]);
+  const [currentImages, setCurrentImages] = useState({});
+  const [selectedVariantData, setSelectedVariantData] = useState({});
 
+  const { product } = props;
+  useEffect(() => {
+    const defaultImages = {};
+    products.forEach((product) => {
+      defaultImages[product.id] = product.thumbnail;
+    });
+    setCurrentImages(defaultImages);
+  }, [products]);
+  const handleThumbnailClick = (productId, variant) => {
+    setCurrentImages((prevImages) => ({
+      ...prevImages,
+      [productId]: variant.thumbnail,
+    }));
+
+    setSelectedVariantData((prevVariants) => ({
+      ...prevVariants,
+      [productId]: {
+        ...variant,
+        sale_price:
+          variant.sale_price > 0 ? variant.sale_price : variant.sell_price,
+      },
+    }));
+  };
   return (
     <>
       <div className="product product-2 text-center">
@@ -12,22 +37,15 @@ const Product = (props) => {
           <span className="product-label label-sale">Sale</span>
           <Link to={`/product-detail/${product.id}`}>
             <img
-              src={product.thumbnail}
-              alt="Product image"
+              alt={product.name}
               className="product-image"
+              src={currentImages[product.id] || product.thumbnail}
               style={{
                 width: "300px",
                 height: "380px",
                 objectFit: "cover",
               }}
             />
-            {product.variants.length > 0 && (
-              <img
-                src={product.variants[0].thumbnail}
-                alt="Product image"
-                className="product-image-hover"
-              />
-            )}
           </Link>
         </figure>
 
@@ -49,15 +67,17 @@ const Product = (props) => {
               VND
             </span>
 
-            <span className="old-price">
-              Was{" "}
-              {product.sell_price
-                ? formatVND(product.sell_price)
-                : product.variants.length > 0
-                ? formatVND(product.variants[0].sell_price)
-                : ""}{" "}
-              VND
-            </span>
+            <div className="product-nav product-nav-thumbs">
+              {product.variants?.map((variant) => (
+                <span key={variant.id}>
+                  <img
+                    alt={`Biến thể của ${product.name}`}
+                    src={variant.thumbnail}
+                    onClick={() => handleThumbnailClick(product.id, variant)}
+                  />
+                </span>
+              ))}
+            </div>
           </div>
 
           {product.variants.length > 0 && (
