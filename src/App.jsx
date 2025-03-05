@@ -24,6 +24,8 @@ import Cart from './pages/Cart';
 import Payments from './pages/Payments';
 import LoginCl from './pages/LoginCl';
 import ListProduct from './pages/ListProduct';
+import Inbox from "./admin/Inbox";
+import Confirm from "./pages/Confirm";
 
 function App() {
   return (
@@ -34,6 +36,7 @@ function App() {
           <Route path="product-detail/:id" element={<ProductDetailClient />} />
           <Route path="cart" element={<Cart />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="confirm" element={<Confirm />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
@@ -59,6 +62,7 @@ function App() {
             <Route path="account" element={<Account />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
+            <Route path="inbox" element={<Inbox />} />
           </Route>
         </Route>
       </Routes>

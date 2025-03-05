@@ -1,104 +1,93 @@
-import React from "react";
-import { Select, Form, Input, Button, notification } from "antd";
-import { useMutation } from "@tanstack/react-query";
-import { AuthServices } from "../services/auth";
+import React, { useEffect, useState } from "react";
+import { Select, Spin } from "antd";
+
+const { Option } = Select;
+
+const fetchProvinces = async () => {
+    const res = await fetch("https://provinces.open-api.vn/api/?depth=3");
+    return res.json();
+};
 
 const Test = () => {
-    const [form] = Form.useForm(); // Sử dụng Form của Ant Design
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [wards, setWards] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // useMutation để gọi API đăng ký
-    const { mutate, isLoading } = useMutation({
-        mutationFn: async (userData) => {
-            try {
-                const response = await AuthServices.register(userData);
-                return response; // Trả về response khi đăng ký thành công
-            } catch (error) {
-                console.error("Error during registration:", error);
-                throw new Error(error.response?.data?.message || "Đã xảy ra lỗi khi đăng ký");
-            }
-        },
-        onSuccess: () => {
-            notification.success({
-                message: "Đăng ký thành công!",
-                description: "Chúc mừng bạn đã đăng ký thành công.",
-            });
-            form.resetFields(); // Xóa dữ liệu form sau khi đăng ký thành công
-        },
-        onError: (error) => {
-            notification.error({
-                message: "Đăng ký thất bại",
-                description: error.message,
-            });
-        },
-    });
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [selectedWard, setSelectedWard] = useState(null);
 
-    // Xử lý khi người dùng ấn nút Submit
-    const handleRegister = (values) => {
-        const { phone_number, password, password_confirmation } = values;
-
-        if (password !== password_confirmation) {
-            notification.error({ message: "Mật khẩu không khớp!" });
-            return;
-        }
-
-        const cleanedPhoneNumber = phone_number.replace(/\D/g, ""); // Loại bỏ ký tự không hợp lệ
-
-        console.log({
-            phone_number: cleanedPhoneNumber,
-            password,
-            password_confirmation,
+    useEffect(() => {
+        fetchProvinces().then((data) => {
+        setProvinces(data);
+        setLoading(false);
         });
+    }, []);
 
-        mutate({
-            phone_number: cleanedPhoneNumber,
-            password,
-            password_confirmation,
-        });
+    const handleProvinceChange = (value) => {
+        const province = provinces.find((p) => p.code === value);
+        setSelectedProvince(value);
+        setDistricts(province ? province.districts : []);
+        setWards([]);
+        setSelectedDistrict(null);
+        setSelectedWard(null);
+    };
+
+    const handleDistrictChange = (value) => {
+        const district = districts.find((d) => d.code === value);
+        setSelectedDistrict(value);
+        setWards(district ? district.wards : []);
+        setSelectedWard(null);
+    };
+
+    const handleWardChange = (value) => {
+        setSelectedWard(value);
     };
 
     return (
-        <Form layout="vertical" form={form} onFinish={handleRegister}>
-            <Form.Item
-                label="Số điện thoại"
-                name="phone_number"
-                rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
-            >
-                <Input />
-            </Form.Item>
-
-            <Form.Item
-                label="Mật khẩu"
-                name="password"
-                rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-            >
-                <Input.Password />
-            </Form.Item>
-
-            <Form.Item
-                label="Xác nhận mật khẩu"
-                name="password_confirmation"
-                dependencies={["password"]}
-                rules={[
-                    { required: true, message: "Vui lòng nhập lại mật khẩu" },
-                    ({ getFieldValue }) => ({
-                        validator(_, value) {
-                            if (!value || getFieldValue("password") === value) {
-                                return Promise.resolve();
-                            }
-                            return Promise.reject(new Error("Mật khẩu không khớp!"));
-                        },
-                    }),
-                ]}
-            >
-                <Input.Password />
-            </Form.Item>
-
-            <Form.Item>
-                <Button type="primary" htmlType="submit" loading={isLoading}>
-                    Đăng ký
-                </Button>
-            </Form.Item>
-        </Form>
+        <div style={{ width: 300, margin: "20px auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {loading ? (
+                <Spin />
+            ) : (
+                <>
+                    <Select
+                        placeholder="Chọn tỉnh/thành phố"
+                        onChange={handleProvinceChange}
+                        value={selectedProvince}
+                        style={{ width: "100%" }}
+                    >
+                        {provinces.map((province) => (
+                        <Option key={province.code} value={province.code}>{province.name}</Option>
+                        ))}
+                    </Select>
+                    
+                    <Select
+                        placeholder="Chọn quận/huyện"
+                        onChange={handleDistrictChange}
+                        value={selectedDistrict}
+                        style={{ width: "100%" }}
+                        disabled={!selectedProvince}
+                    >
+                        {districts.map((district) => (
+                        <Option key={district.code} value={district.code}>{district.name}</Option>
+                        ))}
+                    </Select>
+                    
+                    <Select
+                        placeholder="Chọn phường/xã"
+                        onChange={handleWardChange}
+                        value={selectedWard}
+                        style={{ width: "100%" }}
+                        disabled={!selectedDistrict}
+                    >
+                        {wards.map((ward) => (
+                        <Option key={ward.code} value={ward.code}>{ward.name}</Option>
+                        ))}
+                    </Select>
+                </>
+            )}
+        </div>
     );
 };
 

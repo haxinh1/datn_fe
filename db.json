@@ -1,19 +1,36 @@
 {
-  "posts": [
-    {
-      "id": 1,
-      "title": "json-server",
-      "author": "typicode"
-    }
-  ],
-  "comments": [
-    {
-      "id": 1,
-      "body": "some comment",
-      "postId": 1
-    }
-  ],
-  "profile": {
-    "name": "typicode"
-  }
+  "id": 3,
+  "brand_id": 2,
+  "name": "Áo polo Gucci họa tiết monogram",
+  "slug": "ao-polo-gucci-hoa-tiet-monogram",
+  "views": 0,
+  "content": null,
+  "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1740931191/vrgw9rp07aeylwocv75l.jpg",
+  "sku": "PD003",
+  "stock": null,
+  "sell_price": "400000.00",
+  "sale_price": null,
+  "sale_price_start_at": null,
+  "sale_price_end_at": null,
+  "is_active": 0,
+  "created_at": "2025-03-02T16:01:36.000000Z",
+  "updated_at": "2025-03-03T08:17:06.000000Z",
+  "deleted_at": null,
+  "categories": [
+      {
+          "id": 3,
+          "parent_id": 1,
+          "name": "Áo polo",
+          "slug": "ao-polo",
+          "ordinal": 2,
+          "is_active": true,
+          "created_at": "2025-02-25T14:30:33.000000Z",
+          "updated_at": "2025-02-25T14:30:33.000000Z",
+          "deleted_at": null,
+          "pivot": {
+              "product_id": 3,
+              "category_id": 3
+          }
+      }
+  ]
 }

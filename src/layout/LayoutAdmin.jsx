@@ -142,13 +142,8 @@ const LayoutAdmin = () => {
 
       {/* Main Layout */}
       <Layout className="main-layout">
-        <Header
-          className="header-admin"
-          style={{ background: colorBgContainer }}
-        />
-
+        
         <Content className="content-admin">
-          <Breadcrumb className="breadcrumb-admin" />
           <div
             className="content-box"
             style={{

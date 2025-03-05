@@ -108,7 +108,7 @@ const Account = () => {
             dataIndex: "birthday",
             key: "birthday",
             align: "center",
-            render: (date) => date ? dayjs(date).format("DD/MM/YY") : null,
+            render: (date) => date ? dayjs(date).format("DD/MM/YYYY") : null,
         },
         {
             title: "Điểm tích lũy",
