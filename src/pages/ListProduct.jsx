@@ -2,10 +2,14 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
+import { categoryServices } from './../services/categories';
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState(products);
   const [currentImages, setCurrentImages] = useState({});
   const [selectedVariantData, setSelectedVariantData] = useState({});
   const [selectedBrands, setSelectedBrands] = useState([]);
@@ -24,12 +28,57 @@ const ListProduct = () => {
   }, []);
 
   useEffect(() => {
+    setFilteredProducts(products); // Cập nhật khi products thay đổi
+  }, [products]);
+
+  useEffect(() => {
     const getBrands = async () => {
       const data = await BrandsServices.fetchBrands();
       setBrands(data.data);
     };
     getBrands();
   }, []);
+
+  const handleBrandChange = (brandId) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brandId) ? prev.filter((id) => id !== brandId) : [...prev, brandId]
+    );
+  };
+
+  useEffect(() => {
+    const getCategories = async () => {
+      const data = await categoryServices.fetchCategories();
+      setCategories(data);
+    };
+    getCategories();
+  }, []);
+
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+    );
+  };
+
+  const handleFilter = () => {
+    const filtered = products.filter((product) => {
+      const matchesBrand =
+        selectedBrands.length === 0 || selectedBrands.includes(product.brand_id);
+  
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        product.categories.some((cat) => selectedCategories.includes(cat.id));
+  
+      return matchesBrand && matchesCategory;
+    });
+  
+    setFilteredProducts(filtered);
+  };
+
+  const handleClear = () => {
+    setFilteredProducts(products); // Hiển thị lại toàn bộ sản phẩm
+    setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
+    setSelectedCategories([]); // Bỏ chọn tất cả danh mục
+  };
 
   useEffect(() => {
     const defaultImages = {};
@@ -182,7 +231,7 @@ const ListProduct = () => {
               <div className="col-lg-9">
                 <div className="products mb-3">
                   <div className="row justify-content-center">
-                    {products.map((product) => (
+                    {filteredProducts.map((product) => (
                       <div className="col-6 col-md-4 col-lg-4" key={product.id}>
                         <div className="product product-7 text-center">
                           <figure className="product-media">
@@ -303,28 +352,80 @@ const ListProduct = () => {
                         href="#widget-1"
                         role="button"
                       >
-                        Category
+                        Danh mục
                       </a>
                     </h3>
-                    <div className=" show" id="widget-1">
+
+                    <div className="show" id="widget-1">
                       <div className="widget-body">
-                        <div className="filter-items filter-items-count">
-                          <div className="filter-item">
-                            <div className="custom-control custom-checkbox">
-                              <input
-                                className="custom-control-input"
-                                id="cat-1"
-                                type="checkbox"
-                              />
-                              <label
-                                className="custom-control-label"
-                                htmlFor="cat-1"
-                              >
-                                Dresses
-                              </label>
-                            </div>
-                            <span className="item-count">3</span>
-                          </div>
+                        <div className="filter-items">
+                          {categories.length > 0 ? (
+                            categories.flatMap((category) =>
+                              (category.children || [category]).map((subCategory) => (
+                                <div key={subCategory.id} className="filter-item">
+                                  <div className="custom-control custom-checkbox">
+                                    <input
+                                      className="custom-control-input"
+                                      id={`cat-${subCategory.id}`}
+                                      type="checkbox"
+                                      onChange={() => handleCategoryChange(subCategory.id)}
+                                      checked={selectedCategories.includes(subCategory.id)}
+                                    />
+                                    <label
+                                      className="custom-control-label"
+                                      htmlFor={`cat-${subCategory.id}`}
+                                    >
+                                      {subCategory.name}
+                                    </label>
+                                  </div>
+                                </div>
+                              ))
+                            )
+                          ) : (
+                            <p>Không có danh mục</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* List thương hiệu */}
+                  <div className="widget widget-collapsible">
+                    <h3 className="widget-title">
+                      <Link
+                        aria-controls="widget-4"
+                        aria-expanded="true"
+                        data-toggle="collapse"
+                        href="#widget-4"
+                        role="button"
+                      >
+                        Thương hiệu
+                      </Link>
+                    </h3>
+
+                    <div className="" id="widget-4">
+                      <div className="widget-body">
+                        <div className="filter-items">
+                          {brands.length > 0 ? (
+                            brands.map((brand) => (
+                              <div key={brand.id} className="filter-item">
+                                <div className="custom-control custom-checkbox">
+                                  <input
+                                    className="custom-control-input"
+                                    id={`brand-${brand.id}`}
+                                    type="checkbox"
+                                    onChange={() => handleBrandChange(brand.id)}
+                                    checked={selectedBrands.includes(brand.id)}
+                                  />
+                                  <label className="custom-control-label" htmlFor={`brand-${brand.id}`}>
+                                    {brand.name}
+                                  </label>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p>Không có thương hiệu</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -340,9 +441,10 @@ const ListProduct = () => {
                         href="#widget-2"
                         role="button"
                       >
-                        Size
+                        Kích cỡ
                       </a>
                     </h3>
+
                     <div className=" show" id="widget-2">
                       <div className="widget-body">
                         <div className="filter-items">
@@ -376,9 +478,10 @@ const ListProduct = () => {
                         href="#widget-3"
                         role="button"
                       >
-                        Colour
+                        Màu sắc
                       </a>
                     </h3>
+
                     <div className=" show" id="widget-3">
                       <div className="widget-body">
                         <div className="filter-colors">
@@ -395,53 +498,6 @@ const ListProduct = () => {
                     </div>
                   </div>
 
-                  {/* List thương hiệu */}
-                  <div className="widget widget-collapsible">
-                    <h3 className="widget-title">
-                      <Link
-                        aria-controls="widget-4"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-4"
-                        role="button"
-                      >
-                        Brand
-                      </Link>
-                    </h3>
-                    <div className="" id="widget-4">
-                      <div className="widget-body">
-                        <div className="filter-items">
-                          {brands && brands.length > 0 ? (
-                            brands.map((brand) => (
-                              <div key={brand.id} className="filter-item">
-                                <div className="custom-control custom-checkbox">
-                                  <input
-                                    className="custom-control-input"
-                                    id={`brand-${brand.id}`}
-                                    type="checkbox"
-                                    onChange={() =>
-                                      handleBrandChange(brand.name)
-                                    } // Handle brand selection
-                                    checked={selectedBrands.includes(
-                                      brand.name
-                                    )} // If brand is selected, check the checkbox
-                                  />
-                                  <label
-                                    className="custom-control-label"
-                                    htmlFor={`brand-${brand.id}`}
-                                  >
-                                    {brand.name} {/* Display brand name */}
-                                  </label>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p>No brands available</p> // In case there are no brands
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
                       <a
@@ -451,9 +507,10 @@ const ListProduct = () => {
                         href="#widget-5"
                         role="button"
                       >
-                        Price
+                        Giá
                       </a>
                     </h3>
+
                     <div className=" show" id="widget-5">
                       <div className="widget-body">
                         <div className="filter-price">
@@ -465,6 +522,23 @@ const ListProduct = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="attribute">
+                    <button 
+                      type="submit" 
+                      className="btn btn-outline-primary-2"
+                      onClick={handleFilter}
+                    >
+                      <span>TÌM KIẾM</span>
+                    </button>
+
+                    <button 
+                      onClick={handleClear} 
+                      className="btn btn-outline-primary-2"
+                    >
+                      <span>QUAY LẠI</span>
+                    </button>
                   </div>
                 </div>
               </aside>
