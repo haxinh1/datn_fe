@@ -25,6 +25,11 @@ const register = async (userData) => {
   }
 };
 
+const verify = async (payload) => {
+  const response = await instance.post("/verify-email", payload);
+  return response.data;
+};
+
 const login = async (phone_number, password) => {
   const response = await instance.post("/client/login", {
     phone_number,
@@ -94,6 +99,7 @@ export const AuthServices = {
   updateUser,
   getAUser,
   register,
+  verify,
   login,
   loginad,
   logoutclient,
