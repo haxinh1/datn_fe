@@ -15,6 +15,7 @@ const Signup = () => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [fullName, setFullname] = useState("");
     const [address, setAddress] = useState("");
+    const [detailaddress, setDetailaddress] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,7 +44,7 @@ const Signup = () => {
         onSuccess: () => {
             notification.success({
                 message: "Gửi yều cầu đăng ký thành công!",
-                description: "Hãy kiển tra Email và nhập mã xác nhận để kích hoạt tài khoản.",
+                description: "Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.",
             });
             navigate("/confirm")
         },
@@ -93,6 +94,7 @@ const Signup = () => {
             setPhoneNumber("");
             setFullname("");
             setAddress("");
+            setDetailaddress("");
             setEmail("");
             setPassword("");
             setConfirmPassword("");
@@ -129,6 +131,7 @@ const Signup = () => {
             password_confirmation: confirmPassword,
             fullname: fullName,
             address: address,
+            detail_address: detailaddress,
             email: email
         });
    
@@ -144,6 +147,7 @@ const Signup = () => {
             password_confirmation: confirmPassword,
             fullname: fullName,
             address: formattedAddress,
+            detail_address: detailaddress,
             email: email
         });
     };   
@@ -237,6 +241,15 @@ const Signup = () => {
                                                 <option key={ward.code} value={ward.code}>{ward.name}</option>
                                             ))}
                                         </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Địa chỉ cụ thể</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-control" 
+                                            value={detailaddress} 
+                                            onChange={(e) => setDetailaddress(e.target.value)} 
+                                        />
                                     </div>
                                     {error && <p className="text-danger">{error}</p>}
                                     <div className="form-footer">
