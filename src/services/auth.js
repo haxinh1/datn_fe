@@ -1,9 +1,14 @@
 import instance from "../axios"; // axios instance với base URL
 
-const fetchAuth = async () => {
-  const response = await instance.get("/admin/users");
-  return response.data;
-};
+const  fetchAuth = async () => {
+  try {
+    const response = await instance.get("/admin/users"); // Kiểm tra API URL có đúng không
+    return response?.data ? response : { data: [] }; // Trả về mảng rỗng nếu không có dữ liệu
+  } catch (error) {
+    console.error("Lỗi gọi API:", error);
+    return { data: [] }; // Tránh lỗi khi API bị lỗi
+  }
+}
 
 const getAUser = async (id) => {
   const response = await instance.get(`/admin/users/${id}`);
