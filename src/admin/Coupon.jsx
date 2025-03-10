@@ -1,69 +1,130 @@
-import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col } from 'antd';
-import React, { useState } from 'react';
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Input, DatePicker, Switch, Descriptions } from 'antd';
+import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
+import TextArea from 'antd/es/input/TextArea';
+import { CouponServices } from '../services/coupon';
+import formatDate from '../utils/formatDate';
 
 const Coupon = () => {
+    const [coupon, setCoupon] = useState([]);
+    const [editingCoupon, setEditingCoupon] = useState(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-    const [isActive, setIsActive] = useState(1);    
+    const [selectedCoupon, setSelectedCoupon] = useState(null);
+    const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
 
-    const showDetailModal = (record) => {
-        setSelectedRecord(record);
+    const showDetailModal = async (id) => {
+
+        const response = await CouponServices.getCounponById(id);
+        console.log(response);
+        
+        
+        if (response.success && response.data) {
+            setSelectedCoupon([response.data]);  
+        }
+
         setIsDetailModalVisible(true);
+
+        
     };
 
-    const showEditModal = async (record) => {
-        setSelectedRecord(record);
-        setIsEditModalVisible(true);
+    console.log(selectedCoupon);    
+
+
+    const handleShowModal = async (coupon) => {
+        setEditingCoupon(coupon);
+        if (coupon) {
+            console.log(coupon);
+
+            form.setFieldsValue({
+                title: coupon.title,
+                code: coupon.code,
+                description: coupon.description,
+                discount_type: coupon.discount_type,
+                discount_value: coupon.discount_value,
+                usage_limit: coupon.usage_limit,
+                start_date: dayjs(coupon.start_date),
+                end_date: dayjs(coupon.end_date),
+                is_active: coupon.is_active
+            });
+        } else {
+            form.resetFields();
+        }
+        setIsModalVisible(true);
     };
 
     const handleDetailCancel = () => {
         setIsDetailModalVisible(false);
-        setSelectedRecord(null);
+        setSelectedCoupon(null);
     };
 
-    const handleEditCancel = () => {
-        setIsEditModalVisible(false);
-        setSelectedRecord(null);
+    const handleCancel = () => {
+        setIsModalVisible(false);
     };
 
     // bấm nút chi tiết
     const detailColumn = [
         {
-            title: "Tên người dùng",
-            dataIndex: "fullname",
-            key: "fullname",
+            title: "STT",
+            dataIndex: "index",
+            render: (_, __, index) => index + 1,
             align: "center",
         },
         {
-            title: "Giới tính",
-            dataIndex: "gender",
-            key: "gender",
+            title: "Mã",
+            dataIndex: "code",
+            key: "code",
             align: "center",
-            render: (gender) => {
-                const genderMap = {
-                    male: "Nam",
-                    female: "Nữ",
-                    other: "Khác"
-                };
-                return genderMap[gender];
-            }
-        },        
-        {
-            title: "Ngày sinh",
-            dataIndex: "birthday",
-            key: "birthday",
-            align: "center",
-            render: (date) => date ? dayjs(date).format("DD/MM/YYYY") : null,
         },
         {
-            title: "Địa chỉ",
-            dataIndex: "address",
-            key: "address",
+            title: "Tên mã",
+            dataIndex: "title",
+            key: "title",
             align: "center",
-            render: (address) => address?.address
+        },
+        {
+            title: "Loại phiếu giảm giá",
+            dataIndex: "discount_type",
+            key: "discount_type",
+            align: "center",
+        },
+        {
+            title: "Số lượng",
+            dataIndex: "usage_limit",
+            key: "quantity",
+            align: "center",
+        },
+        {
+            title: "Giá trị giảm",
+            dataIndex: "discount_value",
+            key: "discount_value",
+            align: "center",
+        },
+        {
+            title: "Ngày áp dụng",
+            dataIndex: "start_date",
+            key: "start_date",
+            align: "center",
+            render: (date) => formatDate(date),
+        },
+        {
+            title: "Ngày kết thúc",
+            dataIndex: "end_date",
+            key: "end_date",
+            align: "center",
+            render: (date) => formatDate(date),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "is_active",
+            key: "is_active",
+            align: "center",
+            render: (isActive) => (
+                <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
+                    {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
+                </span>
+            ),
         },
     ]
 
@@ -94,7 +155,7 @@ const Coupon = () => {
         },
         {
             title: "Số lượng",
-            dataIndex: "quantity",
+            dataIndex: "usage_limit",
             key: "quantity",
             align: "center",
         },
@@ -105,16 +166,18 @@ const Coupon = () => {
             align: "center",
         },
         {
-            title: "Đơn hàng áp dụng (VNĐ)",
-            dataIndex: "discount_value",
-            key: "discount_value",
+            title: "Ngày áp dụng",
+            dataIndex: "start_date",
+            key: "start_date",
             align: "center",
+            render: (date) => formatDate(date),
         },
         {
-            title: "Ngày áp dụng",
-            dataIndex: "discount_value",
-            key: "discount_value",
+            title: "Ngày kết thúc",
+            dataIndex: "end_date",
+            key: "end_date",
             align: "center",
+            render: (date) => formatDate(date),
         },
         {
             title: "Trạng thái",
@@ -122,8 +185,8 @@ const Coupon = () => {
             key: "is_active",
             align: "center",
             render: (isActive) => (
-                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive === 1 ? 'Đang áp dụng' : 'Dừng áp dụng'}
+                <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
+                    {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
                 </span>
             ),
         },
@@ -134,21 +197,21 @@ const Coupon = () => {
             render: (_, record) => (
                 <div className="action-container">
                     <Tooltip title="Xem thêm">
-                        <Button 
-                            color="purple" 
-                            variant="solid" 
-                            icon={<EyeOutlined />} 
+                        <Button
+                            color="purple"
+                            variant="solid"
+                            icon={<EyeOutlined />}
                             type='link'
-                            onClick={() => showDetailModal(record)}
+                            onClick={() => showDetailModal(record.id)}
                         />
                     </Tooltip>
                     <Tooltip title="Cập nhật">
                         <Button
                             color="primary"
                             variant="solid"
-                            icon={<EditOutlined/>}
+                            icon={<EditOutlined />}
                             type="link"
-                            onClick={() => showEditModal(record)}
+                            onClick={() => handleShowModal(record)}
                         />
                     </Tooltip>
                 </div>
@@ -156,29 +219,76 @@ const Coupon = () => {
         },
     ];
 
+    const onSubmit = async (values) => {
+        const payload = {
+            title: values.title,
+            code: values.code,
+            description: values.description,
+            discount_type: values.discount_type,
+            discount_value: values.discount_value,
+            usage_limit: values.usage_limit,
+            start_date: values.start_date,
+            end_date: values.end_date,
+            is_active: values.is_active
+        };
+
+        let response;
+
+        if (editingCoupon) {
+            
+            response = await CouponServices.updateCoupon(editingCoupon.id, payload);
+        } else {
+            response = await CouponServices.createCoupon(payload);
+        }
+
+        if (response) {
+            fetchData();
+            notification.success({
+                message: editingCoupon ? "Cập nhật mã giảm giá thành công!" : "Tạo mã giảm giá thành công!",
+            });
+        }
+
+        setIsModalVisible(false);
+        form.resetFields();
+    };
+
+
+    const fetchData = async () => {
+        const { data } = await CouponServices.fetchCoupons();
+        setCoupon(data);
+
+    };
+
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+
     return (
         <div>
             <h1 className="mb-5">
                 <BookOutlined style={{ marginRight: "8px" }} />
                 Quản lý mã giảm giá
             </h1>
-
-            <div className="group1">
-                <Select
-                    placeholder="Chức năng"
-                    className="select-item"
-                    
+            <div className="btn-brand">
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => handleShowModal()}
                 >
-                    <Select.Option value="customer">Khách hàng</Select.Option>
-                    <Select.Option value="manager">Nhân viên</Select.Option>
-                    <Select.Option value="admin">Quản trị viên</Select.Option>
-                </Select>
+                    Thêm Mã Giam Gia
+                </Button>
             </div>
 
-                <Table
-                    columns={columns}
-                    pagination={{ pageSize: 10 }}
-                />
+
+
+            <Table
+                dataSource={coupon}
+                columns={columns}
+                rowKey="id"
+                pagination={{ pageSize: 10 }}
+            />
 
             {/* Modal Chi Tiết */}
             <Modal
@@ -189,58 +299,126 @@ const Coupon = () => {
                 width={800}
             >
                 <Table
+                    dataSource={selectedCoupon}
+                    rowKey={"id"}   
                     columns={detailColumn}
-                    pagination={false} // Không cần phân trang vì chỉ có một bản ghi
+                    pagination={false}
                 />
             </Modal>
 
-            {/* Modal Cập Nhật */}
+
             <Modal
-                title="Cập nhật mã giảm giá"
-                open={isEditModalVisible}
-                onCancel={handleEditCancel}
+                title={editingCoupon ? "Cập nhật mã giảm giá" : "Thêm mã giảm giá"}
+                open={isModalVisible}
+                onCancel={handleCancel}
                 footer={null}
             >
-                <Form 
+                <Form
                     layout="vertical"
                     form={form}
+                    onFinish={onSubmit}
                 >
                     <Row gutter={24}>
                         <Col span={12} className='col-item'>
                             <Form.Item
-                                label="Chức năng"
-                                name="role"
-                                rules={[{ required: true, message: "Vui lòng chọn chức năng" }]}
+                                label="Tên mã giảm giá"
+                                name="title"
+                            >
+                                <Input className='input-item' />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Mã giảm giá"
+                                name="code"
+                                rules={[{ required: true, message: "Vui lòng chọn Code" }]}
+                            >
+                                <Input className='input-item' />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item
+                        label="Mô tả"
+                        name="description"
+                    >
+                        <TextArea className='input-item' />
+                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Kiểu giảm giá"
+                                name="discount_type"
+                                rules={[{ required: true, message: "Vui lòng chọn tên mã giảm giá" }]}
                             >
                                 <Select
-                                    placeholder="Chức năng"
-                                    className="input-item"
+                                    placeholder="Chọn kiểu giảm giá"
+                                    className='input-item'
                                 >
-                                    <Select.Option value="customer">Khách hàng</Select.Option>
-                                    <Select.Option value="manager">Nhân viên</Select.Option>
-                                    <Select.Option value="admin">Quản trị viên</Select.Option>
+                                    <Option value="percent">%</Option>
+                                    <Option value="fix_amount">VND</Option>
                                 </Select>
                             </Form.Item>
                         </Col>
                         <Col span={12} className='col-item'>
                             <Form.Item
-                                label="Trạng thái tài khoản"
-                                name="status"
-                                rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+                                label="Giá trị giảm giá"
+                                name="discount_value"
+                                dependencies={["discount_type"]}
+                                rules={[
+                                    { required: true, message: "Vui lòng chọn giá trị giảm giá" },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const discountType = getFieldValue("discount_type");
+                                            if (discountType === "percent") {
+                                                if (value < 1 || value > 100) {
+                                                    return Promise.reject("Giá trị phải từ 1 - 100%");
+                                                }
+                                            }
+                                            return Promise.resolve();
+                                        }
+                                    })
+                                ]}
                             >
-                                <Select
-                                    placeholder="Trạng thái"
-                                    className="input-item"
-                                >
-                                    <Select.Option value="active">Hoạt động</Select.Option>
-                                    <Select.Option value="inactive">Dừng hoạt động</Select.Option>
-                                </Select>
+                                <Input className='input-item' />
                             </Form.Item>
                         </Col>
                     </Row>
+                    <Form.Item
+                        label="Số lần áp dụng"
+                        name="usage_limit"
+                        rules={[{ required: true, message: "Vui lòng chọn số lần áp dụng" }]}
+                    >
+                        <TextArea className='input-item' />
+                    </Form.Item>
+
+                    <Row gutter={24}>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Ngày bắt đầu"
+                                name="start_date"
+                                rules={[{ required: true, message: "Vui lòng chọn ngày ap dụng" }]}
+                            >
+                                <DatePicker className='input-item' />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Ngày kết thúc"
+                                name="end_date"
+                                rules={[{ required: true, message: "Vui lòng chọn giá trị giảm giá" }]}
+                            >
+                                <DatePicker className='input-item' />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item label="Trạng thái" name="is_active" valuePropName="checked">
+                        <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                    </Form.Item>
 
                     <div className="add">
-                        <Button key="submit" type="primary" >Cập nhật</Button>
+                        <Button type="primary" htmlType="submit">
+                            {editingCoupon ? "Cập nhật" : "Thêm"}
+                        </Button>
                     </div>
                 </Form>
             </Modal>
