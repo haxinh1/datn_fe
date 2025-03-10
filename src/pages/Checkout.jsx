@@ -1,14 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import { Modal } from "antd";
+import { message, Modal } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
+import { paymentServices } from "./../services/payments";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
   const nav = useNavigate();
   const [attributeValues, setAttributeValues] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedWard, setSelectedWard] = useState(null);
+  const [detailaddress, setDetailaddress] = useState("");
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [payMents, setPayments] = useState([]);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [paymentUrl, setPaymentUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [userData, setUserData] = useState({
     fullname: "",
@@ -34,84 +47,159 @@ const Checkout = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Lấy userId và thông tin người dùng từ localStorage
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser?.id) {
+      setUserId(storedUser.id);
+      setUserData({
+        fullname: storedUser.fullname || "", // Lấy fullname từ user
+        email: storedUser.email || "", // Lấy email từ user
+        phone_number: storedUser.phone_number || "", // Lấy phone_number từ user
+        address: storedUser.address || "", // Nếu có address, bạn có thể thêm vào
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetch("https://provinces.open-api.vn/api/?depth=3")
+      .then((res) => res.json())
+      .then((data) => {
+        setProvinces(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleProvinceChange = (e) => {
+    const provinceCode = e.target.value;
+    const province = provinces.find((p) => p.code === Number(provinceCode));
+
+    setSelectedProvince(provinceCode);
+    setDistricts(province ? province.districts : []);
+    setWards([]);
+    setSelectedDistrict("");
+    setSelectedWard("");
+  };
+
+  const handleDistrictChange = (e) => {
+    const districtCode = e.target.value;
+    const district = districts.find((d) => d.code === Number(districtCode));
+
+    setSelectedDistrict(districtCode);
+    setWards(district ? district.wards : []);
+    setSelectedWard("");
+  };
+
+  const handleWardChange = (e) => {
+    setSelectedWard(e.target.value);
+  };
+
+  // Tạo chuỗi địa chỉ theo định dạng mong muốn
+  const formattedAddress =
+    `${detailaddress}, ` +
+    `${
+      selectedWard
+        ? wards.find((w) => w.code === Number(selectedWard))?.name
+        : ""
+    }, ` +
+    `${
+      selectedDistrict
+        ? districts.find((d) => d.code === Number(selectedDistrict))?.name
+        : ""
+    }, ` +
+    `${
+      selectedProvince
+        ? provinces.find((p) => p.code === Number(selectedProvince))?.name
+        : ""
+    }, `;
+
+  // Cập nhật userData.address mỗi khi `formattedAddress` thay đổi
+  useEffect(() => {
+    setUserData((prevData) => ({
+      ...prevData,
+      address: formattedAddress, // Gán địa chỉ đã định dạng vào userData
+    }));
+  }, [formattedAddress]);
+
   const subtotal = cartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
   );
 
   const handlePlaceOrder = async () => {
-    try {
-      if (
-        !userData.fullname ||
-        !userData.email ||
-        !userData.phone_number ||
-        !userData.address
-      ) {
-        Modal.error({
-          title: "Vui lòng điền đầy đủ thông tin nhận hàng!",
-        });
-        return;
-      }
-
-      if (!userId) {
-        Modal.error({
-          title: "Không tìm thấy user_id, vui lòng đăng nhập lại!",
-        });
-        return;
-      }
-
-      const orderData = {
-        user_id: userId,
-        fullname: userData.fullname,
-        email: userData.email,
-        phone_number: userData.phone_number,
-        address: userData.address,
-        total_amount: subtotal,
-      };
-
-      console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
-
-      // Gọi API đặt hàng
-      const orderResponse = await OrderService.placeOrder(orderData);
-      console.log("✅ Kết quả phản hồi từ API:", orderResponse);
-
-      if (orderResponse?.message === "Đặt hàng thành công!") {
-        Modal.success({
-          title: "🎉 Đơn hàng của bạn đã được đặt thành công!",
-          onOk() {
-            setCartItems([]);
-            const orderId = orderResponse?.order?.id; // Check if order_id exists
-            const totalAmount = orderData.total_amount;
-            const fullName = userData.fullname;
-            const Email = userData.email;
-            const phoneNumber = userData.phone_number;
-            const Address = userData.address;
-            console.log("orderId from API response:", orderId);
-            nav("/payments", {
-              state: {
-                orderId,
-                totalAmount,
-                fullName,
-                Email,
-                phoneNumber,
-                Address,
-              },
-            });
-          },
-        });
-      } else {
-        Modal.error({
-          title: "❌ Đặt hàng thất bại!",
-          content: orderResponse?.message || "Lỗi không xác định",
-        });
-      }
-    } catch (error) {
-      console.error("❌ Lỗi khi đặt hàng:", error);
-      Modal.error({
-        title: "Có lỗi xảy ra, vui lòng thử lại.",
-      });
+    if (
+      !userData.fullname ||
+      !userData.email ||
+      !userData.phone_number ||
+      !userData.address
+    ) {
+      message.error("Vui lòng điền đầy đủ thông tin nhận hàng!");
+      return;
     }
+
+    if (!userId) {
+      message.error("Không tìm thấy user_id, vui lòng đăng nhập lại!");
+      return;
+    }
+
+    setIsPaymentModalOpen(true); // Mở modal để chọn phương thức thanh toán
   };
+
+  // const handlePayment = async () => {
+  //   if (!selectedPayment) {
+  //     setErrorMessage("Vui lòng chọn phương thức thanh toán.");
+  //     return;
+  //   }
+
+  //   if (selectedPayment === 1) {
+  //     setSuccessMessage("Thanh toán thành công!");
+  //     navigate("/thanks"); // Use navigate to redirect to /thanks
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   setErrorMessage(null);
+
+  //   try {
+  //     const paymentData = {
+  //       orderId,
+  //       paymentMethod: selectedPayment === 2 ? "vnpay" : "",
+  //       paymentId: selectedPayment,
+  //       bankCode: null,
+  //     };
+
+  //     console.log("🔍 Data being sent to API:", paymentData);
+
+  //     const response = await paymentServices.createPaymentVNP(paymentData);
+
+  //     if (response && response.data.payment_url) {
+  //       console.log("✅ Redirecting to:", response.data.payment_url);
+  //       window.location.href = response.data.payment_url;
+  //     } else {
+  //       setErrorMessage("Lỗi tạo liên kết thanh toán.");
+  //     }
+  //   } catch (error) {
+  //     console.error("❌ Payment error:", error.response?.data || error);
+  //     setErrorMessage(
+  //       error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại."
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const payData = await paymentServices.getPayment();
+        setPayments(payData);
+      } catch (error) {
+        console.error("Error fetching payment methods:", error);
+        setErrorMessage("Không thể lấy phương thức thanh toán.");
+      }
+    };
+    fetchPayments();
+  }, []);
 
   useEffect(() => {
     const fetchAttributeValues = async () => {
@@ -127,14 +215,84 @@ const Checkout = () => {
     fetchAttributeValues();
   }, []);
 
+  const handleConfirmPayment = async () => {
+    try {
+      setIsPaymentModalOpen(false); // Đóng modal
+
+      if (!selectedPayment) {
+        message.error("Vui lòng chọn phương thức thanh toán!");
+        return;
+      }
+
+      const orderData = {
+        user_id: userId,
+        fullname: userData.fullname,
+        email: userData.email,
+        phone_number: userData.phone_number,
+        address: userData.address,
+        total_amount: subtotal,
+      };
+
+      console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
+      const orderResponse = await OrderService.placeOrder(orderData);
+
+      if (orderResponse?.message === "Đặt hàng thành công!") {
+        const orderId = orderResponse?.order?.id;
+        if (selectedPayment === 2) {
+          // Nếu chọn VNPAY, gọi API tạo thanh toán
+          const paymentData = {
+            orderId,
+            paymentMethod: "vnpay",
+            paymentId: selectedPayment,
+            bankCode: null,
+          };
+
+          console.log("🔍 Gửi dữ liệu đến VNPAY:", paymentData);
+          const response = await paymentServices.createPaymentVNP(paymentData);
+
+          if (response && response.data.payment_url) {
+            console.log(
+              "✅ Chuyển hướng đến VNPAY:",
+              response.data.payment_url
+            );
+            window.location.href = response.data.payment_url;
+            return; // Dừng tại đây, không hiển thị thông báo ngay
+          } else {
+            message.error("Lỗi tạo liên kết thanh toán.");
+            return;
+          }
+        }
+
+        // Nếu không phải VNPAY, hiển thị thông báo đặt hàng thành công
+        message.success("🎉 Đơn hàng của bạn đã được đặt thành công!");
+        setCartItems([]);
+        localStorage.removeItem("cartAttributes");
+      } else {
+        message.error(orderResponse?.message || "Lỗi không xác định");
+      }
+    } catch (error) {
+      console.error("❌ Lỗi khi đặt hàng:", error);
+      message.error("Có lỗi xảy ra, vui lòng thử lại.");
+    }
+  };
+
   const getAttributeValue = (product) => {
     const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
-    console.log("Dữ liệu từ localStorage:", attributes);
-    console.log("Dữ liệu từ API attributeValues:", attributeValues);
 
-    return attributes
+    // Tìm đúng sản phẩm có cùng `product_id` và `product_variant_id`
+    const productAttributes = attributes.find(
+      (attr) =>
+        attr.product_id === product.product_id &&
+        attr.product_variant_id === product.product_variant_id
+    );
+
+    if (!productAttributes || !productAttributes.attributes) {
+      return "Không xác định";
+    }
+
+    return productAttributes.attributes
       .map((attr) => {
-        if (!attributeValues?.data) return "Không xác định"; // Kiểm tra nếu API chưa load
+        if (!attributeValues?.data) return "Không xác định";
         const attribute = attributeValues.data.find(
           (av) => String(av.id) === String(attr.attribute_value_id)
         );
@@ -142,9 +300,11 @@ const Checkout = () => {
       })
       .join(", ");
   };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("vi-VN", {}).format(value);
   };
+
   return (
     <div>
       <main className="main">
@@ -205,7 +365,7 @@ const Checkout = () => {
                           className="form-control"
                           type="text"
                           name="fullname"
-                          value={userData.fullname}
+                          value={userData.fullname} // Lấy fullname từ userData
                           required
                           onChange={(e) =>
                             setUserData({
@@ -246,30 +406,69 @@ const Checkout = () => {
                       }
                     />
 
-                    <label>Địa chỉ nhận hàng</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="address"
-                      value={userData.address}
-                      required
-                      onChange={(e) =>
-                        setUserData({ ...userData, address: e.target.value })
-                      }
-                    />
-                  </div>
-                  {/* <div className="input-group">
-                    <input
-                      className="form-control"
-                      placeholder="Mã khuyến mãi"
-                      type="text"
-                    />
-                    <div className="input-group-append">
-                      <button className="btn btn-secondary" type="submit">
-                        Xác nhận
-                      </button>
+                    <div className="form-group">
+                      <label for="province">Tỉnh/Thành phố</label>
+                      <select
+                        id="province"
+                        class="form-control"
+                        onChange={handleProvinceChange}
+                        value={selectedProvince}
+                        required
+                      >
+                        <option value="">Chọn tỉnh/thành phố</option>
+                        {provinces.map((province) => (
+                          <option key={province.code} value={province.code}>
+                            {province.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </div> */}
+                    <div className="form-group">
+                      <label for="district">Quận/Huyện</label>
+                      <select
+                        id="district"
+                        class="form-control"
+                        onChange={handleDistrictChange}
+                        value={selectedDistrict}
+                        required
+                        disabled={!selectedProvince}
+                      >
+                        <option value="">Chọn quận/huyện</option>
+                        {districts.map((district) => (
+                          <option key={district.code} value={district.code}>
+                            {district.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label for="ward">Phường/Xã</label>
+                      <select
+                        id="ward"
+                        class="form-control"
+                        onChange={handleWardChange}
+                        value={selectedWard}
+                        required
+                        disabled={!selectedDistrict}
+                      >
+                        <option value="">Chọn phường/xã</option>
+                        {wards.map((ward) => (
+                          <option key={ward.code} value={ward.code}>
+                            {ward.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Địa chỉ cụ thể</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={detailaddress}
+                        onChange={(e) => setDetailaddress(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
                   <aside className="col-lg-3">
                     <div
@@ -319,9 +518,11 @@ const Checkout = () => {
                             <tr key={item.id}>
                               <td style={{ padding: "10px" }}>
                                 {item.product?.name || `Sản phẩm #${item.id}`}{" "}
-                                <span className="text-muted">
-                                  ({getAttributeValue(item)})
-                                </span>
+                                {item.product_variant_id && (
+                                  <span className="text-muted">
+                                    ({getAttributeValue(item)})
+                                  </span>
+                                )}
                                 (x{item.quantity})
                               </td>
                               <td
@@ -394,7 +595,7 @@ const Checkout = () => {
                           width: "100%",
                           borderRadius: "6px",
                         }}
-                        onClick={handlePlaceOrder}
+                        onClick={() => setIsPaymentModalOpen(true)}
                       >
                         Đến trang thanh toán
                       </button>
@@ -405,6 +606,59 @@ const Checkout = () => {
             </div>
           </div>
         </div>
+        <Modal
+          title="Thanh Toán"
+          visible={isPaymentModalOpen}
+          onCancel={() => setIsPaymentModalOpen(false)}
+          footer={[
+            <button
+              className="btn btn-primary "
+              key="cancel"
+              onClick={() => setIsPaymentModalOpen(false)}
+            >
+              Hủy
+            </button>,
+            <button
+              key="pay"
+              className="btn btn-success"
+              onClick={handleConfirmPayment}
+            >
+              Xác nhận thanh toán
+            </button>,
+          ]}
+        >
+          <p>Chọn phương thức thanh toán:</p>
+          <div className="d-block my-3">
+            {payMents.length > 0 ? (
+              payMents.map((method) => (
+                <div key={method.id} className="custom-control custom-radio">
+                  <input
+                    className="custom-control-input"
+                    id={`httt-${method.id}`}
+                    name="paymentMethod"
+                    type="radio"
+                    value={method.id}
+                    checked={selectedPayment === method.id}
+                    onChange={() => setSelectedPayment(method.id)}
+                    required
+                  />
+                  <label
+                    className="custom-control-label"
+                    htmlFor={`httt-${method.id}`}
+                  >
+                    {method.name}
+                  </label>
+                </div>
+              ))
+            ) : (
+              <p className="text-center font-italic">
+                Loading payment methods...
+              </p>
+            )}
+          </div>
+
+          <hr className="mb-4" />
+        </Modal>
       </main>
     </div>
   );

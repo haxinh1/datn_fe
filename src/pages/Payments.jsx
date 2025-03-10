@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { paymentServices } from './../services/payments';
-
+import { useLocation, useNavigate } from "react-router-dom"; // Import useNavigate
+import { paymentServices } from "./../services/payments";
 
 const Payments = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // Initialize navigate
   const { orderId, totalAmount, fullName, phoneNumber, Email, Address } =
     location.state || {};
+
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -47,6 +48,7 @@ const Payments = () => {
 
     if (selectedPayment === 1) {
       setSuccessMessage("Thanh toán thành công!");
+      navigate("/thanks"); // Use navigate to redirect to /thanks
       return;
     }
 
@@ -210,6 +212,7 @@ const Payments = () => {
 
               <hr className="mb-4" />
 
+              {/* Payment button */}
               {!paymentUrl ? (
                 <button
                   className="btn btn-primary btn-lg btn-block"

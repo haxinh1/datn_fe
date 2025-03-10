@@ -68,20 +68,40 @@ const ProductDetailClient = () => {
     }
   };
   const handleAddToCart = async () => {
-    if (product.variants?.length > 0 && !selectedVariant) {
-      message.error(
-        "Vui lòng chọn màu sắc và kích thước trước khi thêm vào giỏ hàng."
-      );
+    if (product.variants.length > 0 && !selectedVariant) {
+      message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
 
-    const newAttributes = [
-      { attribute_id: 1, attribute_value_id: selectedColorId },
-      { attribute_id: 2, attribute_value_id: selectedSizeId },
-    ];
+    let existingAttributes =
+      JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
-    // Lưu vào localStorage
-    localStorage.setItem("cartAttributes", JSON.stringify(newAttributes));
+    const newAttributes = {
+      product_id: product.id,
+      product_variant_id: selectedVariant ? selectedVariant.id : null, // ✅ Lưu thêm ID biến thể
+      attributes: [
+        { attribute_id: 1, attribute_value_id: selectedColorId },
+        { attribute_id: 2, attribute_value_id: selectedSizeId },
+      ],
+    };
+
+    // Kiểm tra xem sản phẩm có cùng ID và cùng biến thể đã có trong giỏ hàng chưa
+    const existingProductIndex = existingAttributes.findIndex(
+      (item) =>
+        item.product_id === product.id &&
+        item.product_variant_id === newAttributes.product_variant_id
+    );
+
+    if (existingProductIndex !== -1) {
+      // Nếu đã tồn tại cùng sản phẩm & biến thể, cập nhật thuộc tính
+      existingAttributes[existingProductIndex].attributes =
+        newAttributes.attributes;
+    } else {
+      // Nếu chưa có, thêm mới vào giỏ hàng
+      existingAttributes.push(newAttributes);
+    }
+
+    localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
 
     const user = JSON.parse(localStorage.getItem("user"));
     const sessionId = sessionStorage.getItem("session_id");
@@ -93,9 +113,8 @@ const ProductDetailClient = () => {
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
       price: selectedVariant ? selectedVariant.price : product.sell_price,
-      attributes: newAttributes,
+      attributes: newAttributes.attributes,
     };
-
     console.log(itemToAdd);
 
     try {

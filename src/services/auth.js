@@ -20,13 +20,13 @@ const register = async (userData) => {
     const response = await instance.post("/register", userData);
     return response.data;
   } catch (error) {
-    console.error('Lỗi đăng ký:', error.response?.data);
+    console.error("Lỗi đăng ký:", error.response?.data);
     throw new Error(error.response?.data?.message || "Đăng ký thất bại");
   }
 };
 
 const login = async (phone_number, password) => {
-  const response = await instance.post("/client/login", {
+  const response = await instance.post("/login", {
     phone_number,
     password,
   });
