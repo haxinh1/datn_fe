@@ -391,6 +391,7 @@ const List = () => {
                                             key: "thumbnail",
                                             render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
                                             align: "center",
+                                            width: 80,
                                         },
                                         {
                                             title: "Tên biến thể",
@@ -471,13 +472,12 @@ const List = () => {
                                             key: "action",
                                             align: "center",
                                             render: (_, variant) => (
-                                                <Button
+                                                <span
                                                     className="action-link action-link-blue"
-                                                    type="link"
                                                     onClick={() => handleEditVariant(variant)}
                                                 >
                                                     Cập nhật
-                                                </Button>
+                                                </span>
                                             ),
                                         },
                                     ]}

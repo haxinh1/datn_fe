@@ -13,6 +13,7 @@ const ListProduct = () => {
   const [currentImages, setCurrentImages] = useState({});
   const [selectedVariantData, setSelectedVariantData] = useState({});
   const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedPrices, setSelectedPrices] = useState([]);
   const [cart, setCart] = useState(
     JSON.parse(sessionStorage.getItem("session_cart")) || []
   );
@@ -59,6 +60,34 @@ const ListProduct = () => {
     );
   };
 
+  // Tách số thành định dạng tiền tệ
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
+  // Danh sách khoảng giá
+  const priceRanges = [
+    { id: "price-1", label: `Dưới ${formatPrice(200000)} VNĐ`, min: 0, max: 200000 },
+    { id: "price-2", label: `${formatPrice(200000)} - ${formatPrice(300000)} VNĐ`, min: 200000, max: 300000 },
+    { id: "price-3", label: `${formatPrice(300000)} - ${formatPrice(400000)} VNĐ`, min: 300000, max: 400000 },
+    { id: "price-4", label: `${formatPrice(400000)} - ${formatPrice(500000)} VNĐ`, min: 400000, max: 500000 },
+    { id: "price-5", label: `${formatPrice(500000)} - ${formatPrice(600000)} VNĐ`, min: 500000, max: 600000 },
+    { id: "price-6", label: `${formatPrice(600000)} - ${formatPrice(700000)} VNĐ`, min: 600000, max: 700000 },
+    { id: "price-7", label: `Trên ${formatPrice(700000)} VNĐ`, min: 700000, max: Infinity }
+  ];
+
+  const handlePriceChange = (range) => {
+    setSelectedPrices((prev) =>
+      prev.some((r) => r.min === range.min && r.max === range.max)
+        ? prev.filter((r) => r.min !== range.min || r.max !== range.max)
+        : [...prev, range]
+    );
+  };
+
   const handleFilter = () => {
     const filtered = products.filter((product) => {
       const matchesBrand =
@@ -67,9 +96,15 @@ const ListProduct = () => {
       const matchesCategory =
         selectedCategories.length === 0 ||
         product.categories.some((cat) => selectedCategories.includes(cat.id));
-  
-      return matchesBrand && matchesCategory;
-    });
+
+      // Lấy giá hiển thị thực tế của sản phẩm
+      const productPrice = getDisplayedPrice(product);
+
+      const matchesPrice =
+        selectedPrices.length === 0 ||
+        selectedPrices.some((range) => productPrice >= range.min && productPrice <= range.max);
+        return matchesBrand && matchesCategory && matchesPrice;
+      });
   
     setFilteredProducts(filtered);
   };
@@ -78,6 +113,7 @@ const ListProduct = () => {
     setFilteredProducts(products); // Hiển thị lại toàn bộ sản phẩm
     setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
     setSelectedCategories([]); // Bỏ chọn tất cả danh mục
+    setSelectedPrices([]); // Bỏ chọn tất cả mức giá
   };
 
   useEffect(() => {
@@ -160,15 +196,6 @@ const ListProduct = () => {
 
     // Nếu không có sale_price, dùng sell_price của sản phẩm chính
     return product.sell_price;
-  };
-
-  // Tách số thành định dạng tiền tệ
-  const formatPrice = (price) => {
-    const formatter = new Intl.NumberFormat("de-DE", {
-      style: "decimal",
-      maximumFractionDigits: 0,
-    });
-    return formatter.format(price);
   };
 
   return (
@@ -336,10 +363,7 @@ const ListProduct = () => {
               <aside className="col-lg-3 order-lg-first">
                 <div className="sidebar sidebar-shop">
                   <div className="widget widget-clean">
-                    <label>Filters:</label>
-                    <a className="sidebar-filter-clear" href="#">
-                      Clean All
-                    </a>
+                    <label>Tìm kiếm:</label>
                   </div>
 
                   {/* List danh mục */}
@@ -507,18 +531,33 @@ const ListProduct = () => {
                         href="#widget-5"
                         role="button"
                       >
-                        Giá
+                        Mức Giá
                       </a>
                     </h3>
 
                     <div className=" show" id="widget-5">
                       <div className="widget-body">
                         <div className="filter-price">
-                          <div className="filter-price-text">
-                            Price Range:
-                            <span id="filter-price-range" />
+                          <div className="filter-item">
+                            {priceRanges.map((range, index) => (
+                              <div className="custom-control custom-checkbox" key={index}>
+                                <input
+                                  className="custom-control-input"
+                                  type="checkbox"
+                                  id={`price-${index}`}
+                                  checked={selectedPrices.some((r) => r.min === range.min && r.max === range.max)}
+                                  onChange={() => handlePriceChange(range)}
+                                />
+                                <label className="custom-control-label" htmlFor={`price-${index}`}>
+                                  {range.min === 0
+                                    ? `Dưới ${formatPrice(range.max)} VNĐ`
+                                    : range.max === Infinity
+                                      ? `Trên ${formatPrice(range.min)} VNĐ`
+                                      : `${formatPrice(range.min)} - ${formatPrice(range.max)} VNĐ`}
+                                </label>
+                              </div>
+                            ))}
                           </div>
-                          <div id="price-slider" />
                         </div>
                       </div>
                     </div>

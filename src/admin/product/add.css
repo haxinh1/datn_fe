@@ -5,6 +5,11 @@
     font-size: 2rem;
     color: blue;
 }
+.attr-name{
+    font-size: 1.8rem;
+    color: blue;
+    font-weight: bolder ;
+}
 .col-item {
     padding: 8px;
 }

@@ -30,6 +30,7 @@ const Confirm = () => {
         onSuccess: () => {
             notification.success({
                 message: "Tài khoản của bạn đã được kích hoạt",
+                description: "Hãy đăng nhập và sử dụng dịch vụ."
             });
             queryClient.invalidateQueries({ queryKey: ["verify-email"] });
             navigate("/logincl");
