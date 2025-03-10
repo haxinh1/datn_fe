@@ -31,7 +31,7 @@ const verify = async (payload) => {
 };
 
 const login = async (phone_number, password) => {
-  const response = await instance.post("/client/login", {
+  const response = await instance.post("/login", {
     phone_number,
     password,
   });

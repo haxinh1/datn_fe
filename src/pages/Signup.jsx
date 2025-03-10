@@ -18,6 +18,8 @@ const Signup = () => {
     const [detailaddress, setDetailaddress] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [gender, setGender] = useState("");
+    const [birthday, setBirthday] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [provinces, setProvinces] = useState([]);
@@ -94,6 +96,8 @@ const Signup = () => {
             setPhoneNumber("");
             setFullname("");
             setAddress("");
+            setGender("");
+            setBirthday("");
             setDetailaddress("");
             setEmail("");
             setPassword("");
@@ -131,15 +135,17 @@ const Signup = () => {
             password_confirmation: confirmPassword,
             fullname: fullName,
             address: address,
+            gender: gender,
+            birthday: birthday,
             detail_address: detailaddress,
             email: email
         });
    
         // Tạo chuỗi địa chỉ theo định dạng mong muốn
         const formattedAddress = 
-        `${selectedProvince ? provinces.find(p => p.code === Number(selectedProvince))?.name : ""}, ` +
+        `${selectedWard ? wards.find(w => w.code === Number(selectedWard))?.name : ""}, ` +
         `${selectedDistrict ? districts.find(d => d.code === Number(selectedDistrict))?.name : ""}, ` +
-        `${selectedWard ? wards.find(w => w.code === Number(selectedWard))?.name : ""}`;
+        `${selectedProvince ? provinces.find(p => p.code === Number(selectedProvince))?.name : ""}`;
 
         mutate({
             phone_number: cleanedPhoneNumber,
@@ -147,6 +153,8 @@ const Signup = () => {
             password_confirmation: confirmPassword,
             fullname: fullName,
             address: formattedAddress,
+            gender: gender,
+            birthday: birthday,
             detail_address: detailaddress,
             email: email
         });
@@ -173,6 +181,66 @@ const Signup = () => {
                                             value={fullName} 
                                             onChange={(e) => setFullname(e.target.value)} 
                                             required 
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Giới tính</label>
+                                        <select 
+                                            className="form-control" 
+                                            value={gender} 
+                                            onChange={(e) => setGender(e.target.value)} 
+                                            required
+                                        >
+                                            <option value="">Chọn giới tính</option>
+                                            <option value="male">Nam</option>
+                                            <option value="female">Nữ</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Ngày sinh</label>
+                                        <input 
+                                            type="date" 
+                                            className="form-control" 
+                                            value={birthday} 
+                                            onChange={(e) => setBirthday(e.target.value)} 
+                                            required 
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label for="province">Tỉnh/Thành phố</label>
+                                        <select id="province" class="form-control" onChange={handleProvinceChange} value={selectedProvince} required>
+                                            <option value="">Chọn tỉnh/thành phố</option>
+                                            {provinces.map(province => (
+                                                <option key={province.code} value={province.code}>{province.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label for="district">Quận/Huyện</label>
+                                        <select id="district" class="form-control" onChange={handleDistrictChange} value={selectedDistrict} required disabled={!selectedProvince}>
+                                            <option value="">Chọn quận/huyện</option>
+                                            {districts.map(district => (
+                                                <option key={district.code} value={district.code}>{district.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label for="ward">Phường/Xã</label>
+                                        <select id="ward" class="form-control" onChange={handleWardChange} value={selectedWard} required disabled={!selectedDistrict}>
+                                            <option value="">Chọn phường/xã</option>
+                                            {wards.map(ward => (
+                                                <option key={ward.code} value={ward.code}>{ward.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Địa chỉ cụ thể</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-control" 
+                                            value={detailaddress} 
+                                            onChange={(e) => setDetailaddress(e.target.value)} 
                                         />
                                     </div>
                                     <div className="form-group">
@@ -215,42 +283,6 @@ const Signup = () => {
                                             required 
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label for="province">Tỉnh/Thành phố</label>
-                                        <select id="province" class="form-control" onChange={handleProvinceChange} value={selectedProvince} required>
-                                            <option value="">Chọn tỉnh/thành phố</option>
-                                            {provinces.map(province => (
-                                                <option key={province.code} value={province.code}>{province.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label for="district">Quận/Huyện</label>
-                                        <select id="district" class="form-control" onChange={handleDistrictChange} value={selectedDistrict} required disabled={!selectedProvince}>
-                                            <option value="">Chọn quận/huyện</option>
-                                            {districts.map(district => (
-                                                <option key={district.code} value={district.code}>{district.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label for="ward">Phường/Xã</label>
-                                        <select id="ward" class="form-control" onChange={handleWardChange} value={selectedWard} required disabled={!selectedDistrict}>
-                                            <option value="">Chọn phường/xã</option>
-                                            {wards.map(ward => (
-                                                <option key={ward.code} value={ward.code}>{ward.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Địa chỉ cụ thể</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={detailaddress} 
-                                            onChange={(e) => setDetailaddress(e.target.value)} 
-                                        />
-                                    </div>
                                     {error && <p className="text-danger">{error}</p>}
                                     <div className="form-footer">
                                         <button type="submit" className="btn btn-outline-primary-2">
@@ -260,6 +292,7 @@ const Signup = () => {
                                     </div>
                                 </form>
                                 <div className="form-choice">
+                                    <p className="text-center">hoặc đăng ký bằng</p>
                                     <div className="row">
                                         <div className="col-sm-6">
                                             <a href="#" className="btn btn-login btn-g">

@@ -1,38 +1,13 @@
 import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col } from 'antd';
 import React, { useState } from 'react';
-import { AuthServices } from '../services/auth';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
-const Account = () => {
+const Coupon = () => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-    const [selectedRecord, setSelectedRecord] = useState(null);
-    const [filteredUsers, setFilteredUsers] = useState(null);
+    const [isActive, setIsActive] = useState(1);    
     const [form] = Form.useForm();
-
-    const { data: users, isLoading, refetch  } = useQuery({
-        queryKey: ["users"],
-        queryFn: async () => {
-            const response = await AuthServices.fetchAuth();
-            return response.data;
-        },
-    });
-
-    // Mutation để cập nhật tài khoản
-    const updateUserMutation = useMutation({
-        mutationFn: async (updatedData) => {
-            return await AuthServices.updateUser(selectedRecord.id, updatedData);
-        },
-        onSuccess: () => {
-            notification.success({
-                message: "Cập nhật thành công",
-            });
-            refetch(); // Refresh danh sách người dùng sau khi cập nhật
-            handleEditCancel();
-        }
-    });
 
     const showDetailModal = (record) => {
         setSelectedRecord(record);
@@ -41,37 +16,7 @@ const Account = () => {
 
     const showEditModal = async (record) => {
         setSelectedRecord(record);
-
-        try {
-            const userData = await AuthServices.getAUser(record.id);
-            form.setFieldsValue({
-                fullname: userData.fullname,
-                email: userData.email,
-                phone_number: userData.phone_number,
-                password: userData.password,
-                gender: userData.gender,
-                birthday: userData.birthday ? dayjs(userData.birthday) : null,
-                address: userData.address,
-                role: userData.role,
-                status: userData.status,
-            });
-            setIsEditModalVisible(true);
-        } catch (error) {
-            console.error("Lỗi khi lấy dữ liệu người dùng:", error);
-        }
-    };
-
-    const handleUpdateUser = async () => {
-        try {
-            const values = await form.validateFields();
-            const formattedValues = {
-                ...values,
-                birthday: values.birthday ? values.birthday.format("YYYY-MM-DD") : null,
-            };
-            updateUserMutation.mutate(values);
-        } catch (error) {
-            console.error("Lỗi khi cập nhật:", error);
-        }
+        setIsEditModalVisible(true);
     };
 
     const handleDetailCancel = () => {
@@ -130,52 +75,57 @@ const Account = () => {
             align: "center",
         },
         {
-            title: "Tên người dùng",
-            dataIndex: "fullname",
-            key: "fullname",
+            title: "Mã",
+            dataIndex: "code",
+            key: "code",
             align: "center",
         },
         {
-            title: "Số điện thoại",
-            dataIndex: "phone_number",
-            key: "phone_number",
+            title: "Tên mã",
+            dataIndex: "title",
+            key: "title",
             align: "center",
         },
         {
-            title: "Email",
-            dataIndex: "email",
-            key: "email",
+            title: "Loại phiếu giảm giá",
+            dataIndex: "discount_type",
+            key: "discount_type",
             align: "center",
         },
         {
-            title: "Điểm tích lũy",
-            dataIndex: "loyalty_point",
-            key: "loyalty_point",
+            title: "Số lượng",
+            dataIndex: "quantity",
+            key: "quantity",
             align: "center",
         },
         {
-            title: "Chức năng",
-            dataIndex: 'role',
-            key: "role",
+            title: "Giá trị giảm",
+            dataIndex: "discount_value",
+            key: "discount_value",
             align: "center",
-            render: (role) => (
-                <span className={
-                    role === "admin" ? "action-link-green" : role === "manager" ? "action-link-blue" : "action-link-purple"
-                }>
-                    {role === "admin" ? "Quản trị viên" : role === "manager" ? "Nhân viên" : "Khách hàng"}
-                </span>
-            ),
+        },
+        {
+            title: "Đơn hàng áp dụng (VNĐ)",
+            dataIndex: "discount_value",
+            key: "discount_value",
+            align: "center",
+        },
+        {
+            title: "Ngày áp dụng",
+            dataIndex: "discount_value",
+            key: "discount_value",
+            align: "center",
         },
         {
             title: "Trạng thái",
-            dataIndex: 'status',
-            key: "status",
+            dataIndex: "is_active",
+            key: "is_active",
             align: "center",
-            render: (status) => (
-                <span className={status === "active" ? "action-link-blue" : "action-link-red"}>
-                    {status === "active" ? "Hoạt động" : "Dừng hoạt động"}
+            render: (isActive) => (
+                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
+                    {isActive === 1 ? 'Đang áp dụng' : 'Dừng áp dụng'}
                 </span>
-            )            
+            ),
         },
         {
             title: "Thao tác",
@@ -210,18 +160,14 @@ const Account = () => {
         <div>
             <h1 className="mb-5">
                 <BookOutlined style={{ marginRight: "8px" }} />
-                Danh sách tài khoản
+                Quản lý mã giảm giá
             </h1>
 
             <div className="group1">
                 <Select
                     placeholder="Chức năng"
                     className="select-item"
-                    allowClear
-                    onChange={(value) => {
-                        const filteredUsers = value ? users.filter(user => user.role === value) : users;
-                        setFilteredUsers(filteredUsers);
-                    }}
+                    
                 >
                     <Select.Option value="customer">Khách hàng</Select.Option>
                     <Select.Option value="manager">Nhân viên</Select.Option>
@@ -229,17 +175,14 @@ const Account = () => {
                 </Select>
             </div>
 
-            <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
-                    dataSource={filteredUsers || users}
                     pagination={{ pageSize: 10 }}
                 />
-            </Skeleton>
 
             {/* Modal Chi Tiết */}
             <Modal
-                title="Chi Tiết Tài Khoản"
+                title="Chi tiết mã giảm giá"
                 open={isDetailModalVisible}
                 onCancel={handleDetailCancel}
                 footer={null}
@@ -247,14 +190,13 @@ const Account = () => {
             >
                 <Table
                     columns={detailColumn}
-                    dataSource={selectedRecord ? [selectedRecord] : []} // Chỉ hiển thị thông tin khách hàng đã chọn
                     pagination={false} // Không cần phân trang vì chỉ có một bản ghi
                 />
             </Modal>
 
             {/* Modal Cập Nhật */}
             <Modal
-                title="Cập Nhật Chức Năng Và Trạng Thái Tài Khoản"
+                title="Cập nhật mã giảm giá"
                 open={isEditModalVisible}
                 onCancel={handleEditCancel}
                 footer={null}
@@ -298,7 +240,7 @@ const Account = () => {
                     </Row>
 
                     <div className="add">
-                        <Button key="submit" type="primary" onClick={handleUpdateUser}>Cập nhật</Button>
+                        <Button key="submit" type="primary" >Cập nhật</Button>
                     </div>
                 </Form>
             </Modal>
@@ -306,4 +248,4 @@ const Account = () => {
     );
 };
 
-export default Account;
+export default Coupon;
