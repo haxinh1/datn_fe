@@ -348,7 +348,7 @@ const Coupon = () => {
                             <Form.Item
                                 label="Kiểu giảm giá"
                                 name="discount_type"
-                                rules={[{ required: true, message: "Vui lòng chọn tên mã giảm giá" }]}
+                                rules={[{ required: true, message: "Vui lòng chọn kiểu giảm giá" }]}
                             >
                                 <Select
                                     placeholder="Chọn kiểu giảm giá"
@@ -369,7 +369,7 @@ const Coupon = () => {
                                     ({ getFieldValue }) => ({
                                         validator(_, value) {
                                             const discountType = getFieldValue("discount_type");
-                                            if (discountType === "percent") {
+                                            if (discountType === "percent") {x  
                                                 if (value < 1 || value > 100) {
                                                     return Promise.reject("Giá trị phải từ 1 - 100%");
                                                 }
@@ -388,7 +388,7 @@ const Coupon = () => {
                         name="usage_limit"
                         rules={[{ required: true, message: "Vui lòng chọn số lần áp dụng" }]}
                     >
-                        <TextArea className='input-item' />
+                        <Input className='input-item' />
                     </Form.Item>
 
                     <Row gutter={24}>
@@ -405,7 +405,7 @@ const Coupon = () => {
                             <Form.Item
                                 label="Ngày kết thúc"
                                 name="end_date"
-                                rules={[{ required: true, message: "Vui lòng chọn giá trị giảm giá" }]}
+                                rules={[{ required: true, message: "Vui lòng chọn ngày kết thúc" }]}
                             >
                                 <DatePicker className='input-item' />
                             </Form.Item>
