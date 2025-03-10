@@ -67,7 +67,7 @@ const Order = () => {
     enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
   });
 
-  const orderStatusesData = orderStatuses.map((item, index) => ({
+  const orderStatusesData = (orderStatuses || []).map((item, index) => ({
     key: index,
     index: index + 1,
     status: item.status?.name,
@@ -135,11 +135,13 @@ const Order = () => {
   };
 
   // Chuyển đổi dữ liệu thành dataSource cho bảng
-  const dataSource = orders.data.map((order, index) => ({
-    ...order,
-    key: order.id,
-    index: index + 1, // STT (số thứ tự)
-  }));
+  const dataSource = Array.isArray(orders)
+    ? orders.map((order, index) => ({
+        ...order,
+        key: order.id,
+        index: index + 1,
+      }))
+    : [];
 
   // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {

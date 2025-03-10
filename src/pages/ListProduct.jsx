@@ -55,48 +55,6 @@ const ListProduct = () => {
     }));
   };
 
-  const handleAddToCart = async (product) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const rawToken = localStorage.getItem("client_token");
-    const sessionId = sessionStorage.getItem("session_id");
-
-    const itemToAdd = {
-      user_id: user && user.id ? user.id : null,
-      session_id: user && user.id ? null : sessionId,
-      product_id: product.id,
-      product_variant_id: selectedVariantData[product.id]?.id || null,
-      quantity: 1,
-    };
-
-    console.log("Dữ liệu gửi lên server:", itemToAdd);
-
-    try {
-      const response = await cartServices.addCartItem(product.id, itemToAdd);
-      console.log("Phản hồi từ server:", response);
-
-      if (
-        response &&
-        response.message.includes("Sản phẩm đã thêm vào giỏ hàng")
-      ) {
-        setMessage("Sản phẩm đã được thêm vào giỏ hàng thành công!");
-        setMessageType("success");
-      } else {
-        setMessage("Thêm vào giỏ hàng thất bại! Vui lòng thử lại.");
-        setMessageType("error");
-      }
-    } catch (error) {
-      console.error("Lỗi khi thêm vào giỏ hàng:", error);
-      setMessage("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau!");
-      setMessageType("error");
-    }
-
-    // Tự động ẩn message sau 3 giây
-    setTimeout(() => {
-      setMessage("");
-      setMessageType("");
-    }, 3000);
-  };
-
   const getDisplayedPrice = (product) => {
     const selectedVariant = selectedVariantData[product.id];
 
@@ -201,12 +159,18 @@ const ListProduct = () => {
                               />
                             </Link>
                             <div className="product-action">
-                              <button
+                              {/* <button
                                 className="btn-product btn-cart"
                                 onClick={() => handleAddToCart(product)}
                               >
                                 <span>Thêm vào giỏ hàng</span>
-                              </button>
+                              </button> */}
+                              <Link
+                                to={`/product-detail/${product.id}`}
+                                className="btn-product btn-cart"
+                              >
+                                Chi tiết sản phẩm
+                              </Link>
                             </div>
                           </figure>
                           <div className="product-body">

@@ -36,14 +36,21 @@ const Cart = () => {
 
   const handleQuantityChange = async (index, newQuantity) => {
     if (newQuantity < 1) return;
+
     const updatedCartItems = [...cartItems];
     updatedCartItems[index].quantity = newQuantity;
     setCartItems(updatedCartItems);
+
     try {
+      // Lấy variantId từ updatedCartItems nếu có
+      const variantId = updatedCartItems[index].product_variant_id || null;
+
       await cartServices.updateCartItem(
         updatedCartItems[index].product_id,
-        newQuantity
+        newQuantity,
+        variantId // truyền variantId vào
       );
+
       message.success("Cập nhật số lượng thành công");
     } catch (error) {
       console.error(
@@ -54,21 +61,57 @@ const Cart = () => {
     }
   };
 
-  const handleRemoveItem = async (productId) => {
+  const handleRemoveItem = async (productId, productVariantId) => {
+    // Hiển thị modal xác nhận
     Modal.confirm({
       title: "Xác nhận xóa",
-      content: "Bạn có chắc muốn xóa sản phẩm này?",
+      content: "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?",
       okText: "Xóa",
       cancelText: "Hủy",
       onOk: async () => {
         try {
-          await cartServices.removeCartItem(productId);
-          setCartItems(
-            cartItems.filter((item) => item.product_id !== productId)
+          // Kiểm tra xem có productVariantId không để xóa
+          if (productVariantId) {
+            // Xóa sản phẩm biến thể theo product_variant_id
+            await cartServices.removeCartItem(productId, productVariantId);
+          } else {
+            // Xóa sản phẩm đơn theo product_id
+            await cartServices.removeCartItem(productId);
+          }
+
+          // Cập nhật giỏ hàng sau khi xóa
+          setCartItems((prevItems) =>
+            prevItems.filter((item) =>
+              productVariantId
+                ? item.product_variant_id !== productVariantId
+                : item.product_id !== productId
+            )
           );
-          message.success("Xóa sản phẩm thành công!");
+
+          // Cập nhật cartAttributes trong localStorage nếu xóa theo variant id
+          if (productVariantId) {
+            // Lấy cartAttributes từ localStorage
+            const storedAttributes =
+              JSON.parse(localStorage.getItem("cartAttributes")) || [];
+
+            // Lọc ra các thuộc tính không liên quan đến productVariantId
+            const updatedAttributes = storedAttributes.filter(
+              (attribute) => attribute.product_variant_id !== productVariantId
+            );
+
+            // Lưu lại các thuộc tính đã cập nhật vào localStorage
+            localStorage.setItem(
+              "cartAttributes",
+              JSON.stringify(updatedAttributes)
+            );
+          }
+
+          message.success("Sản phẩm đã được xóa thành công!");
         } catch (error) {
-          console.error("Lỗi khi xóa sản phẩm:", error.response?.data || error);
+          console.error(
+            "❌ Lỗi khi xóa sản phẩm:",
+            error.response?.data || error
+          );
           message.error("Lỗi khi xóa sản phẩm, vui lòng thử lại!");
         }
       },
@@ -91,12 +134,21 @@ const Cart = () => {
 
   const getAttributeValue = (product) => {
     const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
-    console.log("Dữ liệu từ localStorage:", attributes);
-    console.log("Dữ liệu từ API attributeValues:", attributeValues);
 
-    return attributes
+    // Tìm đúng sản phẩm có cùng `product_id` và `product_variant_id`
+    const productAttributes = attributes.find(
+      (attr) =>
+        attr.product_id === product.product_id &&
+        attr.product_variant_id === product.product_variant_id
+    );
+
+    if (!productAttributes || !productAttributes.attributes) {
+      return "Không xác định";
+    }
+
+    return productAttributes.attributes
       .map((attr) => {
-        if (!attributeValues?.data) return "Không xác định"; // Kiểm tra nếu API chưa load
+        if (!attributeValues?.data) return "Không xác định";
         const attribute = attributeValues.data.find(
           (av) => String(av.id) === String(attr.attribute_value_id)
         );
@@ -198,9 +250,11 @@ const Cart = () => {
                               </td>
                               <td className="fs-4 text-start">
                                 {productName}
-                                <span className="text-muted">
-                                  ({getAttributeValue(item)})
-                                </span>
+                                {item.product_variant_id && (
+                                  <span className="text-muted">
+                                    ({getAttributeValue(item)})
+                                  </span>
+                                )}
                               </td>
 
                               <td className="fs-4">
@@ -232,9 +286,12 @@ const Cart = () => {
                               </td>
                               <td>
                                 <button
-                                  className="btn  btn-sm p-0"
+                                  className="btn btn-sm p-0"
                                   onClick={() =>
-                                    handleRemoveItem(item.product_id)
+                                    handleRemoveItem(
+                                      item.product_id,
+                                      item.product_variant_id
+                                    )
                                   }
                                   title="Xóa sản phẩm"
                                   style={{
@@ -243,7 +300,6 @@ const Cart = () => {
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-
                                     fontSize: "14px",
                                   }}
                                 >
