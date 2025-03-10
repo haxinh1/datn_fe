@@ -100,6 +100,11 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/brand">Thương hiệu</Link>,
     },
     {
+      key: "coupon",
+      icon: <BilibiliFilled />,
+      label: <Link to="/admin/coupon">Mã giảm giá</Link>,
+    },
+    {
       key: "bill",
       icon: <BilibiliFilled />,
       label: <Link to="/admin/bill">Hóa đơn</Link>,
