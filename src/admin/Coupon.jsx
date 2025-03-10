@@ -370,7 +370,6 @@ const Coupon = () => {
                                         validator(_, value) {
                                             const discountType = getFieldValue("discount_type");
                                             if (discountType === "percent") {
-                                                x
                                                 if (value < 1 || value > 100) {
                                                     return Promise.reject("Giá trị phải từ 1 - 100%");
                                                 }
