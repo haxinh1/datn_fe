@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip, DatePicker } from "antd";
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import TextArea from "antd/es/input/TextArea";
 import slugify from "slugify";
 import "./add.css";
 import { productsServices } from './../../services/product';
@@ -32,7 +31,6 @@ const Add = () => {
     const [images, setImages] = useState([]);
     const [productType, setProductType] = useState("single");
     const [selectedAttributeId, setSelectedAttributeId] = useState(null);
-    const [filteredValues, setFilteredValues] = useState([]); // Lưu giá trị thuộc tính được lọc
     const [tableData, setTableData] = useState([]); // Dữ liệu bảng
     const navigate = useNavigate()
     const [selectedDate, setSelectedDate] = useState(null);
@@ -69,7 +67,7 @@ const Add = () => {
                 description: "Sản phẩm mới đã được thêm vào danh sách.",
             });
             queryClient.invalidateQueries({ queryKey: ["products"] });
-            navigate("/list-pr");
+            navigate("/admin/list-pr");
         },
         onError: (error) => {
             notification.error({
@@ -385,17 +383,18 @@ const Add = () => {
 
     // bảng biến thể
     const columns = [
-        ...forms.map((form) => ({
-            title: form.name, // Tên cột là tên thuộc tính
+        ...forms
+        .filter((form) => form.name && form.values.length > 0) // Chỉ giữ những thuộc tính có giá trị được chọn
+        .map((form) => ({
+            title: form.name,
             dataIndex: form.name,
             key: form.name,
             align: "center",
             render: (_, record) => {
-                // Hiển thị value nếu tồn tại
                 const attributeValue = record[form.name];
-                return attributeValue?.value; // Lấy giá trị value
+                return attributeValue?.value || "-"; // Hiển thị "-" nếu không có giá trị
             },
-        })),  
+        })),
         {
             title: "Ảnh",
             dataIndex: "thumbnail",
@@ -647,14 +646,15 @@ const Add = () => {
                                     ))}
                                 </Select>
 
-                                <Button 
-                                    className="btn-import"
-                                    color="primary" 
-                                    variant="outlined"
-                                    icon={<PlusOutlined />}
-                                    onClick={setIsModalVisible}
-                                >     
-                                </Button>
+                                <Tooltip title='Thêm thương hiệu mới'>
+                                    <Button 
+                                        className="btn-import"
+                                        color="primary" 
+                                        variant="outlined"
+                                        icon={<PlusOutlined />}
+                                        onClick={setIsModalVisible}
+                                    />   
+                                </Tooltip>
                             </div>
                         </Form.Item>
 
@@ -807,163 +807,142 @@ const Add = () => {
                             />
                         </Form.Item>
                     </Col>
-                    
-                    {/* Điều kiện hiển thị cho giá bán khi là sản phẩm đơn */}
-                    {productType === "single" && (
-                        <>
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá bán (VNĐ)"
-                                    name="sell_price"
-                                >
-                                    <InputNumber
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá bán (VNĐ)"
+                            name="sell_price"
+                        >
+                            <InputNumber
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày mở khuyến mại"
-                                    name="sale_price_start_at"
-                                >
-                                    <DatePicker 
-                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
-                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
+                        <Form.Item
+                            label="Ngày mở khuyến mại"
+                            name="sale_price_start_at"
+                        >
+                            <DatePicker 
+                                value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
 
-                            <Col span={8} className="col-item">
-                                <Form.Item
-                                    label="Giá khuyến mại (VNĐ)"
-                                    name="sale_price"
-                                    dependencies={["sell_price"]}
-                                    rules={[
-                                        ({ getFieldValue }) => ({
-                                            validator(_, value) {
-                                                const sellPrice = getFieldValue("sell_price");
-                                                if (!value || !sellPrice || value < sellPrice) {
-                                                    return Promise.resolve();
-                                                }
-                                                return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
-                                            }
-                                        })
-                                    ]}
-                                >
-                                    <InputNumber 
-                                        className="input-item" 
-                                        formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                        parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    />
-                                </Form.Item>
+                    <Col span={8} className="col-item">
+                        <Form.Item
+                            label="Giá khuyến mại (VNĐ)"
+                            name="sale_price"
+                            dependencies={["sell_price"]}
+                            rules={[
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const sellPrice = getFieldValue("sell_price");
+                                        if (!value || !sellPrice || value < sellPrice) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán!"));
+                                    }
+                                })
+                            ]}
+                        >
+                            <InputNumber 
+                                className="input-item" 
+                                formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                            />
+                        </Form.Item>
 
-                                <Form.Item
-                                    label="Ngày đóng khuyến mại"
-                                    name="sale_price_end_at"
-                                >
-                                    <DatePicker 
-                                        value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
-                                        onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
-                                        className="input-item"
-                                        format="DD-MM-YY"  // Định dạng ngày hiển thị
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </>
-                    )}
+                        <Form.Item
+                            label="Ngày đóng khuyến mại"
+                            name="sale_price_end_at"
+                        >
+                            <DatePicker 
+                                value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
+                                onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
+                                className="input-item"
+                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                            />
+                        </Form.Item>
+                    </Col>
                 </Row>
 
                 {productType === "variant" && (
                     <>
                         <hr />
                         <h1 className="mb-5">Thuộc tính</h1>
-                        {forms.map((form, index) => (
-                            <div key={form.id} className="attribute">
-                                <Select
-                                    className="input-attribute"
-                                    allowClear
-                                    showSearch
-                                    placeholder="Chọn thuộc tính"
-                                    value={form.name || undefined}
-                                    onChange={(value) => {
-                                        const isAlreadySelected = forms.some((f, i) => f.name === value && i !== index);
-                                        if (isAlreadySelected) {
-                                            notification.warning({
-                                                message: "Thuộc tính này đã được chọn trước đó!",
-                                            });
-                                            return;
-                                        }
-                                        forms[index].name = value;
-                                        setForms([...forms]);
-                                        const selectedAttribute = attributes.find(attr => attr.name === value);
-                                        const valuesForAttribute = attributeValue.filter(
-                                            val => val.attribute_id === selectedAttribute.id
-                                        );
-                                        setFilteredValues(valuesForAttribute);
-                                    }}
-                                >
-                                    {attributes && attributes.map((attr) => (
-                                        <Option key={attr.id} value={attr.name}>
-                                            {attr.name}
-                                        </Option>
-                                    ))}
-                                </Select>
-                            
-                                <Button 
-                                    color="primary" 
-                                    variant="outlined"
-                                    className="btn-item" 
-                                    icon={<PlusOutlined />} 
-                                    onClick={() => setIsAttributeModalOpen(true)} // Mở modal tạo thuộc tính mới
-                                >
-                                </Button>
-                            
-                                <Select
-                                    mode="multiple"
-                                    className="input-attribute"
-                                    allowClear
-                                    placeholder="Chọn giá trị"
-                                    onChange={(values) => {
-                                        if (values.includes("create_value")) {
-                                            setIsValueModalOpen(true);
-                                            const filteredValues = values.filter((value) => value !== "create_value");
-                                            forms[index].values = filteredValues.map((value) => ({
-                                                id: Number(value),
-                                                value: filteredValues.find((val) => val.id === Number(value))?.value || "",
-                                            }));
-                                        } else {
-                                            forms[index].values = values.map((value) => ({
-                                                id: Number(value),
-                                                value: filteredValues.find((val) => val.id === Number(value))?.value || "",
-                                            }));
-                                        }
-                                        setForms([...forms]); // Cập nhật forms
-                                    }}
-                                >
-                                    {filteredValues.map((val) => (
-                                        <Option key={val.id} value={val.id}>
-                                            {val.value}
-                                        </Option>
-                                    ))}
-                                </Select>
+                        {attributes && attributes
+                            .sort((a, b) => a.id - b.id)
+                            .map((attr) => (
+                            <div key={attr.id}>
+                                <label className="attr-name">{attr.name}</label>
+                                <div className="attribute">
+                                    <Select
+                                        mode="multiple"
+                                        className="input-attribute"
+                                        placeholder={`Chọn giá trị cho ${attr.name}`}
+                                        onChange={(values) => {
+                                            // Chỉ thêm thuộc tính vào danh sách nếu có giá trị được chọn
+                                            const updatedForms = [...forms];
+                                            const existingIndex = updatedForms.findIndex(f => f.id === attr.id);
 
-                                <Button 
-                                    color="primary" 
-                                    variant="outlined"
-                                    className="btn-item" 
-                                    icon={<PlusOutlined />} 
-                                    onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
-                                >
-                                </Button>
+                                            if (values.length > 0) {
+                                                if (existingIndex === -1) {
+                                                    updatedForms.push({
+                                                        id: attr.id,
+                                                        name: attr.name,
+                                                        values: values.map(value => ({
+                                                            id: Number(value),
+                                                            value: attributeValue?.find(val => val.id === Number(value))?.value || ""
+                                                        })),
+                                                    });
+                                                } else {
+                                                    updatedForms[existingIndex].values = values.map(value => ({
+                                                        id: Number(value),
+                                                        value: attributeValue?.find(val => val.id === Number(value))?.value || ""
+                                                    }));
+                                                }
+                                            } else {
+                                                // Xóa thuộc tính khỏi danh sách nếu không có giá trị nào được chọn
+                                                updatedForms.splice(existingIndex, 1);
+                                            }
+
+                                            setForms(updatedForms);
+                                        }}
+                                        value={forms.find(f => f.id === attr.id)?.values.map(v => v.id) || []}
+                                    >
+                                        {attributeValue ? (
+                                            attributeValue
+                                                .filter(val => val.attribute_id === attr.id)
+                                                .map(val => (
+                                                    <Option key={val.id} value={val.id}>
+                                                        {val.value}
+                                                    </Option>
+                                                ))
+                                        ) : (
+                                            <Option disabled>Đang tải...</Option>
+                                        )}
+                                    </Select>
+
+                                    <Tooltip title='Thêm giá trị mới'>
+                                        <Button 
+                                            color="primary" 
+                                            variant="outlined"
+                                            className="btn-item" 
+                                            icon={<PlusOutlined />} 
+                                            onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
+                                        />
+                                    </Tooltip>
+                                </div>
                             </div>
                         ))}
 
                         <Button 
                             color="primary" variant="outlined" className="btn-item" 
-                            onClick={() => setForms([...forms, { id: Date.now(), name: "", values: [] }])}
+                            onClick={() => setIsAttributeModalOpen(true)}
                         >
                             Thêm thuộc tính
                         </Button>
@@ -1012,32 +991,37 @@ const Add = () => {
                         layout="vertical"
                         onFinish={(values) => handleAddValue(values)}                    
                     >
-                        <Form.Item
-                            label="Tên giá trị"
-                            name="value"
-                            rules={[{ required: true, message: "Vui lòng nhập tên giá trị!" }]}
-                        >
-                            <Input placeholder="Nhập tên giá trị" className="input-item" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Thuộc tính"
-                            name="attribute_id"
-                            rules={[{ required: true, message: "Vui lòng chọn thuộc tính!" }]}
-                        >
-                            <Select
-                                className="input-attribute"
-                                allowClear
-                                placeholder="Chọn thuộc tính"
-                                onChange={(value) => setSelectedAttributeId(value)}
-                            >
-                                {attributes && attributes.map((attr) => (
-                                    <Option key={attr.id} value={attr.id}>
-                                        {attr.name}
-                                    </Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
+                        <Row gutter={24}>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Tên giá trị"
+                                    name="value"
+                                    rules={[{ required: true, message: "Vui lòng nhập tên giá trị!" }]}
+                                >
+                                    <Input placeholder="Nhập tên giá trị" className="input-item" />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Thuộc tính"
+                                    name="attribute_id"
+                                    rules={[{ required: true, message: "Vui lòng chọn thuộc tính!" }]}
+                                >
+                                    <Select
+                                        className="input-attribute"
+                                        allowClear
+                                        placeholder="Chọn thuộc tính"
+                                        onChange={(value) => setSelectedAttributeId(value)}
+                                    >
+                                        {attributes && attributes.map((attr) => (
+                                            <Option key={attr.id} value={attr.id}>
+                                                {attr.name}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <div className="add">
                             <Button type="primary" htmlType="submit">
@@ -1058,33 +1042,32 @@ const Add = () => {
                         layout="vertical"
                         onFinish={handleAddBrand}
                     >      
-                        <Form.Item
-                            label="Tên thương hiệu"
-                            name="brand_name"
-                            rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
-                        >
-                            <Input className="input-item" onChange={handleNameBrand} />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Slug"
-                            name="brand_slug"
-                            rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                        >
-                            <Input className="input-item" />
-                        </Form.Item>
+                        <Row gutter={24}>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Tên thương hiệu"
+                                    name="brand_name"
+                                    rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                                >
+                                    <Input className="input-item" onChange={handleNameBrand} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12} className="col-item">
+                                <Form.Item
+                                    label="Slug"
+                                    name="brand_slug"
+                                    rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                                >
+                                    <Input className="input-item" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <Form.Item 
                             label="Logo thương hiệu" 
                             name="logo"
                             valuePropName="fileList"
                             getValueFromEvent={normFile}
-                            rules={[
-                                {
-                                    validator: (_, value) =>
-                                    logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh thương hiệu"),
-                                },
-                            ]}
                         >
                             <Upload 
                                 listType="picture" 

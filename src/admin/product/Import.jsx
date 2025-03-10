@@ -81,7 +81,7 @@ const Import = () => {
                     ? { 
                         ...item, 
                         [field]: value, 
-                        total: (field === "price" ? value : item.price) * item.quantity 
+                        total: (field === "price" ? value : item.price) * (field === "quantity" ? value : item.quantity)
                     }
                     : item
             )
@@ -213,7 +213,7 @@ const Import = () => {
                     ))}
                 </AutoComplete>
 
-                <Link to="/creat">
+                <Link to="/admin/creat">
                     <Button
                         className='btn-import'
                         type="primary"
@@ -300,18 +300,7 @@ const Import = () => {
                                 return (
                                     <Form.Item
                                         name={`sell_price_${uniqueKey}`}
-                                        initialValue={record.sell_price} // Truyền giá bán từ DB vào input
-                                        // rules={[
-                                        //     {
-                                        //         required: true,
-                                        //         message: "Vui lòng nhập giá bán!",
-                                        //     },
-                                        //     {
-                                        //         type: "number",
-                                        //         min: 1,
-                                        //         message: "Giá bán phải lớn hơn 0!",
-                                        //     },
-                                        // ]}
+                                        initialValue={record.sell_price}
                                     >
                                         <InputNumber
                                             className="input-form"

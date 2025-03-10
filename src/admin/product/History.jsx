@@ -569,7 +569,7 @@ const History = () => {
                     </Select>
                 </div>
 
-                <Link to="/import" className='group2'>
+                <Link to="/admin/import" className='group2'>
                     <Button 
                         color="primary" variant="solid" 
                         icon={<PlusOutlined />} 

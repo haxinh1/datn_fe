@@ -1,30 +1,42 @@
 import instance from "../axios"; // axios instance với base URL
 
-const fetchAuth = async () => {
-  const response = await instance.get("/users");
-  return response.data;
-};
+const  fetchAuth = async () => {
+  try {
+    const response = await instance.get("/admin/users"); // Kiểm tra API URL có đúng không
+    return response?.data ? response : { data: [] }; // Trả về mảng rỗng nếu không có dữ liệu
+  } catch (error) {
+    console.error("Lỗi gọi API:", error);
+    return { data: [] }; // Tránh lỗi khi API bị lỗi
+  }
+}
 
 const getAUser = async (id) => {
-  const response = await instance.get(`/users/${id}`);
+  const response = await instance.get(`/admin/users/${id}`);
   return response.data;
 };
 
 const updateUser = async (id, payload) => {
-  const response = await instance.put(`/users/${id}`, payload);
+  const response = await instance.put(`/admin/users/${id}`, payload);
   return response.data;
 };
 
-const register = async (phone_number, password) => {
-  const response = await instance.post("/client/register", {
-    phone_number,
-    password,
-  });
+const register = async (userData) => {
+  try {
+    const response = await instance.post("/register", userData);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi đăng ký:", error.response?.data);
+    throw new Error(error.response?.data?.message || "Đăng ký thất bại");
+  }
+};
+
+const verify = async (payload) => {
+  const response = await instance.post("/verify-email", payload);
   return response.data;
 };
 
 const login = async (phone_number, password) => {
-  const response = await instance.post("/client/login", {
+  const response = await instance.post("/login", {
     phone_number,
     password,
   });
@@ -92,6 +104,7 @@ export const AuthServices = {
   updateUser,
   getAUser,
   register,
+  verify,
   login,
   loginad,
   logoutclient,
