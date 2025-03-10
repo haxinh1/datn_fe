@@ -18,18 +18,18 @@ const Coupon = () => {
 
         const response = await CouponServices.getCounponById(id);
         console.log(response);
-        
-        
+
+
         if (response.success && response.data) {
-            setSelectedCoupon([response.data]);  
+            setSelectedCoupon([response.data]);
         }
 
         setIsDetailModalVisible(true);
 
-        
+
     };
 
-    console.log(selectedCoupon);    
+    console.log(selectedCoupon);
 
 
     const handleShowModal = async (coupon) => {
@@ -235,7 +235,7 @@ const Coupon = () => {
         let response;
 
         if (editingCoupon) {
-            
+
             response = await CouponServices.updateCoupon(editingCoupon.id, payload);
         } else {
             response = await CouponServices.createCoupon(payload);
@@ -300,7 +300,7 @@ const Coupon = () => {
             >
                 <Table
                     dataSource={selectedCoupon}
-                    rowKey={"id"}   
+                    rowKey={"id"}
                     columns={detailColumn}
                     pagination={false}
                 />
@@ -348,7 +348,7 @@ const Coupon = () => {
                             <Form.Item
                                 label="Kiểu giảm giá"
                                 name="discount_type"
-                                rules={[{ required: true, message: "Vui lòng chọn tên mã giảm giá" }]}
+                                rules={[{ required: true, message: "Vui lòng chọn kiểu giảm giá" }]}
                             >
                                 <Select
                                     placeholder="Chọn kiểu giảm giá"
@@ -388,26 +388,58 @@ const Coupon = () => {
                         name="usage_limit"
                         rules={[{ required: true, message: "Vui lòng chọn số lần áp dụng" }]}
                     >
-                        <TextArea className='input-item' />
+                        <Input className='input-item' />
                     </Form.Item>
 
                     <Row gutter={24}>
-                        <Col span={12} className='col-item'>
+                        <Col span={12} className="col-item">
                             <Form.Item
                                 label="Ngày bắt đầu"
                                 name="start_date"
-                                rules={[{ required: true, message: "Vui lòng chọn ngày ap dụng" }]}
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Vui lòng chọn ngày áp dụng",
+                                    },
+                                ]}
                             >
-                                <DatePicker className='input-item' />
+                                <DatePicker
+                                    className="input-item"
+                                    disabledDate={(current) => current && current.isBefore(dayjs(), "day")}
+                                />
                             </Form.Item>
                         </Col>
-                        <Col span={12} className='col-item'>
+
+                        <Col span={12} className="col-item">
                             <Form.Item
                                 label="Ngày kết thúc"
                                 name="end_date"
-                                rules={[{ required: true, message: "Vui lòng chọn giá trị giảm giá" }]}
+                                dependencies={["start_date"]}
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Vui lòng chọn ngày kết thúc",
+                                    },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const startDate = getFieldValue("start_date");
+                                            if (!value || !startDate) return Promise.resolve();
+
+                                            if (value.isBefore(startDate, "day")) {
+                                                return Promise.reject("Ngày kết thúc không thể trước ngày bắt đầu!");
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
                             >
-                                <DatePicker className='input-item' />
+                                <DatePicker
+                                    className="input-item"
+                                    disabledDate={(current) => {
+                                        const startDate = form.getFieldValue("start_date");
+                                        return current && startDate && current.isBefore(startDate, "day");
+                                    }}
+                                />
                             </Form.Item>
                         </Col>
                     </Row>
