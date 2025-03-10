@@ -234,6 +234,7 @@ const Account = () => {
                     columns={columns}
                     dataSource={filteredUsers || users}
                     pagination={{ pageSize: 10 }}
+                    bordered
                 />
             </Skeleton>
 
@@ -249,6 +250,7 @@ const Account = () => {
                     columns={detailColumn}
                     dataSource={selectedRecord ? [selectedRecord] : []} // Chỉ hiển thị thông tin khách hàng đã chọn
                     pagination={false} // Không cần phân trang vì chỉ có một bản ghi
+                    bordered
                 />
             </Modal>
 
