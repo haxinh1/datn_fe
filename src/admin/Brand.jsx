@@ -182,12 +182,6 @@ const Brand = () => {
                         name="logo"
                         valuePropName="fileList"
                         getValueFromEvent={normFile}
-                        rules={[
-                            {
-                                validator: (_, value) =>
-                                logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh thương hiệu"),
-                            },
-                        ]}
                     >
                         <Upload 
                             listType="picture" 
