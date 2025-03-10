@@ -242,7 +242,7 @@ const ProductDetailClient = () => {
                                                 className="form-control"
                                                 value={quantity}
                                                 min="1"
-                                                max={selectedVariant?.stock}
+                                                max={selectedVariant?.stock ? selectedVariant?.stock : product.stock}
                                                 step="1"
                                                 required
                                                 onChange={handleQuantityChange}
