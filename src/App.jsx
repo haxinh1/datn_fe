@@ -18,13 +18,18 @@ import LoginAd from "./admin/LoginAd";
 import PrivateRoute from "./admin/PrivateRAd";
 import Account from "./admin/Account";
 import Signup from "./pages/Signup";
+
+import Cart from "./pages/Cart";
+import Thankyoupage from "./pages/Thankyou";
 import Order from "./admin/Order";
 import Checkout from "./pages/Checkout";
-import Cart from "./pages/Cart";
 import Payments from "./pages/Payments";
 import LoginCl from "./pages/LoginCl";
 import ListProduct from "./pages/ListProduct";
-import Thankyoupage from "./pages/Thankyou";
+import Inbox from "./admin/Inbox";
+import Confirm from "./pages/Confirm";
+import Coupon from "./admin/Coupon";
+
 function App() {
   return (
     <>
@@ -34,6 +39,7 @@ function App() {
           <Route path="product-detail/:id" element={<ProductDetailClient />} />
           <Route path="cart" element={<Cart />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="confirm" element={<Confirm />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
@@ -60,6 +66,8 @@ function App() {
             <Route path="account" element={<Account />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
+            <Route path="inbox" element={<Inbox />} />
+            <Route path="coupon" element={<Coupon />} />
           </Route>
         </Route>
       </Routes>

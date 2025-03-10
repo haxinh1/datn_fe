@@ -189,6 +189,18 @@ const ProductDetail = () => {
   const productData = [
     { key: "sku", label: "Mã sản phẩm:", value: product.sku || "Không có mã" },
     { key: "name", label: "Tên sản phẩm:", value: product.name || "Không có tên" },
+    { key: "slug", label: "Slug:", value: product.slug },
+    {
+      key: "link",
+      label: "Link sản phẩm:",
+      value: product.name_link ? (
+        <a href={product.name_link} target="_blank" rel="noopener noreferrer">
+          {product.name_link}
+        </a>
+      ) : (
+        "Không có"
+      ),
+    },
     {
       key: "brand",
       label: "Thương hiệu sản phẩm:",
@@ -204,7 +216,7 @@ const ProductDetail = () => {
     { key: "sale_price", label: "Giá khuyến mại (VNĐ):", value: formatPrice(product.sale_price) },
     {
       key: "created_at",
-      label: "Thời gian tạo:",
+      label: "Ngày tạo:",
       value: moment(product.created_at).format("DD/MM/YYYY"),
     },
     {
@@ -216,18 +228,6 @@ const ProductDetail = () => {
       key: "sale_price_end",
       label: "Ngày đóng khuyến mại:",
       value: moment(product.sale_price_end_at).format("DD/MM/YYYY"),
-    },
-    { key: "slug", label: "Slug:", value: product.slug },
-    {
-      key: "link",
-      label: "Link sản phẩm:",
-      value: product.name_link ? (
-        <a href={product.name_link} target="_blank" rel="noopener noreferrer">
-          {product.name_link}
-        </a>
-      ) : (
-        "Không có"
-      ),
     },
   ];
 

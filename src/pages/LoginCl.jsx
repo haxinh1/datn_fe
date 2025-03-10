@@ -88,18 +88,18 @@ const Logincl = () => {
                   </div>
                 </form>
                 <div className="form-choice">
-                  <p className="text-center">or sign in with</p>
+                  <p className="text-center">hoặc đăng nhập bằng</p>
                   <div className="row">
                     <div className="col-sm-6">
                       <a href="#" className="btn btn-login btn-g">
                         <i className="icon-google"></i>
-                        Đăng nhập với Google
+                        Google
                       </a>
                     </div>
                     <div className="col-sm-6">
                       <a href="#" className="btn btn-login btn-f">
                         <i className="icon-facebook-f"></i>
-                        Đăng nhập với Facebook
+                        Facebook
                       </a>
                     </div>
                   </div>
