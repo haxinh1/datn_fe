@@ -7,6 +7,8 @@ import {
 import {
   Button,
   Col,
+  ConfigProvider,
+  DatePicker,
   Form,
   Image,
   Input,
@@ -22,7 +24,16 @@ import {
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { OrderService } from "./../services/order";
+import viVN from "antd/es/locale/vi_VN";
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import { paymentServices } from "../services/payments";
+dayjs.locale("vi");
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const Order = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -33,7 +44,15 @@ const Order = () => {
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
+  const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+  const { RangePicker } = DatePicker;
+  const [filters, setFilters] = useState({
+    dateRange: null,
+    status: null,
+    paymentMethod: null,
+  });
 
+  // danh sách đơn hàng
   const {
     data: ordersData,
     isLoading,
@@ -44,6 +63,12 @@ const Order = () => {
       const response = await OrderService.getAllOrder();
       return response.orders || { data: [] };
     },
+  });
+
+  // danh sách phương thức thanh toán
+  const { data: payments } = useQuery({
+    queryKey: ["payments"],
+    queryFn: paymentServices.getPayment,
   });
 
   // danh sách trạng thái
@@ -79,15 +104,16 @@ const Order = () => {
 
   const showEdit = (order) => {
     setSelectedOrderId(order.id); // Lưu ID đơn hàng
+    const currentStatusId = order.status?.id; // Lấy trạng thái hiện tại
+
     form.setFieldsValue({
-      status_id: order.status?.id,
+      status_id: currentStatusId,
       note: "",
       employee_evidence: "",
     });
+
     setIsModal(true);
   };
-
-  const orders = ordersData || { data: [] };
 
   const { mutate: updateOrderStatus } = useMutation({
     mutationFn: async ({ id, data }) => {
@@ -134,14 +160,33 @@ const Order = () => {
     );
   };
 
-  // Chuyển đổi dữ liệu thành dataSource cho bảng
-  const dataSource = Array.isArray(orders)
-    ? orders.map((order, index) => ({
-        ...order,
-        key: order.id,
-        index: index + 1,
-      }))
-    : [];
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value ?? null, // Đảm bảo khi xóa sẽ đặt lại thành null
+    }));
+  };
+
+  const filteredOrders = (ordersData || []).filter((order) => {
+    const { dateRange, status, paymentMethod } = filters;
+
+    const isWithinDateRange =
+      !dateRange ||
+      (dayjs(order.created_at).isSameOrAfter(dayjs(dateRange[0]), "day") &&
+        dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
+
+    const matchesStatus = status === null || order.status?.id === status;
+    const matchesPayment =
+      paymentMethod === null || order.payment?.id === paymentMethod;
+
+    return isWithinDateRange && matchesStatus && matchesPayment;
+  });
+
+  const dataSource = filteredOrders.map((order, index) => ({
+    ...order,
+    key: order.id,
+    index: index + 1,
+  }));
 
   // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
@@ -163,6 +208,12 @@ const Order = () => {
   const showModal = (order) => {
     setIsModalVisible(true);
     setSelectedOrderId(order.id);
+
+    // Cập nhật email và địa chỉ của đơn hàng
+    setOrderInfo({
+      email: order.email,
+      address: order.address,
+    });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
     const orderDetails = order.order_items || [];
@@ -207,6 +258,14 @@ const Order = () => {
       align: "center",
       render: (created_at) =>
         created_at ? dayjs(created_at).format("DD-MM-YYYY") : "",
+    },
+    {
+      title: "Phương thức thanh toán",
+      dataIndex: "payment",
+      align: "center",
+      render: (payment) => (
+        <div className="action-link-blue">{payment?.name}</div>
+      ),
     },
     {
       title: "Trạng thái",
@@ -325,6 +384,47 @@ const Order = () => {
         Quản lý đơn hàng
       </h1>
 
+      <div className="group1">
+        <ConfigProvider locale={viVN}>
+          <RangePicker
+            format="DD-MM-YYYY"
+            placeholder={["Từ ngày", "Đến ngày"]}
+            style={{ marginRight: 10 }}
+            value={filters.dateRange}
+            onChange={(dates) => handleFilterChange("dateRange", dates)}
+            allowClear
+          />
+        </ConfigProvider>
+
+        <Select
+          placeholder="Trạng thái"
+          className="select-item"
+          value={filters.status}
+          onChange={(value) => handleFilterChange("status", value)}
+          allowClear
+        >
+          {status.map((item) => (
+            <Select.Option key={item.id} value={item.id}>
+              {item.name}
+            </Select.Option>
+          ))}
+        </Select>
+
+        <Select
+          placeholder="Phương thức thanh toán"
+          className="select-item"
+          value={filters.paymentMethod}
+          onChange={(value) => handleFilterChange("paymentMethod", value)}
+          allowClear
+        >
+          {payments?.map((method) => (
+            <Select.Option key={method.id} value={method.id}>
+              {method.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </div>
+
       <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
@@ -341,6 +441,8 @@ const Order = () => {
         footer={null}
         width={800}
       >
+        <span>Email người đặt: {orderInfo.email}</span> <br />
+        <span>Địa chỉ nhận hàng: {orderInfo.address}</span>
         <Table
           columns={detailColumns}
           dataSource={orderDetails.map((item, index) => ({
@@ -382,18 +484,28 @@ const Order = () => {
               <Form.Item label="Trạng thái đơn hàng" name="status_id">
                 <Select
                   className="input-item"
-                  placeholder="Trạng thái"
+                  placeholder="Chọn trạng thái"
                   showSearch
-                  value={form.getFieldValue("status_id")}
+                  value={
+                    status.find((s) => s.id === form.getFieldValue("status_id"))
+                      ?.id || null
+                  } // ✅ Hiển thị ID nhưng đảm bảo nó đúng với tên trạng thái
                   onChange={(value) =>
                     form.setFieldsValue({ status_id: value })
                   }
                 >
-                  {status.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
-                    </Select.Option>
-                  ))}
+                  {status
+                    .filter((item) => {
+                      const currentStatusId =
+                        form.getFieldValue("status_id") || 0; // ✅ Kiểm tra tránh undefined
+                      return item.id >= currentStatusId; // ✅ Hiển thị trạng thái hiện tại và các trạng thái sau
+                    })
+                    .map((item) => (
+                      <Select.Option key={item.id} value={item.id}>
+                        {item.name}{" "}
+                        {/* ✅ Hiển thị tên trạng thái thay vì ID */}
+                      </Select.Option>
+                    ))}
                 </Select>
               </Form.Item>
 

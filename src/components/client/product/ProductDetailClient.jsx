@@ -241,16 +241,9 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-price">
-                    {formatPrice(product.sell_price)}
+                    {formatPrice(product.sell_price)} VNĐ
                   </div>
 
-                  <div className="product-content">
-                    <p>
-                      Sed egestas, ante et vulputate volutpat, eros pede semper
-                      est, vitae luctus metus libero eu augue. Morbi purus
-                      libero, faucibus adipiscing. Sed lectus.{" "}
-                    </p>
-                  </div>
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
                       <label>Stock:</label>

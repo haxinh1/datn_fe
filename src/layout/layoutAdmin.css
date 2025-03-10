@@ -33,5 +33,6 @@
 }
 .footer-admin {
     text-align: center;
+    flex-shrink: 0;
 }
   
