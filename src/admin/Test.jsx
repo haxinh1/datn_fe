@@ -1,35 +1,93 @@
-import React, { useState } from 'react';
-import { Select, Form, DatePicker, Input } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import "../admin/product/add.css";
-import { ValuesServices } from '../services/attribute_value';
-import { BrandsServices } from '../services/brands';
-import dayjs from 'dayjs';
+import React, { useEffect, useState } from "react";
+import { Select, Spin } from "antd";
 
 const { Option } = Select;
 
-const Test = () => {
-    const [selectedDate, setSelectedDate] = useState(null);
+const fetchProvinces = async () => {
+    const res = await fetch("https://provinces.open-api.vn/api/?depth=3");
+    return res.json();
+};
 
-    const handleDateChange = (date, dateString) => {
-        setSelectedDate(dateString);
+const Test = () => {
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [wards, setWards] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [selectedWard, setSelectedWard] = useState(null);
+
+    useEffect(() => {
+        fetchProvinces().then((data) => {
+        setProvinces(data);
+        setLoading(false);
+        });
+    }, []);
+
+    const handleProvinceChange = (value) => {
+        const province = provinces.find((p) => p.code === value);
+        setSelectedProvince(value);
+        setDistricts(province ? province.districts : []);
+        setWards([]);
+        setSelectedDistrict(null);
+        setSelectedWard(null);
+    };
+
+    const handleDistrictChange = (value) => {
+        const district = districts.find((d) => d.code === value);
+        setSelectedDistrict(value);
+        setWards(district ? district.wards : []);
+        setSelectedWard(null);
+    };
+
+    const handleWardChange = (value) => {
+        setSelectedWard(value);
     };
 
     return (
-        <Form layout="vertical">
-            <Form.Item
-                label="Chọn ngày"
-                name="selected_date"
-                rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
-            >
-                <DatePicker 
-                    value={selectedDate ? dayjs(selectedDate) : null} 
-                    onChange={handleDateChange} 
-                    className="input-item" 
-                    format="DD-MM-YY"
-                />
-            </Form.Item>
-        </Form>
+        <div style={{ width: 300, margin: "20px auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {loading ? (
+                <Spin />
+            ) : (
+                <>
+                    <Select
+                        placeholder="Chọn tỉnh/thành phố"
+                        onChange={handleProvinceChange}
+                        value={selectedProvince}
+                        style={{ width: "100%" }}
+                    >
+                        {provinces.map((province) => (
+                        <Option key={province.code} value={province.code}>{province.name}</Option>
+                        ))}
+                    </Select>
+                    
+                    <Select
+                        placeholder="Chọn quận/huyện"
+                        onChange={handleDistrictChange}
+                        value={selectedDistrict}
+                        style={{ width: "100%" }}
+                        disabled={!selectedProvince}
+                    >
+                        {districts.map((district) => (
+                        <Option key={district.code} value={district.code}>{district.name}</Option>
+                        ))}
+                    </Select>
+                    
+                    <Select
+                        placeholder="Chọn phường/xã"
+                        onChange={handleWardChange}
+                        value={selectedWard}
+                        style={{ width: "100%" }}
+                        disabled={!selectedDistrict}
+                    >
+                        {wards.map((ward) => (
+                        <Option key={ward.code} value={ward.code}>{ward.name}</Option>
+                        ))}
+                    </Select>
+                </>
+            )}
+        </div>
     );
 };
 

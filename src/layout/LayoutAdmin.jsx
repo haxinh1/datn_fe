@@ -77,7 +77,17 @@ const LayoutAdmin = () => {
     {
       key: "history",
       icon: <BookOutlined />,
-      label: <Link to="history">Quản lý nhập hàng</Link>,
+      label: <Link to="/admin/history">Quản lý nhập hàng</Link>,
+    },
+    {
+      key: "order",
+      icon: <BilibiliFilled />,
+      label: <Link to="/admin/order">Quản lý đơn hàng</Link>,
+    },
+    {
+      key: "account",
+      icon: <BilibiliFilled />,
+      label: <Link to="/admin/account">Quản lý tài khoản</Link>,
     },
     {
       key: "category",
@@ -90,9 +100,9 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/brand">Thương hiệu</Link>,
     },
     {
-      key: "account",
+      key: "coupon",
       icon: <BilibiliFilled />,
-      label: <Link to="/account">Quản lý tài khoản</Link>,
+      label: <Link to="/admin/coupon">Mã giảm giá</Link>,
     },
     {
       key: "bill",
@@ -105,9 +115,9 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/inbox">Tin nhắn</Link>,
     },
     {
-      key: "home",
+      key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/admin/home">Trang chủ</Link>,
+      label: <Link to="/">Trang chủ</Link>,
     },
     {
       key: "logoutad",
@@ -137,13 +147,8 @@ const LayoutAdmin = () => {
 
       {/* Main Layout */}
       <Layout className="main-layout">
-        <Header
-          className="header-admin"
-          style={{ background: colorBgContainer }}
-        />
-
+        
         <Content className="content-admin">
-          <Breadcrumb className="breadcrumb-admin" />
           <div
             className="content-box"
             style={{

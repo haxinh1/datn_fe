@@ -109,9 +109,8 @@ const Brand = () => {
             align: "center",
             render: (_, item) => (
                 <div className="action-container">
-                    <Link to='' className="action-link action-link-blue">
-                        Cập nhật
-                    </Link>
+                    <span className="action-link action-link-blue">Cập nhật</span>
+                    
                     <div className="divider"></div>
 
                     <span className="action-link action-link-red">Xóa</span>
@@ -151,41 +150,38 @@ const Brand = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleAddBrand}
                 >      
-                    <Form.Item
-                        label="Tên thương hiệu"
-                        name="name"
-                        rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
-                    >
-                        <Input className="input-item" onChange={handleNameChange} />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Slug"
-                        name="slug"
-                        rules={[{ required: true, message: "Vui lòng nhập slug" }]}
-                    >
-                        <Input className="input-item" />
-                    </Form.Item>
-
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Tên thương hiệu"
+                                name="name"
+                                rules={[{ required: true, message: "Vui lòng nhập tên thương hiệu" }]}
+                            >
+                                <Input className="input-item" onChange={handleNameChange} />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Slug"
+                                name="slug"
+                                rules={[{ required: true, message: "Vui lòng nhập slug" }]}
+                            >
+                                <Input className="input-item" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
                 
                     <Form.Item 
                         label="Logo thương hiệu" 
                         name="logo"
                         valuePropName="fileList"
                         getValueFromEvent={normFile}
-                        rules={[
-                            {
-                                validator: (_, value) =>
-                                logo ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh thương hiệu"),
-                            },
-                        ]}
                     >
                         <Upload 
                             listType="picture" 

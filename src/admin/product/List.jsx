@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker } from "antd";
+import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
@@ -70,6 +70,7 @@ const List = () => {
         return formatter.format(price);
     };
 
+    // sửa url ảnh thành file
     const urlToFile = async (url, filename) => {
         const response = await fetch(url);
         const blob = await response.blob();
@@ -88,6 +89,7 @@ const List = () => {
         };
     };
 
+    // sửa biến thể
     const handleEditVariant = async (variant) => {
         setCurrentVariant(variant);
         setNewPrice(variant.sell_price);
@@ -297,13 +299,13 @@ const List = () => {
             render: (_, item) => (
                 <div className="action-container">
                     <Tooltip title="Chi tiết">
-                        <Link to={`/detailad/${item.id}`}>
+                        <Link to={`/admin/detailad/${item.id}`}>
                             <Button color="purple" variant="solid" icon={<EyeOutlined />} />
                         </Link>
                     </Tooltip>
                     
                     <Tooltip title="Cập nhật">
-                        <Link to={`/edit-pr/${item.id}`}>
+                        <Link to={`/admin/edit-pr/${item.id}`}>
                             <Button color="primary" variant="solid" icon={<EditOutlined />} />
                         </Link>
                     </Tooltip>
@@ -359,13 +361,13 @@ const List = () => {
                 </div>
 
                 <div className="group2">
-                    <Link to="/add-pr">
+                    <Link to="/admin/add-pr">
                         <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
                             Thêm sản phẩm
                         </Button>
                     </Link>
 
-                    <Link to="/import">
+                    <Link to="/admin/import">
                         <Button color="primary" variant="solid" icon={<PlusOutlined />}>
                             Nhập hàng
                         </Button>
@@ -389,6 +391,7 @@ const List = () => {
                                             key: "thumbnail",
                                             render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
                                             align: "center",
+                                            width: 80,
                                         },
                                         {
                                             title: "Tên biến thể",
@@ -469,13 +472,12 @@ const List = () => {
                                             key: "action",
                                             align: "center",
                                             render: (_, variant) => (
-                                                <Button
+                                                <span
                                                     className="action-link action-link-blue"
-                                                    type="link"
                                                     onClick={() => handleEditVariant(variant)}
                                                 >
                                                     Cập nhật
-                                                </Button>
+                                                </span>
                                             ),
                                         },
                                     ]}
@@ -511,54 +513,60 @@ const List = () => {
                 </h5>
 
                 <Form layout="vertical">
-                    <Form.Item 
-                        label="Giá bán (VNĐ)"
-                        name="sell_price"
-                        initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
-                        rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
-                    >
-                        <InputNumber 
-                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                            className="input-item" 
-                            value={newPrice} 
-                            onChange={setNewPrice} 
-                        />
-                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item 
+                                label="Giá bán (VNĐ)"
+                                name="sell_price"
+                                initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
+                                rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                            >
+                                <InputNumber 
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    className="input-item" 
+                                    value={newPrice} 
+                                    onChange={setNewPrice} 
+                                />
+                            </Form.Item>
 
-                    <Form.Item 
-                        label="Giá khuyến mại (VNĐ)"
-                    >
-                        <InputNumber 
-                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                            parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                            className="input-item" 
-                            value={newSalePrice} 
-                            onChange={setNewSalePrice} 
-                        />
-                    </Form.Item>
+                            <Form.Item
+                                label="Ngày mở khuyến mại"
+                            >
+                                <DatePicker
+                                    value={startDate} 
+                                    onChange={(date) => setStartDate(date)} 
+                                    className="input-item"
+                                    format="DD-MM-YYYY"
+                                />
+                            </Form.Item>
+                        </Col>
 
-                    <Form.Item
-                        label="Ngày mở khuyến mại"
-                    >
-                        <DatePicker
-                            value={startDate} 
-                            onChange={(date) => setStartDate(date)} 
-                            className="input-item"
-                            format="DD-MM-YYYY"
-                        />
-                    </Form.Item>
+                        <Col span={12} className="col-item">
+                            <Form.Item 
+                                label="Giá khuyến mại (VNĐ)"
+                            >
+                                <InputNumber 
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
+                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    className="input-item" 
+                                    value={newSalePrice} 
+                                    onChange={setNewSalePrice} 
+                                />
+                            </Form.Item>
 
-                    <Form.Item
-                        label="Ngày đóng khuyến mại"
-                    >
-                        <DatePicker
-                            value={endDate} 
-                            onChange={(date) => setEndDate(date)} 
-                            className="input-item"
-                            format="DD-MM-YYYY"
-                        />
-                    </Form.Item>
+                            <Form.Item
+                                label="Ngày đóng khuyến mại"
+                            >
+                                <DatePicker
+                                    value={endDate} 
+                                    onChange={(date) => setEndDate(date)} 
+                                    className="input-item"
+                                    format="DD-MM-YYYY"
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
 
                     <Form.Item
                         label="Ảnh"
