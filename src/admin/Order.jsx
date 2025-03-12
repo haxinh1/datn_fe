@@ -1,26 +1,5 @@
-import {
-  BookOutlined,
-  EditOutlined,
-  EyeOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  Col,
-  ConfigProvider,
-  DatePicker,
-  Form,
-  Image,
-  Input,
-  Modal,
-  notification,
-  Row,
-  Select,
-  Skeleton,
-  Table,
-  Tooltip,
-  Upload,
-} from "antd";
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
+import { Button, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { OrderService } from "./../services/order";
@@ -38,13 +17,16 @@ dayjs.extend(isSameOrBefore);
 const Order = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModal, setIsModal] = useState(false);
+  const [isModals, setIsModals] = useState(false);
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const hideEdit = () => setIsModal(false);
+  const hideEdits = () => setIsModals(false);
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
   const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+  const [selectedOrders, setSelectedOrders] = useState([]);
   const { RangePicker } = DatePicker;
   const [filters, setFilters] = useState({
     dateRange: null,
@@ -53,11 +35,7 @@ const Order = () => {
   });
 
   // danh sách đơn hàng
-  const {
-    data: ordersData,
-    isLoading,
-    refetch: refetchOrders,
-  } = useQuery({
+  const {data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
       const response = await OrderService.getAllOrder();
@@ -91,6 +69,77 @@ const Order = () => {
     },
     enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
   });
+
+  const handleSelectOrder = (selectedRowKeys, selectedRows) => {
+    setSelectedOrders(selectedRows); // Lưu trữ các đơn hàng đã chọn
+  };  
+
+  const rowSelection = {
+    selectedRowKeys: selectedOrders.map((order) => order.id),
+    onChange: handleSelectOrder,
+  };
+
+  // Hàm xử lý khi bấm nút Cập nhật cho nhiều đơn hàng
+  const handleUpdateButtonClick = () => {
+    if (selectedOrders.length === 0) {
+      notification.error({ message: "Vui lòng chọn ít nhất một đơn hàng!" });
+      return;
+    }
+
+    // Kiểm tra xem tất cả các đơn hàng đã chọn có trạng thái giống nhau không
+    const isSameStatus = selectedOrders.every(
+      (order) => order.status.id === selectedOrders[0].status.id
+    );
+
+    if (!isSameStatus) {
+      notification.error({ message: "Các đơn hàng phải có cùng trạng thái!" });
+      return;
+    }
+
+    // Nếu các đơn hàng có cùng trạng thái, mở modal
+    setIsModals(true); // Hiển thị modal cho việc cập nhật nhiều đơn hàng
+  };
+
+  // Hàm gửi yêu cầu cập nhật trạng thái cho nhiều đơn hàng
+  const handleBatchUpdate = async (values) => {
+    // Kiểm tra nếu chưa chọn đơn hàng
+    if (selectedOrders.length === 0) {
+      notification.error({ message: "Vui lòng chọn ít nhất một đơn hàng!" });
+      return;
+    }
+
+    // Tạo payload với danh sách các ID đơn hàng và trạng thái mới
+    const payload = {
+      order_ids: selectedOrders.map((order) => order.id),  
+      current_status: selectedOrders[0].status.id,        
+      new_status: values.status_id,     
+      note: values.note || "",             
+    };
+
+    console.log("Payload gửi đi: ", payload); // Debug
+
+    try {
+      // Gọi API cập nhật trạng thái cho nhiều đơn hàng
+      const response = await updateOrders(payload);
+      notification.success({
+        message: "Cập nhật trạng thái cho nhiều đơn hàng thành công!",
+      });
+      hideEdits(); // Đóng modal
+      refetchOrders(); // Làm mới danh sách đơn hàng sau khi cập nhật
+      form.resetFields();
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái cho nhiều đơn hàng: ", error);
+      notification.error({
+        message: "Lỗi cập nhật trạng thái cho nhiều đơn hàng",
+      });
+    }
+  };
+
+  // Hàm gọi API để cập nhật trạng thái cho nhiều đơn hàng
+  const updateOrders = async (payload) => {
+    const response = await OrderService.updateOrders(payload);
+    return response.data;
+  };
 
   const orderStatusesData = (orderStatuses || []).map((item, index) => ({
     key: index,
@@ -202,6 +251,9 @@ const Order = () => {
       const imageUrl = info.file.response.secure_url;
       setImage(imageUrl);
       form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+    } else if (info.file.status === "removed") {
+      setImage(""); // Xóa ảnh khi người dùng xóa
+      form.setFieldsValue({ employee_evidence: "" }); // Cập nhật lại giá trị trong form
     }
   };
 
@@ -423,12 +475,25 @@ const Order = () => {
             </Select.Option>
           ))}
         </Select>
+
+        <div className="group2">
+          <Button 
+            color="primary" 
+            variant="solid"
+            icon={<EditOutlined />} 
+            onClick={handleUpdateButtonClick}
+            disabled={selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0].status.id)}
+          >
+            Cập nhật
+          </Button>
+        </div>
       </div>
 
       <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
           dataSource={dataSource}
+          rowSelection={rowSelection}
           pagination={{ pageSize: 10 }}
           bordered
         />
@@ -439,7 +504,7 @@ const Order = () => {
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={800}
+        width={1000}
       >
         <span>Email người đặt: {orderInfo.email}</span> <br />
         <span>Địa chỉ nhận hàng: {orderInfo.address}</span>
@@ -469,6 +534,17 @@ const Order = () => {
             );
           }}
         />
+
+        <hr />
+        <h1 className="mb-5">Lịch sử cập nhật</h1>
+        <Skeleton active loading={isLoading}>
+          <Table
+            columns={editcolumns}
+            dataSource={orderStatusesData}
+            pagination={{ pageSize: 5 }}
+            bordered
+          />
+        </Skeleton>
       </Modal>
 
       <Modal
@@ -476,11 +552,10 @@ const Order = () => {
         visible={isModal}
         onCancel={hideEdit}
         footer={null}
-        width={1000}
       >
         <Form form={form} layout="vertical" onFinish={handleUpdateOrder}>
           <Row gutter={24}>
-            <Col span={8} className="col-item">
+            <Col span={12} className="col-item">
               <Form.Item label="Trạng thái đơn hàng" name="status_id">
                 <Select
                   className="input-item"
@@ -509,12 +584,6 @@ const Order = () => {
                 </Select>
               </Form.Item>
 
-              <Form.Item label="Ghi chú" name="note">
-                <Input className="input-item" />
-              </Form.Item>
-            </Col>
-
-            <Col span={8} className="col-item">
               <Form.Item
                 label="Ảnh xác nhận"
                 name="employee_evidence"
@@ -526,30 +595,76 @@ const Order = () => {
                   data={{ upload_preset: "quangOsuy" }}
                   onChange={onHandleChange}
                 >
-                  <button className="upload-button" type="button">
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                  </button>
+                  {!image && ( 
+                    <button className="upload-button" type="button">
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                    </button>
+                  )}
                 </Upload>
               </Form.Item>
             </Col>
+
+            <Col span={12} className="col-item">
+              <Form.Item label="Ghi chú" name="note">
+                <Input className="input-item" />
+              </Form.Item>
+            </Col>
           </Row>
-
-          <Button htmlType="submit" type="primary" className="btn-item">
-            Cập nhật
-          </Button>
+          
+          <div className="add">
+            <Button htmlType="submit" type="primary">
+              Cập nhật
+            </Button>
+          </div>
         </Form>
+      </Modal>
 
-        <hr />
-        <h1 className="mb-5">Lịch sử cập nhật</h1>
-        <Skeleton active loading={isLoading}>
-          <Table
-            columns={editcolumns}
-            dataSource={orderStatusesData}
-            pagination={{ pageSize: 5 }}
-            bordered
-          />
-        </Skeleton>
+      <Modal
+        title="Cập nhật trạng thái nhiều đơn hàng"
+        visible={isModals}
+        onCancel={hideEdits}
+        footer={null}
+      >
+        <Form form={form} layout="vertical" onFinish={handleBatchUpdate}>
+          <Form.Item label="Trạng thái đơn hàng" name="status_id">
+            <Select
+              className="input-item"
+              placeholder="Chọn trạng thái"
+              showSearch
+              value={
+                status.find((s) => s.id === form.getFieldValue("status_id"))
+                  ?.id || null
+              } // ✅ Hiển thị ID nhưng đảm bảo nó đúng với tên trạng thái
+              onChange={(value) =>
+                form.setFieldsValue({ status_id: value })
+              }
+            >
+              {status
+                .filter((item) => {
+                  const currentStatusId =
+                    form.getFieldValue("status_id") || 0; // ✅ Kiểm tra tránh undefined
+                  return item.id >= currentStatusId; // ✅ Hiển thị trạng thái hiện tại và các trạng thái sau
+                })
+                .map((item) => (
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}{" "}
+                    {/* ✅ Hiển thị tên trạng thái thay vì ID */}
+                  </Select.Option>
+                ))}
+            </Select>
+          </Form.Item>
+            
+          <Form.Item label="Ghi chú" name="note">
+            <Input className="input-item" />
+          </Form.Item>
+          
+          <div className="add">
+            <Button htmlType="submit" type="primary">
+              Cập nhật
+            </Button>
+          </div>
+        </Form>
       </Modal>
     </div>
   );

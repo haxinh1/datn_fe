@@ -135,6 +135,11 @@ const History = () => {
     // Cột danh sách nhập hàng
     const columns = [
         {
+            title:"",
+            render:() => { return <input className="tick" type="checkbox" />},
+            align: "center"
+          },
+        {
             title: "STT",
             dataIndex: "index",
             render: (_, __, index) => index + 1,
@@ -569,14 +574,24 @@ const History = () => {
                     </Select>
                 </div>
 
-                <Link to="/admin/import" className='group2'>
+                <div className="group2">
                     <Button 
-                        color="primary" variant="solid" 
-                        icon={<PlusOutlined />} 
+                        color="primary" 
+                        variant="solid"
+                        icon={<EditOutlined />} 
                     >
-                        Nhập hàng
+                        Cập nhật
                     </Button>
-                </Link>
+                    
+                    <Link to="/admin/import">
+                        <Button 
+                            color="primary" variant="solid" 
+                            icon={<PlusOutlined />} 
+                        >
+                            Nhập hàng
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <Skeleton active loading={isProductsLoading}>
