@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
-import { categoryServices } from './../services/categories';
+import { categoryServices } from "./../services/categories";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -42,7 +42,9 @@ const ListProduct = () => {
 
   const handleBrandChange = (brandId) => {
     setSelectedBrands((prev) =>
-      prev.includes(brandId) ? prev.filter((id) => id !== brandId) : [...prev, brandId]
+      prev.includes(brandId)
+        ? prev.filter((id) => id !== brandId)
+        : [...prev, brandId]
     );
   };
 
@@ -56,7 +58,9 @@ const ListProduct = () => {
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
     );
   };
 
@@ -71,13 +75,48 @@ const ListProduct = () => {
 
   // Danh sách khoảng giá
   const priceRanges = [
-    { id: "price-1", label: `Dưới ${formatPrice(200000)} VNĐ`, min: 0, max: 200000 },
-    { id: "price-2", label: `${formatPrice(200000)} - ${formatPrice(300000)} VNĐ`, min: 200000, max: 300000 },
-    { id: "price-3", label: `${formatPrice(300000)} - ${formatPrice(400000)} VNĐ`, min: 300000, max: 400000 },
-    { id: "price-4", label: `${formatPrice(400000)} - ${formatPrice(500000)} VNĐ`, min: 400000, max: 500000 },
-    { id: "price-5", label: `${formatPrice(500000)} - ${formatPrice(600000)} VNĐ`, min: 500000, max: 600000 },
-    { id: "price-6", label: `${formatPrice(600000)} - ${formatPrice(700000)} VNĐ`, min: 600000, max: 700000 },
-    { id: "price-7", label: `Trên ${formatPrice(700000)} VNĐ`, min: 700000, max: Infinity }
+    {
+      id: "price-1",
+      label: `Dưới ${formatPrice(200000)} VNĐ`,
+      min: 0,
+      max: 200000,
+    },
+    {
+      id: "price-2",
+      label: `${formatPrice(200000)} - ${formatPrice(300000)} VNĐ`,
+      min: 200000,
+      max: 300000,
+    },
+    {
+      id: "price-3",
+      label: `${formatPrice(300000)} - ${formatPrice(400000)} VNĐ`,
+      min: 300000,
+      max: 400000,
+    },
+    {
+      id: "price-4",
+      label: `${formatPrice(400000)} - ${formatPrice(500000)} VNĐ`,
+      min: 400000,
+      max: 500000,
+    },
+    {
+      id: "price-5",
+      label: `${formatPrice(500000)} - ${formatPrice(600000)} VNĐ`,
+      min: 500000,
+      max: 600000,
+    },
+    {
+      id: "price-6",
+      label: `${formatPrice(600000)} - ${formatPrice(700000)} VNĐ`,
+      min: 600000,
+      max: 700000,
+    },
+    {
+      id: "price-7",
+      label: `Trên ${formatPrice(700000)} VNĐ`,
+      min: 700000,
+      max: Infinity,
+    },
   ];
 
   const handlePriceChange = (range) => {
@@ -91,8 +130,9 @@ const ListProduct = () => {
   const handleFilter = () => {
     const filtered = products.filter((product) => {
       const matchesBrand =
-        selectedBrands.length === 0 || selectedBrands.includes(product.brand_id);
-  
+        selectedBrands.length === 0 ||
+        selectedBrands.includes(product.brand_id);
+
       const matchesCategory =
         selectedCategories.length === 0 ||
         product.categories.some((cat) => selectedCategories.includes(cat.id));
@@ -102,10 +142,12 @@ const ListProduct = () => {
 
       const matchesPrice =
         selectedPrices.length === 0 ||
-        selectedPrices.some((range) => productPrice >= range.min && productPrice <= range.max);
-        return matchesBrand && matchesCategory && matchesPrice;
-      });
-  
+        selectedPrices.some(
+          (range) => productPrice >= range.min && productPrice <= range.max
+        );
+      return matchesBrand && matchesCategory && matchesPrice;
+    });
+
     setFilteredProducts(filtered);
   };
 
@@ -349,25 +391,34 @@ const ListProduct = () => {
                         <div className="filter-items">
                           {categories.length > 0 ? (
                             categories.flatMap((category) =>
-                              (category.children || [category]).map((subCategory) => (
-                                <div key={subCategory.id} className="filter-item">
-                                  <div className="custom-control custom-checkbox">
-                                    <input
-                                      className="custom-control-input"
-                                      id={`cat-${subCategory.id}`}
-                                      type="checkbox"
-                                      onChange={() => handleCategoryChange(subCategory.id)}
-                                      checked={selectedCategories.includes(subCategory.id)}
-                                    />
-                                    <label
-                                      className="custom-control-label"
-                                      htmlFor={`cat-${subCategory.id}`}
-                                    >
-                                      {subCategory.name}
-                                    </label>
+                              (category.children || [category]).map(
+                                (subCategory) => (
+                                  <div
+                                    key={subCategory.id}
+                                    className="filter-item"
+                                  >
+                                    <div className="custom-control custom-checkbox">
+                                      <input
+                                        className="custom-control-input"
+                                        id={`cat-${subCategory.id}`}
+                                        type="checkbox"
+                                        onChange={() =>
+                                          handleCategoryChange(subCategory.id)
+                                        }
+                                        checked={selectedCategories.includes(
+                                          subCategory.id
+                                        )}
+                                      />
+                                      <label
+                                        className="custom-control-label"
+                                        htmlFor={`cat-${subCategory.id}`}
+                                      >
+                                        {subCategory.name}
+                                      </label>
+                                    </div>
                                   </div>
-                                </div>
-                              ))
+                                )
+                              )
                             )
                           ) : (
                             <p>Không có danh mục</p>
@@ -405,7 +456,10 @@ const ListProduct = () => {
                                     onChange={() => handleBrandChange(brand.id)}
                                     checked={selectedBrands.includes(brand.id)}
                                   />
-                                  <label className="custom-control-label" htmlFor={`brand-${brand.id}`}>
+                                  <label
+                                    className="custom-control-label"
+                                    htmlFor={`brand-${brand.id}`}
+                                  >
                                     {brand.name}
                                   </label>
                                 </div>
@@ -504,20 +558,31 @@ const ListProduct = () => {
                         <div className="filter-price">
                           <div className="filter-item">
                             {priceRanges.map((range, index) => (
-                              <div className="custom-control custom-checkbox" key={index}>
+                              <div
+                                className="custom-control custom-checkbox"
+                                key={index}
+                              >
                                 <input
                                   className="custom-control-input"
                                   type="checkbox"
                                   id={`price-${index}`}
-                                  checked={selectedPrices.some((r) => r.min === range.min && r.max === range.max)}
+                                  checked={selectedPrices.some(
+                                    (r) =>
+                                      r.min === range.min && r.max === range.max
+                                  )}
                                   onChange={() => handlePriceChange(range)}
                                 />
-                                <label className="custom-control-label" htmlFor={`price-${index}`}>
+                                <label
+                                  className="custom-control-label"
+                                  htmlFor={`price-${index}`}
+                                >
                                   {range.min === 0
                                     ? `Dưới ${formatPrice(range.max)} VNĐ`
                                     : range.max === Infinity
-                                      ? `Trên ${formatPrice(range.min)} VNĐ`
-                                      : `${formatPrice(range.min)} - ${formatPrice(range.max)} VNĐ`}
+                                    ? `Trên ${formatPrice(range.min)} VNĐ`
+                                    : `${formatPrice(
+                                        range.min
+                                      )} - ${formatPrice(range.max)} VNĐ`}
                                 </label>
                               </div>
                             ))}
@@ -526,18 +591,18 @@ const ListProduct = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="attribute">
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="btn btn-outline-primary-2"
                       onClick={handleFilter}
                     >
                       <span>TÌM KIẾM</span>
                     </button>
 
-                    <button 
-                      onClick={handleClear} 
+                    <button
+                      onClick={handleClear}
                       className="btn btn-outline-primary-2"
                     >
                       <span>QUAY LẠI</span>

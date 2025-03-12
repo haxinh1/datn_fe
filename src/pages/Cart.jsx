@@ -4,6 +4,8 @@ import { cartServices } from "./../services/cart";
 import { message, Modal } from "antd";
 import { ValuesServices } from "../services/attribute_value";
 
+import { productsServices } from "./../services/product";
+
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [shippingCost, setShippingCost] = useState(0);
@@ -12,8 +14,54 @@ const Cart = () => {
 
   useEffect(() => {
     const getCart = async () => {
-      const data = await cartServices.fetchCart();
-      setCartItems(data);
+      let data = [];
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        // If user is logged in, fetch the cart from the server
+        data = await cartServices.fetchCart();
+        console.log("Giỏ hàng từ API:", data);
+      } else {
+        // If user is not logged in, get the cart from sessionStorage
+        const sessionCart = JSON.parse(sessionStorage.getItem("cart") || "{}");
+        console.log("Giỏ hàng từ sessionStorage:", sessionCart);
+
+        // Convert the object to an array
+        const cartItemsArray = Object.values(sessionCart);
+
+        // Fetch product details for each cart item
+        const updatedCartItems = await Promise.all(
+          cartItemsArray.map(async (item) => {
+            try {
+              // Fetch product details by product_id
+              const productDetails = await productsServices.fetchProductById(
+                item.product_id
+              );
+              console.log("Product details fetched:", productDetails);
+
+              return {
+                ...item,
+                product: productDetails, // Add product details to cart item
+              };
+            } catch (error) {
+              console.error("Error fetching product:", error);
+              return {
+                ...item,
+                product: null, // Fallback if product data fetch fails
+              };
+            }
+          })
+        );
+
+        data = updatedCartItems;
+      }
+
+      // Update state with fetched cart items
+      if (Array.isArray(data)) {
+        setCartItems(data);
+      } else {
+        setCartItems([]); // Fallback to empty cart if data is not valid
+      }
     };
     getCart();
   }, []);
@@ -25,12 +73,14 @@ const Cart = () => {
     }).format(value);
   };
 
-  const subtotal = cartItems.reduce((total, item) => {
-    const price = item.product_variant
-      ? item.product_variant.sale_price || item.product_variant.price
-      : item.price;
-    return total + price * item.quantity;
-  }, 0);
+  const subtotal = Array.isArray(cartItems)
+    ? cartItems.reduce((total, item) => {
+        const price = item.product_variant
+          ? item.product_variant.sale_price || item.product_variant.sell_price
+          : item.price;
+        return total + price * item.quantity;
+      }, 0)
+    : 0;
 
   const total = subtotal + shippingCost;
 
@@ -41,20 +91,35 @@ const Cart = () => {
     updatedCartItems[index].quantity = newQuantity;
     setCartItems(updatedCartItems);
 
+    const productId = updatedCartItems[index].product_id;
+    const variantId = updatedCartItems[index].product_variant_id || null;
+
     try {
-      // Lấy variantId từ updatedCartItems nếu có
-      const variantId = updatedCartItems[index].product_variant_id || null;
+      const user = localStorage.getItem("user");
+      const parsedUser = user ? JSON.parse(user) : null;
+      const userId = parsedUser ? parsedUser.id : null;
 
-      await cartServices.updateCartItem(
-        updatedCartItems[index].product_id,
-        newQuantity,
-        variantId // truyền variantId vào
-      );
+      if (userId) {
+        // Cập nhật giỏ hàng trên server nếu người dùng đã đăng nhập
+        await cartServices.updateCartItem(productId, newQuantity, variantId);
+        message.success("Cập nhật số lượng thành công");
+      } else {
+        // Nếu người dùng chưa đăng nhập, cập nhật giỏ hàng trong session
+        const sessionCart = JSON.parse(sessionStorage.getItem("cart") || "{}");
+        const key = productId + "-" + (variantId || "default");
 
-      message.success("Cập nhật số lượng thành công");
+        if (!sessionCart[key]) {
+          return message.error("Không tìm thấy sản phẩm trong giỏ hàng");
+        }
+
+        sessionCart[key].quantity = newQuantity;
+        sessionStorage.setItem("cart", JSON.stringify(sessionCart));
+
+        message.success("Cập nhật số lượng thành công (Session)");
+      }
     } catch (error) {
       console.error(
-        "Lỗi khi cập nhật số lượng:",
+        "❌ Lỗi khi cập nhật số lượng:",
         error.response?.data || error
       );
       message.error("Lỗi khi cập nhật số lượng, vui lòng thử lại!");
@@ -135,7 +200,7 @@ const Cart = () => {
   const getAttributeValue = (product) => {
     const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
-    // Tìm đúng sản phẩm có cùng `product_id` và `product_variant_id`
+    // Tìm đúng sản phẩm có cùng product_id và product_variant_id
     const productAttributes = attributes.find(
       (attr) =>
         attr.product_id === product.product_id &&
@@ -199,34 +264,27 @@ const Cart = () => {
                           <th className="fs-4" style={{ width: "5%" }}>
                             Xóa
                           </th>{" "}
-                          {/* ✅ Cột xóa nhỏ */}
                         </tr>
                       </thead>
                       <tbody>
                         {cartItems.map((item, index) => {
                           const isVariant = item.product_variant_id !== null;
 
-                          // ✅ Lấy hình ảnh từ biến thể hoặc sản phẩm đơn
-                          const productImage = isVariant
-                            ? item.product_variant?.thumbnail ||
-                              item.product?.thumbnail
-                            : item.product?.thumbnail ||
-                              "/images/default-image.jpg";
+                          // Get product image
+                          const productImage =
+                            item.product?.thumbnail ||
+                            "/images/default-image.jpg";
 
-                          // ✅ Lấy giá sản phẩm (ưu tiên giá sale nếu có)
+                          // Get product price (sale_price or sell_price)
                           const productPrice = isVariant
                             ? item.product_variant?.sale_price ||
-                              item.product_variant?.price
-                            : item.price;
+                              item.product_variant?.sell_price
+                            : item.product?.sale_price ||
+                              item.product?.sell_price;
 
-                          // ✅ Lấy tên sản phẩm, tránh lỗi `undefined`
-                          const productName = isVariant
-                            ? `${item.product?.name} ${
-                                item.product_variant?.name
-                                  ? "- " + item.product_variant?.name
-                                  : ""
-                              }`
-                            : item.product?.name || "Sản phẩm không xác định";
+                          // Get product name
+                          const productName =
+                            item.product?.name || "Sản phẩm không xác định";
 
                           return (
                             <tr
@@ -256,21 +314,20 @@ const Cart = () => {
                                   </span>
                                 )}
                               </td>
-
                               <td className="fs-4">
                                 {formatCurrency(productPrice)}
                               </td>
                               <td>
                                 <input
                                   type="number"
-                                  value={cartItems[index]?.quantity || 1} // Đảm bảo lấy đúng số lượng
+                                  value={cartItems[index]?.quantity || 1}
                                   min="1"
                                   onChange={(e) => {
                                     const newQuantity =
                                       parseInt(e.target.value) || 1;
                                     handleQuantityChange(index, newQuantity);
                                   }}
-                                  className=" text-center fs-4"
+                                  className="text-center fs-4"
                                   style={{
                                     width: "55px",
                                     height: "35px",
