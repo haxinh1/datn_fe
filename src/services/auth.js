@@ -1,6 +1,6 @@
 import instance from "../axios"; // axios instance với base URL
 
-const  fetchAuth = async () => {
+const fetchAuth = async () => {
   try {
     const response = await instance.get("/admin/users"); // Kiểm tra API URL có đúng không
     return response?.data ? response : { data: [] }; // Trả về mảng rỗng nếu không có dữ liệu
@@ -8,7 +8,7 @@ const  fetchAuth = async () => {
     console.error("Lỗi gọi API:", error);
     return { data: [] }; // Tránh lỗi khi API bị lỗi
   }
-}
+};
 
 const getAUser = async (id) => {
   const response = await instance.get(`/admin/users/${id}`);
@@ -99,7 +99,32 @@ const logoutad = async () => {
   return { message: "Admin logged out and adminToken cleared" };
 };
 
+const getUserAddresses = async () => {
+  try {
+    // Lấy user_id từ localStorage
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const userId = storedUser?.id; // Lấy user_id từ localStorage
+
+    if (!userId) {
+      throw new Error("User ID not found in localStorage");
+    }
+
+    // Gọi API lấy địa chỉ của người dùng dựa trên user_id
+    const response = await instance.get("/user-addresses", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("client_token")}`,
+      },
+    });
+
+    return response.data; // Trả về dữ liệu địa chỉ
+  } catch (error) {
+    console.error("Lỗi khi lấy địa chỉ: ", error);
+    throw error;
+  }
+};
+
 export const AuthServices = {
+  getUserAddresses,
   fetchAuth,
   updateUser,
   getAUser,

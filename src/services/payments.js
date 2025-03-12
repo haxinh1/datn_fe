@@ -5,24 +5,6 @@ const getPayment = async () => {
   return response.data;
 };
 
-// const createPaymentVNP = async ({
-//   orderId,
-//   paymentMethod,
-//   bankCode = null,
-// }) => {
-//   const response = await instance.post("/payments/vnpay", {
-//     order_id: orderId,
-//     payment_method: paymentMethod,
-//     bank_code: bankCode,
-//   });
-
-//   if (response.data.payment_url) {
-//     window.location.href = response.data.payment_url; // ✅ Redirect to VNPay
-//   }
-
-//   return response.data;
-// };
-
 const createPaymentVNP = async ({
   orderId,
   paymentMethod,
@@ -30,12 +12,12 @@ const createPaymentVNP = async ({
 }) => {
   const response = await instance.post("/payments/vnpay", {
     order_id: orderId,
-    payment_method: paymentMethod,
+    payment_method: paymentMethod, // Make sure this matches what the backend expects ('vnpay')
     bank_code: bankCode,
   });
 
   if (response.data.payment_url) {
-    window.location.href = response.data.payment_url; // ✅ Redirect to VNPay
+    window.location.href = response.data.payment_url; // Redirect to VNPAY
   }
 
   return response.data;

@@ -20,7 +20,8 @@ const Checkout = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [payMents, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [paymentUrl, setPaymentUrl] = useState(null);
+  const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
+
   const [loading, setLoading] = useState(false);
 
   const [userData, setUserData] = useState({
@@ -32,19 +33,32 @@ const Checkout = () => {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const cartData = await cartServices.fetchCart();
-      setCartItems(cartData);
-    };
-    fetchData();
-  }, []);
+    const fetchCartData = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
 
-  useEffect(() => {
-    // Lấy userId từ localStorage
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser?.id) {
-      setUserId(storedUser.id);
-    }
+      if (storedUser?.id) {
+        // Nếu có userId => Lấy giỏ hàng từ API
+        try {
+          const cartData = await cartServices.fetchCart();
+          setCartItems(cartData); // Set giỏ hàng từ API
+        } catch (error) {
+          console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
+        }
+      } else {
+        // Nếu không đăng nhập => Lấy giỏ hàng từ sessionStorage (cho khách vãng lai)
+        const localCart = JSON.parse(sessionStorage.getItem("cart")) || []; // Default empty array if no cart data
+        console.log(localCart);
+
+        // Kiểm tra lại dữ liệu giỏ hàng
+        if (Array.isArray(localCart)) {
+          setCartItems(localCart); // Set giỏ hàng từ sessionStorage
+        } else {
+          setCartItems([]); // Nếu dữ liệu không phải mảng, khởi tạo giỏ hàng rỗng
+        }
+      }
+    };
+
+    fetchCartData();
   }, []);
 
   useEffect(() => {
@@ -121,72 +135,9 @@ const Checkout = () => {
     }));
   }, [formattedAddress]);
 
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
-
-  const handlePlaceOrder = async () => {
-    if (
-      !userData.fullname ||
-      !userData.email ||
-      !userData.phone_number ||
-      !userData.address
-    ) {
-      message.error("Vui lòng điền đầy đủ thông tin nhận hàng!");
-      return;
-    }
-
-    if (!userId) {
-      message.error("Không tìm thấy user_id, vui lòng đăng nhập lại!");
-      return;
-    }
-
-    setIsPaymentModalOpen(true); // Mở modal để chọn phương thức thanh toán
-  };
-
-  // const handlePayment = async () => {
-  //   if (!selectedPayment) {
-  //     setErrorMessage("Vui lòng chọn phương thức thanh toán.");
-  //     return;
-  //   }
-
-  //   if (selectedPayment === 1) {
-  //     setSuccessMessage("Thanh toán thành công!");
-  //     navigate("/thanks"); // Use navigate to redirect to /thanks
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   setErrorMessage(null);
-
-  //   try {
-  //     const paymentData = {
-  //       orderId,
-  //       paymentMethod: selectedPayment === 2 ? "vnpay" : "",
-  //       paymentId: selectedPayment,
-  //       bankCode: null,
-  //     };
-
-  //     console.log("🔍 Data being sent to API:", paymentData);
-
-  //     const response = await paymentServices.createPaymentVNP(paymentData);
-
-  //     if (response && response.data.payment_url) {
-  //       console.log("✅ Redirecting to:", response.data.payment_url);
-  //       window.location.href = response.data.payment_url;
-  //     } else {
-  //       setErrorMessage("Lỗi tạo liên kết thanh toán.");
-  //     }
-  //   } catch (error) {
-  //     console.error("❌ Payment error:", error.response?.data || error);
-  //     setErrorMessage(
-  //       error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại."
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const subtotal = Array.isArray(cartItems)
+    ? cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
+    : 0;
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -217,13 +168,15 @@ const Checkout = () => {
 
   const handleConfirmPayment = async () => {
     try {
-      setIsPaymentModalOpen(false); // Đóng modal
+      setIsPaymentModalOpen(false); // Close the payment modal
 
+      // Check if no payment method is selected
       if (!selectedPayment) {
         message.error("Vui lòng chọn phương thức thanh toán!");
         return;
       }
 
+      // Prepare the order data for submission
       const orderData = {
         user_id: userId,
         fullname: userData.fullname,
@@ -231,6 +184,8 @@ const Checkout = () => {
         phone_number: userData.phone_number,
         address: userData.address,
         total_amount: subtotal,
+        payment_method:
+          selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "", // 'cod' or 'vnpay'
       };
 
       console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
@@ -238,35 +193,39 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         const orderId = orderResponse?.order?.id;
-        if (selectedPayment === 2) {
-          // Nếu chọn VNPAY, gọi API tạo thanh toán
+
+        if (selectedPayment === 1) {
+          // If the payment method is VNPAY, create the payment link
           const paymentData = {
             orderId,
-            paymentMethod: "vnpay",
+            paymentMethod: "vnpay", // Ensure to send 'vnpay'
             paymentId: selectedPayment,
-            bankCode: null,
+            bankCode: null, // You can add bankCode if needed
           };
 
-          console.log("🔍 Gửi dữ liệu đến VNPAY:", paymentData);
+          console.log(paymentData); // Log payment data for testing
+
           const response = await paymentServices.createPaymentVNP(paymentData);
 
-          if (response && response.data.payment_url) {
-            console.log(
-              "✅ Chuyển hướng đến VNPAY:",
-              response.data.payment_url
-            );
-            window.location.href = response.data.payment_url;
-            return; // Dừng tại đây, không hiển thị thông báo ngay
+          if (response && response.payment_url) {
+            console.log("✅ Chuyển hướng đến VNPAY:", response.payment_url);
+
+            // Update the order status before redirecting
+            await paymentServices.updateOrderStatus(orderId, 2); // '2' = "Đang chờ thanh toán"
+
+            // Redirect to the VNPAY payment URL
+            window.location.href = response.payment_url; // Ensure this works for redirecting to VNPAY
+            return; // Stop further execution if redirection is successful
           } else {
-            message.error("Lỗi tạo liên kết thanh toán.");
+            message.error("Lỗi tạo liên kết thanh toán VNPay.");
             return;
           }
         }
 
-        // Nếu không phải VNPAY, hiển thị thông báo đặt hàng thành công
+        // If payment method is COD, confirm the order immediately
         message.success("🎉 Đơn hàng của bạn đã được đặt thành công!");
-        setCartItems([]);
-        localStorage.removeItem("cartAttributes");
+        setCartItems([]); // Clear the cart
+        localStorage.removeItem("cartAttributes"); // Remove the cart from localStorage
       } else {
         message.error(orderResponse?.message || "Lỗi không xác định");
       }
@@ -514,7 +473,7 @@ const Checkout = () => {
                         </thead>
                         <tbody>
                           {/* Danh sách sản phẩm */}
-                          {cartItems.map((item) => (
+                          {cartItemsToDisplay.map((item) => (
                             <tr key={item.id}>
                               <td style={{ padding: "10px" }}>
                                 {item.product?.name || `Sản phẩm #${item.id}`}{" "}
@@ -528,8 +487,7 @@ const Checkout = () => {
                               <td
                                 style={{ textAlign: "right", padding: "10px" }}
                               >
-                                {formatCurrency(item.price)}VNĐ
-                                {/* {item.price.toLocaleString()} VND */}
+                                {formatCurrency(item.price)} VNĐ
                               </td>
                             </tr>
                           ))}
@@ -612,7 +570,7 @@ const Checkout = () => {
           onCancel={() => setIsPaymentModalOpen(false)}
           footer={[
             <button
-              className="btn btn-primary "
+              className="btn btn-primary"
               key="cancel"
               onClick={() => setIsPaymentModalOpen(false)}
             >

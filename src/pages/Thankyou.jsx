@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { OrderService } from "./../services/order";
 
 const Thankyoupage = () => {
   const location = useLocation(); // Get the current location
@@ -13,6 +14,22 @@ const Thankyoupage = () => {
   const paymentMethod = query.get("vnp_CardType"); // Payment method
   const customerEmail = ""; // Logic to get customer's email if needed
   const customerName = ""; // Logic to get customer's name if needed
+
+  // Function to update order status
+  const updateOrderStatus = async () => {
+    if (paymentStatus === "00" && orderId) {
+      try {
+        await OrderService.updateOrderStatus(orderId, { status_id: 2 });
+        console.log(`Order status for order ID ${orderId} updated to 2.`);
+      } catch (error) {
+        console.error("Failed to update order status:", error.message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    updateOrderStatus();
+  }, [paymentStatus, orderId]); // Run effect when paymentStatus or orderId changes
 
   return (
     <div className="container mt-5">
@@ -66,19 +83,6 @@ const Thankyoupage = () => {
             </li>
           </ul>
         </section>
-
-        {/* <section className="mb-4">  
-          <h3>THÔNG TIN KHÁCH HÀNG</h3>  
-          <ul className="list-unstyled">  
-            <li>  
-              Họ tên khách hàng: <strong>{customerName || "Người dùng"}</strong>  
-            </li>  
-            <li>  
-              Địa chỉ Email:{" "}  
-              <strong>{customerEmail || "Không có thông tin"}</strong>  
-            </li>  
-          </ul>  
-        </section> */}
 
         <footer className="text-center mt-4">
           <p>
