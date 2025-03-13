@@ -46,6 +46,12 @@ const updateOrderStatus = async (id, payload) => {
   return response.data;
 };
 
+// cập nhật trạng thái đơn hàng
+const updateOrders= async (payload) => {
+  const response = await instance.put(`orders/batch-update-status`, payload);
+  return response.data;
+};
+
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
@@ -54,4 +60,5 @@ export const OrderService = {
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,
+  updateOrders
 };

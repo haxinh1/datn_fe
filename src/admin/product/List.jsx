@@ -540,6 +540,30 @@ const List = () => {
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            <Form.Item
+                                label="Ảnh"
+                                name="newImage"
+                                rules={[{
+                                    validator: (_, value) =>
+                                    newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                                }]}
+                            >
+                                <Upload
+                                    listType="picture"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    fileList={newImage ? [newImage] : []}
+                                    onChange={handleImageUpload}
+                                    onRemove={() => setNewImage(null)} 
+                                >
+                                    {!newImage && ( 
+                                        <Button icon={<UploadOutlined />} className="btn-item">
+                                            Tải ảnh lên
+                                        </Button>
+                                    )}
+                                </Upload>
+                            </Form.Item>
                         </Col>
 
                         <Col span={12} className="col-item">
@@ -565,42 +589,18 @@ const List = () => {
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            <Form.Item label="Trạng thái kinh doanh">
+                                <Switch 
+                                    checked={isActive === 1} 
+                                    onChange={(checked) => setIsActive(checked ? 1 : 0)} 
+                                />
+                                <span style={{ marginLeft: 10 }}>
+                                    {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
+                                </span>
+                            </Form.Item>
                         </Col>
                     </Row>
-
-                    <Form.Item
-                        label="Ảnh"
-                        name="newImage"
-                        rules={[{
-                            validator: (_, value) =>
-                            newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
-                        }]}
-                    >
-                        <Upload
-                            listType="picture"
-                            action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                            data={{ upload_preset: "quangOsuy" }}
-                            fileList={newImage ? [newImage] : []}
-                            onChange={handleImageUpload}
-                            onRemove={() => setNewImage(null)} 
-                        >
-                            {!newImage && ( 
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
-                            )}
-                        </Upload>
-                    </Form.Item>
-
-                    <Form.Item label="Trạng thái kinh doanh">
-                        <Switch 
-                            checked={isActive === 1} 
-                            onChange={(checked) => setIsActive(checked ? 1 : 0)} 
-                        />
-                        <span style={{ marginLeft: 10 }}>
-                            {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
-                        </span>
-                    </Form.Item>
 
                     <div className="add">
                         <Button type="primary" onClick={handleSaveVariant}>Cập nhật</Button>

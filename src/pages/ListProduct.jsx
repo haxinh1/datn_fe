@@ -23,10 +23,15 @@ const ListProduct = () => {
   useEffect(() => {
     const getProducts = async () => {
       const data = await productsServices.fetchProducts();
-      setProducts(data.data);
+      
+      // Lọc sản phẩm có is_active = 1
+      const activeProducts = data.data.filter(product => product.is_active === 1);
+  
+      setProducts(activeProducts);
+      setFilteredProducts(activeProducts); // Cập nhật filteredProducts luôn
     };
     getProducts();
-  }, []);
+  }, []);  
 
   useEffect(() => {
     setFilteredProducts(products); // Cập nhật khi products thay đổi
