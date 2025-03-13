@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout, List, Avatar, Input, Button, Image, Tooltip } from 'antd';
 import { SendOutlined, SearchOutlined, PictureOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import './inbox.css';
+import "../css/inbox.css";
 
 const { Sider, Content, Footer } = Layout;
 

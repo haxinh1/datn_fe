@@ -52,7 +52,7 @@ const Logincl = () => {
           <div className="form-tab">
             <ul className="nav nav-pills nav-fill">
               <li className="nav-item">
-                <a className="nav-link active">Đăng Nhập</a>
+                <a className="nav-link active"><span>Đăng Nhập</span></a>
               </li>
             </ul>
             <div className="tab-content">
@@ -88,7 +88,7 @@ const Logincl = () => {
                   </div>
                 </form>
                 <div className="form-choice">
-                  <p className="text-center">hoặc đăng nhập bằng</p>
+                  <p className="text-center"><span>hoặc đăng nhập bằng</span></p>
                   <div className="row">
                     <div className="col-sm-6">
                       <a href="#" className="btn btn-login btn-g">

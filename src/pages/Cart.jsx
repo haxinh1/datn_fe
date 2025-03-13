@@ -315,7 +315,7 @@ const Cart = () => {
                 </div>
                 <aside className="col-lg-3">
                   <div className="summary summary-cart">
-                    <h3 className="summary-title fs-4">Tổng giỏ hàng</h3>
+                    <h3 className="summary-title fs-4">Giỏ hàng của bạn</h3>
                     <table className="table table-summary">
                       <tbody>
                         <tr className="summary-subtotal fs-5">
@@ -323,7 +323,7 @@ const Cart = () => {
                           <td>{formatCurrency(subtotal)}</td>
                         </tr>
                         <tr className="summary-total fs-5">
-                          <td>Tổng cộng:</td>
+                          <td>Tổng tiền:</td>
                           <td>{formatCurrency(total)}</td>
                         </tr>
                       </tbody>

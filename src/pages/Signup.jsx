@@ -167,7 +167,7 @@ const Signup = () => {
                     <div className="form-tab">
                         <ul className="nav nav-pills nav-fill">
                             <li className="nav-item">
-                                <a className="nav-link active">Đăng ký</a>
+                                <a className="nav-link active"><span>Đăng Ký Tài Khoản</span></a>
                             </li>
                         </ul>
                         <div className="tab-content">
@@ -292,7 +292,7 @@ const Signup = () => {
                                     </div>
                                 </form>
                                 <div className="form-choice">
-                                    <p className="text-center">hoặc đăng ký bằng</p>
+                                    <p className="text-center"><span>hoặc đăng ký bằng</span></p>
                                     <div className="row">
                                         <div className="col-sm-6">
                                             <a href="#" className="btn btn-login btn-g">

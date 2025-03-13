@@ -3,13 +3,13 @@ import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Uploa
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import "./list.css";
-import "./add.css";
 import { productsServices } from "../../services/product";
 import { variantsServices } from "../../services/variants";
 import { BrandsServices } from "../../services/brands";
 import { categoryServices } from "../../services/categories";
 import dayjs from "dayjs";
+import "../../css/list.css";
+import "../../css/add.css";
 
 const List = () => {
     const queryClient = useQueryClient();

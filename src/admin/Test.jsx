@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Select, Spin } from "antd";
+import "../css/add.css";
+import "../css/list.css";
 
 const { Option } = Select;
 

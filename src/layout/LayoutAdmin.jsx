@@ -1,19 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Breadcrumb, Layout, Menu, theme, Modal } from "antd"; // Import Modal từ Ant Design
-import {
-  HomeOutlined,
-  BookOutlined,
-  FormOutlined,
-  UserOutlined,
-  BilibiliFilled,
-  MessageOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
+import { Layout, Menu, theme, Modal } from "antd";
+import { HomeOutlined, BookOutlined, UserOutlined, BilibiliFilled, MessageOutlined, LogoutOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Footer, Sider } = Layout;
 
 const LayoutAdmin = () => {
   const {
@@ -72,52 +64,52 @@ const LayoutAdmin = () => {
     {
       key: "list-pr",
       icon: <BookOutlined />,
-      label: <Link to="/admin/list-pr">Quản lý sản phẩm</Link>,
+      label: <Link to="/admin/list-pr"><span>Quản lý sản phẩm</span></Link>,
     },
     {
       key: "history",
       icon: <BookOutlined />,
-      label: <Link to="/admin/history">Quản lý nhập hàng</Link>,
+      label: <Link to="/admin/history"><span>Quản lý nhập hàng</span></Link>,
     },
     {
       key: "order",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/order">Quản lý đơn hàng</Link>,
+      label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
     },
     {
       key: "account",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/account">Quản lý tài khoản</Link>,
+      label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
     },
     {
       key: "category",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/categories">Danh mục</Link>,
+      label: <Link to="/admin/categories"><span>Danh mục</span></Link>,
     },
     {
       key: "brand",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/brand">Thương hiệu</Link>,
+      label: <Link to="/admin/brand"><span>Thương hiệu</span></Link>,
     },
     {
       key: "coupon",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/coupon">Mã giảm giá</Link>,
+      label: <Link to="/admin/coupon"><span>Mã giảm giá</span></Link>,
     },
     {
       key: "bill",
       icon: <BilibiliFilled />,
-      label: <Link to="/admin/bill">Hóa đơn</Link>,
+      label: <Link to="/admin/bill"><span>Hóa đơn</span></Link>,
     },
     {
       key: "inbox",
       icon: <MessageOutlined />,
-      label: <Link to="/admin/inbox">Tin nhắn</Link>,
+      label: <Link to="/admin/inbox"><span>Tin nhắn</span></Link>,
     },
     {
       key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/">Trang chủ</Link>,
+      label: <Link to="/"><span>Trang chủ</span></Link>,
     },
     {
       key: "logoutad",

@@ -3,7 +3,6 @@ import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, R
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
-import "./add.css";
 import { productsServices } from './../../services/product';
 import { BrandsServices } from './../../services/brands';
 import { categoryServices } from './../../services/categories';
@@ -13,6 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import "../../css/add.css";
 
 const { Option } = Select;
 

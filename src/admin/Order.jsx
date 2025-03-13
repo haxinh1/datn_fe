@@ -10,6 +10,8 @@ import { paymentServices } from "../services/payments";
 dayjs.locale("vi");
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import "../css/add.css";
+import "../css/list.css";
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -508,6 +510,7 @@ const Order = () => {
       >
         <span>Email người đặt: {orderInfo.email}</span> <br />
         <span>Địa chỉ nhận hàng: {orderInfo.address}</span>
+
         <Table
           columns={detailColumns}
           dataSource={orderDetails.map((item, index) => ({
@@ -517,6 +520,7 @@ const Order = () => {
             product_name: item.product?.name,
           }))}
           bordered
+          pagination={false}
           summary={() => {
             const totalAmount = orderDetails.reduce(
               (sum, item) => sum + item.quantity * item.sell_price,

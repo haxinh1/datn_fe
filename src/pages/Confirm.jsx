@@ -63,15 +63,15 @@ const Confirm = () => {
                     <div className="form-tab">
                         <ul className="nav nav-pills nav-fill">
                             <li className="nav-item">
-                                <a className="nav-link active">Xác nhận đăng ký</a>
+                                <a className="nav-link active"><span>Xác Nhận Đăng Ký</span></a>
                             </li>
                         </ul>
                         <div className="tab-content">
                             <div className="tab-pane fade show active">
+                                <div className="product-content">
+                                    <span>Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.{" "}</span>
+                                </div>
                                 <form onSubmit={handleConfirm}>
-                                    <div className="product-content">
-                                        <p>Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.{" "}</p>
-                                    </div>
                                     <div className="form-group">
                                         <label>Email</label>
                                         <input 
