@@ -38,10 +38,18 @@ const Cart = () => {
                 item.product_id
               );
               console.log("Product details fetched:", productDetails);
+              let productVariant = null;
 
+              // Nếu sản phẩm có biến thể, lấy thông tin biến thể từ API hoặc product data
+              if (item.product_variant_id && productDetails.data.variants) {
+                productVariant = productDetails.data.variants.find(
+                  (variant) => variant.id === item.product_variant_id
+                );
+              }
               return {
                 ...item,
-                product: productDetails, // Add product details to cart item
+                product: productDetails.data, // Add product details to cart item
+                product_variant: productVariant || null, // Gán biến thể vào cart item
               };
             } catch (error) {
               console.error("Error fetching product:", error);

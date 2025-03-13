@@ -5,6 +5,7 @@ import { message, Modal } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
+import { productsServices } from "./../services/product";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -37,7 +38,7 @@ const Checkout = () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
 
       if (storedUser?.id) {
-        // Nếu có userId => Lấy giỏ hàng từ API
+        // Nếu đã đăng nhập => Lấy giỏ hàng từ API
         try {
           const cartData = await cartServices.fetchCart();
           setCartItems(cartData); // Set giỏ hàng từ API
@@ -45,16 +46,42 @@ const Checkout = () => {
           console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
         }
       } else {
-        // Nếu không đăng nhập => Lấy giỏ hàng từ sessionStorage (cho khách vãng lai)
-        const localCart = JSON.parse(sessionStorage.getItem("cart")) || []; // Default empty array if no cart data
-        console.log(localCart);
+        // Nếu chưa đăng nhập => Lấy giỏ hàng từ sessionStorage
+        const sessionCart = JSON.parse(sessionStorage.getItem("cart")) || {};
 
-        // Kiểm tra lại dữ liệu giỏ hàng
-        if (Array.isArray(localCart)) {
-          setCartItems(localCart); // Set giỏ hàng từ sessionStorage
-        } else {
-          setCartItems([]); // Nếu dữ liệu không phải mảng, khởi tạo giỏ hàng rỗng
-        }
+        // Chuyển Object thành Array
+        const cartItemsArray = Object.values(sessionCart);
+
+        // Fetch thông tin sản phẩm từ API
+        const updatedCartItems = await Promise.all(
+          cartItemsArray.map(async (item) => {
+            try {
+              const productDetails = await productsServices.fetchProductById(
+                item.product_id
+              );
+
+              // Kiểm tra nếu sản phẩm có biến thể
+              let productVariant = null;
+              if (item.product_variant_id && productDetails.data.variants) {
+                productVariant = productDetails.data.variants.find(
+                  (variant) => variant.id === item.product_variant_id
+                );
+              }
+
+              return {
+                ...item,
+                product: productDetails.data,
+                product_variant: productVariant || null,
+              };
+            } catch (error) {
+              console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
+              return { ...item, product: null };
+            }
+          })
+        );
+        console.log("Dữ liệu giỏ hàng từ sessionStorage:", updatedCartItems);
+
+        setCartItems(updatedCartItems);
       }
     };
 
@@ -136,7 +163,16 @@ const Checkout = () => {
   }, [formattedAddress]);
 
   const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
+    ? cartItems.reduce((total, item) => {
+        // Lấy giá sản phẩm từ biến thể nếu có
+        const productPrice = item.product_variant
+          ? item.product_variant.sale_price ||
+            item.product_variant.sell_price ||
+            0
+          : item.product?.sale_price || item.product?.sell_price || 0;
+
+        return total + productPrice * (item.quantity || 1);
+      }, 0)
     : 0;
 
   useEffect(() => {
@@ -186,6 +222,13 @@ const Checkout = () => {
         total_amount: subtotal,
         payment_method:
           selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "", // 'cod' or 'vnpay'
+        products: cartItems.map((item) => ({
+          product_id: item.product_id,
+          product_variant_id: item.product_variant_id,
+          quantity: item.quantity,
+          price:
+            item.product_variant?.sale_price || item.product?.sale_price || 0,
+        })),
       };
 
       console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
@@ -487,7 +530,13 @@ const Checkout = () => {
                               <td
                                 style={{ textAlign: "right", padding: "10px" }}
                               >
-                                {formatCurrency(item.price)} VNĐ
+                                {formatCurrency(
+                                  item.product_variant
+                                    ? item.product_variant.sale_price ||
+                                        item.product_variant.sell_price
+                                    : item.product?.sale_price ||
+                                        item.product?.sell_price
+                                )}
                               </td>
                             </tr>
                           ))}
