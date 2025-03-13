@@ -4,40 +4,20 @@
     overflow: hidden;
 }
 .inbox-sidebar {
-    background: #f0f2f5;
+    background: #ccd8ea;
     overflow-y: auto;
 }
-.inbox-chat {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-}
-.inbox-chat-box {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-.chat-message {
-    padding: 8px 12px;
-    border-radius: 10px;
-    max-width: 60%;
-    margin-bottom: 8px;
-}
-.sent {
-    background: #1890ff;
-    color: white;
-    align-self: flex-end;
-}
-.received {
-    background: #f0f0f0;
-    color: black;
-    align-self: flex-start;
-}
-.inbox-chat-input {
+.inbox-search {
+    position: sticky;
+    top: 0; /* Đảm bảo input tìm kiếm luôn nằm ở phía trên cùng của sidebar */
+    background-color: #ccd8ea; /* Đặt nền màu trắng để không bị ảnh hưởng bởi nội dung cuộn */
+    z-index: 1; /* Đảm bảo input tìm kiếm không bị che khuất */
     padding: 10px;
-    background: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.inbox-search .ant-input {
+    border-radius: 20px;
+    padding: 5px 16px;
 }
 .inbox-user-item {
     display: flex;
@@ -47,4 +27,104 @@
 }
 .inbox-user-item:hover {
     background: #e6f7ff;
+}
+.user-bar {
+    display: flex;
+    gap: 10px;
+    margin-left: 20px;
+}
+.user-name{
+    font-size: 1.6rem;
+    color: black;
+    font-weight: bolder ;
+}
+.inbox-chat {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.inbox-chat-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background: #ccd8ea;
+    color: white;
+    font-weight: bold;
+    height: 60px;
+}
+.inbox-chat-header .user-info {
+    flex: 1;
+}
+.inbox-chat-header .action-icons .anticon:hover {
+    color: #1890ff;
+}
+.inbox-chat-header .avatar {
+    margin-right: 10px;
+}
+.user-info {
+    color: black;
+    font-size: 16px;
+}
+.inbox-chat-box {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.chat-message {
+    display: flex;
+    justify-content: center; /* Căn giữa tin nhắn theo chiều ngang */
+    align-items: center; /* Căn giữa tin nhắn theo chiều dọc */
+    padding: 8px 12px;
+    border-radius: 10px;
+    max-width: 620px;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+}
+.sent {
+    background: #0084ff;
+    color: white;
+    align-self: flex-end;
+}
+.received {
+    background: #f0f0f0;
+    color: black;
+    align-self: flex-start;
+}
+.image-inbox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.image-inbox-preview {
+    object-fit: cover;
+    border-radius: 5px;
+}
+.inbox-chat-input {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: #ccd8ea;
+}
+.image-preview-container {
+    display: flex;
+    flex-wrap: nowrap; /* Không cho ảnh xuống dòng */
+    margin-bottom: 10px;
+    overflow-x: auto; /* Nếu ảnh nhiều, có thể cuộn ngang */
+}
+.image-preview-item {
+    position: relative;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+.image-preview {
+    width: 90px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+.upload{
+    cursor: pointer;
+    margin-top: 10px;
 }

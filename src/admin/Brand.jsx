@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import "../admin/product/add.css";
 import "../admin/product/list.css";
 import { BrandsServices } from "../services/brands";

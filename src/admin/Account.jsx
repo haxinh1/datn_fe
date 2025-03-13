@@ -52,6 +52,7 @@ const Account = () => {
                 gender: userData.gender,
                 birthday: userData.birthday ? dayjs(userData.birthday) : null,
                 address: userData.address,
+                detail_address: userData.detail_address,
                 role: userData.role,
                 status: userData.status,
             });
@@ -119,6 +120,13 @@ const Account = () => {
             key: "address",
             align: "center",
             render: (address) => address?.address
+        },
+        {
+            title: "Địa chỉ cụ thể",  // Cột để hiển thị detail_address
+            dataIndex: "address",   // Lấy dữ liệu từ address
+            key: "detail_address",
+            align: "center",
+            render: (address) => address?.detail_address  // Hiển thị detail_address từ address
         },
     ]
 
@@ -244,7 +252,7 @@ const Account = () => {
                 open={isDetailModalVisible}
                 onCancel={handleDetailCancel}
                 footer={null}
-                width={800}
+                width={900}
             >
                 <Table
                     columns={detailColumn}

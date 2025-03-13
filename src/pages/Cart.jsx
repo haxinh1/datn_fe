@@ -27,7 +27,7 @@ const Cart = () => {
 
   const subtotal = cartItems.reduce((total, item) => {
     const price = item.product_variant
-      ? item.product_variant.sale_price || item.product_variant.price
+      ? item.product_variant.sale_price || item.product_variant.sell_price
       : item.price;
     return total + price * item.quantity;
   }, 0);
@@ -216,7 +216,7 @@ const Cart = () => {
                           // ✅ Lấy giá sản phẩm (ưu tiên giá sale nếu có)
                           const productPrice = isVariant
                             ? item.product_variant?.sale_price ||
-                              item.product_variant?.price
+                              item.product_variant?.sell_price
                             : item.price;
 
                           // ✅ Lấy tên sản phẩm, tránh lỗi `undefined`
