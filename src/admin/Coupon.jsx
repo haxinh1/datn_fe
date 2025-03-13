@@ -1,10 +1,12 @@
 import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Input, DatePicker, Switch, Descriptions } from 'antd';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Row, Col, Input, DatePicker, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import TextArea from 'antd/es/input/TextArea';
 import { CouponServices } from '../services/coupon';
 import formatDate from '../utils/formatDate';
+import "../css/add.css";
+import "../css/list.css";
 
 const Coupon = () => {
     const [coupon, setCoupon] = useState([]);

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import "../css/add.css";
+import "../css/list.css";
 
 const Account = () => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import "../admin/product/add.css";
-import "../admin/product/list.css";
 import { BrandsServices } from "../services/brands";
 import { BookOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import slugify from "slugify";
+import "../css/add.css";
+import "../css/list.css";
 
 const Brand = () => {
     const queryClient = useQueryClient();

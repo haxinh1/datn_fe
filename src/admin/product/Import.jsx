@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Button, Select, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
+import "../../css/add.css";
+import "../../css/list.css";
 
 const Import = () => {
     const [form] = Form.useForm();

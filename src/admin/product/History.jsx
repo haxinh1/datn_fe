@@ -1,4 +1,4 @@
-import { Button, Table, Modal, Row, DatePicker, ConfigProvider, Form, Select, Input, InputNumber, notification, Tooltip, Skeleton } from 'antd';
+import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 dayjs.locale("vi");
 import { Link } from 'react-router-dom';
+import "../../css/add.css";
+import "../../css/list.css";
 
 const History = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);

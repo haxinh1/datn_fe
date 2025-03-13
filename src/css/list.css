@@ -1,6 +1,7 @@
 .mb-5 {
     font-size: 2rem;
     color: blue;
+    font-weight: bold;
 }
 .tick{
     display: block;

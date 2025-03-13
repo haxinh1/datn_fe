@@ -250,7 +250,7 @@ const ListProduct = () => {
                                 to={`/product-detail/${product.id}`}
                                 className="btn-product btn-cart"
                               >
-                                Chi tiết sản phẩm
+                                <span>Chi tiết sản phẩm</span>
                               </Link>
                             </div>
                           </figure>
@@ -345,7 +345,7 @@ const ListProduct = () => {
                         href="#widget-1"
                         role="button"
                       >
-                        Danh mục
+                        <span>Danh mục</span>
                       </a>
                     </h3>
 
@@ -392,7 +392,7 @@ const ListProduct = () => {
                         href="#widget-4"
                         role="button"
                       >
-                        Thương hiệu
+                        <span>Thương hiệu</span>
                       </Link>
                     </h3>
 
@@ -434,7 +434,7 @@ const ListProduct = () => {
                         href="#widget-2"
                         role="button"
                       >
-                        Kích cỡ
+                        <span>Kích cỡ</span>
                       </a>
                     </h3>
 
@@ -471,7 +471,7 @@ const ListProduct = () => {
                         href="#widget-3"
                         role="button"
                       >
-                        Màu sắc
+                        <span>Màu sắc</span>
                       </a>
                     </h3>
 
@@ -500,7 +500,7 @@ const ListProduct = () => {
                         href="#widget-5"
                         role="button"
                       >
-                        Mức Giá
+                        <span>Mức Giá</span>
                       </a>
                     </h3>
 
