@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Layout, Menu, theme, Modal } from "antd";
-import { HomeOutlined, BookOutlined, UserOutlined, BilibiliFilled, MessageOutlined, LogoutOutlined } from "@ant-design/icons";
+import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip } from "antd";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, UsergroupAddOutlined, ProjectOutlined, EditOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
+import logo from "../assets/images/logo-footer.png";
 
-const { Content, Footer, Sider } = Layout;
+const { Content, Header, Footer, Sider } = Layout;
 
 const LayoutAdmin = () => {
   const {
@@ -13,6 +14,12 @@ const LayoutAdmin = () => {
   } = theme.useToken();
 
   const nav = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    setUser(storedUser);  // Lấy thông tin người dùng từ localStorage
+  }, []);
 
   const logoutad = async () => {
     // Hiển thị Modal xác nhận trước khi logout
@@ -56,49 +63,43 @@ const LayoutAdmin = () => {
 
   const menuItems = [
     {
-      key: "",
-      icon: <UserOutlined />,
-      label: `Xin chào Admin`,
-      disabled: true,
-    },
-    {
       key: "list-pr",
-      icon: <BookOutlined />,
+      icon: <ProductOutlined />,
       label: <Link to="/admin/list-pr"><span>Quản lý sản phẩm</span></Link>,
     },
     {
       key: "history",
-      icon: <BookOutlined />,
+      icon: <ImportOutlined />,
       label: <Link to="/admin/history"><span>Quản lý nhập hàng</span></Link>,
     },
     {
       key: "order",
-      icon: <BilibiliFilled />,
+      icon: <BookOutlined />,
       label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
     },
     {
       key: "account",
-      icon: <BilibiliFilled />,
+      icon: <UsergroupAddOutlined />,
       label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
     },
     {
       key: "category",
-      icon: <BilibiliFilled />,
+      icon: <TableOutlined />,
       label: <Link to="/admin/categories"><span>Danh mục</span></Link>,
     },
     {
       key: "brand",
-      icon: <BilibiliFilled />,
+      icon: <GroupOutlined />,
       label: <Link to="/admin/brand"><span>Thương hiệu</span></Link>,
     },
     {
       key: "coupon",
-      icon: <BilibiliFilled />,
+      icon: <ProjectOutlined />,
       label: <Link to="/admin/coupon"><span>Mã giảm giá</span></Link>,
     },
     {
       key: "bill",
-      icon: <BilibiliFilled />,
+      icon: <PrinterOutlined />,
       label: <Link to="/admin/bill"><span>Hóa đơn</span></Link>,
     },
     {
@@ -110,11 +111,6 @@ const LayoutAdmin = () => {
       key: "client",
       icon: <HomeOutlined />,
       label: <Link to="/"><span>Trang chủ</span></Link>,
-    },
-    {
-      key: "logoutad",
-      icon: <LogoutOutlined />,
-      label: <span onClick={logoutad}>Đăng xuất</span>,
     },
   ];
 
@@ -128,7 +124,9 @@ const LayoutAdmin = () => {
         onBreakpoint={(broken) => console.log(broken)}
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
-        <div className="demo-logo-vertical" />
+        <div className="demo-logo-vertical">
+          <img src={logo} className="logo-admin"/>
+        </div>
         <Menu
           theme="dark"
           mode="inline"
@@ -137,9 +135,24 @@ const LayoutAdmin = () => {
         />
       </Sider>
 
-      {/* Main Layout */}
       <Layout className="main-layout">
-        
+        <Header className="header-admin">
+          {user && (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Avatar src={user.avatar} alt="Avatar" size="large" style={{ marginRight: 10 }} />
+              <span>{user.fullname}</span>
+            </div>
+          )}
+          <div className="group2">
+            <Tooltip title='Cập nhật thông tin'>
+              <Button color="primary" variant="solid" icon={<EditOutlined />}/>
+            </Tooltip>
+            <Tooltip title='Đăng xuất'>
+              <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad}/>
+            </Tooltip>
+          </div>
+        </Header>
+
         <Content className="content-admin">
           <div
             className="content-box"

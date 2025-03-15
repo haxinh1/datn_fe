@@ -172,7 +172,7 @@ const Cart = () => {
                 <div className="col-lg-9">
                   {cartItems.length === 0 ? (
                     <p className="fs-4 text-center text-danger">
-                      Giỏ hàng của bạn đang trống!
+                      <span>Giỏ hàng của bạn đang trống!</span>
                     </p>
                   ) : (
                     <table className="table table-cart">

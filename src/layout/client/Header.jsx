@@ -1,5 +1,5 @@
 import React from "react";
-import { Image } from "antd";
+import { Image, Tooltip } from "antd";
 import "../../assets/css/bootstrap.min.css";
 import "../../assets/css/plugins/owl-carousel/owl.carousel.css";
 import "../../assets/css/plugins/magnific-popup/magnific-popup.css";
@@ -25,7 +25,7 @@ const Header = () => {
               </button>
 
               <a href="#" className="logo">
-                <Image src={logo} style={{ width: "80px", height: "20px" }} />
+                <Link to="/"><img src={logo} style={{ width: "80px", height: "20px" }} /></Link>,
               </a>
             </div>
             <div className="header-center">
@@ -87,27 +87,28 @@ const Header = () => {
                 </form>
               </div>
 
-              <a href="wishlist.html" className="wishlist-link">
-                <i className="icon-heart-o"></i>
-                <span className="wishlist-count">3</span>
-              </a>
-
-              <div className="dropdown cart-dropdown">
-                <Link
-                  to={"/cart"}
-                  className="dropdown-toggle"
-                  role="button"
-                  data-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                  data-display="static"
-                >
-                  <i className="icon-shopping-cart"></i>
-                  <span className="cart-count">2</span>
-                  <span className="cart-txt">$164.00</span>
+              <Tooltip title="Đăng nhập">
+                <Link to={"/logincl"} className="wishlist-link">
+                  <i className="icon-user"></i>
                 </Link>
+              </Tooltip>
+            
+              <div className="dropdown cart-dropdown">
+                <Tooltip title="Giỏ hàng">
+                  <Link
+                    to={"/cart"}
+                    className="dropdown-toggle"
+                    role="button"
+                    data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    data-display="static"
+                  >
+                    <i className="icon-shopping-cart"></i>
+                  </Link>
+                </Tooltip>
 
-                <div className="dropdown-menu dropdown-menu-right">
+                {/* <div className="dropdown-menu dropdown-menu-right">
                   <div className="dropdown-cart-products">
                     <div className="product">
                       <div className="product-cart-details">
@@ -168,7 +169,7 @@ const Header = () => {
                       Checkout<i className="icon-long-arrow-right"></i>
                     </Link>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

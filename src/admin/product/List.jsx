@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { EditOutlined, EyeOutlined, ImportOutlined, PlusOutlined, ProductOutlined, UploadOutlined } from "@ant-design/icons";
 import { productsServices } from "../../services/product";
 import { variantsServices } from "../../services/variants";
 import { BrandsServices } from "../../services/brands";
@@ -317,7 +317,7 @@ const List = () => {
     return (
         <>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ProductOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
@@ -368,7 +368,7 @@ const List = () => {
                     </Link>
 
                     <Link to="/admin/import">
-                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                        <Button color="primary" variant="solid" icon={<ImportOutlined />}>
                             Nhập hàng
                         </Button>
                     </Link>

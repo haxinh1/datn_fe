@@ -3,6 +3,7 @@ import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
 import { categoryServices } from './../services/categories';
+import bg from "../assets/images/backgrounds/bg-1.jpg";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -164,42 +165,10 @@ const ListProduct = () => {
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
-        {message && (
-          <div
-            className={`message-box ${
-              messageType === "success" ? "message-success" : "message-error"
-            }`}
-            style={{
-              padding: "10px",
-              marginBottom: "10px",
-              borderRadius: "5px",
-              textAlign: "center",
-              fontWeight: "bold",
-              backgroundColor:
-                messageType === "success" ? "#d4edda" : "#f8d7da",
-              color: messageType === "success" ? "#155724" : "#721c24",
-              border:
-                messageType === "success"
-                  ? "1px solid #c3e6cb"
-                  : "1px solid #f5c6cb",
-            }}
-          >
-            {message}
-          </div>
-        )}
-        <div
-          className="page-header text-center"
-          style={{
-            backgroundImage: "url('assets/images/page-header-bg.jpg')",
-          }}
-        >
-          <div className="container">
-            <h1 className="page-title">
-              Grid 3 Columns
-              <span>Shop</span>
-            </h1>
-          </div>
+        <div className="text-center">
+          <img src={bg} alt="" />
         </div>
+        
         <nav aria-label="breadcrumb" className="breadcrumb-nav mb-2">
           <div className="container">
             <ol className="breadcrumb">
@@ -331,10 +300,6 @@ const ListProduct = () => {
               </div>
               <aside className="col-lg-3 order-lg-first">
                 <div className="sidebar sidebar-shop">
-                  <div className="widget widget-clean">
-                    <label>Tìm kiếm:</label>
-                  </div>
-
                   {/* List danh mục */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
@@ -352,7 +317,7 @@ const ListProduct = () => {
                     <div className="show" id="widget-1">
                       <div className="widget-body">
                         <div className="filter-items">
-                          {categories.length > 0 ? (
+                          {categories.length > 0 &&
                             categories.flatMap((category) =>
                               (category.children || [category]).map((subCategory) => (
                                 <div key={subCategory.id} className="filter-item">
@@ -364,19 +329,13 @@ const ListProduct = () => {
                                       onChange={() => handleCategoryChange(subCategory.id)}
                                       checked={selectedCategories.includes(subCategory.id)}
                                     />
-                                    <label
-                                      className="custom-control-label"
-                                      htmlFor={`cat-${subCategory.id}`}
-                                    >
+                                    <label className="custom-control-label" htmlFor={`cat-${subCategory.id}`}>
                                       {subCategory.name}
                                     </label>
                                   </div>
                                 </div>
                               ))
-                            )
-                          ) : (
-                            <p>Không có danh mục</p>
-                          )}
+                            )}
                         </div>
                       </div>
                     </div>
@@ -399,7 +358,7 @@ const ListProduct = () => {
                     <div className="" id="widget-4">
                       <div className="widget-body">
                         <div className="filter-items">
-                          {brands.length > 0 ? (
+                          {brands.length > 0 &&
                             brands.map((brand) => (
                               <div key={brand.id} className="filter-item">
                                 <div className="custom-control custom-checkbox">
@@ -415,10 +374,7 @@ const ListProduct = () => {
                                   </label>
                                 </div>
                               </div>
-                            ))
-                          ) : (
-                            <p>Không có thương hiệu</p>
-                          )}
+                            ))}
                         </div>
                       </div>
                     </div>

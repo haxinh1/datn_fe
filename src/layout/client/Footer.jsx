@@ -13,7 +13,7 @@ const Footer = () => {
                         <div className="row">
                             <div className="col-sm-12 col-lg-6">
                                 <div className="widget widget-about">
-                                    <Image src={logofooter} />
+                                    <img src={logofooter} style={{marginBottom:'20px'}}/>
 
                                     <p>
                                         Praesent dapibus, neque id cursus ucibus, tortor neque egestas augue, eu vulputate magna eros eu erat.
@@ -29,7 +29,7 @@ const Footer = () => {
                                             <div className="col-sm-6 col-md-8">
                                                 <span className="widget-about-title">Payment Method</span>
                                                 <figure className="footer-payments">
-                                                    <Image src={payments} style={{ width: "272px", height: "20px" }} />
+                                                    <img src={payments} style={{ width: "272px", height: "20px" }} />
                                                 </figure>
                                             </div>
                                         </div>

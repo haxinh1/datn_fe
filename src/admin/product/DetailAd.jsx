@@ -233,7 +233,7 @@ const ProductDetail = () => {
 
   return (
     product && (
-      <div className="container mt-5">
+      <div className="container">
         <h1 className="mb-5">
           <EyeOutlined style={{ marginRight: "8px" }} />
           Chi tiết sản phẩm

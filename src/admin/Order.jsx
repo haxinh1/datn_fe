@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import "../css/add.css";
 import "../css/list.css";
+import TextArea from "antd/es/input/TextArea";
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -124,7 +125,7 @@ const Order = () => {
       // Gọi API cập nhật trạng thái cho nhiều đơn hàng
       const response = await updateOrders(payload);
       notification.success({
-        message: "Cập nhật trạng thái cho nhiều đơn hàng thành công!",
+        message: "Trạng thái của các đơn hàng đẫ được cập nhật!",
       });
       hideEdits(); // Đóng modal
       refetchOrders(); // Làm mới danh sách đơn hàng sau khi cập nhật
@@ -564,7 +565,6 @@ const Order = () => {
                 <Select
                   className="input-item"
                   placeholder="Chọn trạng thái"
-                  showSearch
                   value={
                     status.find((s) => s.id === form.getFieldValue("status_id"))
                       ?.id || null
@@ -588,6 +588,12 @@ const Order = () => {
                 </Select>
               </Form.Item>
 
+              <Form.Item label="Ghi chú" name="note">
+                <TextArea className="input-item" />
+              </Form.Item>
+            </Col>
+
+            <Col span={12} className="col-item">
               <Form.Item
                 label="Ảnh xác nhận"
                 name="employee_evidence"
@@ -601,17 +607,11 @@ const Order = () => {
                 >
                   {!image && ( 
                     <button className="upload-button" type="button">
-                      <PlusOutlined />
+                      <UploadOutlined />
                       <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                     </button>
                   )}
                 </Upload>
-              </Form.Item>
-            </Col>
-
-            <Col span={12} className="col-item">
-              <Form.Item label="Ghi chú" name="note">
-                <Input className="input-item" />
               </Form.Item>
             </Col>
           </Row>
@@ -635,7 +635,6 @@ const Order = () => {
             <Select
               className="input-item"
               placeholder="Chọn trạng thái"
-              showSearch
               value={
                 status.find((s) => s.id === form.getFieldValue("status_id"))
                   ?.id || null
