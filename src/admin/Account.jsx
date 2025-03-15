@@ -1,5 +1,5 @@
-import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col } from 'antd';
+import { EditOutlined, EyeOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Image } from 'antd';
 import React, { useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -146,6 +146,13 @@ const Account = () => {
             align: "center",
         },
         {
+            title: "Ảnh đại diện",
+            dataIndex: "avatar",
+            key: "avatar",
+            render: (avatar) => <Image width={45} height={60} src={avatar} />,
+            align: "center",
+        },
+        {
             title: "Số điện thoại",
             dataIndex: "phone_number",
             key: "phone_number",
@@ -219,7 +226,7 @@ const Account = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <UsergroupAddOutlined style={{ marginRight: "8px" }} />
                 Danh sách tài khoản
             </h1>
 

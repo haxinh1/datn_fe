@@ -1,0 +1,75 @@
+.signup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 1000px;
+    background-color: #f5f5f5;
+    background: url("../assets/images/backgrounds/login-bg.jpg") no-repeat center center/cover; 
+}
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f5f5f5;
+    background: url("../assets/images/backgrounds/login-bg.jpg") no-repeat center center/cover; 
+}
+.title{
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: #e48948;
+    margin-bottom: 20px;
+}
+hr{
+    border: 0;
+    height: 3px;
+    background: #e48948;
+}
+.signup-card {
+    width: 800px;
+    padding: 24px;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.9); /* Làm mờ nền card */
+    border-radius: 12px;
+}
+.login-card {
+    width: 450px;
+    padding: 24px;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.9); /* Làm mờ nền card */
+    border-radius: 12px;
+}
+.ant-card-head-title {
+    font-size: 32px;
+    text-align: center;
+}
+.form-log {
+    margin-bottom: 40px;
+}
+.text-confirm {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    color: #e48948;
+    font-family: 'Roboto', sans-serif;
+}
+.text-quest {
+    display: block;
+    text-align: center;
+    color: #e48948;
+    font-size: 16px;
+    margin-top: 10px;
+}
+.text-quest:hover {
+    text-decoration: underline;
+}
+.form.help {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+  

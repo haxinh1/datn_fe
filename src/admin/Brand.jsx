@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BrandsServices } from "../services/brands";
-import { BookOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, GroupOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import slugify from "slugify";
 import "../css/add.css";
 import "../css/list.css";
@@ -121,7 +121,7 @@ const Brand = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <GroupOutlined style={{ marginRight: "8px" }} />
                 Danh sách thương hiệu
             </h1>
 

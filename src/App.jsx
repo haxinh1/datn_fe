@@ -29,6 +29,7 @@ import ListProduct from "./pages/ListProduct";
 import Inbox from "./admin/Inbox";
 import Confirm from "./pages/Confirm";
 import Coupon from "./admin/Coupon";
+import Forget from "./pages/Forget";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="signup" element={<Signup />} />
           <Route path="confirm" element={<Confirm />} />
+          <Route path="forget" element={<Forget />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />

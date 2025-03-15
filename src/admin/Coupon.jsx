@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, PlusOutlined, ProjectOutlined } from '@ant-design/icons';
 import { Button, Table, Tooltip, Modal, Form, Select, notification, Row, Col, Input, DatePicker, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
@@ -32,7 +32,6 @@ const Coupon = () => {
     };
 
     console.log(selectedCoupon);
-
 
     const handleShowModal = async (coupon) => {
         setEditingCoupon(coupon);
@@ -254,23 +253,20 @@ const Coupon = () => {
         form.resetFields();
     };
 
-
     const fetchData = async () => {
         const { data } = await CouponServices.fetchCoupons();
         setCoupon(data);
 
     };
 
-
     useEffect(() => {
         fetchData();
     }, []);
 
-
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ProjectOutlined style={{ marginRight: "8px" }} />
                 Quản lý mã giảm giá
             </h1>
             <div className="btn-brand">
@@ -279,11 +275,9 @@ const Coupon = () => {
                     icon={<PlusOutlined />}
                     onClick={() => handleShowModal()}
                 >
-                    Thêm Mã Giam Gia
+                    Thêm mới
                 </Button>
             </div>
-
-
 
             <Table
                 dataSource={coupon}
@@ -307,7 +301,6 @@ const Coupon = () => {
                     pagination={false}
                 />
             </Modal>
-
 
             <Modal
                 title={editingCoupon ? "Cập nhật mã giảm giá" : "Thêm mã giảm giá"}

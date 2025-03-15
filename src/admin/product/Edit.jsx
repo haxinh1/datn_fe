@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip, DatePicker } from "antd";
-import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
 import { productsServices } from './../../services/product';
@@ -625,7 +625,10 @@ const Edit = () => {
 
     return (
         <div className="container">
-            <h1 className="mb-5">Cập nhật sản phẩm</h1>
+            <h1 className="mb-5">
+                <EditOutlined style={{ marginRight: "8px" }} />
+                Cập nhật sản phẩm
+            </h1>
             <Form 
                 form={form} 
                 onFinish={onFinish}
@@ -764,7 +767,7 @@ const Edit = () => {
                             >
                                 {images.length < 12 && (
                                     <button className="upload-button" type="button">
-                                        <PlusOutlined />
+                                        <UploadOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                                     </button>
                                 )}

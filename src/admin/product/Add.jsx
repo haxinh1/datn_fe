@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip, DatePicker } from "antd";
-import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { BarsOutlined, DeleteOutlined, InsertRowLeftOutlined, PlusCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
 import { productsServices } from './../../services/product';
@@ -598,7 +598,10 @@ const Add = () => {
 
     return (
         <div className="container">
-            <h1 className="mb-5">Thêm sản phẩm mới</h1>
+            <h1 className="mb-5">
+                <PlusCircleOutlined style={{ marginRight: "8px" }} />
+                Thêm sản phẩm mới
+            </h1>
             <Form 
                 form={form} 
                 onFinish={onFinish}
@@ -753,7 +756,7 @@ const Add = () => {
                             >
                                 {images.length < 12 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
-                                        <PlusOutlined />
+                                        <UploadOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                                     </button>
                                 )}
@@ -873,7 +876,10 @@ const Add = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h1 className="mb-5">Thuộc tính</h1>
+                        <h1 className="mb-5">
+                            <BarsOutlined style={{ marginRight: "8px" }} />
+                            Thuộc tính
+                        </h1>
                         {attributes && attributes
                             .sort((a, b) => a.id - b.id)
                             .map((attr) => (
@@ -949,7 +955,10 @@ const Add = () => {
                         <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                         <hr />
-                        <h1 className="mb-5">Danh sách sản phẩm cùng loại</h1>
+                        <h1 className="mb-5">
+                            <InsertRowLeftOutlined style={{ marginRight: "8px" }} />
+                            Danh sách sản phẩm cùng loại
+                        </h1>
                         <Table columns={columns} dataSource={tableData} rowKey="id" />
                     </>
                 )}

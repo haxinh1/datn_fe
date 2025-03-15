@@ -2,7 +2,7 @@ import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNu
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, ImportOutlined } from '@ant-design/icons';
 import viVN from "antd/es/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -548,7 +548,7 @@ const History = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ImportOutlined style={{ marginRight: "8px" }} />
                 Lịch sử nhập hàng
             </h1>
 
@@ -588,7 +588,7 @@ const History = () => {
                     <Link to="/admin/import">
                         <Button 
                             color="primary" variant="solid" 
-                            icon={<PlusOutlined />} 
+                            icon={<ImportOutlined />} 
                         >
                             Nhập hàng
                         </Button>
