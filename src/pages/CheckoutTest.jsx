@@ -7,7 +7,7 @@ import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
 
-const Checkout = () => {
+const CheckoutTest = () => {
   const [cartItems, setCartItems] = useState([]);
   const nav = useNavigate();
   const [attributeValues, setAttributeValues] = useState([]);
@@ -21,7 +21,6 @@ const Checkout = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [payMents, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
 
   const [loading, setLoading] = useState(false);
 
@@ -33,58 +32,16 @@ const Checkout = () => {
   });
   const [userId, setUserId] = useState(null);
 
+  const sessionCart = JSON.parse(sessionStorage.getItem("cart")) || {};
+  const cartItemsArray = Object.values(sessionCart); // Chuyển đổi đối tượng thành mảng
+
   useEffect(() => {
     const fetchCartData = async () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
 
-      if (storedUser?.id) {
-        // Nếu đã đăng nhập => Lấy giỏ hàng từ API
-        try {
-          const cartData = await cartServices.fetchCart();
-          setCartItems(cartData); // Set giỏ hàng từ API
-        } catch (error) {
-          console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
-        }
-      } else {
-        // Nếu chưa đăng nhập => Lấy giỏ hàng từ sessionStorage
-        const sessionCart = JSON.parse(sessionStorage.getItem("cart")) || {};
-
-        // Chuyển Object thành Arrayz
-        const cartItemsArray = Object.values(sessionCart);
-
-        // Fetch thông tin sản phẩm từ API
-        const updatedCartItems = await Promise.all(
-          cartItemsArray.map(async (item) => {
-            try {
-              const productDetails = await productsServices.fetchProductById(
-                item.product_id
-              );
-
-              // Kiểm tra nếu sản phẩm có biến thể
-              let productVariant = null;
-              if (item.product_variant_id && productDetails.data.variants) {
-                productVariant = productDetails.data.variants.find(
-                  (variant) => variant.id === item.product_variant_id
-                );
-              }
-
-              return {
-                ...item,
-                product: productDetails.data,
-                product_variant: productVariant || null,
-              };
-            } catch (error) {
-              console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
-              return { ...item, product: null };
-            }
-          })
-        );
-        console.log("Dữ liệu giỏ hàng từ sessionStorage:", updatedCartItems);
-
-        setCartItems(updatedCartItems);
-      }
+      const cartData = await cartServices.fetchCart();
+      setCartItems(cartData); // Set giỏ hàng từ API
     };
-
     fetchCartData();
   }, []);
 
@@ -164,14 +121,15 @@ const Checkout = () => {
 
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-        // Lấy giá sản phẩm từ biến thể nếu có
         const productPrice = item.product_variant
           ? item.product_variant.sale_price ||
             item.product_variant.sell_price ||
             0
           : item.product?.sale_price || item.product?.sell_price || 0;
 
-        return total + productPrice * (item.quantity || 1);
+        const quantity = item.quantity || 1; // Đảm bảo quantity luôn có giá trị hợp lệ
+
+        return total + productPrice * quantity;
       }, 0)
     : 0;
 
@@ -517,28 +475,12 @@ const Checkout = () => {
                         </thead>
                         <tbody>
                           {/* Danh sách sản phẩm */}
-                          {cartItemsToDisplay.map((item) => (
-                            <tr key={item.id}>
-                              <td style={{ padding: "10px" }}>
-                                {item.product?.name || `Sản phẩm #${item.id}`}{" "}
-                                {item.product_variant_id && (
-                                  <span className="text-muted">
-                                    ({getAttributeValue(item)})
-                                  </span>
-                                )}
-                                (x{item.quantity})
-                              </td>
-                              <td
-                                style={{ textAlign: "right", padding: "10px" }}
-                              >
-                                {formatCurrency(
-                                  item.product_variant
-                                    ? item.product_variant.sale_price ||
-                                        item.product_variant.sell_price
-                                    : item.product?.sale_price ||
-                                        item.product?.sell_price
-                                )}
-                              </td>
+                          {cartItemsArray.map((item, index) => (
+                            <tr key={index}>
+                              <td>{item.product_id}</td>
+                              <td>{item.quantity}</td>
+                              <td>{item.price}</td>
+                              <td>{item.price * item.quantity}</td>
                             </tr>
                           ))}
 
@@ -672,4 +614,4 @@ const Checkout = () => {
   );
 };
 
-export default Checkout;
+export default CheckoutTest;
