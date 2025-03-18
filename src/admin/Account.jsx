@@ -1,6 +1,6 @@
-import { EditOutlined, EyeOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Image } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ const Account = () => {
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [filteredUsers, setFilteredUsers] = useState(null);
     const [form] = Form.useForm();
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
 
     const { data: users, isLoading, refetch  } = useQuery({
         queryKey: ["users"],
@@ -35,6 +36,13 @@ const Account = () => {
             handleEditCancel();
         }
     });
+
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("user")); // Giả sử 'user' là key lưu trữ dữ liệu người dùng
+        if (userData) {
+            setLoggedInUserId(userData.id);
+        }
+    }, []);    
 
     const showDetailModal = (record) => {
         setSelectedRecord(record);
@@ -149,7 +157,7 @@ const Account = () => {
             title: "Ảnh đại diện",
             dataIndex: "avatar",
             key: "avatar",
-            render: (avatar) => <Image width={45} height={60} src={avatar} />,
+            render: (avatar) => avatar ? (<Image width={45} src={avatar} />) : null,
             align: "center",
         },
         {
@@ -216,6 +224,7 @@ const Account = () => {
                             icon={<EditOutlined/>}
                             type="link"
                             onClick={() => showEditModal(record)}
+                            disabled={record.id === loggedInUserId}
                         />
                     </Tooltip>
                 </div>
@@ -226,7 +235,7 @@ const Account = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <UsergroupAddOutlined style={{ marginRight: "8px" }} />
+                <TeamOutlined style={{ marginRight: "8px" }} />
                 Danh sách tài khoản
             </h1>
 

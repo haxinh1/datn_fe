@@ -46,24 +46,19 @@ const Confirm = () => {
         setLoading(false);
     };
 
+    const userEmail = localStorage.getItem("user_email"); // 🔥 Lấy email từ localStorage
+
     return (
         <div className="login-container">
             <Card className="login-card">
                 <h1 className="title">Xác Nhận Email</h1>
-                <p className="text-confirm">Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.</p>
+                <span className="text-confirm">Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.</span>
                 <hr />
 
                 <Form form={form} layout="vertical" onFinish={handleConfirm}>
-                    <Form.Item
-                        className="form-log"
-                        label="Email"
-                        name="email"
-                        rules={[
-                            { required: true, message: "Vui lòng nhập Email" },
-                            { type: "email", message: "Email không hợp lệ" },
-                        ]}
-                    >
-                        <Input placeholder="Nhập Email" className="input-item"/>
+                    {/* Ẩn input email nhưng vẫn gửi dữ liệu */}
+                    <Form.Item name="email" initialValue={userEmail} style={{ display: "none" }}>
+                        <Input type="hidden" />
                     </Form.Item>
 
                     <Form.Item

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AuthServices } from "./../services/auth";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Form, Input, Button, Card, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import "../css/loginad.css";
@@ -51,7 +51,7 @@ const LoginAd = () => {
   };
 
   return (
-    <div className="login-container">
+    <div className="loginad-container">
       <Card title="Đăng Nhập Quản Lý" className="login-card">
         <Form 
           onFinish={handleLogin} 
@@ -79,6 +79,10 @@ const LoginAd = () => {
             <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu" className="input-item"/>
           </Form.Item>
 
+          <Link to='/forgetad'>
+            <span className="admin-quest">Quên mật khẩu</span>
+          </Link>
+          
           <Button 
             type="primary" htmlType="submit" 
             block loading={loading} className="btn-item"

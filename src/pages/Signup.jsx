@@ -43,7 +43,8 @@ const Signup = () => {
             const response = await AuthServices.register(userData);
             return response;
         },
-        onSuccess: () => {
+        onSuccess: (_, userData) => {
+            localStorage.setItem("user_email", userData.email); // 🔥 Lưu email vào localStorage
             notification.success({
                 message: "Đăng ký thành công!",
                 description: "Hãy kiểm tra Email để kích hoạt tài khoản.",
@@ -56,7 +57,7 @@ const Signup = () => {
                 description: error.message,
             });
         },
-    });
+    });    
 
     const onHandleChange = (info) => {
         if (info.file.status === "done" && info.file.response) {
@@ -185,7 +186,17 @@ const Signup = () => {
 
                             <Form.Item  
                                 name="confirmPassword" label="Xác nhận mật khẩu" 
-                                rules={[{ required: true, message: "Vui lòng nhập lại mật khẩu" }]}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập lại mật khẩu" },
+                                    {
+                                        validator: (_, value) => {
+                                            if (!value || value === form.getFieldValue('password')) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                                        },
+                                    },
+                                ]}
                             > 
                                 <Input.Password className="input-item" placeholder="Xác nhận mật khẩu"/>
                             </Form.Item>

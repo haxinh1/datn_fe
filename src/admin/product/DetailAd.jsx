@@ -133,7 +133,7 @@ const ProductDetail = () => {
       });
   };
 
-  if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
+  if (loading) return <span>Đang tải thông tin sản phẩm...</span>;
   if (error) return <p>{error}</p>;
 
   // Cấu hình cột cho bảng trong modal

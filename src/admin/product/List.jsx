@@ -230,7 +230,7 @@ const List = () => {
             title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
-            render: (_, item) => <Image width={45} height={60} src={item.thumbnail} />,
+            render: (_, item) => <Image width={45} src={item.thumbnail} />,
             align: "center",
         },
         {
@@ -389,7 +389,7 @@ const List = () => {
                                             title: "Ảnh",
                                             dataIndex: "thumbnail",
                                             key: "thumbnail",
-                                            render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
+                                            render: (thumbnail) => <Image width={45} src={thumbnail} />,
                                             align: "center",
                                             width: 80,
                                         },

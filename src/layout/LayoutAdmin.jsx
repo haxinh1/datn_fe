@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip } from "antd";
-import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, UsergroupAddOutlined, ProjectOutlined, EditOutlined } from "@ant-design/icons";
+import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -33,6 +33,7 @@ const LayoutAdmin = () => {
         try {
           const tokenBefore = localStorage.getItem("adminToken");
           console.log("Token before logout:", tokenBefore); // Kiểm tra token trước khi logout
+          localStorage.removeItem("admin_token");  // Xóa token
 
           // Gửi yêu cầu logout cho admin
           await AuthServices.logoutad(
@@ -61,6 +62,17 @@ const LayoutAdmin = () => {
     });
   };
 
+  const menu = (
+    <Menu>
+      <Menu.Item key="updateAccount" icon={<EditOutlined />}>
+        <Link to={`/admin/update/${user?.id}`}><span>Cập nhật thông tin</span></Link>
+      </Menu.Item>
+      <Menu.Item key="changePassword" icon={<LockOutlined />}>
+        <Link to={`/admin/change/${user?.id}`}><span>Đổi mật khẩu</span></Link>
+      </Menu.Item>
+    </Menu>
+  );
+
   const menuItems = [
     {
       key: "list-pr",
@@ -79,7 +91,7 @@ const LayoutAdmin = () => {
     },
     {
       key: "account",
-      icon: <UsergroupAddOutlined />,
+      icon: <TeamOutlined />,
       label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
     },
     {
@@ -138,19 +150,21 @@ const LayoutAdmin = () => {
       <Layout className="main-layout">
         <Header className="header-admin">
           {user && (
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", marginRight : "10px" }}>
               <Avatar src={user.avatar} alt="Avatar" size="large" style={{ marginRight: 10 }} />
               <span>{user.fullname}</span>
             </div>
           )}
-          <div className="group2">
-            <Tooltip title='Cập nhật thông tin'>
-              <Button color="primary" variant="solid" icon={<EditOutlined />}/>
-            </Tooltip>
-            <Tooltip title='Đăng xuất'>
-              <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad}/>
-            </Tooltip>
-          </div>
+          
+          <Tooltip title='Thông báo'>
+            <BellOutlined style={{fontSize:'24px', marginRight:'10px', cursor:'pointer'}}/>
+          </Tooltip>
+          <Dropdown overlay={menu} trigger={['hover']}>
+            <Button color="primary" variant="solid" icon={<SettingOutlined />} />
+          </Dropdown>
+          <Tooltip title='Đăng xuất'>
+            <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad}/>
+          </Tooltip>
         </Header>
 
         <Content className="content-admin">
