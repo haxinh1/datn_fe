@@ -18,7 +18,7 @@ import LoginAd from "./admin/LoginAd";
 import PrivateRoute from "./admin/PrivateRAd";
 import Account from "./admin/Account";
 import Signup from "./pages/Signup";
-
+import Dashboard from "./pages/Dashboard";
 import Cart from "./pages/Cart";
 import Thankyoupage from "./pages/Thankyou";
 import Order from "./admin/Order";
@@ -29,10 +29,22 @@ import ListProduct from "./pages/ListProduct";
 import Inbox from "./admin/Inbox";
 import Confirm from "./pages/Confirm";
 import Coupon from "./admin/Coupon";
+import Forget from "./pages/Forget";
+import Reset from "./pages/Reset";
+import Update from "./admin/Update";
+import Change from "./admin/Change";
+import ForgetAd from "./admin/ForgetAd";
+import ResetAd from "./admin/ResetAd";
+import PrivateClient from "./pages/PrivateClient";
+import ChangePass from "./pages/ChangePass";
+import Info from "./pages/Info";
+import Orders from "./pages/Orders";
+import Address from "./pages/Address";
 
 function App() {
   return (
     <>
+      {/*router cho khách hàng */}
       <Routes>
         <Route path="/" element={<LayoutClient />}>
           <Route index element={<Home />} />
@@ -40,17 +52,28 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="signup" element={<Signup />} />
           <Route path="confirm" element={<Confirm />} />
+          <Route path="forget" element={<Forget />} />
+          <Route path="reset/:token" element={<Reset />} />
           <Route path="checkout" element={<Checkout />} />
 
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
+
+          <Route path="dashboard" element={<PrivateClient><Dashboard /></PrivateClient>}>
+            <Route path="changepass/:id" element={<ChangePass />} />
+            <Route path="info/:id" element={<Info />} />
+            <Route path="orders/:id" element={<Orders />} />
+            <Route path="address/:id" element={<Address />} />
+          </Route>
         </Route>
       </Routes>
 
       <Routes>
         <Route path="/loginad" index element={<LoginAd />} />
+        <Route path="/forgetad" element={<ForgetAd />} />
+        <Route path="/resetad/:token" element={<ResetAd />} />
 
         {/* Các trang cần đăng nhập */}
         <Route element={<PrivateRoute />}>
@@ -69,6 +92,8 @@ function App() {
             <Route path="order" element={<Order />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />
+            <Route path="update/:id" element={<Update />} />
+            <Route path="change/:id" element={<Change />} />
           </Route>
         </Route>
       </Routes>

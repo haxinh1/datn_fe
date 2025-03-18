@@ -1,13 +1,15 @@
-import { Button, Table, Modal, Row, DatePicker, ConfigProvider, Form, Select, Input, InputNumber, notification, Tooltip, Skeleton } from 'antd';
+import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, ImportOutlined } from '@ant-design/icons';
 import viVN from "antd/es/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 dayjs.locale("vi");
 import { Link } from 'react-router-dom';
+import "../../css/add.css";
+import "../../css/list.css";
 
 const History = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -134,6 +136,11 @@ const History = () => {
 
     // Cột danh sách nhập hàng
     const columns = [
+        {
+            title:"",
+            render:() => { return <input className="tick" type="checkbox" />},
+            align: "center"
+          },
         {
             title: "STT",
             dataIndex: "index",
@@ -541,7 +548,7 @@ const History = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ImportOutlined style={{ marginRight: "8px" }} />
                 Lịch sử nhập hàng
             </h1>
 
@@ -569,14 +576,24 @@ const History = () => {
                     </Select>
                 </div>
 
-                <Link to="/admin/import" className='group2'>
+                <div className="group2">
                     <Button 
-                        color="primary" variant="solid" 
-                        icon={<PlusOutlined />} 
+                        color="primary" 
+                        variant="solid"
+                        icon={<EditOutlined />} 
                     >
-                        Nhập hàng
+                        Cập nhật
                     </Button>
-                </Link>
+                    
+                    <Link to="/admin/import">
+                        <Button 
+                            color="primary" variant="solid" 
+                            icon={<ImportOutlined />} 
+                        >
+                            Nhập hàng
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <Skeleton active loading={isProductsLoading}>

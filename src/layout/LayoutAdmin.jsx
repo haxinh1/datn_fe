@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Breadcrumb, Layout, Menu, theme, Modal } from "antd"; // Import Modal từ Ant Design
-import {
-  HomeOutlined,
-  BookOutlined,
-  FormOutlined,
-  UserOutlined,
-  BilibiliFilled,
-  MessageOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
+import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
+import logo from "../assets/images/logo-footer.png";
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Header, Footer, Sider } = Layout;
 
 const LayoutAdmin = () => {
   const {
@@ -21,6 +14,12 @@ const LayoutAdmin = () => {
   } = theme.useToken();
 
   const nav = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    setUser(storedUser);  // Lấy thông tin người dùng từ localStorage
+  }, []);
 
   const logoutad = async () => {
     // Hiển thị Modal xác nhận trước khi logout
@@ -34,6 +33,7 @@ const LayoutAdmin = () => {
         try {
           const tokenBefore = localStorage.getItem("adminToken");
           console.log("Token before logout:", tokenBefore); // Kiểm tra token trước khi logout
+          localStorage.removeItem("admin_token");  // Xóa token
 
           // Gửi yêu cầu logout cho admin
           await AuthServices.logoutad(
@@ -62,67 +62,67 @@ const LayoutAdmin = () => {
     });
   };
 
+  const menu = (
+    <Menu>
+      <Menu.Item key="updateAccount" icon={<EditOutlined />}>
+        <Link to={`/admin/update/${user?.id}`}><span>Cập nhật thông tin</span></Link>
+      </Menu.Item>
+      <Menu.Item key="changePassword" icon={<LockOutlined />}>
+        <Link to={`/admin/change/${user?.id}`}><span>Đổi mật khẩu</span></Link>
+      </Menu.Item>
+    </Menu>
+  );
+
   const menuItems = [
     {
-      key: "",
-      icon: <UserOutlined />,
-      label: `Xin chào Admin`,
-      disabled: true,
-    },
-    {
       key: "list-pr",
-      icon: <BookOutlined />,
-      label: <Link to="/admin/list-pr">Quản lý sản phẩm</Link>,
+      icon: <ProductOutlined />,
+      label: <Link to="/admin/list-pr"><span>Quản lý sản phẩm</span></Link>,
     },
     {
       key: "history",
-      icon: <BookOutlined />,
-      label: <Link to="/admin/history">Quản lý nhập hàng</Link>,
+      icon: <ImportOutlined />,
+      label: <Link to="/admin/history"><span>Quản lý nhập hàng</span></Link>,
     },
     {
       key: "order",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/order">Quản lý đơn hàng</Link>,
+      icon: <BookOutlined />,
+      label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
     },
     {
       key: "account",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/account">Quản lý tài khoản</Link>,
+      icon: <TeamOutlined />,
+      label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
     },
     {
       key: "category",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/categories">Danh mục</Link>,
+      icon: <TableOutlined />,
+      label: <Link to="/admin/categories"><span>Danh mục</span></Link>,
     },
     {
       key: "brand",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/brand">Thương hiệu</Link>,
+      icon: <GroupOutlined />,
+      label: <Link to="/admin/brand"><span>Thương hiệu</span></Link>,
     },
     {
       key: "coupon",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/coupon">Mã giảm giá</Link>,
+      icon: <ProjectOutlined />,
+      label: <Link to="/admin/coupon"><span>Mã giảm giá</span></Link>,
     },
     {
       key: "bill",
-      icon: <BilibiliFilled />,
-      label: <Link to="/admin/bill">Hóa đơn</Link>,
+      icon: <PrinterOutlined />,
+      label: <Link to="/admin/bill"><span>Hóa đơn</span></Link>,
     },
     {
       key: "inbox",
       icon: <MessageOutlined />,
-      label: <Link to="/admin/inbox">Tin nhắn</Link>,
+      label: <Link to="/admin/inbox"><span>Tin nhắn</span></Link>,
     },
     {
       key: "client",
       icon: <HomeOutlined />,
-      label: <Link to="/">Trang chủ</Link>,
-    },
-    {
-      key: "logoutad",
-      icon: <LogoutOutlined />,
-      label: <span onClick={logoutad}>Đăng xuất</span>,
+      label: <Link to="/"><span>Trang chủ</span></Link>,
     },
   ];
 
@@ -136,7 +136,9 @@ const LayoutAdmin = () => {
         onBreakpoint={(broken) => console.log(broken)}
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
-        <div className="demo-logo-vertical" />
+        <div className="demo-logo-vertical">
+          <img src={logo} className="logo-admin"/>
+        </div>
         <Menu
           theme="dark"
           mode="inline"
@@ -145,9 +147,26 @@ const LayoutAdmin = () => {
         />
       </Sider>
 
-      {/* Main Layout */}
       <Layout className="main-layout">
-        
+        <Header className="header-admin">
+          {user && (
+            <div style={{ display: "flex", alignItems: "center", marginRight : "10px" }}>
+              <Avatar src={user.avatar} alt="Avatar" size="large" style={{ marginRight: 10 }} />
+              <span>{user.fullname}</span>
+            </div>
+          )}
+          
+          <Tooltip title='Thông báo'>
+            <BellOutlined style={{fontSize:'24px', marginRight:'10px', cursor:'pointer'}}/>
+          </Tooltip>
+          <Dropdown overlay={menu} trigger={['hover']}>
+            <Button color="primary" variant="solid" icon={<SettingOutlined />} />
+          </Dropdown>
+          <Tooltip title='Đăng xuất'>
+            <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad}/>
+          </Tooltip>
+        </Header>
+
         <Content className="content-admin">
           <div
             className="content-box"

@@ -9,7 +9,7 @@ const PrivateRoute = () => {
     return <Navigate to="/loginad" replace />;
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "admin" && user.role !== "manager") {
     return <Navigate to="/" replace />;
   }
 

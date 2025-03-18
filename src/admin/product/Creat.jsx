@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, Form, notification, Row, Col, Upload, Radio, InputNumber, Switch, Tooltip, DatePicker } from "antd";
-import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
-import "./add.css";
 import { productsServices } from './../../services/product';
 import { BrandsServices } from './../../services/brands';
 import { categoryServices } from './../../services/categories';
@@ -13,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import "../../css/add.css";
 
 const { Option } = Select;
 
@@ -598,7 +598,10 @@ const Creat = () => {
 
     return (
         <div className="container">
-            <h1 className="mb-5">Thêm sản phẩm mới</h1>
+            <h1 className="mb-5">
+                <PlusCircleOutlined style={{ marginRight: "8px" }} />
+                Thêm sản phẩm mới
+            </h1>
             <Form 
                 form={form} 
                 onFinish={onFinish}
@@ -753,7 +756,7 @@ const Creat = () => {
                             >
                                 {images.length < 12 && ( // Ẩn nút tải lên nếu đã có 6 ảnh
                                     <button className="upload-button" type="button">
-                                        <PlusOutlined />
+                                        <UploadOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                                     </button>
                                 )}

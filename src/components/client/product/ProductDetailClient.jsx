@@ -167,13 +167,13 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <a href="#">Home</a>
+              <span>Trang Chủ</span>
             </li>
             <li className="breadcrumb-item">
-              <a href="#">Products</a>
+              <span>Sản Phẩm</span>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
-              Product Detail
+              <span>Chi Tiết</span>
             </li>
           </ol>
         </div>
@@ -269,7 +269,8 @@ const ProductDetailClient = () => {
                     </div>
                   ) : (
                     <div className="details-filter-row details-row-size">
-                      <label>Stock:</label>
+                      <label>Tồn kho:</label>
+
                       <div className="product-nav product-nav-dots">
                         <div>{product.stock}</div>
                       </div>
@@ -316,7 +317,7 @@ const ProductDetailClient = () => {
                           value={selectedSize}
                           onChange={(e) => handleSizeSelect(e.target.value)}
                         >
-                          <option value="">Select a size</option>
+                          <option value="">Chọn size</option>
                           {product.atribute_value_product
                             .filter(
                               (attr) => attr.attribute_value.attribute_id === 2
@@ -340,7 +341,7 @@ const ProductDetailClient = () => {
                     </div>
                   )}
                   <div className="details-filter-row details-row-size">
-                    <label htmlFor="qty">Qty:</label>
+                    <label htmlFor="qty">Số lượng:</label>
                     <div className="product-details-quantity">
                       <input
                         type="number"
@@ -348,7 +349,11 @@ const ProductDetailClient = () => {
                         className="form-control"
                         value={quantity}
                         min="1"
-                        max={selectedVariant?.stock}
+                        max={
+                          selectedVariant?.stock
+                            ? selectedVariant?.stock
+                            : product.stock
+                        }
                         step="1"
                         required
                         onChange={handleQuantityChange}
@@ -385,7 +390,7 @@ const ProductDetailClient = () => {
 
                   <div className="product-details-footer">
                     <div className="product-cat">
-                      <span>Category:</span>
+                      <span>Danh Mục:</span>
                       {product.categories &&
                         product.categories.map((category) => (
                           <span key={category.id}>

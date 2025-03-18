@@ -29,8 +29,8 @@ const Cart = () => {
 
   // Log the cartItems to verify the data after setting
   useEffect(() => {
-    console.log("Giỏ hàng sau khi setCartItems:", cartItems.data);
-  }, [cartItems.data]);
+    console.log("Giỏ hàng sau khi setCartItems:", cartItems);
+  }, [cartItems]);
 
   useEffect(() => {
     const fetchAttributeValues = async () => {
@@ -158,7 +158,7 @@ const Cart = () => {
                 <div className="col-lg-9">
                   {cartItems.length === 0 ? (
                     <p className="fs-4 text-center text-danger">
-                      Giỏ hàng của bạn đang trống!
+                      <span>Giỏ hàng của bạn đang trống!</span>
                     </p>
                   ) : (
                     <table className="table table-cart">
@@ -189,13 +189,29 @@ const Cart = () => {
                       </thead>
                       <tbody>
                         {cartItems.map((item, index) => {
-                          const productImage =
-                            item.product?.thumbnail ||
-                            "/images/default-image.jpg";
-                          const productPrice =
-                            item.product_variant?.sale_price || item.price;
-                          const productName =
-                            item.product?.name || "Sản phẩm không xác định";
+                          const isVariant = item.product_variant_id !== null;
+
+                          // ✅ Lấy hình ảnh từ biến thể hoặc sản phẩm đơn
+                          const productImage = isVariant
+                            ? item.product_variant?.thumbnail ||
+                              item.product?.thumbnail
+                            : item.product?.thumbnail ||
+                              "/images/default-image.jpg";
+
+                          // ✅ Lấy giá sản phẩm (ưu tiên giá sale nếu có)
+                          const productPrice = isVariant
+                            ? item.product_variant?.sale_price ||
+                              item.product_variant?.sell_price
+                            : item.price;
+
+                          // ✅ Lấy tên sản phẩm, tránh lỗi `undefined`
+                          const productName = isVariant
+                            ? `${item.product?.name} ${
+                                item.product_variant?.name
+                                  ? "- " + item.product_variant?.name
+                                  : ""
+                              }`
+                            : item.product?.name || "Sản phẩm không xác định";
 
                           return (
                             <tr
@@ -286,7 +302,7 @@ const Cart = () => {
                 </div>
                 <aside className="col-lg-3">
                   <div className="summary summary-cart">
-                    <h3 className="summary-title fs-4">Tổng giỏ hàng</h3>
+                    <h3 className="summary-title fs-4">Giỏ hàng của bạn</h3>
                     <table className="table table-summary">
                       <tbody>
                         <tr className="summary-subtotal fs-5">
@@ -294,7 +310,7 @@ const Cart = () => {
                           <td>{formatCurrency(subtotal)}</td>
                         </tr>
                         <tr className="summary-total fs-5">
-                          <td>Tổng cộng:</td>
+                          <td>Tổng tiền:</td>
                           <td>{formatCurrency(total)}</td>
                         </tr>
                       </tbody>

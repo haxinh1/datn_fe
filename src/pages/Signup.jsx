@@ -1,62 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { notification, Select } from "antd";
-import { AuthServices } from '../services/auth';
-import '../assets/css/bootstrap.min.css';
-import '../assets/css/plugins/owl-carousel/owl.carousel.css';
-import '../assets/css/plugins/magnific-popup/magnific-popup.css';
-import '../assets/css/plugins/jquery.countdown.css';
-import '../assets/css/style.css';
-import '../assets/css/skins/skin-demo-8.css';
-import '../assets/css/demos/demo-8.css';
+import { Form, Input, Button, Select, DatePicker, notification, Row, Col, Card, Upload } from "antd";
+import { AuthServices } from "../services/auth";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import "../css/signup.css";
+import { UploadOutlined } from "@ant-design/icons";
 
 const Signup = () => {
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [fullName, setFullname] = useState("");
-    const [address, setAddress] = useState("");
-    const [detailaddress, setDetailaddress] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [gender, setGender] = useState("");
-    const [birthday, setBirthday] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
+    const [form] = Form.useForm();
+    const navigate = useNavigate();
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
-    const [selectedProvince, setSelectedProvince] = useState(null);
-    const [selectedDistrict, setSelectedDistrict] = useState(null);
-    const [selectedWard, setSelectedWard] = useState(null);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate()
-
-    // Sử dụng useMutation để gọi API đăng ký
-    const { mutate, data } = useMutation({
-        mutationFn: async (userData) => {
-            try {
-                const response = await AuthServices.register(userData);
-                return response; // Trả về response khi đăng ký thành công
-            } catch (error) {
-                // In ra lỗi chi tiết để kiểm tra
-                console.error('Error during registration:', error);
-                throw new Error(error.response?.data?.message || "Đã xảy ra lỗi khi đăng ký");
-            }
-        },
-        onSuccess: () => {
-            notification.success({
-                message: "Gửi yều cầu đăng ký thành công!",
-                description: "Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.",
-            });
-            navigate("/confirm")
-        },
-        onError: (error) => {
-            notification.error({
-                message: "Đăng ký thất bại",
-                description: error.message,
-            });
-        },
-    });   
+    const [image, setImage] = useState("");
 
     useEffect(() => {
         fetch("https://provinces.open-api.vn/api/?depth=3")
@@ -67,252 +25,241 @@ const Signup = () => {
             });
     }, []);
 
-    const handleProvinceChange = (e) => {
-        const provinceCode = e.target.value;
-        const province = provinces.find(p => p.code === Number(provinceCode));
-        
-        setSelectedProvince(provinceCode);
+    const handleProvinceChange = (value) => {
+        const province = provinces.find(p => p.code === Number(value));
         setDistricts(province ? province.districts : []);
         setWards([]);
-        setSelectedDistrict("");
-        setSelectedWard("");
-    };    
-    
-    const handleDistrictChange = (e) => {
-        const districtCode = e.target.value;
-        const district = districts.find(d => d.code === Number(districtCode));
-        
-        setSelectedDistrict(districtCode);
+        form.setFieldsValue({ district: null, ward: null });
+    };
+
+    const handleDistrictChange = (value) => {
+        const district = districts.find(d => d.code === Number(value));
         setWards(district ? district.wards : []);
-        setSelectedWard("");
-    };    
-    
-    const handleWardChange = (e) => {
-        setSelectedWard(e.target.value);
-    };       
+        form.setFieldsValue({ ward: null });
+    };
 
-    useEffect(() => {
-        if (data) {
-            setPhoneNumber("");
-            setFullname("");
-            setAddress("");
-            setGender("");
-            setBirthday("");
-            setDetailaddress("");
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
-            setSelectedProvince(null);
-            setSelectedDistrict(null);
-            setSelectedWard(null);
-            setDistricts([]);
-            setWards([]);
-            setError("");
+    const { mutate } = useMutation({
+        mutationFn: async (userData) => {
+            const response = await AuthServices.register(userData);
+            return response;
+        },
+        onSuccess: (_, userData) => {
+            localStorage.setItem("user_email", userData.email); // 🔥 Lưu email vào localStorage
+            notification.success({
+                message: "Đăng ký thành công!",
+                description: "Hãy kiểm tra Email để kích hoạt tài khoản.",
+            });
+            navigate("/confirm");
+        },
+        onError: (error) => {
+            notification.error({
+                message: "Đăng ký thất bại",
+                description: error.message,
+            });
+        },
+    });    
+
+    const onHandleChange = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+          const imageUrl = info.file.response.secure_url;
+          setImage(imageUrl);
+          form.setFieldsValue({ avatar: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+        } else if (info.file.status === "removed") {
+          setImage(""); // Xóa ảnh khi người dùng xóa
+          form.setFieldsValue({ avatar: "" }); // Cập nhật lại giá trị trong form
         }
-    }, [data]);
-    
-    const handleRegister = (e) => {
-        e.preventDefault();
-    
-        // Kiểm tra mật khẩu có khớp không
-        if (password !== confirmPassword) {
-            setError("Mật khẩu không khớp!");
+    };
+
+    const handleRegister = (values) => {
+        if (values.password !== values.confirmPassword) {
+            notification.error({ message: "Mật khẩu không khớp!" });
             return;
         }
+        
+        const formattedAddress = [
+            values.ward ? wards.find(w => w.code === Number(values.ward))?.name : "",
+            values.district ? districts.find(d => d.code === Number(values.district))?.name : "",
+            values.province ? provinces.find(p => p.code === Number(values.province))?.name : "",
+        ].filter(Boolean).join(", ");
     
-        // Làm sạch số điện thoại (nếu cần)
-        const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');  // Loại bỏ ký tự không phải số
-   
-        // Kiểm tra trước khi gửi dữ liệu
-        if (!cleanedPhoneNumber || !password || !confirmPassword) {
-            setError("Vui lòng điền đầy đủ thông tin.");
-            return;
-        }
-
-        console.log({
-            phone_number: cleanedPhoneNumber,
-            password: password,
-            password_confirmation: confirmPassword,
-            fullname: fullName,
-            address: address,
-            gender: gender,
-            birthday: birthday,
-            detail_address: detailaddress,
-            email: email
-        });
-   
-        // Tạo chuỗi địa chỉ theo định dạng mong muốn
-        const formattedAddress = 
-        `${selectedWard ? wards.find(w => w.code === Number(selectedWard))?.name : ""}, ` +
-        `${selectedDistrict ? districts.find(d => d.code === Number(selectedDistrict))?.name : ""}, ` +
-        `${selectedProvince ? provinces.find(p => p.code === Number(selectedProvince))?.name : ""}`;
-
-        mutate({
-            phone_number: cleanedPhoneNumber,
-            password: password,
-            password_confirmation: confirmPassword,
-            fullname: fullName,
+        const userData = {
+            phone_number: values.phone_number,
+            password: values.password,
+            password_confirmation: values.confirmPassword,
+            fullname: values.fullname,
             address: formattedAddress,
-            gender: gender,
-            birthday: birthday,
-            detail_address: detailaddress,
-            email: email
-        });
-    };   
+            gender: values.gender,
+            birthday: values.birthday.format("YYYY-MM-DD"),
+            detail_address: values.detail_address,
+            email: values.email,
+            avatar: values.avatar,
+        };
+    
+        console.log("Dữ liệu gửi đi:", userData);
+        mutate(userData);
+    };    
 
     return (
-        <div className="login-page bg-image pt-8 pb-8 pt-md-12 pb-md-12 pt-lg-17 pb-lg-17">
-            <div className="container">
-                <div className="form-box">
-                    <div className="form-tab">
-                        <ul className="nav nav-pills nav-fill">
-                            <li className="nav-item">
-                                <a className="nav-link active">Đăng ký</a>
-                            </li>
-                        </ul>
-                        <div className="tab-content">
-                            <div className="tab-pane fade show active">
-                                <form onSubmit={handleRegister}>
-                                    <div className="form-group">
-                                        <label>Họ và tên</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={fullName} 
-                                            onChange={(e) => setFullname(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Giới tính</label>
-                                        <select 
-                                            className="form-control" 
-                                            value={gender} 
-                                            onChange={(e) => setGender(e.target.value)} 
-                                            required
-                                        >
-                                            <option value="">Chọn giới tính</option>
-                                            <option value="male">Nam</option>
-                                            <option value="female">Nữ</option>
-                                            <option value="other">Khác</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Ngày sinh</label>
-                                        <input 
-                                            type="date" 
-                                            className="form-control" 
-                                            value={birthday} 
-                                            onChange={(e) => setBirthday(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label for="province">Tỉnh/Thành phố</label>
-                                        <select id="province" class="form-control" onChange={handleProvinceChange} value={selectedProvince} required>
-                                            <option value="">Chọn tỉnh/thành phố</option>
-                                            {provinces.map(province => (
-                                                <option key={province.code} value={province.code}>{province.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label for="district">Quận/Huyện</label>
-                                        <select id="district" class="form-control" onChange={handleDistrictChange} value={selectedDistrict} required disabled={!selectedProvince}>
-                                            <option value="">Chọn quận/huyện</option>
-                                            {districts.map(district => (
-                                                <option key={district.code} value={district.code}>{district.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label for="ward">Phường/Xã</label>
-                                        <select id="ward" class="form-control" onChange={handleWardChange} value={selectedWard} required disabled={!selectedDistrict}>
-                                            <option value="">Chọn phường/xã</option>
-                                            {wards.map(ward => (
-                                                <option key={ward.code} value={ward.code}>{ward.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Địa chỉ cụ thể</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={detailaddress} 
-                                            onChange={(e) => setDetailaddress(e.target.value)} 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Email</label>
-                                        <input 
-                                            type="email" 
-                                            className="form-control" 
-                                            value={email} 
-                                            onChange={(e) => setEmail(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Số điện thoại</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={phoneNumber} 
-                                            onChange={(e) => setPhoneNumber(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Mật khẩu</label>
-                                        <input 
-                                            type="password" 
-                                            className="form-control" 
-                                            value={password} 
-                                            onChange={(e) => setPassword(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Xác nhận mật khẩu</label>
-                                        <input 
-                                            type="password" 
-                                            className="form-control" 
-                                            value={confirmPassword} 
-                                            onChange={(e) => setConfirmPassword(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    {error && <p className="text-danger">{error}</p>}
-                                    <div className="form-footer">
-                                        <button type="submit" className="btn btn-outline-primary-2">
-                                            <span>ĐĂNG KÝ</span>
-                                            <i className="icon-long-arrow-right"></i>
-                                        </button>
-                                    </div>
-                                </form>
-                                <div className="form-choice">
-                                    <p className="text-center">hoặc đăng ký bằng</p>
-                                    <div className="row">
-                                        <div className="col-sm-6">
-                                            <a href="#" className="btn btn-login btn-g">
-                                                <i className="icon-google"></i>
-                                                Google
-                                            </a>
-                                        </div>
-                                        <div className="col-sm-6">
-                                            <a href="#" className="btn btn-login btn-f">
-                                                <i className="icon-facebook-f"></i>
-                                                Facebook
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        <div className="signup-container">
+            <Card className="signup-card">
+                <h1 className="title">Đăng Ký Tài Khoản</h1>
+                <hr />
+                <Form form={form} layout="vertical" onFinish={handleRegister}>
+                    <Row gutter={24}>
+                        <Col span={12}>
+                            <Form.Item 
+                                name="fullname" label="Họ và tên" 
+                                rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
+                            > 
+                                <Input className="input-item" placeholder="Nhập họ và tên"/>
+                            </Form.Item>
+
+                            <Row gutter={24}>
+                                <Col span={12}>
+                                    <Form.Item 
+                                        name="gender" label="Giới tính" 
+                                        rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
+                                    > 
+                                        <Select className="input-item" placeholder="Chọn giới tính">
+                                            <Select.Option value="male">Nam</Select.Option>
+                                            <Select.Option value="female">Nữ</Select.Option>
+                                            <Select.Option value="other">Khác</Select.Option>
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item 
+                                        name="birthday" label="Ngày sinh" 
+                                        rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
+                                    > 
+                                        <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY"/>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Col>    
+
+                        <Col span={12}>
+                            <Form.Item
+                                label="Ảnh đại diện"
+                                name="avatar"
+                                getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
+                            >
+                                <Upload
+                                listType="picture-card"
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{ upload_preset: "quangOsuy" }}
+                                onChange={onHandleChange}
+                                >
+                                {!image && ( 
+                                    <button className="upload-button" type="button">
+                                        <UploadOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </button>
+                                )}
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={24}>
+                        <Col span={12}>
+                            <Form.Item  
+                                name="email" label="Email" 
+                                rules={[{ required: true, type: "email", message: "Vui lòng nhập email hợp lệ" }]}
+                            > 
+                                <Input className="input-item" placeholder="Nhập Email"/>
+                            </Form.Item>
+
+                            <Form.Item  
+                                name="phone_number" label="Số điện thoại" 
+                                rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
+                            > 
+                                <Input className="input-item" placeholder="Nhập số điện thoại"/>
+                            </Form.Item>
+
+                            <Form.Item  
+                                name="password" label="Mật khẩu" 
+                                rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+                            > 
+                                <Input.Password className="input-item" placeholder="Nhập mật khẩu"/>
+                            </Form.Item>
+
+                            <Form.Item  
+                                name="confirmPassword" label="Xác nhận mật khẩu" 
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập lại mật khẩu" },
+                                    {
+                                        validator: (_, value) => {
+                                            if (!value || value === form.getFieldValue('password')) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                                        },
+                                    },
+                                ]}
+                            > 
+                                <Input.Password className="input-item" placeholder="Xác nhận mật khẩu"/>
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                            <Form.Item 
+                                name="province" label="Tỉnh/Thành phố" 
+                            > 
+                                <Select onChange={handleProvinceChange} loading={loading} className="input-item" placeholder="Chọn tỉnh/thành phố">
+                                    {provinces.map(p => <Select.Option key={p.code} value={p.code}>{p.name}</Select.Option>)}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item  
+                                name="district" label="Quận/Huyện" 
+                            > 
+                                <Select onChange={handleDistrictChange} disabled={!districts.length} className="input-item" placeholder="Chọn quận/huyện">
+                                    {districts.map(d => <Select.Option key={d.code} value={d.code}>{d.name}</Select.Option>)}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item  
+                                name="ward" label="Phường/Xã" 
+                            > 
+                                <Select disabled={!wards.length} className="input-item" placeholder="Chọn phường/xã">
+                                    {wards.map(w => <Select.Option key={w.code} value={w.code}>{w.name}</Select.Option>)}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item 
+                                name="detail_address" label="Địa chỉ cụ thể" 
+                            > 
+                                <Input className="input-item" placeholder="Nhập địa chỉ cụ thể"/>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    
+                    <div className="add">
+                        <button type="primary" htmlType="submit" className="btn btn-outline-primary-2">
+                            <span>ĐĂNG KÝ</span>
+                            <i className="icon-long-arrow-right"></i>
+                        </button>
+                    </div>
+                </Form>
+                <div className="form-choice">
+                    <p className="text-center"><span>hoặc đăng ký bằng</span></p>
+                    <div className="row">
+                        <div className="col-sm-6">
+                            <a href="#" className="btn btn-login btn-g">
+                                <i className="icon-google"></i>
+                                Google
+                            </a>
+                        </div>
+                        <div className="col-sm-6">
+                            <a href="#" className="btn btn-login btn-f">
+                                <i className="icon-facebook-f"></i>
+                                Facebook
+                            </a>
                         </div>
                     </div>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

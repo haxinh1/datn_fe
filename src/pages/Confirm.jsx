@@ -1,110 +1,83 @@
 import React, { useState } from "react";
-import '../assets/css/bootstrap.min.css';
-import '../assets/css/plugins/owl-carousel/owl.carousel.css';
-import '../assets/css/plugins/magnific-popup/magnific-popup.css';
-import '../assets/css/plugins/jquery.countdown.css';
-import '../assets/css/style.css';
-import '../assets/css/skins/skin-demo-8.css';
-import '../assets/css/demos/demo-8.css';
+import { Form, Input, Card, notification } from "antd";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AuthServices } from "../services/auth";
 import { useNavigate } from "react-router-dom";
-import { notification } from "antd";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "../assets/css/bootstrap.min.css";
+import "../assets/css/plugins/owl-carousel/owl.carousel.css";
+import "../assets/css/plugins/magnific-popup/magnific-popup.css";
+import "../assets/css/plugins/jquery.countdown.css";
+import "../assets/css/style.css";
+import "../assets/css/skins/skin-demo-8.css";
+import "../assets/css/demos/demo-8.css";
+import "../css/signup.css";
 
 const Confirm = () => {
-    const queryClient = useQueryClient(); 
-    const [email, setEmail] = useState("");
-    const [code, setCode] = useState("");
-    const navigate = useNavigate()
+    const [form] = Form.useForm();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
 
-    // Gửi mã xác nhận
     const { mutate } = useMutation({
         mutationFn: async (user) => {
-            try {
-                const response = await AuthServices.verify(user);
-                return response
-            } catch (error) {
-                throw new Error(error.response?.data?.message || "Đã xảy ra lỗi");
-            }
+            const response = await AuthServices.verify(user);
+            return response;
         },
         onSuccess: () => {
             notification.success({
-                message: "Tài khoản của bạn đã được kích hoạt",
-                description: "Hãy đăng nhập và sử dụng dịch vụ."
+                message: "Xác nhận thành công!",
+                description: "Tài khoản của bạn đã được kích hoạt. Hãy đăng nhập để sử dụng dịch vụ.",
             });
             queryClient.invalidateQueries({ queryKey: ["verify-email"] });
             navigate("/logincl");
         },
         onError: (error) => {
             notification.error({
-                message: "xác nhận thất bại",
-                description: error.message,
+                message: "Xác nhận thất bại",
+                description: error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!",
             });
         },
     });
 
-    const handleConfirm = (e) => {
-        e.preventDefault();
+    const handleConfirm = async (values) => {
+        setLoading(true);
+        mutate(values);
+        setLoading(false);
+    };
 
-        console.log({
-            email: email,
-            verification_code: code
-        })
-        mutate({
-            email: email,
-            verification_code: code
-        });
-    };  
+    const userEmail = localStorage.getItem("user_email"); // 🔥 Lấy email từ localStorage
 
     return (
-        <div className="login-page bg-image pt-8 pb-8 pt-md-12 pb-md-12 pt-lg-17 pb-lg-17">
-            <div className="container">
-                <div className="form-box">
-                    <div className="form-tab">
-                        <ul className="nav nav-pills nav-fill">
-                            <li className="nav-item">
-                                <a className="nav-link active">Xác nhận đăng ký</a>
-                            </li>
-                        </ul>
-                        <div className="tab-content">
-                            <div className="tab-pane fade show active">
-                                <form onSubmit={handleConfirm}>
-                                    <div className="product-content">
-                                        <p>Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.{" "}</p>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Email</label>
-                                        <input 
-                                            type="email" 
-                                            className="form-control" 
-                                            value={email} 
-                                            onChange={(e) => setEmail(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Mã xác nhận</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={code} 
-                                            onChange={(e) => setCode(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    {/* {error && <p className="text-danger">{error}</p>} */}
-                                    <div className="form-footer">
-                                        <button type="submit" className="btn btn-outline-primary-2">
-                                            <span>Xác nhận</span>
-                                            <i className="icon-long-arrow-right"></i>
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+        <div className="login-container">
+            <Card className="login-card">
+                <h1 className="title">Xác Nhận Email</h1>
+                <span className="text-confirm">Hãy kiểm tra Email và nhập mã xác nhận để kích hoạt tài khoản.</span>
+                <hr />
+
+                <Form form={form} layout="vertical" onFinish={handleConfirm}>
+                    {/* Ẩn input email nhưng vẫn gửi dữ liệu */}
+                    <Form.Item name="email" initialValue={userEmail} style={{ display: "none" }}>
+                        <Input type="hidden" />
+                    </Form.Item>
+
+                    <Form.Item
+                        className="form-log"
+                        label="Mã xác nhận"
+                        name="verification_code"
+                        rules={[{ required: true, message: "Vui lòng nhập mã xác nhận" }]}
+                    >
+                        <Input placeholder="Nhập mã xác nhận" className="input-item"/>
+                    </Form.Item>
+
+                    <div className="add">
+                        <button type="primary" htmlType="submit" loading={loading} className="btn btn-outline-primary-2">
+                            <span>XÁC NHẬN</span>
+                            <i className="icon-long-arrow-right"></i>
+                        </button>
                     </div>
-                </div>
-            </div>
+                </Form>
+            </Card>
         </div>
     );
 };

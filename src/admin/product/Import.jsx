@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Button, Select, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
+import "../../css/add.css";
+import "../../css/list.css";
 
 const Import = () => {
     const [form] = Form.useForm();
@@ -139,7 +141,7 @@ const Import = () => {
         const productsArray = Object.values(groupedProducts);
     
         const payload = {
-            user_id: 1,
+            // user_id: 1,
             products: productsArray
         };
     
@@ -193,7 +195,10 @@ const Import = () => {
 
     return (
         <div>
-            <h1 className="mb-5">Nhập hàng</h1>
+            <h1 className="mb-5">
+                <ImportOutlined style={{ marginRight: "8px" }} />
+                Nhập hàng
+            </h1>
 
             <div className="attribute">
                 <AutoComplete
@@ -202,6 +207,7 @@ const Import = () => {
                     value={searchQuery}
                     onSearch={handleSearch}
                     onSelect={(value, option) => handleSelectProduct(value, option)}
+                    prefix={<SearchOutlined />}
                 >
                     {filteredProducts.map(product => (
                         <AutoComplete.Option key={product.id} value={product.id} item={product}>
