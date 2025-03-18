@@ -87,8 +87,8 @@ const Header = () => {
                 </form>
               </div>
 
-              <Tooltip title="Đăng nhập">
-                <Link to={"/logincl"} className="wishlist-link">
+              <Tooltip title="Tài khoản">
+                <Link to={"/dashboard"} className="wishlist-link">
                   <i className="icon-user"></i>
                 </Link>
               </Tooltip>

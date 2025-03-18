@@ -156,9 +156,20 @@ const Edit = () => {
             });
             return; // Dừng lại không gửi dữ liệu
         }
+
+        // Kiểm tra và giữ giá trị cũ cho attribute_values_id nếu không thay đổi
+        const currentAttributeValuesId = product ? product.attribute_values_id : [];
+        const updatedAttributeValuesId = forms.flatMap((form) =>
+            form.values
+                .filter((value) => value && value.id !== null && value.id !== undefined)
+                .map((value) => Number(value.id))
+        );
+
+        const finalAttributeValuesId = updatedAttributeValuesId.length > 0 ? updatedAttributeValuesId : currentAttributeValuesId;
         
         const updatedData = {
             ...prepareProductData(values),
+            attribute_values_id: finalAttributeValuesId, // Sử dụng giá trị đã cập nhật hoặc giá trị cũ
             thumbnail: thumbnail ? thumbnail.url : null,
             product_images: images && images.map((img) => img.url), // Chỉ lấy danh sách URL ảnh
             sell_price: values.sell_price,

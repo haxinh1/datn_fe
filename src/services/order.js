@@ -28,6 +28,11 @@ const placeOrder = async (orderData) => {
   return response.data;
 };
 
+// danh sách đơn hàng theo người dùng
+const getOrderByIdUser = async (userId) => {
+  const response = await instance.get(`/orders/user/${userId}`);
+  return response.data;
+};
 
 const getOrderById = async (orderId) => {
   const response = await instance.get(`/orders/${orderId}`);
@@ -46,7 +51,7 @@ const updateOrderStatus = async (id, payload) => {
   return response.data;
 };
 
-// cập nhật trạng thái đơn hàng
+// cập nhật trạng thái nhiều đơn hàng đơn hàng
 const updateOrders= async (payload) => {
   const response = await instance.put(`orders/batch-update-status`, payload);
   return response.data;
@@ -60,5 +65,6 @@ export const OrderService = {
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,
-  updateOrders
+  updateOrders,
+  getOrderByIdUser
 };

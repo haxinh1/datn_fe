@@ -1,32 +1,30 @@
-import React from "react";
-import { Form, Input, Card, notification } from "antd";
+import React, { useState } from "react";
+import { Form, Input, Card, notification, Button } from "antd";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../assets/css/bootstrap.min.css";
-import "../assets/css/plugins/owl-carousel/owl.carousel.css";
-import "../assets/css/plugins/magnific-popup/magnific-popup.css";
-import "../assets/css/plugins/jquery.countdown.css";
 import "../assets/css/style.css";
-import "../assets/css/skins/skin-demo-8.css";
-import "../assets/css/demos/demo-8.css";
-import "../css/signup.css";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AuthServices } from './../services/auth';
+import "../css/loginad.css";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AuthServices } from "./../services/auth";
+import { UserOutlined } from "@ant-design/icons";
 
-const Forget = () => {
+const ForgetAd = () => {
     const [form] = Form.useForm();
     const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
 
     const { mutate } = useMutation({
         mutationFn: async (user) => {
-            const response = await AuthServices.forget(user);
-            return response;
+            setLoading(true);
+            return await AuthServices.forget(user);
         },
         onSuccess: () => {
             notification.success({
                 message: "Gửi yêu cầu thành công!",
-                description: "Hãy kiếm tra Email của bạn để đặt lại mật khẩu.",
+                description: "Hãy kiểm tra Email của bạn để đặt lại mật khẩu.",
             });
             queryClient.invalidateQueries({ queryKey: ["forgot-password"] });
+            setLoading(false);
             form.resetFields();
         },
         onError: (error) => {
@@ -34,6 +32,7 @@ const Forget = () => {
                 message: "Xác nhận thất bại",
                 description: error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!",
             });
+            setLoading(false);
         },
     });
 
@@ -43,35 +42,39 @@ const Forget = () => {
     };
 
     return (
-        <div className="login-container">
-            <Card className="login-card">
-                <h1 className="title">Quên Mật Khẩu</h1>
+        <div className="loginad-container">
+            <Card title="Quên Mật Khẩu" className="login-card">
                 <span className="text-confirm">Hãy nhập Email của bạn để được hỗ trợ cấp lại mật khẩu.</span>
-                <hr />
-
-                <Form form={form} layout="vertical" onFinish={handleConfirm}>
+                <Form onFinish={handleConfirm} layout="vertical" form={form}>
                     <Form.Item
                         className="form-log"
                         label="Email"
                         name="email"
                         rules={[
                             { required: true, message: "Vui lòng nhập Email" },
-                            { type: "email", message: "Email không hợp lệ" },
+                            { type: "email", message: "Email không hợp lệ" }
                         ]}
                     >
-                        <Input placeholder="Nhập Email" className="input-item"/>
+                        <Input
+                            prefix={<UserOutlined />}
+                            placeholder="Nhập Email"
+                            className="input-item"
+                        />
                     </Form.Item>
 
-                    <div className="add">
-                        <button type="primary" htmlType="submit"  className="btn btn-outline-primary-2">
-                            <span>GỬI</span>
-                            <i className="icon-long-arrow-right"></i>
-                        </button>
-                    </div>
+                    <Button 
+                        type="primary" 
+                        htmlType="submit" 
+                        block 
+                        className="btn-item"
+                        loading={loading}
+                    >
+                        Gửi
+                    </Button>
                 </Form>
             </Card>
         </div>
     );
 };
 
-export default Forget;
+export default ForgetAd;

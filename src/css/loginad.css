@@ -1,4 +1,4 @@
-.login-container {
+.loginad-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -23,4 +23,16 @@
 
 .form-log {
   margin-bottom: 40px;
+}
+
+.admin-quest{
+  display: block;
+  text-align: center;
+  color: red;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.admin-quest:hover{
+  text-decoration: underline;
 }

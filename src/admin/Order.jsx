@@ -1,5 +1,5 @@
-import { BookOutlined, EditOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
-import { Button, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { OrderService } from "./../services/order";
@@ -10,8 +10,6 @@ import { paymentServices } from "../services/payments";
 dayjs.locale("vi");
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import "../css/add.css";
-import "../css/list.css";
 import TextArea from "antd/es/input/TextArea";
 
 dayjs.extend(isSameOrAfter);
@@ -20,17 +18,19 @@ dayjs.extend(isSameOrBefore);
 const Order = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModal, setIsModal] = useState(false);
-  const [isModals, setIsModals] = useState(false);
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const hideEdit = () => setIsModal(false);
-  const hideEdits = () => setIsModals(false);
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
   const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
-  const [selectedOrders, setSelectedOrders] = useState([]);
   const { RangePicker } = DatePicker;
+  const [validStatuses, setValidStatuses] = useState([]);
+  const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
+  const [batchUpdateStatuses, setBatchUpdateStatuses] = useState([]);
+  const [batchUpdateNote, setBatchUpdateNote] = useState("");
+  const [selectedOrders, setSelectedOrders] = useState([]);
   const [filters, setFilters] = useState({
     dateRange: null,
     status: null,
@@ -38,7 +38,7 @@ const Order = () => {
   });
 
   // danh sách đơn hàng
-  const {data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
+  const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
       const response = await OrderService.getAllOrder();
@@ -73,77 +73,6 @@ const Order = () => {
     enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
   });
 
-  const handleSelectOrder = (selectedRowKeys, selectedRows) => {
-    setSelectedOrders(selectedRows); // Lưu trữ các đơn hàng đã chọn
-  };  
-
-  const rowSelection = {
-    selectedRowKeys: selectedOrders.map((order) => order.id),
-    onChange: handleSelectOrder,
-  };
-
-  // Hàm xử lý khi bấm nút Cập nhật cho nhiều đơn hàng
-  const handleUpdateButtonClick = () => {
-    if (selectedOrders.length === 0) {
-      notification.error({ message: "Vui lòng chọn ít nhất một đơn hàng!" });
-      return;
-    }
-
-    // Kiểm tra xem tất cả các đơn hàng đã chọn có trạng thái giống nhau không
-    const isSameStatus = selectedOrders.every(
-      (order) => order.status.id === selectedOrders[0].status.id
-    );
-
-    if (!isSameStatus) {
-      notification.error({ message: "Các đơn hàng phải có cùng trạng thái!" });
-      return;
-    }
-
-    // Nếu các đơn hàng có cùng trạng thái, mở modal
-    setIsModals(true); // Hiển thị modal cho việc cập nhật nhiều đơn hàng
-  };
-
-  // Hàm gửi yêu cầu cập nhật trạng thái cho nhiều đơn hàng
-  const handleBatchUpdate = async (values) => {
-    // Kiểm tra nếu chưa chọn đơn hàng
-    if (selectedOrders.length === 0) {
-      notification.error({ message: "Vui lòng chọn ít nhất một đơn hàng!" });
-      return;
-    }
-
-    // Tạo payload với danh sách các ID đơn hàng và trạng thái mới
-    const payload = {
-      order_ids: selectedOrders.map((order) => order.id),  
-      current_status: selectedOrders[0].status.id,        
-      new_status: values.status_id,     
-      note: values.note || "",             
-    };
-
-    console.log("Payload gửi đi: ", payload); // Debug
-
-    try {
-      // Gọi API cập nhật trạng thái cho nhiều đơn hàng
-      const response = await updateOrders(payload);
-      notification.success({
-        message: "Trạng thái của các đơn hàng đẫ được cập nhật!",
-      });
-      hideEdits(); // Đóng modal
-      refetchOrders(); // Làm mới danh sách đơn hàng sau khi cập nhật
-      form.resetFields();
-    } catch (error) {
-      console.error("Lỗi khi cập nhật trạng thái cho nhiều đơn hàng: ", error);
-      notification.error({
-        message: "Lỗi cập nhật trạng thái cho nhiều đơn hàng",
-      });
-    }
-  };
-
-  // Hàm gọi API để cập nhật trạng thái cho nhiều đơn hàng
-  const updateOrders = async (payload) => {
-    const response = await OrderService.updateOrders(payload);
-    return response.data;
-  };
-
   const orderStatusesData = (orderStatuses || []).map((item, index) => ({
     key: index,
     index: index + 1,
@@ -154,15 +83,32 @@ const Order = () => {
     created_at: dayjs(item.created_at).format("DD/MM/YYYY - HH:mm"),
   }));
 
+  const validTransitions = {
+    1: [2], // Chờ thanh toán -> Đã thanh toán
+    2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
+    3: [4, 8], // Đang xử lý -> Đang giao hàng Hủy đơn
+    4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+    5: [7], // Đã giao hàng -> Hoàn thành
+    9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
+    10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
+    12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
+  };    
+
   const showEdit = (order) => {
     setSelectedOrderId(order.id); // Lưu ID đơn hàng
     const currentStatusId = order.status?.id; // Lấy trạng thái hiện tại
 
     form.setFieldsValue({
-      status_id: currentStatusId,
+      status_id: undefined, // Không đặt giá trị mặc định cho status_id
       note: "",
       employee_evidence: "",
     });
+
+    // Lọc các trạng thái hợp lệ dựa trên trạng thái hiện tại
+    const validStatuses = validTransitions[currentStatusId] || [];
+    const filteredStatus = status.filter(item => validStatuses.includes(item.id));
+
+    setValidStatuses(filteredStatus); // Lưu lại các trạng thái hợp lệ
 
     setIsModal(true);
   };
@@ -225,7 +171,7 @@ const Order = () => {
     const isWithinDateRange =
       !dateRange ||
       (dayjs(order.created_at).isSameOrAfter(dayjs(dateRange[0]), "day") &&
-        dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
+      dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
 
     const matchesStatus = status === null || order.status?.id === status;
     const matchesPayment =
@@ -275,7 +221,105 @@ const Order = () => {
     setOrderDetails(orderDetails);
   };
 
+  // Hàm hiển thị modal cập nhật trạng thái
+  const showBatchUpdateModal = () => {
+    if (selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0]?.status.id)) {
+      return; // Không mở modal nếu không có đơn hàng được chọn hoặc các đơn hàng không cùng trạng thái
+    }
+
+    // Lấy trạng thái hiện tại của các đơn hàng
+    const currentStatus = selectedOrders[0]?.status.id;
+
+    // Lọc các trạng thái hợp lệ dựa trên trạng thái hiện tại của các đơn hàng
+    const validStatuses = validTransitions[currentStatus] || [];
+    const filteredStatus = status.filter(item => validStatuses.includes(item.id));
+
+    // Set các trạng thái hợp lệ vào modal
+    setBatchUpdateStatuses(filteredStatus);
+
+    // Mở modal
+    setBatchUpdateModalVisible(true);
+  };
+
+  // Kiểm tra xem có thể kích hoạt nút cập nhật không
+  const isUpdateButtonDisabled = selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0]?.status.id);
+
+  // Đóng modal
+  const hideBatchUpdateModal = () => {
+    setBatchUpdateModalVisible(false);
+  };
+
+  // Xử lý khi người dùng chọn đơn hàng
+  const handleSelectSingle = (order) => {
+    setSelectedOrders((prevSelectedOrders) => {
+      if (prevSelectedOrders.some(item => item.id === order.id)) {
+        return prevSelectedOrders.filter(item => item.id !== order.id);
+      } else {
+        return [...prevSelectedOrders, order];
+      }
+    });
+  };
+
+  // Xử lý khi người dùng chọn tất cả đơn hàng
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedOrders(ordersData);  // Chọn tất cả đơn hàng
+    } else {
+      setSelectedOrders([]);  // Bỏ chọn tất cả
+    }
+  };
+
+  // Cập nhật danh sách các đơn hàng được chọn
+  const rowSelection = {
+    selectedRowKeys: selectedOrders.map(order => order.id),
+    onChange: (selectedRowKeys) => {
+      setSelectedOrders(ordersData.filter(order => selectedRowKeys.includes(order.id)));
+    },
+  };
+
+  const handleBatchUpdateOrder = async (values) => {
+    const payload = {
+      order_ids: selectedOrders.map((order) => order.id),  // Lấy ID các đơn hàng đã chọn
+      current_status: selectedOrders[0].status.id,  // Trạng thái hiện tại của đơn hàng
+      new_status: values.status_id,  // Trạng thái mới
+      note: values.note || "",  // Ghi chú đồng bộ cho các đơn hàng
+    };
+
+    console.log(payload)
+
+    try {
+      // Gọi API cập nhật trạng thái cho nhiều đơn hàng
+      const response = await updateOrders(payload);
+        notification.success({
+        message: "Trạng thái của các đơn hàng đẫ được cập nhật!",
+      });
+      hideBatchUpdateModal(); // Đóng modal
+      refetchOrders(); // Làm mới danh sách đơn hàng sau khi cập nhật
+      form.resetFields();
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái cho nhiều đơn hàng: ", error);
+      notification.error({
+        message: "Lỗi cập nhật trạng thái cho nhiều đơn hàng",
+      });
+    }
+  };
+  
+  // Hàm gọi API để cập nhật trạng thái cho nhiều đơn hàng
+  const updateOrders = async (payload) => {
+    const response = await OrderService.updateOrders(payload);
+    return response.data;
+  };
+
   const columns = [
+    {
+      title: <Checkbox onChange={handleSelectAll} />,
+      render: (_, order) => (
+        <Checkbox 
+          checked={selectedOrders.some(item => item.id === order.id)} 
+          onChange={() => handleSelectSingle(order)} 
+        />
+      ),
+    },
     {
       title: "STT",
       dataIndex: "index",
@@ -312,7 +356,7 @@ const Order = () => {
       key: "created_at",
       align: "center",
       render: (created_at) =>
-        created_at ? dayjs(created_at).format("DD-MM-YYYY") : "",
+      created_at ? dayjs(created_at).format("DD-MM-YYYY") : "",
     },
     {
       title: "Phương thức thanh toán",
@@ -383,9 +427,9 @@ const Order = () => {
       key: "employee_evidence",
       align: "center",
       render: (employee_evidence) =>
-        employee_evidence ? (
-          <Image width={60} height={90} src={employee_evidence} />
-        ) : null,
+      employee_evidence ? (
+          <Image width={60} src={employee_evidence} />
+      ) : null,
     },
     {
       title: "Người cập nhật",
@@ -450,7 +494,7 @@ const Order = () => {
             allowClear
           />
         </ConfigProvider>
-
+  
         <Select
           placeholder="Trạng thái"
           className="select-item"
@@ -460,7 +504,7 @@ const Order = () => {
         >
           {status.map((item) => (
             <Select.Option key={item.id} value={item.id}>
-              {item.name}
+                {item.name}
             </Select.Option>
           ))}
         </Select>
@@ -484,8 +528,8 @@ const Order = () => {
             color="primary" 
             variant="solid"
             icon={<EditOutlined />} 
-            onClick={handleUpdateButtonClick}
-            disabled={selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0].status.id)}
+            onClick={showBatchUpdateModal}
+            disabled={isUpdateButtonDisabled}
           >
             Cập nhật
           </Button>
@@ -496,7 +540,6 @@ const Order = () => {
         <Table
           columns={columns}
           dataSource={dataSource}
-          rowSelection={rowSelection}
           pagination={{ pageSize: 10 }}
           bordered
         />
@@ -507,10 +550,10 @@ const Order = () => {
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={1000}
+        width={800}
       >
-        <span>Email người đặt: {orderInfo.email}</span> <br />
-        <span>Địa chỉ nhận hàng: {orderInfo.address}</span>
+        <span>Email người đặt: <span className="text-quest">{orderInfo.email}</span></span> <br />
+        <span>Địa chỉ nhận hàng: <span className="text-quest">{orderInfo.address}</span></span>
 
         <Table
           columns={detailColumns}
@@ -565,26 +608,13 @@ const Order = () => {
                 <Select
                   className="input-item"
                   placeholder="Chọn trạng thái"
-                  value={
-                    status.find((s) => s.id === form.getFieldValue("status_id"))
-                      ?.id || null
-                  } // ✅ Hiển thị ID nhưng đảm bảo nó đúng với tên trạng thái
-                  onChange={(value) =>
-                    form.setFieldsValue({ status_id: value })
-                  }
+                  showSearch
                 >
-                  {status
-                    .filter((item) => {
-                      const currentStatusId =
-                        form.getFieldValue("status_id") || 0; // ✅ Kiểm tra tránh undefined
-                      return item.id >= currentStatusId; // ✅ Hiển thị trạng thái hiện tại và các trạng thái sau
-                    })
-                    .map((item) => (
-                      <Select.Option key={item.id} value={item.id}>
-                        {item.name}{" "}
-                        {/* ✅ Hiển thị tên trạng thái thay vì ID */}
-                      </Select.Option>
-                    ))}
+                  {validStatuses.map((item) => (
+                    <Select.Option key={item.id} value={item.id}>
+                      {item.name}
+                    </Select.Option>
+                  ))}
                 </Select>
               </Form.Item>
 
@@ -615,9 +645,9 @@ const Order = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
           <div className="add">
-            <Button htmlType="submit" type="primary">
+            <Button type="primary" htmlType="submit">
               Cập nhật
             </Button>
           </div>
@@ -626,44 +656,39 @@ const Order = () => {
 
       <Modal
         title="Cập nhật trạng thái nhiều đơn hàng"
-        visible={isModals}
-        onCancel={hideEdits}
+        visible={batchUpdateModalVisible}
+        onCancel={hideBatchUpdateModal}
         footer={null}
       >
-        <Form form={form} layout="vertical" onFinish={handleBatchUpdate}>
-          <Form.Item label="Trạng thái đơn hàng" name="status_id">
-            <Select
+        <Form layout="vertical" onFinish={handleBatchUpdateOrder}>
+          <Form.Item 
+            label="Trạng thái đơn hàng" 
+            name="status_id" 
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
+          >
+            <Select 
               className="input-item"
-              placeholder="Chọn trạng thái"
-              value={
-                status.find((s) => s.id === form.getFieldValue("status_id"))
-                  ?.id || null
-              } // ✅ Hiển thị ID nhưng đảm bảo nó đúng với tên trạng thái
-              onChange={(value) =>
-                form.setFieldsValue({ status_id: value })
-              }
+              placeholder="Chọn trạng thái" 
+              showSearch
             >
-              {status
-                .filter((item) => {
-                  const currentStatusId =
-                    form.getFieldValue("status_id") || 0; // ✅ Kiểm tra tránh undefined
-                  return item.id >= currentStatusId; // ✅ Hiển thị trạng thái hiện tại và các trạng thái sau
-                })
-                .map((item) => (
-                  <Select.Option key={item.id} value={item.id}>
-                    {item.name}{" "}
-                    {/* ✅ Hiển thị tên trạng thái thay vì ID */}
-                  </Select.Option>
-                ))}
+              {batchUpdateStatuses.map((status) => (
+                <Select.Option key={status.id} value={status.id}>
+                  {status.name}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
-            
+
           <Form.Item label="Ghi chú" name="note">
-            <Input className="input-item" />
+            <Input.TextArea
+              className="input-item"
+              value={batchUpdateNote}
+              onChange={(e) => setBatchUpdateNote(e.target.value)}
+            />
           </Form.Item>
-          
+            
           <div className="add">
-            <Button htmlType="submit" type="primary">
+            <Button type="primary" htmlType="submit">
               Cập nhật
             </Button>
           </div>
