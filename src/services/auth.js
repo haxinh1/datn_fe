@@ -38,8 +38,27 @@ const update = async (id, userData) => {
 
 // đổi mật khẩu
 const changePassword = async (id, userData) => {
-  const response = await instance.put(`/admin/change-password/${id}`, userData);
-  return response.data;
+  const token =
+    localStorage.getItem("client_token") || localStorage.getItem("adminToken"); // Lấy token từ localStorage
+
+  if (!token) {
+    throw new Error("Token xác thực không có trong localStorage");
+  }
+
+  try {
+    const response = await instance.put(
+      `/admin/change-password/${id}`,
+      userData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Gửi token trong header Authorization
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 // quên mật khẩu client
@@ -139,7 +158,18 @@ const logoutad = async () => {
 };
 
 const getAddressByIdUser = async (userId) => {
-  const response = await instance.get(`user-addresses/${userId}`);
+  const token =
+    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+
+  if (!token) {
+    throw new Error("Token xác thực không có trong localStorage");
+  }
+
+  const response = await instance.get(`user-addresses/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+    },
+  });
   return response.data;
 };
 

@@ -21,7 +21,10 @@ const Logincl = () => {
   const handleLogin = async (values) => {
     setLoading(true);
     try {
-      const response = await AuthServices.login(values.phone_number, values.password);
+      const response = await AuthServices.login(
+        values.phone_number,
+        values.password
+      );
       console.log("Phản hồi từ server:", response);
       console.log("Dữ liệu gửi đi:", values);
       if (response?.token) {
@@ -40,7 +43,8 @@ const Logincl = () => {
     } catch (err) {
       notification.error({
         message: "Đăng nhập thất bại",
-        description: err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!",
+        description:
+          err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!",
       });
     }
     setLoading(false);
@@ -49,15 +53,17 @@ const Logincl = () => {
   const validatePhoneOrEmail = (_, value) => {
     const phoneRegex = /^[0-9]{10,11}$/;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  
+
     if (!value) {
       return Promise.reject("Vui lòng nhập số điện thoại hoặc Email");
     }
-  
+
     if (!phoneRegex.test(value) && !emailRegex.test(value)) {
-      return Promise.reject("Nhập sai định dạng. Vui lòng nhập số điện thoại hoặc Email hợp lệ");
+      return Promise.reject(
+        "Nhập sai định dạng. Vui lòng nhập số điện thoại hoặc Email hợp lệ"
+      );
     }
-  
+
     return Promise.resolve();
   };
 
@@ -93,16 +99,20 @@ const Logincl = () => {
           </Form.Item>
 
           <div className="form help">
-            <Link to='/forget'>
+            <Link to="/forget">
               <span className="text-quest">Quên mật khẩu</span>
             </Link>
-            <Link to='/signup'>
+            <Link to="/signup">
               <span className="text-quest">Bạn chưa có tài khoản?</span>
             </Link>
           </div>
-    
+
           <div className="add">
-            <button type="primary" htmlType="submit" className="btn btn-outline-primary-2">
+            <button
+              type="primary"
+              htmlType="submit"
+              className="btn btn-outline-primary-2"
+            >
               <span>ĐĂNG NHẬP</span>
               <i className="icon-long-arrow-right"></i>
             </button>
@@ -110,7 +120,9 @@ const Logincl = () => {
         </Form>
 
         <div className="form-choice">
-          <p className="text-center"><span>hoặc đăng nhập bằng</span></p>
+          <p className="text-center">
+            <span>hoặc đăng nhập bằng</span>
+          </p>
           <div className="row">
             <div className="col-sm-6">
               <a href="#" className="btn btn-login btn-g">
@@ -128,7 +140,7 @@ const Logincl = () => {
         </div>
       </Card>
     </div>
-  );  
+  );
 };
 
 export default Logincl;
