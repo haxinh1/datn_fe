@@ -14,28 +14,30 @@ const getAllStatus = async () => {
 
 const placeOrder = async (orderData) => {
   const token = localStorage.getItem("client_token");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user ? user.id : null;
 
-  // Kiểm tra xem có token không
   const headers = {
     "Content-Type": "application/json",
   };
 
-  // Nếu có token, thêm header Authorization
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+
+  orderData.user_id = userId || null;
 
   try {
     const response = await instance.post("/orders/place", orderData, {
       headers,
     });
+    console.log("Response backend (order):", response.data); // Thêm dòng này
     return response.data;
   } catch (error) {
     console.error("Lỗi khi đặt hàng:", error.response?.data || error);
     throw error;
   }
 };
-
 const getOrderById = async (orderId) => {
   const response = await instance.get(`/orders/${orderId}`);
   return response.data;
