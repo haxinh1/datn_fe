@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
 import { message, Modal } from "antd";
-import { cartServices } from "./../../../services/cart";
+import { cartServices } from "../../../services/cart";
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
@@ -28,14 +28,14 @@ const ProductDetailClient = () => {
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
-    setSelectedSize("");
-    setSelectedVariant(null);
+    setSelectedSize(""); // reset size when color is changed
+    setSelectedVariant(null); // reset variant
   };
 
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
-    findVariant(selectedColor, sizeId);
+    findVariant(selectedColor, sizeId); // update variant based on color and size
   };
 
   const formatPrice = (price) => {
@@ -72,7 +72,6 @@ const ProductDetailClient = () => {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
-
     let existingAttributes =
       JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
@@ -80,18 +79,14 @@ const ProductDetailClient = () => {
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
-      product_thumbnail: selectedVariant
-        ? selectedVariant.thumbnail
-        : product.thumbnail, // Thêm ảnh sản phẩm
       price: selectedVariant
         ? selectedVariant.price
-        : product.sale_price || product.sell_price, // Thêm giá sản phẩm
+        : product.sale_price || product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
       ],
     };
-
     const existingProductIndex = existingAttributes.findIndex(
       (item) =>
         item.product_id === product.id &&
@@ -108,9 +103,8 @@ const ProductDetailClient = () => {
     localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
 
     const user = JSON.parse(localStorage.getItem("user"));
-
     const itemToAdd = {
-      user_id: user?.id || null,
+      user_id: user?.id || 0, // 0 nếu chưa đăng nhập
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -121,39 +115,36 @@ const ProductDetailClient = () => {
     };
 
     try {
-      // Kiểm tra nếu người dùng đã đăng nhập
+      let response;
+
       if (user?.id) {
-        const response = await cartServices.addCartItem(product.id, itemToAdd);
-        if (response?.message?.includes("Sản phẩm đã được thêm vào giỏ hàng")) {
-          message.success("Sản phẩm đã được thêm vào giỏ hàng!");
-        } else {
-          message.error("Thêm vào giỏ hàng thất bại. Vui lòng thử lại.");
-        }
+        // If user is logged in, send request to add item to cart in database
+        response = await cartServices.addCartItem(product.id, itemToAdd);
       } else {
-        // Lưu giỏ hàng vào sessionStorage nếu chưa đăng nhập
-        const sessionCart = JSON.parse(sessionStorage.getItem("cart") || "{}"); // Sử dụng đối tượng thay vì mảng
+        // If user is not logged in, send request to store cart in session
+        response = await cartServices.addCartItem(product.id, itemToAdd);
+      }
 
-        const key =
-          product.id + "-" + (selectedVariant ? selectedVariant.id : "default");
+      // Log the response to see what it contains
+      console.log("Response from addCartItem:", response);
 
-        // Cập nhật giỏ hàng trong session
-        if (sessionCart[key]) {
-          sessionCart[key].quantity += quantity;
-        } else {
-          sessionCart[key] = { ...itemToAdd };
-        }
-
-        sessionStorage.setItem("cart", JSON.stringify(sessionCart));
-
-        message.success("Sản phẩm đã được thêm vào giỏ hàng (Session)!");
+      // Check for response message properly
+      if (
+        response &&
+        response?.message &&
+        response.message.includes("Sản phẩm đã được thêm vào giỏ hàng")
+      ) {
+        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+      } else {
+        message.error(
+          response?.message || "Thêm vào giỏ hàng thất bại. Vui lòng thử lại."
+        );
       }
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
     }
   };
-
-  if (!product) return <p>Đang tải...</p>;
 
   const fetchProduct = async () => {
     const { data } = await productsServices.fetchProductById(id);
@@ -169,6 +160,7 @@ const ProductDetailClient = () => {
       setMainImage(product.thumbnail);
     }
   }, [product.thumbnail]);
+
   return (
     <>
       <nav aria-label="breadcrumb" className="breadcrumb-nav border-0 mb-0">
@@ -181,7 +173,7 @@ const ProductDetailClient = () => {
               <a href="#">Products</a>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
-              Extended Description
+              Product Detail
             </li>
           </ol>
         </div>
@@ -201,7 +193,6 @@ const ProductDetailClient = () => {
                       data-zoom-image={mainImage}
                       alt="product image"
                     />
-
                     <a
                       onClick={(e) => {
                         e.preventDefault();
@@ -214,7 +205,6 @@ const ProductDetailClient = () => {
                       <i className="icon-arrows"></i>
                     </a>
                   </figure>
-
                   <div
                     id="product-zoom-gallery"
                     className="product-image-gallery"
@@ -280,7 +270,6 @@ const ProductDetailClient = () => {
                   ) : (
                     <div className="details-filter-row details-row-size">
                       <label>Stock:</label>
-
                       <div className="product-nav product-nav-dots">
                         <div>{product.stock}</div>
                       </div>
@@ -290,7 +279,6 @@ const ProductDetailClient = () => {
                   {product.atribute_value_product?.length > 0 && (
                     <div className="details-filter-row details-row-size">
                       <label htmlFor="Color">Màu:</label>
-
                       <div className="product-nav product-nav-dots">
                         {product.atribute_value_product
                           .filter(
@@ -449,106 +437,16 @@ const ProductDetailClient = () => {
         </div>
       </div>
 
-      <div className="product-details-tab product-details-extended">
-        <div className="container">
-          <ul className="nav nav-pills justify-content-center" role="tablist">
-            <li className="nav-item">
-              <a
-                className="nav-link active"
-                id="product-desc-link"
-                data-toggle="tab"
-                href="#product-desc-tab"
-                role="tab"
-                aria-controls="product-desc-tab"
-                aria-selected="true"
-              >
-                Description
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-info-link"
-                data-toggle="tab"
-                href="#product-info-tab"
-                role="tab"
-                aria-controls="product-info-tab"
-                aria-selected="false"
-              >
-                Additional information
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-shipping-link"
-                data-toggle="tab"
-                href="#product-shipping-tab"
-                role="tab"
-                aria-controls="product-shipping-tab"
-                aria-selected="false"
-              >
-                Shipping & Returns
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-review-link"
-                data-toggle="tab"
-                href="#product-review-tab"
-                role="tab"
-                aria-controls="product-review-tab"
-                aria-selected="false"
-              >
-                Reviews (2)
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="tab-content">
-          <div
-            className="tab-pane fade show active"
-            id="product-desc-tab"
-            role="tabpanel"
-            aria-labelledby="product-desc-link"
-          >
-            <div className="product-desc-content">
-              <div
-                className="product-desc-row bg-image"
-                style={{ backgroundImage: `url(${product.thumbnail})` }}
-              >
-                <div className="container">
-                  <div className="row justify-content-end">
-                    <div className="col-sm-6 col-lg-4">
-                      <h2>Product Information</h2>
-                      <ul>
-                        <li>Faux suede fabric upper</li>
-                        <li>Tie strap buckle detail</li>
-                        <li>Block heel</li>
-                        <li>Open toe</li>
-                        <li>Heel Height: 7cm / 2.5 inches</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Modal
-          centered
-          open={modal2Open}
-          onOk={() => setModal2Open(false)}
-          onCancel={() => setModal2Open(false)}
-          maskClosable={true}
-          footer={null}
-        >
-          <img src={mainImage} alt="" style={{ padding: "20px" }} />
-        </Modal>
-      </div>
+      <Modal
+        centered
+        open={modal2Open}
+        onOk={() => setModal2Open(false)}
+        onCancel={() => setModal2Open(false)}
+        maskClosable={true}
+        footer={null}
+      >
+        <img src={mainImage} alt="" style={{ padding: "20px" }} />
+      </Modal>
     </>
   );
 };

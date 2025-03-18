@@ -8,11 +8,13 @@ const getPayment = async () => {
 const createPaymentVNP = async ({
   orderId,
   paymentMethod,
+  userId, // thêm userId vào đây
   bankCode = null,
 }) => {
   const response = await instance.post("/payments/vnpay", {
     order_id: orderId,
-    payment_method: paymentMethod, // Make sure this matches what the backend expects ('vnpay')
+    payment_method: paymentMethod,
+    user_id: userId, // đảm bảo backend nhận được user_id
     bank_code: bankCode,
   });
 
@@ -22,6 +24,7 @@ const createPaymentVNP = async ({
 
   return response.data;
 };
+
 export const paymentServices = {
   getPayment,
   createPaymentVNP,

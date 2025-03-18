@@ -49,7 +49,7 @@ const Checkout = () => {
         // Nếu chưa đăng nhập => Lấy giỏ hàng từ sessionStorage
         const sessionCart = JSON.parse(sessionStorage.getItem("cart")) || {};
 
-        // Chuyển Object thành Arrayz
+        // Chuyển Object thành Array
         const cartItemsArray = Object.values(sessionCart);
 
         // Fetch thông tin sản phẩm từ API
@@ -204,15 +204,16 @@ const Checkout = () => {
 
   const handleConfirmPayment = async () => {
     try {
-      setIsPaymentModalOpen(false); // Close the payment modal
+      setIsPaymentModalOpen(false);
 
-      // Check if no payment method is selected
       if (!selectedPayment) {
         message.error("Vui lòng chọn phương thức thanh toán!");
         return;
       }
 
-      // Prepare the order data for submission
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user ? user.id : null;
+
       const orderData = {
         user_id: userId || null,
         fullname: userData.fullname,
@@ -221,7 +222,7 @@ const Checkout = () => {
         address: userData.address,
         total_amount: subtotal,
         payment_method:
-          selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "", // 'cod' or 'vnpay'
+          selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
         products: cartItems.map((item) => ({
           product_id: item.product_id,
           product_variant_id: item.product_variant_id,
@@ -231,43 +232,20 @@ const Checkout = () => {
         })),
       };
 
-      console.log("📦 Gửi đơn hàng với dữ liệu:", orderData);
       const orderResponse = await OrderService.placeOrder(orderData);
 
+      // ✅ Kiểm tra log này trong console browser (F12) xem đã nhận đúng chưa
+      console.log("orderResponse:", orderResponse);
+
+      if (orderResponse?.payment_url) {
+        console.log("Chuyển hướng tới URL:", orderResponse.payment_url);
+        window.location.href = orderResponse.payment_url; // Dòng này bắt buộc phải có để chuyển hướng!
+        return;
+      }
+
       if (orderResponse?.message === "Đặt hàng thành công!") {
-        const orderId = orderResponse?.order?.id;
-
-        if (selectedPayment === 1) {
-          // If the payment method is VNPAY, create the payment link
-          const paymentData = {
-            orderId,
-            paymentMethod: "vnpay", // Ensure to send 'vnpay'
-            paymentId: selectedPayment,
-            bankCode: null, // You can add bankCode if needed
-          };
-
-          console.log(paymentData); // Log payment data for testing
-
-          const response = await paymentServices.createPaymentVNP(paymentData);
-
-          if (response && response.payment_url) {
-            console.log("✅ Chuyển hướng đến VNPAY:", response.payment_url);
-
-            // Update the order status before redirecting
-            await paymentServices.updateOrderStatus(orderId, 2); // '2' = "Đang chờ thanh toán"
-
-            // Redirect to the VNPAY payment URL
-            window.location.href = response.payment_url; // Ensure this works for redirecting to VNPAY
-            return; // Stop further execution if redirection is successful
-          } else {
-            message.error("Lỗi tạo liên kết thanh toán VNPay.");
-            return;
-          }
-        }
-
-        // If payment method is COD, confirm the order immediately
-        message.success("🎉 Đơn hàng của bạn đã được đặt thành công!");
-        setCartItems([]); // Clear the cart
+        message.success("🎉 Đơn hàng đã đặt thành công!");
+        setCartItems([]);
         localStorage.removeItem("cartAttributes");
         sessionStorage.removeItem("cart");
       } else {
