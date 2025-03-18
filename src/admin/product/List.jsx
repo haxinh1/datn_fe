@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import "./list.css";
-import "./add.css";
+import { EditOutlined, EyeOutlined, ImportOutlined, PlusOutlined, ProductOutlined, UploadOutlined } from "@ant-design/icons";
 import { productsServices } from "../../services/product";
 import { variantsServices } from "../../services/variants";
 import { BrandsServices } from "../../services/brands";
 import { categoryServices } from "../../services/categories";
 import dayjs from "dayjs";
+import "../../css/list.css";
+import "../../css/add.css";
 
 const List = () => {
     const queryClient = useQueryClient();
@@ -230,7 +230,7 @@ const List = () => {
             title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
-            render: (_, item) => <Image width={45} height={60} src={item.thumbnail} />,
+            render: (_, item) => <Image width={45} src={item.thumbnail} />,
             align: "center",
         },
         {
@@ -317,7 +317,7 @@ const List = () => {
     return (
         <>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ProductOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
@@ -368,7 +368,7 @@ const List = () => {
                     </Link>
 
                     <Link to="/admin/import">
-                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                        <Button color="primary" variant="solid" icon={<ImportOutlined />}>
                             Nhập hàng
                         </Button>
                     </Link>
@@ -389,7 +389,7 @@ const List = () => {
                                             title: "Ảnh",
                                             dataIndex: "thumbnail",
                                             key: "thumbnail",
-                                            render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
+                                            render: (thumbnail) => <Image width={45} src={thumbnail} />,
                                             align: "center",
                                             width: 80,
                                         },
@@ -540,6 +540,30 @@ const List = () => {
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            <Form.Item
+                                label="Ảnh"
+                                name="newImage"
+                                rules={[{
+                                    validator: (_, value) =>
+                                    newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                                }]}
+                            >
+                                <Upload
+                                    listType="picture"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    fileList={newImage ? [newImage] : []}
+                                    onChange={handleImageUpload}
+                                    onRemove={() => setNewImage(null)} 
+                                >
+                                    {!newImage && ( 
+                                        <Button icon={<UploadOutlined />} className="btn-item">
+                                            Tải ảnh lên
+                                        </Button>
+                                    )}
+                                </Upload>
+                            </Form.Item>
                         </Col>
 
                         <Col span={12} className="col-item">
@@ -565,42 +589,18 @@ const List = () => {
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            <Form.Item label="Trạng thái kinh doanh">
+                                <Switch 
+                                    checked={isActive === 1} 
+                                    onChange={(checked) => setIsActive(checked ? 1 : 0)} 
+                                />
+                                <span style={{ marginLeft: 10 }}>
+                                    {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
+                                </span>
+                            </Form.Item>
                         </Col>
                     </Row>
-
-                    <Form.Item
-                        label="Ảnh"
-                        name="newImage"
-                        rules={[{
-                            validator: (_, value) =>
-                            newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
-                        }]}
-                    >
-                        <Upload
-                            listType="picture"
-                            action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                            data={{ upload_preset: "quangOsuy" }}
-                            fileList={newImage ? [newImage] : []}
-                            onChange={handleImageUpload}
-                            onRemove={() => setNewImage(null)} 
-                        >
-                            {!newImage && ( 
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
-                            )}
-                        </Upload>
-                    </Form.Item>
-
-                    <Form.Item label="Trạng thái kinh doanh">
-                        <Switch 
-                            checked={isActive === 1} 
-                            onChange={(checked) => setIsActive(checked ? 1 : 0)} 
-                        />
-                        <span style={{ marginLeft: 10 }}>
-                            {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
-                        </span>
-                    </Form.Item>
 
                     <div className="add">
                         <Button type="primary" onClick={handleSaveVariant}>Cập nhật</Button>

@@ -239,6 +239,7 @@ const Checkout = () => {
 
       if (orderResponse?.payment_url) {
         console.log("Chuyển hướng tới URL:", orderResponse.payment_url);
+
         window.location.href = orderResponse.payment_url; // Dòng này bắt buộc phải có để chuyển hướng!
         return;
       }

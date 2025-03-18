@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip, DatePicker } from "antd";
-import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
-import "./add.css";
 import { productsServices } from './../../services/product';
 import { BrandsServices } from './../../services/brands';
 import { categoryServices } from './../../services/categories';
@@ -13,6 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import "../../css/add.css";
 
 const { Option } = Select;
 
@@ -156,9 +156,20 @@ const Edit = () => {
             });
             return; // Dừng lại không gửi dữ liệu
         }
+
+        // Kiểm tra và giữ giá trị cũ cho attribute_values_id nếu không thay đổi
+        const currentAttributeValuesId = product ? product.attribute_values_id : [];
+        const updatedAttributeValuesId = forms.flatMap((form) =>
+            form.values
+                .filter((value) => value && value.id !== null && value.id !== undefined)
+                .map((value) => Number(value.id))
+        );
+
+        const finalAttributeValuesId = updatedAttributeValuesId.length > 0 ? updatedAttributeValuesId : currentAttributeValuesId;
         
         const updatedData = {
             ...prepareProductData(values),
+            attribute_values_id: finalAttributeValuesId, // Sử dụng giá trị đã cập nhật hoặc giá trị cũ
             thumbnail: thumbnail ? thumbnail.url : null,
             product_images: images && images.map((img) => img.url), // Chỉ lấy danh sách URL ảnh
             sell_price: values.sell_price,
@@ -625,7 +636,10 @@ const Edit = () => {
 
     return (
         <div className="container">
-            <h1 className="mb-5">Cập nhật sản phẩm</h1>
+            <h1 className="mb-5">
+                <EditOutlined style={{ marginRight: "8px" }} />
+                Cập nhật sản phẩm
+            </h1>
             <Form 
                 form={form} 
                 onFinish={onFinish}
@@ -764,7 +778,7 @@ const Edit = () => {
                             >
                                 {images.length < 12 && (
                                     <button className="upload-button" type="button">
-                                        <PlusOutlined />
+                                        <UploadOutlined />
                                         <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                                     </button>
                                 )}

@@ -3,7 +3,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Link, useParams } from "react-router-dom";
 import { productsServices } from "../../services/product";
 import moment from "moment";
-import "./detailad.css";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Modal, Table, DatePicker, ConfigProvider, Form } from "antd";
@@ -11,6 +10,7 @@ import { categoryServices } from "../../services/categories";
 import { EyeOutlined } from "@ant-design/icons";
 import viVN from "antd/lib/locale/vi_VN"; // Import locale tiếng Việt
 import "moment/locale/vi"; // Chuyển moment sang tiếng Việt
+import "../../css/detailad.css";
 
 const ProductDetail = () => {
   const { id } = useParams(); // Lấy ID sản phẩm từ URL
@@ -133,7 +133,7 @@ const ProductDetail = () => {
       });
   };
 
-  if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
+  if (loading) return <span>Đang tải thông tin sản phẩm...</span>;
   if (error) return <p>{error}</p>;
 
   // Cấu hình cột cho bảng trong modal
@@ -233,7 +233,7 @@ const ProductDetail = () => {
 
   return (
     product && (
-      <div className="container mt-5">
+      <div className="container">
         <h1 className="mb-5">
           <EyeOutlined style={{ marginRight: "8px" }} />
           Chi tiết sản phẩm
