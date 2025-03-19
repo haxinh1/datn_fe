@@ -216,6 +216,7 @@ const Checkout = () => {
     try {
       setIsPaymentModalOpen(false);
 
+      // Kiểm tra nếu người dùng chưa chọn phương thức thanh toán
       if (!selectedPayment) {
         message.error("Vui lòng chọn phương thức thanh toán!");
         return;
@@ -223,6 +224,12 @@ const Checkout = () => {
 
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
+
+      // Nếu là khách vãng lai và chọn COD, sẽ báo lỗi
+      if (!userId && selectedPayment === 2) {
+        message.error("Khách vãng lai chỉ có thể thanh toán qua VNPay");
+        return;
+      }
 
       const orderData = {
         user_id: userId || null,
@@ -244,13 +251,11 @@ const Checkout = () => {
 
       const orderResponse = await OrderService.placeOrder(orderData);
 
-      // ✅ Kiểm tra log này trong console browser (F12) xem đã nhận đúng chưa
       console.log("orderResponse:", orderResponse);
 
+      // Nếu có URL thanh toán từ VNPay, chuyển hướng người dùng
       if (orderResponse?.payment_url) {
-        console.log("Chuyển hướng tới URL:", orderResponse.payment_url);
-
-        window.location.href = orderResponse.payment_url; // Dòng này bắt buộc phải có để chuyển hướng!
+        window.location.href = orderResponse.payment_url;
         return;
       }
 
@@ -624,7 +629,7 @@ const Checkout = () => {
             </button>,
           ]}
         >
-          <p>Chọn phương thức thanh toán:</p>
+          <p>Chọn phương thức thanh toán :</p>
           <div className="d-block my-3">
             {payMents.length > 0 ? (
               payMents.map((method) => (
@@ -638,6 +643,7 @@ const Checkout = () => {
                     checked={selectedPayment === method.id}
                     onChange={() => setSelectedPayment(method.id)}
                     required
+                    disabled={!userId && method.name.toLowerCase() === "cod"} // Vô hiệu hóa COD nếu là khách vãng lai
                   />
                   <label
                     className="custom-control-label"
@@ -653,8 +659,6 @@ const Checkout = () => {
               </p>
             )}
           </div>
-
-          <hr className="mb-4" />
         </Modal>
       </main>
     </div>
