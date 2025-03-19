@@ -54,6 +54,7 @@ const addCartItem = async (productId, payload) => {
       // Nếu đã đăng nhập, gửi yêu cầu đến backend để thêm sản phẩm vào giỏ hàng
       const response = await instance.post(`/cart/add/${productId}`, payload, {
         headers,
+        withCredentials: true, // Đảm bảo backend nhận diện session
       });
 
       return response.data;
@@ -61,6 +62,7 @@ const addCartItem = async (productId, payload) => {
       // Nếu chưa đăng nhập, gửi yêu cầu vào backend để lưu giỏ hàng trong session
       const response = await instance.post(`/cart/add/${productId}`, payload, {
         headers,
+        withCredentials: true, // Đảm bảo backend nhận diện session
       });
 
       return response.data;
@@ -93,7 +95,7 @@ const updateCartItem = async (productId, newQuantity, variantId = null) => {
     } else {
       // Nếu người dùng chưa đăng nhập, gọi backend để cập nhật giỏ hàng trong session
       const response = await instance.put(
-        `/admin/cart/update/${productId}${variantId ? `/${variantId}` : ""}`,
+        `/cart/update/${productId}${variantId ? `/${variantId}` : ""}`,
         {
           quantity: newQuantity,
           user_id: userId, // <-- thêm user_id vào đây

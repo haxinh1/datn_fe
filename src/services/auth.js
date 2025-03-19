@@ -126,6 +126,7 @@ const logoutclient = async () => {
       // Sau khi logout thành công, xóa cả client_token và user khỏi localStorage
       localStorage.removeItem("client_token"); // Xóa token client
       localStorage.removeItem("client"); // Xóa thông tin user
+      localStorage.removeItem("user"); // Xóa thông tin user
 
       return { message: "Client logged out successfully" };
     } catch (error) {
