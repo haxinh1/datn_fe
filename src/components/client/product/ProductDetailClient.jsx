@@ -104,7 +104,7 @@ const ProductDetailClient = () => {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const itemToAdd = {
-      user_id: user?.id || 0, // 0 nếu chưa đăng nhập
+      user_id: user?.id || null, // 0 nếu chưa đăng nhập
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,

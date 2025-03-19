@@ -40,8 +40,20 @@ import ChangePass from "./pages/ChangePass";
 import Info from "./pages/Info";
 import Orders from "./pages/Orders";
 import Address from "./pages/Address";
-
+import instance from "./axios";
+import { useEffect } from "react";
 function App() {
+  useEffect(() => {
+    // Gọi một lần duy nhất khi App được load lần đầu
+    instance
+      .get("http://127.0.0.1:8000/sanctum/csrf-cookie")
+      .then(() => {
+        console.log("✅ Đã lấy csrf-cookie thành công!");
+      })
+      .catch((error) => {
+        console.error("❌ Lỗi khi lấy csrf-cookie:", error);
+      });
+  }, []);
   return (
     <>
       {/*router cho khách hàng */}
@@ -61,7 +73,14 @@ function App() {
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
 
-          <Route path="dashboard" element={<PrivateClient><Dashboard /></PrivateClient>}>
+          <Route
+            path="dashboard"
+            element={
+              <PrivateClient>
+                <Dashboard />
+              </PrivateClient>
+            }
+          >
             <Route path="changepass/:id" element={<ChangePass />} />
             <Route path="info/:id" element={<Info />} />
             <Route path="orders/:id" element={<Orders />} />

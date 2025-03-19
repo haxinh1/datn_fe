@@ -41,46 +41,56 @@ const Checkout = () => {
         // Nếu đã đăng nhập => Lấy giỏ hàng từ API
         try {
           const cartData = await cartServices.fetchCart();
-          setCartItems(cartData); // Set giỏ hàng từ API
+          setCartItems(cartData);
         } catch (error) {
           console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
         }
       } else {
-        // Nếu chưa đăng nhập => Lấy giỏ hàng từ sessionStorage
-        const sessionCart = JSON.parse(sessionStorage.getItem("cart")) || {};
-
-        // Chuyển Object thành Array
-        const cartItemsArray = Object.values(sessionCart);
+        // Nếu chưa đăng nhập => Lấy giỏ hàng từ localStorage
+        const localCartData =
+          JSON.parse(localStorage.getItem("cart_items")) || [];
 
         // Fetch thông tin sản phẩm từ API
         const updatedCartItems = await Promise.all(
-          cartItemsArray.map(async (item) => {
+          localCartData.map(async (item) => {
             try {
               const productDetails = await productsServices.fetchProductById(
                 item.product_id
               );
 
-              // Kiểm tra nếu sản phẩm có biến thể
-              let productVariant = null;
-              if (item.product_variant_id && productDetails.data.variants) {
-                productVariant = productDetails.data.variants.find(
-                  (variant) => variant.id === item.product_variant_id
+              let variantDetails = null;
+
+              if (item.product_variant_id) {
+                variantDetails = productDetails.data.variants.find(
+                  (v) => v.id === item.product_variant_id
                 );
               }
+
+              // Giá ưu tiên variant, nếu không thì lấy giá của sản phẩm gốc
+              const price = variantDetails
+                ? variantDetails.sale_price || variantDetails.sell_price
+                : productDetails.data.sale_price ||
+                  productDetails.data.sell_price;
 
               return {
                 ...item,
                 product: productDetails.data,
-                product_variant: productVariant || null,
+                product_variant: variantDetails,
+                price,
               };
             } catch (error) {
               console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
-              return { ...item, product: null };
+              return {
+                ...item,
+                product: null,
+                product_variant: null,
+                price: 0,
+              };
             }
           })
         );
-        console.log("Dữ liệu giỏ hàng từ sessionStorage:", updatedCartItems);
 
+        console.log("✅ Giỏ hàng local đã cập nhật:", updatedCartItems);
         setCartItems(updatedCartItems);
       }
     };

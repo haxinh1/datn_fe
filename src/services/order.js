@@ -19,22 +19,29 @@ const placeOrder = async (orderData) => {
 
   const headers = {
     "Content-Type": "application/json",
+    Authorization: token ? `Bearer ${token}` : undefined,
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  // Lấy cart từ localStorage nếu không có userId
+  if (!userId) {
+    const localCartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+    orderData.cart_items = localCartItems;
   }
-
-  orderData.user_id = userId || null;
 
   try {
     const response = await instance.post("/orders/place", orderData, {
       headers,
     });
-    console.log("Response backend (order):", response.data); // Thêm dòng này
+
+    // Xóa giỏ hàng trong localStorage nếu đặt hàng thành công (không đăng nhập)
+    if (!userId) {
+      localStorage.removeItem("cart_items");
+    }
+
+    console.log("✅ Đặt hàng thành công:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi đặt hàng:", error.response?.data || error);
+    console.error("❌ Lỗi khi đặt hàng:", error.response?.data || error);
     throw error;
   }
 };

@@ -16,57 +16,43 @@ const fetchCart = async () => {
           Authorization: `Bearer ${localStorage.getItem("client_token")}`,
         },
         params: { user_id: userId },
-        withCredentials: true, // Đảm bảo gửi cookie kèm theo request
+        withCredentials: true,
       });
 
       console.log("✅ Dữ liệu giỏ hàng từ API:", response.data);
       return response.data.cart_items || [];
     } else {
-      // Nếu chưa đăng nhập, lấy giỏ hàng từ session trên backend
-      const response = await instance.get("/cart", {
-        withCredentials: true, // Quan trọng để backend nhận diện session
-      });
-
-      console.log("🛒 Giỏ hàng từ session:", response.data.cart_items);
-      return response.data.cart_items || [];
+      // Nếu chưa đăng nhập, lấy giỏ hàng từ localStorage
+      const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+      console.log("🛒 Giỏ hàng từ localStorage:", localCart);
+      return localCart;
     }
   } catch (error) {
     console.error("❌ Lỗi khi tải giỏ hàng:", error.response?.data || error);
     return [];
   }
 };
-
 // Thêm sản phẩm vào giỏ hàng
 const addCartItem = async (productId, payload) => {
   try {
     const token = localStorage.getItem("client_token");
-    const user = localStorage.getItem("user");
-    const parsedUser = user ? JSON.parse(user) : null;
-    const userId = parsedUser ? parsedUser.id : null;
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user ? user.id : null;
 
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-    };
-
-    // Kiểm tra nếu người dùng đã đăng nhập
-    if (userId) {
-      // Nếu đã đăng nhập, gửi yêu cầu đến backend để thêm sản phẩm vào giỏ hàng
-      const response = await instance.post(`/cart/add/${productId}`, payload, {
-        headers,
-        withCredentials: true, // Đảm bảo backend nhận diện session
-      });
-
-      return response.data;
-    } else {
-      // Nếu chưa đăng nhập, gửi yêu cầu vào backend để lưu giỏ hàng trong session
-      const response = await instance.post(`/cart/add/${productId}`, payload, {
-        headers,
-        withCredentials: true, // Đảm bảo backend nhận diện session
-      });
-
-      return response.data;
+    if (!userId) {
+      let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+      localCart.push(payload);
+      localStorage.setItem("cart_items", JSON.stringify(localCart));
+      return { message: "Sản phẩm đã được thêm vào giỏ hàng (local)!" };
     }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const response = await instance.post(`/cart/add/${productId}`, payload, {
+      headers,
+    });
+
+    return response.data;
   } catch (error) {
     console.error(
       "❌ Lỗi khi thêm vào giỏ hàng:",
@@ -115,35 +101,33 @@ const updateCartItem = async (productId, newQuantity, variantId = null) => {
 // Xóa sản phẩm khỏi giỏ hàng
 const removeCartItem = async (productId, variantId = null) => {
   try {
-    const user = localStorage.getItem("user");
-    const parsedUser = user ? JSON.parse(user) : null;
-    const userId = parsedUser ? parsedUser.id : null;
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user ? user.id : null;
+
+    if (!userId) {
+      let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+      localCart = localCart.filter(
+        (item) =>
+          !(
+            item.product_id === productId &&
+            item.product_variant_id === variantId
+          )
+      );
+      localStorage.setItem("cart_items", JSON.stringify(localCart));
+      return { message: "Sản phẩm đã được xóa khỏi giỏ hàng (local)!" };
+    }
 
     const token = localStorage.getItem("client_token");
-    const headers = {
-      Authorization: token ? `Bearer ${token}` : "",
-    };
+    const headers = { Authorization: `Bearer ${token}` };
 
-    if (userId) {
-      // Người dùng đã đăng nhập, xóa sản phẩm khỏi database
-      const response = await instance.delete(
-        `/cart/remove/${productId}${variantId ? `/${variantId}` : ""}`,
-        { headers }
-      );
-      return response.data;
-    } else {
-      // Người dùng chưa đăng nhập, xóa sản phẩm khỏi session
-      const response = await instance.delete(
-        `/cart/remove/${productId}${variantId ? `/${variantId}` : ""}`,
-        { headers }
-      );
-      return response.data;
-    }
-  } catch (error) {
-    console.error(
-      "❌ Lỗi khi xóa sản phẩm khỏi giỏ hàng:",
-      error.response?.data || error
+    const response = await instance.delete(
+      `/cart/remove/${productId}${variantId ? `/${variantId}` : ""}`,
+      { headers }
     );
+
+    return response.data;
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa sản phẩm khỏi giỏ hàng:", error);
     throw error;
   }
 };
