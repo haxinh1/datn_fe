@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const api = axios.create({
+const instance = axios.create({
   baseURL: "http://127.0.0.1:8000/api",
   headers: {
     "Content-Type": "application/json",
@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 // Middleware để thêm Authorization header (nếu có token)
-api.interceptors.request.use(
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("admin_token"); // Hoặc lấy từ nơi khác (ví dụ: context, sessionStorage)
     if (token) {
@@ -22,4 +22,4 @@ api.interceptors.request.use(
   }
 );
 
-export default api;
+export default instance;

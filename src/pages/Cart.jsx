@@ -15,9 +15,49 @@ const Cart = () => {
   useEffect(() => {
     const getCart = async () => {
       try {
-        const cartData = await cartServices.fetchCart();
-        console.log("✅ Dữ liệu giỏ hàng sau khi lấy từ API:", cartData);
-        setCartItems(cartData); // Lưu dữ liệu giỏ hàng vào state
+        const user = JSON.parse(localStorage.getItem("user"));
+        const userId = user ? user.id : null;
+
+        if (userId) {
+          // Lấy giỏ hàng từ database khi đã đăng nhập
+          const cartData = await cartServices.fetchCart();
+          setCartItems(cartData);
+        } else {
+          // Lấy giỏ hàng từ localStorage khi chưa đăng nhập
+          let localCartData =
+            JSON.parse(localStorage.getItem("cart_items")) || [];
+
+          // Lấy thông tin chi tiết sản phẩm/biến thể
+          const detailedCart = await Promise.all(
+            localCartData.map(async (item) => {
+              const productDetails = await productsServices.fetchProductById(
+                item.product_id
+              );
+              let variantDetails = null;
+
+              if (item.product_variant_id) {
+                variantDetails = productDetails.data.variants.find(
+                  (v) => v.id === item.product_variant_id
+                );
+              }
+
+              // Giá ưu tiên variant, nếu không thì lấy giá của sản phẩm gốc
+              const price = variantDetails
+                ? variantDetails.sale_price || variantDetails.sell_price
+                : productDetails.data.sale_price ||
+                  productDetails.data.sell_price;
+
+              return {
+                ...item,
+                product: productDetails.data,
+                product_variant: variantDetails,
+                price, // ✅ Đảm bảo luôn có giá
+              };
+            })
+          );
+
+          setCartItems(detailedCart);
+        }
       } catch (error) {
         console.error("❌ Lỗi khi lấy giỏ hàng:", error);
         message.error("Không thể lấy giỏ hàng, vui lòng thử lại!");
