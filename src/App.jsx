@@ -29,6 +29,7 @@ import ListProduct from "./pages/ListProduct";
 import Inbox from "./admin/Inbox";
 import Confirm from "./pages/Confirm";
 import Coupon from "./admin/Coupon";
+import ProductReview from "./pages/ProductReview";
 
 function App() {
   return (
@@ -45,6 +46,8 @@ function App() {
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
+          <Route path="product-review" element={<ProductReview />} />
+
         </Route>
       </Routes>
 
