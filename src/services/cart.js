@@ -40,12 +40,32 @@ const addCartItem = async (productId, payload) => {
     const userId = user ? user.id : null;
 
     if (!userId) {
+      // Giỏ hàng lưu trong localStorage
       let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
-      localCart.push(payload);
+
+      // Kiểm tra nếu sản phẩm đã có trong giỏ hàng
+      const existingItemIndex = localCart.findIndex((item) => {
+        return (
+          item.product_id === productId &&
+          (item.product_variant_id === payload.product_variant_id ||
+            !payload.product_variant_id)
+        );
+      });
+
+      if (existingItemIndex !== -1) {
+        // Nếu sản phẩm đã có trong giỏ hàng, tăng số lượng
+        localCart[existingItemIndex].quantity += payload.quantity;
+      } else {
+        // Nếu sản phẩm chưa có trong giỏ hàng, thêm vào giỏ hàng
+        localCart.push(payload);
+      }
+
+      // Cập nhật lại cart_items trong localStorage
       localStorage.setItem("cart_items", JSON.stringify(localCart));
+
       return { message: "Sản phẩm đã được thêm vào giỏ hàng (local)!" };
     }
-
+    // For authenticated user
     const headers = { Authorization: `Bearer ${token}` };
 
     const response = await instance.post(`/cart/add/${productId}`, payload, {

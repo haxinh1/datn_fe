@@ -141,13 +141,29 @@ const Cart = () => {
       const userId = parsedUser ? parsedUser.id : null;
 
       if (userId) {
-        // Update cart on the server if the user is logged in
+        // Nếu người dùng đã đăng nhập, cập nhật giỏ hàng trên server
         await cartServices.updateCartItem(productId, newQuantity, variantId);
         message.success("Cập nhật số lượng thành công");
       } else {
-        // If the user is not logged in, send a request to update the cart in the session
-        await cartServices.updateCartItem(productId, newQuantity, variantId);
-        message.success("Cập nhật số lượng thành công (Session)");
+        // Nếu người dùng chưa đăng nhập, cập nhật giỏ hàng trong localStorage
+        let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+
+        // Tìm và cập nhật sản phẩm trong localStorage
+        const key = productId + "-" + (variantId ?? "default");
+        const existingItemIndex = localCart.findIndex(
+          (item) =>
+            item.product_id === productId &&
+            (item.product_variant_id === variantId || !variantId)
+        );
+
+        if (existingItemIndex !== -1) {
+          localCart[existingItemIndex].quantity = newQuantity;
+        }
+
+        // Lưu lại giỏ hàng vào localStorage
+        localStorage.setItem("cart_items", JSON.stringify(localCart));
+
+        message.success("Cập nhật số lượng thành công ");
       }
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
