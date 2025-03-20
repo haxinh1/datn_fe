@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { OrderService } from "./../services/order";
+// import { OrderService } from "./../services/order";
 
 const Thankyoupage = () => {
   const location = useLocation(); // Get the current location
@@ -16,20 +16,20 @@ const Thankyoupage = () => {
   const customerName = ""; // Logic to get customer's name if needed
 
   // Function to update order status
-  const updateOrderStatus = async () => {
-    if (paymentStatus === "00" && orderId) {
-      try {
-        await OrderService.updateOrderStatus(orderId, { status_id: 2 });
-        console.log(`Order status for order ID ${orderId} updated to 2.`);
-      } catch (error) {
-        console.error("Failed to update order status:", error.message);
-      }
-    }
-  };
+  // const updateOrderStatus = async () => {
+  //   if (paymentStatus === "00" && orderId) {
+  //     try {
+  //       await OrderService.updateOrderStatus(orderId, { status_id: 2 });
+  //       console.log(`Order status for order ID ${orderId} updated to 2.`);
+  //     } catch (error) {
+  //       console.error("Failed to update order status:", error.message);
+  //     }
+  //   }
+  // };
 
-  useEffect(() => {
-    updateOrderStatus();
-  }, [paymentStatus, orderId]); // Run effect when paymentStatus or orderId changes
+  // useEffect(() => {
+  //   updateOrderStatus();
+  // }, [paymentStatus, orderId]);
 
   return (
     <div className="container mt-5">

@@ -87,6 +87,7 @@ const ProductDetailClient = () => {
         { attribute_id: 2, attribute_value_id: selectedSizeId },
       ],
     };
+
     const existingProductIndex = existingAttributes.findIndex(
       (item) =>
         item.product_id === product.id &&
@@ -94,9 +95,11 @@ const ProductDetailClient = () => {
     );
 
     if (existingProductIndex !== -1) {
-      existingAttributes[existingProductIndex].attributes =
-        newAttributes.attributes;
+      // If product exists, update quantity
+      existingAttributes[existingProductIndex].quantity +=
+        newAttributes.quantity;
     } else {
+      // If product doesn't exist, add to cart
       existingAttributes.push(newAttributes);
     }
 
@@ -125,10 +128,8 @@ const ProductDetailClient = () => {
         response = await cartServices.addCartItem(product.id, itemToAdd);
       }
 
-      // Log the response to see what it contains
       console.log("Response from addCartItem:", response);
 
-      // Check for response message properly
       if (
         response &&
         response?.message &&

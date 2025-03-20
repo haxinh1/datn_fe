@@ -25,7 +25,10 @@ const Header = () => {
               </button>
 
               <a href="#" className="logo">
-                <Link to="/"><img src={logo} style={{ width: "80px", height: "20px" }} /></Link>,
+                <Link to="/">
+                  <img src={logo} style={{ width: "80px", height: "20px" }} />
+                </Link>
+                ,
               </a>
             </div>
             <div className="header-center">
@@ -92,7 +95,7 @@ const Header = () => {
                   <i className="icon-user"></i>
                 </Link>
               </Tooltip>
-            
+
               <div className="dropdown cart-dropdown">
                 <Tooltip title="Giỏ hàng">
                   <Link
