@@ -30,6 +30,7 @@ import Inbox from "./admin/Inbox";
 import Confirm from "./pages/Confirm";
 import Coupon from "./admin/Coupon";
 import ProductReview from "./pages/ProductReview";
+import Comment from "./admin/comment";
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
             <Route path="order" element={<Order />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />
+            <Route path="comment" element={<Comment />} />
           </Route>
         </Route>
       </Routes>
