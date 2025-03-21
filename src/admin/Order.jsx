@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -86,13 +86,13 @@ const Order = () => {
   const validTransitions = {
     1: [2], // Chờ thanh toán -> Đã thanh toán
     2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
-    3: [4, 8], // Đang xử lý -> Đang giao hàng Hủy đơn
+    3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
     4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
-    5: [7], // Đã giao hàng -> Hoàn thành
+    // 5: [7], // Đã giao hàng -> Hoàn thành
     9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
     10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
     12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
-  };    
+  };
 
   const showEdit = (order) => {
     setSelectedOrderId(order.id); // Lưu ID đơn hàng
@@ -171,7 +171,7 @@ const Order = () => {
     const isWithinDateRange =
       !dateRange ||
       (dayjs(order.created_at).isSameOrAfter(dayjs(dateRange[0]), "day") &&
-      dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
+        dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
 
     const matchesStatus = status === null || order.status?.id === status;
     const matchesPayment =
@@ -206,7 +206,7 @@ const Order = () => {
     }
   };
 
-  const showModal = (order) => {
+  const showModal = async (order) => {
     setIsModalVisible(true);
     setSelectedOrderId(order.id);
 
@@ -217,7 +217,7 @@ const Order = () => {
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
-    const orderDetails = order.order_items || [];
+    const orderDetails = await OrderService.getOrderById(order.id);
     setOrderDetails(orderDetails);
   };
 
@@ -290,7 +290,7 @@ const Order = () => {
     try {
       // Gọi API cập nhật trạng thái cho nhiều đơn hàng
       const response = await updateOrders(payload);
-        notification.success({
+      notification.success({
         message: "Trạng thái của các đơn hàng đẫ được cập nhật!",
       });
       hideBatchUpdateModal(); // Đóng modal
@@ -303,20 +303,37 @@ const Order = () => {
       });
     }
   };
-  
+
   // Hàm gọi API để cập nhật trạng thái cho nhiều đơn hàng
   const updateOrders = async (payload) => {
     const response = await OrderService.updateOrders(payload);
     return response.data;
   };
 
+  const getReturnReason = (note) => {
+    switch (note) {
+      case "store_error":
+        return "Cửa hàng gửi sai, thiếu sản phẩm";
+      case "damaged":
+        return "Sản phẩm có dấu hiệu hư hỏng";
+      case "misdescription":
+        return "Sản phẩm khác với mô tả";
+      case "size_change":
+        return "Tôi muốn đổi size";
+      case "other":
+        return "Khác";
+      default:
+        return note || "";
+    }
+  };
+
   const columns = [
     {
       title: <Checkbox onChange={handleSelectAll} />,
       render: (_, order) => (
-        <Checkbox 
-          checked={selectedOrders.some(item => item.id === order.id)} 
-          onChange={() => handleSelectSingle(order)} 
+        <Checkbox
+          checked={selectedOrders.some(item => item.id === order.id)}
+          onChange={() => handleSelectSingle(order)}
         />
       ),
     },
@@ -348,6 +365,7 @@ const Order = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       align: "center",
+      width: 160,
       render: (total_amount) => (total_amount ? formatPrice(total_amount) : ""),
     },
     {
@@ -356,12 +374,13 @@ const Order = () => {
       key: "created_at",
       align: "center",
       render: (created_at) =>
-      created_at ? dayjs(created_at).format("DD-MM-YYYY") : "",
+        created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
     },
     {
       title: "Phương thức thanh toán",
       dataIndex: "payment",
       align: "center",
+      width: 160,
       render: (payment) => (
         <div className="action-link-blue">{payment?.name}</div>
       ),
@@ -371,7 +390,9 @@ const Order = () => {
       dataIndex: "status",
       align: "center",
       render: (status) => (
-        <div className="action-link-blue">{status?.name}</div>
+        <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+          {status?.name}
+        </div>
       ),
     },
     {
@@ -420,16 +441,27 @@ const Order = () => {
       dataIndex: "note",
       key: "note",
       align: "center",
+      render: (note) => getReturnReason(note),
     },
     {
-      title: "Ảnh xác nhận",
+      title: "Ảnh/video xác nhận",
       dataIndex: "employee_evidence",
       key: "employee_evidence",
       align: "center",
-      render: (employee_evidence) =>
-      employee_evidence ? (
-          <Image width={60} src={employee_evidence} />
-      ) : null,
+      render: (employee_evidence) => {
+        // Kiểm tra nếu là ảnh
+        const isImage = employee_evidence && (employee_evidence.endsWith(".jpg") || employee_evidence.endsWith(".jpeg") || employee_evidence.endsWith(".png"));
+        // Kiểm tra nếu là video
+        const isVideo = employee_evidence && (employee_evidence.endsWith(".mp4") || employee_evidence.endsWith(".webm"));
+        if (isImage) {
+          // Nếu là ảnh, hiển thị ảnh với Ant Design Image component
+          return <Image width={60} src={employee_evidence} alt="Employee Evidence" />;
+        } else if (isVideo) {
+          // Nếu là video, chỉ hiển thị URL của video
+          return <a className="text-url" href={employee_evidence} target="_blank" rel="noopener noreferrer">{employee_evidence}</a>;
+        }
+        return null; // Nếu không phải ảnh hay video, không hiển thị gì
+      }
     },
     {
       title: "Người cập nhật",
@@ -454,8 +486,21 @@ const Order = () => {
     },
     {
       title: "Tên sản phẩm",
-      dataIndex: "product_name",
+      dataIndex: "name",
       align: "center",
+      render: (text, record) => {
+        // Kiểm tra nếu product có dữ liệu và lấy tên sản phẩm từ record.product.name
+        const productName = record.name ? record.name : '';
+
+        // Kiểm tra nếu variants có thuộc tính và kết hợp tên sản phẩm với thuộc tính biến thể
+        const variantAttributes = record.variants.map(variant => {
+          // Lấy các thuộc tính của biến thể và nối chúng lại
+          const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
+          return `${productName} - ${attributes}`;  // Kết hợp tên sản phẩm với thuộc tính biến thể
+        }).join(", ");
+
+        return variantAttributes || productName;  // Nếu không có biến thể, chỉ trả về tên sản phẩm
+      }
     },
     {
       title: "Số lượng",
@@ -488,13 +533,12 @@ const Order = () => {
           <RangePicker
             format="DD-MM-YYYY"
             placeholder={["Từ ngày", "Đến ngày"]}
-            style={{ marginRight: 10 }}
             value={filters.dateRange}
             onChange={(dates) => handleFilterChange("dateRange", dates)}
             allowClear
           />
         </ConfigProvider>
-  
+
         <Select
           placeholder="Trạng thái"
           className="select-item"
@@ -504,7 +548,7 @@ const Order = () => {
         >
           {status.map((item) => (
             <Select.Option key={item.id} value={item.id}>
-                {item.name}
+              {item.name}
             </Select.Option>
           ))}
         </Select>
@@ -524,10 +568,10 @@ const Order = () => {
         </Select>
 
         <div className="group2">
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             variant="solid"
-            icon={<EditOutlined />} 
+            icon={<EditOutlined />}
             onClick={showBatchUpdateModal}
             disabled={isUpdateButtonDisabled}
           >
@@ -550,7 +594,7 @@ const Order = () => {
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={800}
+        width={1000}
       >
         <span>Email người đặt: <span className="text-quest">{orderInfo.email}</span></span> <br />
         <span>Địa chỉ nhận hàng: <span className="text-quest">{orderInfo.address}</span></span>
@@ -635,7 +679,7 @@ const Order = () => {
                   data={{ upload_preset: "quangOsuy" }}
                   onChange={onHandleChange}
                 >
-                  {!image && ( 
+                  {!image && (
                     <button className="upload-button" type="button">
                       <UploadOutlined />
                       <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
@@ -661,14 +705,14 @@ const Order = () => {
         footer={null}
       >
         <Form layout="vertical" onFinish={handleBatchUpdateOrder}>
-          <Form.Item 
-            label="Trạng thái đơn hàng" 
-            name="status_id" 
+          <Form.Item
+            label="Trạng thái đơn hàng"
+            name="status_id"
             rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
           >
-            <Select 
+            <Select
               className="input-item"
-              placeholder="Chọn trạng thái" 
+              placeholder="Chọn trạng thái"
               showSearch
             >
               {batchUpdateStatuses.map((status) => (
@@ -686,7 +730,7 @@ const Order = () => {
               onChange={(e) => setBatchUpdateNote(e.target.value)}
             />
           </Form.Item>
-            
+
           <div className="add">
             <Button type="primary" htmlType="submit">
               Cập nhật

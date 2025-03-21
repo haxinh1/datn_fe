@@ -90,6 +90,11 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
     },
     {
+      key: "bill",
+      icon: <PrinterOutlined />,
+      label: <Link to="/admin/bill"><span>Quản lý hóa đơn</span></Link>,
+    },
+    {
       key: "account",
       icon: <TeamOutlined />,
       label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
@@ -108,11 +113,6 @@ const LayoutAdmin = () => {
       key: "coupon",
       icon: <ProjectOutlined />,
       label: <Link to="/admin/coupon"><span>Mã giảm giá</span></Link>,
-    },
-    {
-      key: "bill",
-      icon: <PrinterOutlined />,
-      label: <Link to="/admin/bill"><span>Hóa đơn</span></Link>,
     },
     {
       key: "inbox",
