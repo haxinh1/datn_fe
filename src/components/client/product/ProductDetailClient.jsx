@@ -118,29 +118,16 @@ const ProductDetailClient = () => {
     };
 
     try {
-      let response;
-
       if (user?.id) {
         // If user is logged in, send request to add item to cart in database
-        response = await cartServices.addCartItem(product.id, itemToAdd);
+        await cartServices.addCartItem(product.id, itemToAdd);
       } else {
         // If user is not logged in, send request to store cart in session
-        response = await cartServices.addCartItem(product.id, itemToAdd);
+        await cartServices.addCartItem(product.id, itemToAdd);
       }
 
-      console.log("Response from addCartItem:", response);
-
-      if (
-        response &&
-        response?.message &&
-        response.message.includes("Sản phẩm đã được thêm vào giỏ hàng")
-      ) {
-        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
-      } else {
-        message.error(
-          response?.message || "Thêm vào giỏ hàng thất bại. Vui lòng thử lại."
-        );
-      }
+      // Display success message
+      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
