@@ -1,5 +1,5 @@
 import { BookOutlined, StarFilled } from "@ant-design/icons";
-import React from "react";
+import React, { useState } from "react";
 import formatDate from "../../utils/formatDate";
 import { Table, Spin, Typography, Button, Select, message } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ const { Option } = Select;
 
 const Comment = () => {
   const queryClient = useQueryClient();
+  const [selectedComments, setSelectedComments] = useState([]);
 
   const { data: comments, isLoading, error } = useQuery({
     queryKey: ["comments"],
@@ -27,9 +28,38 @@ const Comment = () => {
     },
   });
 
+
+
   const handleUpdateComment = (id, status) => {
     updateMutation.mutate({ id, status });
   };
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: ({ comment_ids, action }) => CommentServices.bulkAction({ comment_ids, action }),
+    onSuccess: () => {
+      message.success("Cập nhật trạng thái hàng loạt thành công!");
+      queryClient.invalidateQueries(["comments"]);
+      setSelectedComments([]);
+    },
+    onError: () => {
+      message.error("Cập nhật thất bại, vui lòng thử lại!");
+    },
+  });
+
+  const handleSelectChange = (selectedRowKeys) => {
+    setSelectedComments(selectedRowKeys);
+  };
+
+  const handleBulkUpdate = (action) => {
+    if (selectedComments.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một bình luận!");
+      return;
+    }
+    bulkUpdateMutation.mutate({ comment_ids: selectedComments, action });
+  };
+
+
+
 
   const columns = [
     {
@@ -109,11 +139,24 @@ const Comment = () => {
         <BookOutlined style={{ marginRight: "8px" }} />
         Danh sách bình luận
       </h1>
+
+      <div className="mb-4 flex gap-2">
+        <Button type="primary" onClick={() => handleBulkUpdate("approve")} disabled={selectedComments.length === 0}>
+          Duyệt tất cả đã chọn
+        </Button>
+        <Button color="danger" variant="solid" onClick={() => handleBulkUpdate("hide")} disabled={selectedComments.length === 0}>
+          Ẩn tất cả đã chọn
+        </Button>
+      </div>
       <Table
         className="custom-table"
         dataSource={comments || []}
         columns={columns}
         rowKey="id"
+        rowSelection={{
+          selectedRowKeys: selectedComments,
+          onChange: handleSelectChange,
+        }}
         expandable={{ childrenColumnName: "children" }}
       />
     </>
