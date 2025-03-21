@@ -10,6 +10,11 @@ const fetchAuth = async () => {
   }
 };
 
+const getAllCustomer = async (payload) => {
+  const response = await instance.get(`/admin/users/customer`, payload);
+  return response.data;
+}
+
 const getAUser = async (id) => {
   const response = await instance.get(`/admin/users/${id}`);
   return response.data;
@@ -210,6 +215,7 @@ const updateAddress = async (addressId, payload) => {
 
 export const AuthServices = {
   fetchAuth,
+  getAllCustomer,
   updateUser,
   getAUser,
   register,
