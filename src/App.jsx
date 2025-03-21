@@ -42,6 +42,8 @@ import Orders from "./pages/Orders";
 import Address from "./pages/Address";
 import instance from "./axios";
 import { useEffect } from "react";
+import Bill from "./admin/Bill";
+
 function App() {
   useEffect(() => {
     // Gọi một lần duy nhất khi App được load lần đầu
@@ -109,6 +111,7 @@ function App() {
             <Route path="account" element={<Account />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
+            <Route path="bill" element={<Bill />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />
             <Route path="update/:id" element={<Update />} />

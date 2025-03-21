@@ -1,4 +1,4 @@
-import { EditOutlined } from '@ant-design/icons';
+import { LockOutlined } from '@ant-design/icons';
 import { Col, Form, Input, Row, Button, notification } from 'antd';
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -49,7 +49,7 @@ const Change = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <EditOutlined style={{ marginRight: "8px" }} />
+                <LockOutlined style={{ marginRight: "8px" }} />
                 Đổi mật khẩu
             </h1>
 

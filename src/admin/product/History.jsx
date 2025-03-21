@@ -158,7 +158,7 @@ const History = () => {
             title: "Ngày nhập hàng",
             dataIndex: "ngaytao",
             key: "ngaytao",
-            render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD-MM-YYYY") : ""),
+            render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD/MM/YYYY") : ""),
             align: "center",
         },
         {
