@@ -115,6 +115,11 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/inbox">Tin nhắn</Link>,
     },
     {
+      key: "inbox",
+      icon: <MessageOutlined />,
+      label: <Link to="/admin/comment">Bình Luận</Link>,
+    },
+    {
       key: "client",
       icon: <HomeOutlined />,
       label: <Link to="/">Trang chủ</Link>,
