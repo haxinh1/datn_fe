@@ -6,6 +6,12 @@ const getAllOrder = async () => {
   return response.data;
 };
 
+// danh sách hoá đơn
+const getAllBill = async () => {
+  const response = await instance.get("/completed");
+  return response.data;
+};
+
 // danh sách trạng thái
 const getAllStatus = async () => {
   const response = await instance.get("/order-statuses");
@@ -45,8 +51,9 @@ const getOrderByIdUser = async (userId) => {
   return response.data;
 };
 
+// chi tiết đơn hàng theo id
 const getOrderById = async (orderId) => {
-  const response = await instance.get(`/orders/${orderId}`);
+  const response = await instance.get(`/orders/${orderId}/items`);
   return response.data;
 };
 
@@ -58,7 +65,16 @@ const getOrderStatus = async (id) => {
 
 // cập nhật trạng thái đơn hàng
 const updateOrderStatus = async (id, payload) => {
-  const response = await instance.put(`/orders/${id}/update-status`, payload);
+  // Lấy client_token từ localStorage
+  const clientToken = localStorage.getItem('client_token');
+
+  // Gửi client_token trong headers khi gọi API
+  const response = await instance.put(`/orders/${id}/update-status`, payload, {
+    headers: {
+      Authorization: `Bearer ${clientToken}`, // Hoặc truyền trực tiếp client_token vào nếu cần
+    },
+  });
+
   return response.data;
 };
 
@@ -73,6 +89,7 @@ export const OrderService = {
   getOrderById,
   placeOrder,
   getAllOrder,
+  getAllBill,
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
 import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
@@ -12,6 +12,7 @@ const Import = () => {
     const [addedVariants, setAddedVariants] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredProducts, setFilteredProducts] = useState([]);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     // Fetch danh sách sản phẩm và biến thể
     const { data: products = [] } = useQuery({
@@ -163,6 +164,24 @@ const Import = () => {
         form.setFieldsValue(changedValues);
     };    
 
+    const handleSelectAll = (e) => {
+        const checked = e.target.checked;
+        if (checked) {
+            setSelectedRowKeys(addedVariants.map(item => item.key)); // Chọn tất cả
+        } else {
+            setSelectedRowKeys([]); // Bỏ chọn tất cả
+        }
+    };
+    
+    const handleRowSelectionChange = (selectedRowKeys) => {
+        setSelectedRowKeys(selectedRowKeys); // Cập nhật hàng được chọn
+    };
+
+    const handleRemoveSelected = () => {
+        setAddedVariants(prevItems => prevItems.filter(item => !selectedRowKeys.includes(item.key)));
+        setSelectedRowKeys([]); // Reset lại danh sách đã chọn
+    };    
+
     // Gửi dữ liệu nhập hàng
     const handleSubmit = async () => {
         try {
@@ -235,10 +254,28 @@ const Import = () => {
                 layout="vertical"
                 onValuesChange={handleValuesChange}
             >
+                <div className="group2">
+                    <Button 
+                        color="danger" 
+                        variant="solid"
+                        icon={<DeleteOutlined />} 
+                        onClick={handleRemoveSelected}
+                    >
+                        Xóa
+                    </Button>
+                </div>
+
                 <Table
                     dataSource={addedVariants}
                     rowKey="key"
                     pagination={false}
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: handleRowSelectionChange,
+                        getCheckboxProps: record => ({
+                            disabled: false, // Có thể tùy chỉnh để vô hiệu hóa checkbox
+                        }),
+                    }}
                     columns={[
                         {
                             title: "STT",

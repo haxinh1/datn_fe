@@ -549,7 +549,7 @@ const Creat = () => {
             align: "center",
             render: (text, record) => (
                 <DatePicker
-                    format="DD-MM-YYYY"
+                    format="DD/MM/YYYY"
                     value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
                     onChange={(date) => handleDateChange(date, "start", record)}
                 />
@@ -562,7 +562,7 @@ const Creat = () => {
             align: "center",
             render: (text, record) => (
                 <DatePicker
-                    format="DD-MM-YYYY"
+                    format="DD/MM/YYYY"
                     value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
                     onChange={(date) => handleDateChange(date, "end", record)}
                 />
@@ -830,7 +830,7 @@ const Creat = () => {
                                 value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
                                 onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
                                 className="input-item"
-                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                format="DD/MM/YYYY"  // Định dạng ngày hiển thị
                             />
                         </Form.Item>
                     </Col>
@@ -867,7 +867,7 @@ const Creat = () => {
                                 value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
                                 onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
                                 className="input-item"
-                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                format="DD/MM/YYYY"  // Định dạng ngày hiển thị
                             />
                         </Form.Item>
                     </Col>

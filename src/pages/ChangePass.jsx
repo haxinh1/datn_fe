@@ -1,4 +1,4 @@
-import { EditOutlined } from "@ant-design/icons";
+import { EditOutlined, LockOutlined } from "@ant-design/icons";
 import { Col, Form, Input, Row, Button, notification } from "antd";
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -53,7 +53,7 @@ const ChangePass = () => {
           <Col span={3}></Col>
           <Col span={8}>
             <h1 className="mb-5">
-              <EditOutlined style={{ marginRight: "8px" }} />
+              <LockOutlined style={{ marginRight: "8px" }} />
               Đổi mật khẩu
             </h1>
 
@@ -64,7 +64,7 @@ const ChangePass = () => {
               ]}
               name="current_password"
             >
-              <Input.Password />
+              <Input.Password className="input-item"/>
             </Form.Item>
 
             <Form.Item
@@ -86,7 +86,7 @@ const ChangePass = () => {
                 }),
               ]}
             >
-              <Input.Password />
+              <Input.Password className="input-item"/>
             </Form.Item>
 
             <Form.Item
@@ -109,7 +109,7 @@ const ChangePass = () => {
               ]}
               name="confirm_password"
             >
-              <Input.Password />
+              <Input.Password className="input-item"/>
             </Form.Item>
 
             <div className="add">
