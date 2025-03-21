@@ -16,10 +16,19 @@ const Comment = () => {
     queryFn: CommentServices.fetchComments,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, status }) => CommentServices.updateComment(id, { status }),
+    onSuccess: () => {
+      message.success("Cập nhật trạng thái thành công!");
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+    },
+    onError: () => {
+      message.error("Cập nhật thất bại, vui lòng thử lại!");
+    },
+  });
 
   const handleUpdateComment = (id, status) => {
-   console.log(id, status);
-   
+    updateMutation.mutate({ id, status });
   };
 
   const columns = [
@@ -72,7 +81,7 @@ const Comment = () => {
           style={{ width: 120 }}
           onChange={(value) => handleUpdateComment(record.id, value)}
         >
-       <Option value={0}>Chờ duyệt</Option>
+         <Option value={0}>Chờ duyệt</Option>
           <Option value={1}>Đã duyệt</Option>
           <Option value={2}>Đã ẩn</Option>
         </Select>
