@@ -97,7 +97,12 @@ const LayoutAdmin = () => {
     {
       key: "account",
       icon: <TeamOutlined />,
-      label: <Link to="/admin/account"><span>Quản lý tài khoản</span></Link>,
+      label: <Link to="/admin/account"><span>Quản lý nhân sự</span></Link>,
+    },
+    {
+      key: "customer",
+      icon: <TeamOutlined />,
+      label: <Link to="/admin/customer"><span>Khách hàng</span></Link>,
     },
     {
       key: "category",
