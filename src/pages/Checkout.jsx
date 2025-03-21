@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
+import { AuthServices } from "./../services/auth";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -301,6 +302,29 @@ const Checkout = () => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("vi-VN", {}).format(value);
   };
+
+  useEffect(() => {
+    const fetchUserAddress = async () => {
+      if (userId) {
+        try {
+          const addressData = await AuthServices.getAddressByIdUser(userId); // Lấy địa chỉ từ userId
+          console.log("addressData:", addressData); // Log dữ liệu địa chỉ để kiểm tra
+          if (addressData) {
+            setDetailaddress(addressData.detail_address); // Cập nhật detail_address vào state
+            setUserData((prevData) => ({
+              ...prevData,
+              address: addressData.detail_address, // Address data properly updated here
+            }));
+            setDetailaddress(addressData.detail_address); // Make sure to update the detailaddress state directly
+          }
+        } catch (error) {
+          console.error("Lỗi khi lấy địa chỉ:", error);
+        }
+      }
+    };
+
+    fetchUserAddress();
+  }, [userId]);
 
   return (
     <div>
