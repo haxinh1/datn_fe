@@ -43,6 +43,7 @@ import Address from "./pages/Address";
 import instance from "./axios";
 import { useEffect } from "react";
 import Bill from "./admin/Bill";
+import Customer from "./admin/Customer";
 
 function App() {
   useEffect(() => {
@@ -69,7 +70,6 @@ function App() {
           <Route path="forget" element={<Forget />} />
           <Route path="reset/:token" element={<Reset />} />
           <Route path="checkout" element={<Checkout />} />
-
           <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
@@ -109,6 +109,7 @@ function App() {
             <Route path="history" element={<History />} />
             <Route path="brand" element={<Brand />} />
             <Route path="account" element={<Account />} />
+            <Route path="customer" element={<Customer />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
             <Route path="bill" element={<Bill />} />
