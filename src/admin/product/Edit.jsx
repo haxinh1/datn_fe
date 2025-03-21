@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Input, Select, Table, Modal, InputNumber, Form, notification, Row, Col, Upload, Radio, Switch, Tooltip, DatePicker } from "antd";
-import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { BarsOutlined, DeleteOutlined, EditOutlined, InsertRowLeftOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import slugify from "slugify";
 import { productsServices } from './../../services/product';
@@ -587,7 +587,7 @@ const Edit = () => {
             align: "center",
             render: (text, record) => (
                 <DatePicker
-                    format="DD-MM-YYYY"
+                    format="DD/MM/YYYY"
                     value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
                     onChange={(date) => handleDateChange(date, "start", record)}
                 />
@@ -600,7 +600,7 @@ const Edit = () => {
             align: "center",
             render: (text, record) => (
                 <DatePicker
-                    format="DD-MM-YYYY"
+                    format="DD/MM/YYYY"
                     value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
                     onChange={(date) => handleDateChange(date, "end", record)}
                 />
@@ -853,7 +853,7 @@ const Edit = () => {
                                 value={product?.sale_price_start_at ? dayjs(product.sale_price_start_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
                                 onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
                                 className="input-item"
-                                format="DD-MM-YY"  // Định dạng ngày hiển thị
+                                format="DD/MM/YYYY"  // Định dạng ngày hiển thị
                             />
                         </Form.Item>
                     </Col>
@@ -890,7 +890,7 @@ const Edit = () => {
                                 value={product?.sale_price_end_at ? dayjs(product.sale_price_end_at) : null}  // Dùng dayjs để chuyển đổi giá trị ngày
                                 onChange={handleDateChange}  // Hàm xử lý khi thay đổi ngày
                                 className="input-item"
-                                format="DD-MM-YY"  // Định dạng ngày hiển thịnh dạng ngày hiển thị
+                                format="DD/MM/YYYY"  // Định dạng ngày hiển thịnh dạng ngày hiển thị
                             />
                         </Form.Item>
                     </Col>
@@ -899,7 +899,10 @@ const Edit = () => {
                 {productType === "variant" && (
                     <>
                         <hr />
-                        <h1 className="mb-5">Thuộc tính</h1>
+                        <h1 className="mb-5">
+                            <BarsOutlined style={{ marginRight: "8px" }} />
+                            Thuộc tính
+                        </h1>
                         {attributes && attributes
                             .sort((a, b) => a.id - b.id)
                             .map((attr) => (
@@ -975,7 +978,10 @@ const Edit = () => {
                         <Button type="primary" className="btn-item" onClick={generateVariants}>Tạo biến thể</Button>
 
                         <hr />
-                        <h1 className="mb-5">Danh sách sản phẩm cùng loại</h1>
+                        <h1 className="mb-5">
+                            <InsertRowLeftOutlined style={{ marginRight: "8px" }} />
+                            Danh sách sản phẩm cùng loại
+                        </h1>
                         <Table columns={columns} dataSource={tableData} rowKey="id" />
                     </>
                 )}

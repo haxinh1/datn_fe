@@ -224,7 +224,7 @@ const Cart = () => {
                             Hình ảnh
                           </th>
                           <th
-                            className="fs-4 text-start"
+                            className="fs-4"
                             style={{ width: "35%" }}
                           >
                             Sản phẩm

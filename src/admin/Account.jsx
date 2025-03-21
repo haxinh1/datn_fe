@@ -14,6 +14,7 @@ const Account = () => {
     const [filteredUsers, setFilteredUsers] = useState(null);
     const [form] = Form.useForm();
     const [loggedInUserId, setLoggedInUserId] = useState(null);
+    const [loggedInUserRole, setLoggedInUserRole] = useState([]);
 
     const { data: users, isLoading, refetch  } = useQuery({
         queryKey: ["users"],
@@ -32,6 +33,7 @@ const Account = () => {
             notification.success({
                 message: "Cập nhật thành công",
             });
+            console.log(userData)
             refetch(); // Refresh danh sách người dùng sau khi cập nhật
             handleEditCancel();
         }
@@ -41,6 +43,7 @@ const Account = () => {
         const userData = JSON.parse(localStorage.getItem("user")); // Giả sử 'user' là key lưu trữ dữ liệu người dùng
         if (userData) {
             setLoggedInUserId(userData.id);
+            setLoggedInUserRole(userData.role); 
         }
     }, []);    
 
@@ -51,7 +54,8 @@ const Account = () => {
 
     const showEditModal = async (record) => {
         setSelectedRecord(record);
-
+        setIsEditModalVisible(true); // Đặt modal hiển thị trước
+    
         try {
             const userData = await AuthServices.getAUser(record.id);
             form.setFieldsValue({
@@ -66,11 +70,10 @@ const Account = () => {
                 role: userData.role,
                 status: userData.status,
             });
-            setIsEditModalVisible(true);
         } catch (error) {
             console.error("Lỗi khi lấy dữ liệu người dùng:", error);
         }
-    };
+    };    
 
     const handleUpdateUser = async () => {
         try {
@@ -224,7 +227,7 @@ const Account = () => {
                             icon={<EditOutlined/>}
                             type="link"
                             onClick={() => showEditModal(record)}
-                            disabled={record.id === loggedInUserId}
+                            disabled={record.id === loggedInUserId || loggedInUserRole === 'manager'}
                         />
                     </Tooltip>
                 </div>
@@ -274,8 +277,8 @@ const Account = () => {
             >
                 <Table
                     columns={detailColumn}
-                    dataSource={selectedRecord ? [selectedRecord] : []} // Chỉ hiển thị thông tin khách hàng đã chọn
-                    pagination={false} // Không cần phân trang vì chỉ có một bản ghi
+                    dataSource={selectedRecord ? [selectedRecord] : []}
+                    pagination={false} 
                     bordered
                 />
             </Modal>

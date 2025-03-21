@@ -259,7 +259,7 @@ const ProductDetailClient = () => {
 
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
-                      <label>Stock:</label>
+                      <label>Tồn kho:</label>
                       <div className="product-nav product-nav-dots">
                         <div>
                           {selectedVariant

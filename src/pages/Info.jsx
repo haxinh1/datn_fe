@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { EditOutlined, UploadOutlined, UserOutlined } from '@ant-design/icons';
 
 const Info = () => {
     const { id } = useParams();
@@ -125,81 +125,75 @@ const Info = () => {
         setIsModalVisible(false);
     };
 
-    const columns = [
+    const userColumns = [
         {
-            title: "Tên người dùng",
-            dataIndex: "fullname",
-            key: "fullname",
-            align: "center",
+          title: "Thông tin",
+          dataIndex: "label",
+          key: "label",
+          width: 160,
         },
         {
-            title: "Ảnh đại diện",
-            dataIndex: "avatar",
-            key: "avatar",
-            render: (avatar) => avatar ? (<Image width={45} src={avatar} />) : null,
-            align: "center",
+          title: "Chi tiết",
+          dataIndex: "value",
+          key: "value",
         },
-        {
-            title: "Số điện thoại",
-            dataIndex: "phone_number",
-            key: "phone_number",
-            align: "center",
-        },
-        {
-            title: "Email",
-            dataIndex: "email",
-            key: "email",
-            align: "center",
-        },
-        {
-            title: "Giới tính",
-            dataIndex: "gender",
-            key: "gender",
-            align: "center",
-            render: (gender) => {
-                const genderMap = {
-                    male: "Nam",
-                    female: "Nữ",
-                    other: "Khác"
-                };
-                return genderMap[gender];
-            }
-        },
-        {
-            title: "Ngày sinh",
-            dataIndex: "birthday",
-            key: "birthday",
-            align: "center",
-            render: (birthday) => birthday ? birthday.format('DD/MM/YYYY') : '',
-        },
-        {
-            title: "Thao tác",
-            key: "action",
-            align: "center",
-            render: (_, item) => (
-              <div className="action-container">
-                <Tooltip title="Cập nhật">
-                  <Button
-                    color="primary"
-                    variant="solid"
-                    icon={<EditOutlined />}
-                    onClick={showModal}
-                  />
-                </Tooltip>
-              </div>
-            ),
-          },
     ];
+
+    const dataSource = user? [
+        {
+            key: "avatar",
+            label: "Ảnh đại diện",
+            value: user.avatar ? <Image width={90} src={user.avatar} /> : "",
+        },
+        { 
+            key: "fullname", 
+            label: "Tên người dùng", 
+            value: user.fullname 
+        },
+        { 
+            key: "phone_number", 
+            label: "Số điện thoại", 
+            value: user.phone_number 
+        },
+        { 
+            key: "email", 
+            label: "Email", 
+            value: user.email 
+        },
+        {
+            key: "gender",
+            label: "Giới tính",
+            value: user.gender ? { male: "Nam", female: "Nữ", other: "Khác" }[user.gender] : "",
+        },
+        { 
+            key: "birthday", 
+            label: "Ngày sinh", 
+            value: user.birthday ? user.birthday.format("DD/MM/YYYY") : "" 
+        },
+        {
+            key: "action",
+            value: (
+                <Button type="primary" className="btn-item" icon={<EditOutlined />} onClick={showModal}>
+                    Cập nhật
+                </Button>
+            ),
+        },
+    ] : [];
 
     return (
         <>
+            <h1 className="mb-5">
+              <UserOutlined style={{ marginRight: "8px" }} />
+              Thông tin của bạn
+            </h1>
+
             <Skeleton active loading={isLoading}>
                 {user && (
                     <Table
-                        columns={columns}
-                        dataSource={[user]}  // Truyền dữ liệu người dùng dưới dạng mảng có một phần tử
+                        columns={userColumns}
+                        dataSource={dataSource}
                         pagination={false}
-                        bordered
+                        showHeader={false}
                     />
                 )}
             </Skeleton>
@@ -298,7 +292,7 @@ const Info = () => {
                     </Row>
 
                     <div className="add">
-                        <Button type="primary" htmlType="submit" className='btn-item'>
+                        <Button type="primary" htmlType="submit">
                             Cập nhật
                         </Button>
                     </div>
