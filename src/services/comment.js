@@ -24,8 +24,19 @@ const updateComment = async (id, payload) => {
         console.log(error)
     }
 }
+
+const bulkAction = async ({ comment_ids, action }) => {
+    try {
+        const { data } = await instance.put(`/comments/bulk-action`, { comment_ids, action });
+        return data;
+    } catch (error) {
+        console.error("Lỗi khi thực hiện bulk action:", error);
+        throw error;
+    }
+};
 export const CommentServices = {
     fetchComments,
     createComment,
-    updateComment
+    updateComment,
+    bulkAction
 }
