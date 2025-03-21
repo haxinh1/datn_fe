@@ -81,7 +81,7 @@ const Comment = () => {
           style={{ width: 120 }}
           onChange={(value) => handleUpdateComment(record.id, value)}
         >
-         <Option value={0}>Chờ duyệt</Option>
+          {status !== 1 && status !== 2 && <Option value={0}>Chờ duyệt</Option>}
           <Option value={1}>Đã duyệt</Option>
           <Option value={2}>Đã ẩn</Option>
         </Select>
