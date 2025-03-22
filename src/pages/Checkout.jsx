@@ -329,6 +329,7 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         message.success("🎉 Đơn hàng đã đặt thành công!");
+        nav("/");
         setCartItems([]);
         localStorage.removeItem("cartAttributes");
         sessionStorage.removeItem("cart");
