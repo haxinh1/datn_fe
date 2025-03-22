@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartServices } from "./../services/cart";
-import { message, Modal } from "antd";
+import { message, Modal, Table, InputNumber, Button, Image, Checkbox, Tooltip } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 import { productsServices } from "./../services/product";
 import { ValuesServices } from "../services/attribute_value";
 
@@ -9,8 +10,10 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [shippingCost, setShippingCost] = useState(0);
   const [attributeValues, setAttributeValues] = useState([]);
-
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSubtotal, setSelectedSubtotal] = useState(0);
+  const [selectedTotal, setSelectedTotal] = useState(0);
 
   useEffect(() => {
     const getCart = async () => {
@@ -45,7 +48,7 @@ const Cart = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                  productDetails.data.sell_price;
+                productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -85,6 +88,19 @@ const Cart = () => {
 
     fetchAttributeValues();
   }, []);
+
+  useEffect(() => {
+    const selectedItems = cartItems.filter((_, index) =>
+      selectedRowKeys.includes(index)
+    );
+    const newSelectedSubtotal = selectedItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    setSelectedSubtotal(newSelectedSubtotal);
+    setSelectedTotal(newSelectedSubtotal + shippingCost);
+  }, [cartItems, selectedRowKeys, shippingCost]);
+
   const getAttributeValue = (product) => {
     const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
@@ -114,6 +130,49 @@ const Cart = () => {
       style: "currency",
       currency: "VND",
     }).format(value);
+  };
+
+  const handleSelectChange = (selectedKeys) => {
+    setSelectedRowKeys(selectedKeys);
+  };
+
+  // Cập nhật subtotal và total khi chọn sản phẩm
+  const selectedItems = cartItems.filter((item) => selectedRowKeys.includes(item.key));
+
+  // Cấu hình rowSelection cho bảng
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: handleSelectChange,
+  };
+
+  // Xóa nhiều sản phẩm đã chọn
+  const handleRemoveSelectedItems = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning("Vui lòng chọn sản phẩm cần xóa.");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Xác nhận xóa",
+      content: "Bạn có chắc muốn xóa các sản phẩm đã chọn khỏi giỏ hàng?",
+      okText: "Xóa",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          // Xóa sản phẩm khỏi giỏ hàng (localStorage hoặc server)
+          setCartItems((prevItems) =>
+            prevItems.filter((item, index) => !selectedRowKeys.includes(index))
+          );
+
+          setSelectedRowKeys([]);
+
+          message.success("Sản phẩm đã được xóa thành công!");
+        } catch (error) {
+          console.error("Lỗi khi xóa sản phẩm:", error);
+          message.error("Lỗi khi xóa sản phẩm, vui lòng thử lại!");
+        }
+      },
+    });
   };
 
   const subtotal = cartItems.reduce((total, item) => {
@@ -199,6 +258,93 @@ const Cart = () => {
     });
   };
 
+  const columns = [
+    {
+      title: "Hình ảnh",
+      dataIndex: "image",
+      key: "image",
+      align: "center",
+      render: (text) => (
+        <Image
+          src={text}
+          alt="Sản phẩm"
+          width={45}
+          fallback="/images/default-image.jpg"
+        />
+      )
+    },
+    {
+      title: "Tên sản phẩm",
+      dataIndex: "name",
+      key: "name",
+      align: "center",
+      render: (text, record) => (
+        <>
+          {text}
+          {record.variant && (
+            <span className="text-muted" style={{ fontSize: "14px" }}>
+              ({record.variant})
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      title: "Giá",
+      dataIndex: "price",
+      key: "price",
+      align: "center",
+      render: (price) => formatCurrency(price),
+    },
+    {
+      title: "Số lượng",
+      dataIndex: "quantity",
+      key: "quantity",
+      align: "center",
+      render: (quantity, record, index) => (
+        <InputNumber
+          min={1}
+          value={quantity}
+          onChange={(value) => handleQuantityChange(index, value)}
+        />
+      ),
+    },
+    {
+      title: "Tổng tiền",
+      dataIndex: "total",
+      key: "total",
+      align: "center",
+      render: (total) => formatCurrency(total),
+    },
+    {
+      title: "",
+      key: "delete",
+      align: "center",
+      render: (_, record) => (
+        <Tooltip title='Xóa sản phẩm'>
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined/>}
+            onClick={() => handleRemoveItem(record.product_id, record.product_variant_id)}
+          />
+        </Tooltip>
+      ),
+    },
+  ];
+
+  const dataSource = cartItems.map((item, index) => ({
+    key: index,
+    image: item.product_variant?.thumbnail || item.product?.thumbnail || "/images/default-image.jpg",
+    name: item.product?.name + (item.product_variant?.name ? ` - ${item.product_variant.name}` : ""),
+    variant: getAttributeValue(item),
+    price: item.price,
+    quantity: item.quantity,
+    total: item.price * item.quantity,
+    product_id: item.product_id,
+    product_variant_id: item.product_variant_id,
+  }));
+
   return (
     <div>
       <main className="main">
@@ -211,163 +357,39 @@ const Cart = () => {
           <div className="cart">
             <div className="container">
               <div className="row">
+
                 <div className="col-lg-9">
-                  {cartItems.length === 0 ? (
-                    <p className="fs-4 text-center text-danger">
-                      <span>Giỏ hàng của bạn đang trống!</span>
-                    </p>
-                  ) : (
-                    <table className="table table-cart">
-                      <thead>
-                        <tr className="text-center align-middle">
-                          <th className="fs-4" style={{ width: "10%" }}>
-                            Hình ảnh
-                          </th>
-                          <th
-                            className="fs-4"
-                            style={{ width: "35%" }}
-                          >
-                            Sản phẩm
-                          </th>
-                          <th className="fs-4" style={{ width: "15%" }}>
-                            Giá
-                          </th>
-                          <th className="fs-4" style={{ width: "10%" }}>
-                            Số lượng
-                          </th>
-                          <th className="fs-4" style={{ width: "15%" }}>
-                            Tổng
-                          </th>
-                          <th className="fs-4" style={{ width: "5%" }}>
-                            Xóa
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cartItems.map((item, index) => {
-                          const isVariant = item.product_variant_id !== null;
+                  <Table
+                    rowSelection={rowSelection}
+                    columns={columns}
+                    dataSource={dataSource}
+                    pagination={false}
+                  />
 
-                          // ✅ Lấy hình ảnh từ biến thể hoặc sản phẩm đơn
-                          const productImage = isVariant
-                            ? item.product_variant?.thumbnail ||
-                              item.product?.thumbnail
-                            : item.product?.thumbnail ||
-                              "/images/default-image.jpg";
-
-                          // ✅ Lấy giá sản phẩm (ưu tiên giá sale nếu có)
-                          const productPrice = isVariant
-                            ? item.product_variant?.sale_price ||
-                              item.product_variant?.sell_price
-                            : item.price;
-
-                          // ✅ Lấy tên sản phẩm, tránh lỗi `undefined`
-                          const productName = isVariant
-                            ? `${item.product?.name} ${
-                                item.product_variant?.name
-                                  ? "- " + item.product_variant?.name
-                                  : ""
-                              }`
-                            : item.product?.name || "Sản phẩm không xác định";
-
-                          return (
-                            <tr
-                              key={index}
-                              className="text-center align-middle"
-                            >
-                              <td>
-                                <img
-                                  src={productImage}
-                                  alt={productName}
-                                  width="75"
-                                  height="75"
-                                  onError={(e) =>
-                                    (e.target.src = "/images/default-image.jpg")
-                                  }
-                                  style={{
-                                    objectFit: "cover",
-                                    borderRadius: "8px",
-                                  }}
-                                />
-                              </td>
-                              <td className="fs-4 text-start">
-                                {productName}{" "}
-                                {item.product_variant_id && (
-                                  <span
-                                    className="text-muted"
-                                    style={{ fontSize: "14px" }}
-                                  >
-                                    ({getAttributeValue(item)})
-                                  </span>
-                                )}
-                              </td>
-                              <td className="fs-4">
-                                {formatCurrency(productPrice)}
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  value={cartItems[index]?.quantity || 1}
-                                  min="1"
-                                  onChange={(e) => {
-                                    const newQuantity =
-                                      parseInt(e.target.value) || 1;
-                                    handleQuantityChange(index, newQuantity);
-                                  }}
-                                  className="text-center fs-4"
-                                  style={{
-                                    width: "55px",
-                                    height: "35px",
-                                    fontSize: "16px",
-                                    color: "black",
-                                    borderRadius: "5px",
-                                    borderColor: "black",
-                                  }}
-                                />
-                              </td>
-                              <td className="fs-4">
-                                {formatCurrency(productPrice * item.quantity)}
-                              </td>
-                              <td>
-                                <button
-                                  className="btn btn-sm p-0"
-                                  onClick={() =>
-                                    handleRemoveItem(
-                                      item.product_id,
-                                      item.product_variant_id
-                                    )
-                                  }
-                                  title="Xóa sản phẩm"
-                                  style={{
-                                    width: "25px",
-                                    height: "25px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "14px",
-                                  }}
-                                >
-                                  <i className="fa-solid fa-xmark text-danger"></i>
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
+                  <div className="group1">
+                    <Button
+                      color="danger"
+                      variant="solid"
+                      onClick={handleRemoveSelectedItems}
+                      icon={<DeleteOutlined />}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
                 </div>
+
                 <aside className="col-lg-3">
                   <div className="summary summary-cart">
-                    <h3 className="summary-title fs-4">Giỏ hàng của bạn</h3>
+                    <h3 className="summary-title fs-4">Giỏ hàng đã chọn</h3>
                     <table className="table table-summary">
                       <tbody>
                         <tr className="summary-subtotal fs-5">
                           <td>Tạm tính:</td>
-                          <td>{formatCurrency(subtotal)}</td>
+                          <td>{formatCurrency(selectedSubtotal)}</td>
                         </tr>
                         <tr className="summary-total fs-5">
                           <td>Tổng tiền:</td>
-                          <td>{formatCurrency(total)}</td>
+                          <td>{formatCurrency(selectedTotal)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -375,7 +397,7 @@ const Cart = () => {
                       to="/checkout"
                       className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                     >
-                      Checkout<i className="icon-long-arrow-right"></i>
+                      Thanh toán<i className="icon-long-arrow-right"></i>
                     </Link>
                   </div>
                 </aside>
