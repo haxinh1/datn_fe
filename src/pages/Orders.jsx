@@ -408,7 +408,7 @@ const Orders = () => {
             <div className="group1">
                 <ConfigProvider locale={viVN}>
                     <RangePicker
-                        format="DD-MM-YYYY"
+                        format="DD/MM/YYYY"
                         placeholder={["Từ ngày", "Đến ngày"]}
                         onChange={(dates) => handleFilterChange("dateRange", dates)}
                         allowClear
