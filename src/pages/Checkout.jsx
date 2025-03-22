@@ -1,14 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import { message, Modal } from "antd";
-import { useNavigate } from "react-router-dom";
+import {
+  Button,
+  message,
+  Modal,
+  Radio,
+  Skeleton,
+  Table,
+  Tooltip,
+  Form,
+  Select,
+  Input,
+  notification,
+} from "antd";
+import { useNavigate, useParams } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
+import { AuthServices } from "../services/auth";
+import { CheckOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { useMutation } from "@tanstack/react-query";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const nav = useNavigate();
   const [attributeValues, setAttributeValues] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -22,9 +40,9 @@ const Checkout = () => {
   const [payMents, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
-
   const [loading, setLoading] = useState(false);
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
   const [userData, setUserData] = useState({
     fullname: "",
     email: "",
@@ -121,28 +139,63 @@ const Checkout = () => {
       });
   }, []);
 
-  const handleProvinceChange = (e) => {
-    const provinceCode = e.target.value;
-    const province = provinces.find((p) => p.code === Number(provinceCode));
-
-    setSelectedProvince(provinceCode);
+  const handleProvinceChange = (value) => {
+    const province = provinces.find((p) => p.code === Number(value));
     setDistricts(province ? province.districts : []);
     setWards([]);
-    setSelectedDistrict("");
-    setSelectedWard("");
+    form.setFieldsValue({ district: null, ward: null });
   };
 
-  const handleDistrictChange = (e) => {
-    const districtCode = e.target.value;
-    const district = districts.find((d) => d.code === Number(districtCode));
-
-    setSelectedDistrict(districtCode);
+  const handleDistrictChange = (value) => {
+    const district = districts.find((d) => d.code === Number(value));
     setWards(district ? district.wards : []);
-    setSelectedWard("");
+    form.setFieldsValue({ ward: null });
   };
 
-  const handleWardChange = (e) => {
-    setSelectedWard(e.target.value);
+  // thêm địa chỉ mới
+  const { mutate } = useMutation({
+    mutationFn: async (userData) => {
+      const response = await AuthServices.addAddress(userData);
+      return response;
+    },
+    onSuccess: (_, userData) => {
+      notification.success({
+        message: "Địa chỉ mới đã được thêm",
+      });
+      form.setFieldsValue();
+      setIsModalVisible(false);
+    },
+    onError: (error) => {
+      notification.error({
+        message: "Thêm thất bại",
+        description: error.message,
+      });
+    },
+  });
+
+  const handleAdd = (values) => {
+    const formattedAddress = [
+      values.ward
+        ? wards.find((w) => w.code === Number(values.ward))?.name
+        : "",
+      values.district
+        ? districts.find((d) => d.code === Number(values.district))?.name
+        : "",
+      values.province
+        ? provinces.find((p) => p.code === Number(values.province))?.name
+        : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const userData = {
+      address: formattedAddress,
+      detail_address: values.detail_address,
+      id_default: values.id_default,
+    };
+
+    console.log("Dữ liệu gửi đi:", userData);
+    mutate(userData);
   };
 
   // Tạo chuỗi địa chỉ theo định dạng mong muốn
@@ -222,6 +275,19 @@ const Checkout = () => {
         return;
       }
 
+      if (!selectedAddress && !userData.address) {
+        message.error("Chưa có địa chỉ đặt hàng!");
+        return;
+      }
+      const selectedAddressData = addresses.find(
+        (address) => address.id === selectedAddress
+      );
+
+      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
+      if (!selectedAddressData && !userData.address) {
+        message.error("Địa chỉ không hợp lệ!");
+        return;
+      }
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
@@ -236,7 +302,9 @@ const Checkout = () => {
         fullname: userData.fullname,
         email: userData.email,
         phone_number: userData.phone_number,
-        address: userData.address,
+        address: selectedAddressData
+          ? selectedAddressData.detail_address && selectedAddressData.address
+          : userData.address, // Nếu là khách vãng lai thì lấy userData.address
         total_amount: subtotal,
         payment_method:
           selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
@@ -300,6 +368,44 @@ const Checkout = () => {
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("vi-VN", {}).format(value);
+  };
+
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const userId = storedUser?.id; // Lấy id từ localStorage
+
+      if (userId) {
+        try {
+          const data = await AuthServices.getAddressByIdUser(userId); // Lấy địa chỉ người dùng
+          setAddresses(data);
+
+          // Tự động chọn địa chỉ mặc định nếu có
+          const defaultAddress = data.find((address) => address.id_default);
+          if (defaultAddress) {
+            setSelectedAddress(defaultAddress.id); // Đặt giá trị selectedAddress bằng id của địa chỉ mặc định
+          }
+        } catch (error) {
+          console.error("Lỗi khi lấy địa chỉ:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchAddresses();
+  }, []);
+
+  const handleAddressChange = (e) => {
+    setSelectedAddress(e.target.value); // Lưu id địa chỉ đã chọn
+  };
+
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
   };
 
   return (
@@ -402,69 +508,166 @@ const Checkout = () => {
                         setUserData({ ...userData, email: e.target.value })
                       }
                     />
+                    {!userId ? (
+                      <div>
+                        <label>Địa chỉ giao hàng:</label>
+                        <Input
+                          value={userData.address} // Lấy giá trị từ userData.address
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              address: e.target.value, // Cập nhật địa chỉ mới vào userData
+                            })
+                          }
+                          placeholder="Nhập địa chỉ giao hàng"
+                        />
+                      </div>
+                    ) : (
+                      addresses.length > 0 && (
+                        <div>
+                          <label>Chọn địa chỉ</label>
+                          <Radio.Group
+                            onChange={handleAddressChange}
+                            value={selectedAddress}
+                          >
+                            {addresses.map((address) => (
+                              <Radio key={address.id} value={address.id}>
+                                <div>{`${address.detail_address}, ${address.address}`}</div>
+                                {address.id_default && " (Mặc định)"}
+                              </Radio>
+                            ))}
+                          </Radio.Group>
+                        </div>
+                      )
+                    )}
 
-                    <div className="form-group">
-                      <label for="province">Tỉnh/Thành phố</label>
-                      <select
-                        id="province"
-                        class="form-control"
-                        onChange={handleProvinceChange}
-                        value={selectedProvince}
-                        required
+                    {!userId ? null : (
+                      <Button
+                        color="primary"
+                        variant="solid"
+                        icon={<PlusOutlined />}
+                        onClick={showModal}
                       >
-                        <option value="">Chọn tỉnh/thành phố</option>
-                        {provinces.map((province) => (
-                          <option key={province.code} value={province.code}>
-                            {province.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label for="district">Quận/Huyện</label>
-                      <select
-                        id="district"
-                        class="form-control"
-                        onChange={handleDistrictChange}
-                        value={selectedDistrict}
-                        required
-                        disabled={!selectedProvince}
-                      >
-                        <option value="">Chọn quận/huyện</option>
-                        {districts.map((district) => (
-                          <option key={district.code} value={district.code}>
-                            {district.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label for="ward">Phường/Xã</label>
-                      <select
-                        id="ward"
-                        class="form-control"
-                        onChange={handleWardChange}
-                        value={selectedWard}
-                        required
-                        disabled={!selectedDistrict}
-                      >
-                        <option value="">Chọn phường/xã</option>
-                        {wards.map((ward) => (
-                          <option key={ward.code} value={ward.code}>
-                            {ward.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Địa chỉ cụ thể</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={detailaddress}
-                        onChange={(e) => setDetailaddress(e.target.value)}
-                      />
-                    </div>
+                        Thêm mới
+                      </Button>
+                    )}
+
+                    <Modal
+                      title="Thêm địa chỉ mới"
+                      visible={isModalVisible}
+                      onCancel={handleCancel}
+                      footer={null}
+                    >
+                      <Form form={form} layout="vertical" onFinish={handleAdd}>
+                        <Form.Item
+                          name="province"
+                          label="Tỉnh/Thành phố"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Vui lòng chọn tỉnh/thành phố",
+                            },
+                          ]}
+                        >
+                          <Select
+                            onChange={handleProvinceChange}
+                            className="input-item"
+                            placeholder="Chọn tỉnh/thành phố"
+                          >
+                            {provinces.map((p) => (
+                              <Select.Option key={p.code} value={p.code}>
+                                {p.name}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="district"
+                          label="Quận/Huyện"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Vui lòng chọn quận/huyện",
+                            },
+                          ]}
+                        >
+                          <Select
+                            onChange={handleDistrictChange}
+                            disabled={!districts.length}
+                            className="input-item"
+                            placeholder="Chọn quận/huyện"
+                          >
+                            {districts.map((d) => (
+                              <Select.Option key={d.code} value={d.code}>
+                                {d.name}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="ward"
+                          label="Phường/Xã"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Vui lòng chọn phường/xã",
+                            },
+                          ]}
+                        >
+                          <Select
+                            disabled={!wards.length}
+                            className="input-item"
+                            placeholder="Chọn phường/xã"
+                          >
+                            {wards.map((w) => (
+                              <Select.Option key={w.code} value={w.code}>
+                                {w.name}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="detail_address"
+                          label="Địa chỉ cụ thể"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Vui lòng nhập địa chỉ cụ thể",
+                            },
+                          ]}
+                        >
+                          <Input
+                            className="input-item"
+                            placeholder="Nhập địa chỉ cụ thể"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="id_default"
+                          label="Đặt làm địa chỉ mặc định"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Vui lòng chọn địa chỉ mặc định",
+                            },
+                          ]}
+                        >
+                          <Radio.Group>
+                            <Radio value={1}>Có</Radio>
+                            <Radio value={0}>Không</Radio>
+                          </Radio.Group>
+                        </Form.Item>
+
+                        <div className="add">
+                          <Button type="primary" htmlType="submit">
+                            Lưu
+                          </Button>
+                        </div>
+                      </Form>
+                    </Modal>
                   </div>
 
                   <aside className="col-lg-3">
