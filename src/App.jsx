@@ -42,6 +42,8 @@ import Orders from "./pages/Orders";
 import Address from "./pages/Address";
 import Bill from "./admin/Bill";
 import Customer from "./admin/Customer";
+import ProductReview from "./pages/ProductReview";
+import Comment from "./admin/comment";
 
 function App() {
   return (
@@ -61,15 +63,8 @@ function App() {
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
-
-          <Route
-            path="dashboard"
-            element={
-              <PrivateClient>
-                <Dashboard />
-              </PrivateClient>
-            }
-          >
+          <Route path="product-review" element={<ProductReview />} />
+          <Route path="dashboard"element={<PrivateClient><Dashboard /></PrivateClient>}>
             <Route path="changepass/:id" element={<ChangePass />} />
             <Route path="info/:id" element={<Info />} />
             <Route path="orders/:id" element={<Orders />} />
@@ -104,6 +99,7 @@ function App() {
             <Route path="coupon" element={<Coupon />} />
             <Route path="update/:id" element={<Update />} />
             <Route path="change/:id" element={<Change />} />
+            <Route path="comment" element={<Comment />} />
           </Route>
         </Route>
       </Routes>
