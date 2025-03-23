@@ -64,6 +64,11 @@ const getOrderById = async (orderId) => {
   return response.data;
 };
 
+const getDetailOrder= async (orderId) => {
+  const response = await instance.get(`/orders/${orderId}`);
+  return response.data;
+};
+
 // danh sách quản lý đơn hàng
 const getOrderStatus = async (id) => {
   const response = await instance.get(`/orders/${id}/statuses`);
@@ -71,17 +76,19 @@ const getOrderStatus = async (id) => {
 };
 
 // cập nhật trạng thái đơn hàng
+// const updateOrderStatus = async (id, payload) => {
+//   const clientToken = localStorage.getItem('client_token');
+//   const response = await instance.put(`/orders/${id}/update-status`, payload, {
+//     headers: {
+//       Authorization: `Bearer ${clientToken}`,
+//     },
+//   });
+
+//   return response.data;
+// };
+
 const updateOrderStatus = async (id, payload) => {
-  // Lấy client_token từ localStorage
-  const clientToken = localStorage.getItem('client_token');
-
-  // Gửi client_token trong headers khi gọi API
-  const response = await instance.put(`/orders/${id}/update-status`, payload, {
-    headers: {
-      Authorization: `Bearer ${clientToken}`, // Hoặc truyền trực tiếp client_token vào nếu cần
-    },
-  });
-
+  const response = await instance.put(`/orders/${id}/update-status`, payload);
   return response.data;
 };
 
@@ -94,6 +101,7 @@ const updateOrders = async (payload) => {
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
+  getDetailOrder,
   placeOrder,
   getAllOrder,
   getAllBill,

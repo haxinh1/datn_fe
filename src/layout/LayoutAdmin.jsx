@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
-import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined } from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -126,8 +126,8 @@ const LayoutAdmin = () => {
     },
     {
       key: "comment",
-      icon: <MessageOutlined />,
-      label: <Link to="/admin/comment">Bình Luận</Link>,
+      icon: <CommentOutlined />,
+      label: <Link to="/admin/comment"><span>Bình Luận</span></Link>,
     },
     {
       key: "client",

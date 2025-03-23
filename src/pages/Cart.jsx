@@ -325,7 +325,7 @@ const Cart = () => {
           <Button
             type="text"
             danger
-            icon={<DeleteOutlined/>}
+            icon={<DeleteOutlined />}
             onClick={() => handleRemoveItem(record.product_id, record.product_variant_id)}
           />
         </Tooltip>
@@ -348,9 +348,9 @@ const Cart = () => {
   return (
     <div>
       <main className="main">
-        <div className="page-header text-center">
+        <div className="page-header text-center" style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}>
           <div className="container">
-            <h1 className="page-title fs-3">Giỏ hàng</h1>
+            <h1 className="page-title">Giỏ Hàng</h1>
           </div>
         </div>
         <div className="page-content">
@@ -366,16 +366,14 @@ const Cart = () => {
                     pagination={false}
                   />
 
-                  <div className="group1">
-                    <Button
-                      color="danger"
-                      variant="solid"
-                      onClick={handleRemoveSelectedItems}
-                      icon={<DeleteOutlined />}
-                    >
-                      Xóa
-                    </Button>
-                  </div>
+                  <Button
+                    color="danger"
+                    variant="solid"
+                    onClick={handleRemoveSelectedItems}
+                    icon={<DeleteOutlined />}
+                  >
+                    Xóa
+                  </Button>
                 </div>
 
                 <aside className="col-lg-3">

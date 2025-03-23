@@ -1,8 +1,8 @@
-import { BookOutlined, CheckOutlined, CloseOutlined, EyeOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
+import { BookOutlined, CheckOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
 import { Button, Col, ConfigProvider, DatePicker, Form, Input, Modal, Radio, Row, Select, Skeleton, Table, Tooltip, Upload, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
 import { paymentServices } from '../services/payments';
 import { useQuery } from '@tanstack/react-query';
@@ -24,6 +24,7 @@ const Orders = () => {
     const [isCustomReason, setIsCustomReason] = useState(false);
     const [video, setVideo] = useState("");
     const [form] = Form.useForm();
+    const navigate = useNavigate()
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -131,7 +132,7 @@ const Orders = () => {
                     if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
                         notification.success({
                             message: "Cảm ơn bạn đã tin tưởng Molla Shop",
-                            description: "Hẹn gặp lại!",
+                            description: "Hãy đánh giá sản phẩm của bạn tại đây!",
                         });
 
                         // Cập nhật lại danh sách đơn hàng với trạng thái mới
@@ -140,6 +141,7 @@ const Orders = () => {
                                 order.id === orderId ? { ...order, status: { id: 7, name: "Hoàn thành" } } : order
                             )
                         );
+                        navigate(`/review/${orderId}`);
                     } else {
                         notification.error({
                             message: "Cập nhật thất bại",
@@ -373,7 +375,7 @@ const Orders = () => {
                 const isCompleted = status?.id === 7; // 'Hoàn thành' status
                 const canCancel = [1, 2, 3].includes(status?.id);
                 return (
-                    <div className="group1">
+                    <div className="action-container">
                         <Tooltip title="Chi tiết đơn hàng">
                             <Button
                                 color="purple"
@@ -392,6 +394,14 @@ const Orders = () => {
                                 onClick={() => handleMarkAsReceived(item.id)}
                             />
                         </Tooltip>
+
+                        <Link to={`/detail/${item.id}`}>
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<CheckOutlined />}
+                            />
+                        </Link>
                     </div>
                 );
             },
