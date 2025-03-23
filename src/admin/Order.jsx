@@ -79,7 +79,7 @@ const Order = () => {
     status: item.status?.name,
     note: item.note,
     employee_evidence: item.employee_evidence,
-    modified_by: item.modified_by?.fullname,
+    modified_by: item.modified_by?.fullname || 'Khách hàng',
     created_at: dayjs(item.created_at).format("DD/MM/YYYY - HH:mm"),
   }));
 
