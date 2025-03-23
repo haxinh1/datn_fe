@@ -1,3 +1,4 @@
+import { Button } from "antd";
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 // import { OrderService } from "./../services/order";
@@ -45,13 +46,13 @@ const Thankyoupage = () => {
         <header className="text-center mb-4">
           <h1 className="text-primary">MOLLA SHOP</h1>
           <h2>THANH TOÁN THÀNH CÔNG</h2>
-          <p>
+          <span>
             Cảm ơn <strong>{customerName || "quý khách"}</strong> đã đặt hàng
             tại Molla Shop. Dưới đây là thông tin đơn hàng của bạn.
             <strong>
               Vui lòng kiểm tra email của bạn để biết thêm chi tiết.
             </strong>
-          </p>
+          </span>
         </header>
 
         <section className="mb-4">
@@ -85,18 +86,21 @@ const Thankyoupage = () => {
         </section>
 
         <footer className="text-center mt-4">
-          <p>
+          <span>
             Mọi thắc mắc về đơn hàng vui lòng liên hệ số hotline:{" "}
             <strong>09100204</strong> hoặc gửi thư vào địa chỉ{" "}
             <strong>hotro@mollashop.com</strong> để được giải đáp.
-          </p>
-          <p>Trân trọng cảm ơn</p>
+          </span> 
+          <hr />
+          <span className="text-confirm">Trân trọng cảm ơn và hẹn gặp lại!</span>
         </footer>
 
         {/* Centered link button */}
-        <div className="text-center mt-3">
-          <Link to="/" className="btn btn-primary">
-            Quay về trang chủ
+        <div className="add">
+          <Link to="/">
+            <Button className="button-item">
+              Quay về trang chủ
+            </Button>
           </Link>
         </div>
       </div>

@@ -181,7 +181,7 @@ const getAddressByIdUser = async (userId) => {
 //người dùng thêm địa chỉ
 const addAddress = async (payload) => {
   const token =
-    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+    localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -195,16 +195,32 @@ const addAddress = async (payload) => {
   return response.data;
 };
 
-//người dùng sửa địa chỉ
-const updateAddress = async (addressId, payload) => {
+const getaAddress = async (id) => {
   const token =
-    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+    localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
   }
 
-  const response = await instance.put(`/user-addresses/${addressId}`, payload, 
+  const response = await instance.get(`/useraddress-addresses/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+    },
+  });
+  return response.data;
+}
+
+//người dùng sửa địa chỉ
+const updateAddress = async (id, payload) => {
+  const token =
+    localStorage.getItem("client_token");
+
+  if (!token) {
+    throw new Error("Token xác thực không có trong localStorage");
+  }
+
+  const response = await instance.put(`/user-addresses/${id}`, payload, 
     {
       headers: {
         Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
@@ -230,5 +246,6 @@ export const AuthServices = {
   logoutad,
   getAddressByIdUser,
   addAddress,
+  getaAddress,
   updateAddress
 };

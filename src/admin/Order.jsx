@@ -138,10 +138,15 @@ const Order = () => {
       return;
     }
 
+    // Lấy id người dùng từ localStorage
+    const user = JSON.parse(localStorage.getItem("user"));
+    const modifiedBy = user?.id;
+
     const payload = {
       order_status_id: values.status_id,
       note: values.note || "",
       employee_evidence: values.employee_evidence || image || "",
+      user_id: modifiedBy,
     };
 
     console.log("Dữ liệu gửi đi:", payload); // Debug
