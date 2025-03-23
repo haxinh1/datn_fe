@@ -272,6 +272,61 @@ const Cart = () => {
     });
   };
 
+  const handleCheckoutClick = (e) => {
+    // If no items are selected, show an error and prevent navigation
+    if (selectedRowKeys.length === 0) {
+      e.preventDefault(); // Prevent navigation
+      message.error("Vui lòng chọn ít nhất một sản phẩm để thanh toán!");
+      return;
+    }
+
+    // Gather selected items with necessary information for checkout
+    const selectedItemsForCheckout = selectedRowKeys.map((key) => {
+      const selectedItem = cartItems[key];
+      const attributes =
+        JSON.parse(localStorage.getItem("cartAttributes")) || [];
+      let variantAttributes = [];
+
+      if (selectedItem.product_variant_id) {
+        // Get variant attributes if product has a variant
+        const productAttributes = attributes.find(
+          (attr) =>
+            attr.product_id === selectedItem.product_id &&
+            attr.product_variant_id === selectedItem.product_variant_id
+        );
+
+        if (productAttributes && productAttributes.attributes) {
+          variantAttributes = productAttributes.attributes.map((attr) => {
+            const attribute = attributeValues.find(
+              (av) => String(av.id) === String(attr.attribute_value_id)
+            );
+            return attribute ? attribute.value : "Không xác định";
+          });
+        }
+      }
+
+      // Return the item with necessary fields for checkout
+      return {
+        product_id: selectedItem.product_id,
+        name: selectedItem.product.name,
+        quantity: selectedItem.quantity,
+        price: selectedItem.price,
+        product_variant_id: selectedItem.product_variant_id || null,
+        variant_attributes: variantAttributes,
+      };
+    });
+
+    // Proceed to checkout page with selected items and their details
+    // Pass the selected items to the checkout page via state
+    navigate("/checkout", {
+      state: {
+        selectedItems: selectedItemsForCheckout,
+        // Send selected items with necessary info
+      },
+    });
+    console.log("selectedItems trong Cart:", selectedItemsForCheckout);
+  };
+
   const columns = [
     {
       title: "Hình ảnh",
@@ -413,21 +468,13 @@ const Cart = () => {
                         </tr>
                       </tbody>
                     </table>
-                    {selectedRowKeys.length === 0 ? (
-                      <p style={{ color: "red" }}>
-                        Vui lòng chọn ít nhất một sản phẩm để thanh toán!
-                      </p>
-                    ) : (
-                      <Link
-                        to={{
-                          pathname: "/checkout", // Đi tới trang thanh toán
-                          state: { selectedItems }, // Truyền các sản phẩm đã chọn vào state
-                        }}
-                        className="btn btn-outline-primary-2 btn-order btn-block fs-5"
-                      >
-                        Thanh toán<i className="icon-long-arrow-right"></i>
-                      </Link>
-                    )}
+                    <Link
+                      to="/checkout"
+                      className="btn btn-outline-primary-2 btn-order btn-block fs-5"
+                      onClick={handleCheckoutClick} // Trigger the error message check and proceed to checkout
+                    >
+                      Thanh toán<i className="icon-long-arrow-right"></i>
+                    </Link>
                   </div>
                 </aside>
               </div>
