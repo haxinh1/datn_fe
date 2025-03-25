@@ -131,28 +131,134 @@ const Checkout = () => {
   }, []);
 
   useEffect(() => {
-    fetch("https://provinces.open-api.vn/api/?depth=3")
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Thay token của bạn vào đây
+    fetch(
+      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+      }
+    )
       .then((res) => res.json())
       .then((data) => {
-        setProvinces(data);
-        setLoading(false);
+        if (Array.isArray(data.data)) {
+          setProvinces(data.data); // Lưu vào state provinces
+        }
+      })
+      .catch((error) => {
+        console.error("Lỗi khi lấy dữ liệu tỉnh thành phố:", error);
       });
   }, []);
 
+  // Xử lý sự kiện khi người dùng chọn tỉnh/thành phố
   const handleProvinceChange = (value) => {
-    const province = provinces.find((p) => p.code === Number(value));
-    setDistricts(province ? province.districts : []);
+    // Reset districts and wards when province changes
+    setDistricts([]);
     setWards([]);
-    form.setFieldsValue({ district: null, ward: null });
+
+    setSelectedProvince(value);
+
+    if (!value) {
+      console.error("Invalid province ID:", value);
+      return;
+    }
+    console.log("ProvinceID:", value);
+    // Get the ProvinceID instead of Code
+    const selectedProvince = provinces.find((p) => p.ProvinceID === value);
+
+    if (!selectedProvince) {
+      console.error("Province not found for value:", value);
+      return;
+    }
+
+    const provinceId = selectedProvince.ProvinceID; // Use the correct ProvinceID
+
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+    fetch(
+      `https://online-gateway.ghn.vn/shiip/public-api/master-data/district?province_id=${provinceId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.code === 400) {
+          console.error("Error fetching districts:", data.message);
+        } else if (Array.isArray(data.data)) {
+          setDistricts(data.data); // Update districts with the fetched data
+        } else {
+          console.error("Unexpected response format:", data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching districts:", error);
+      });
   };
 
+  // Xử lý sự kiện khi người dùng chọn quận/huyện
   const handleDistrictChange = (value) => {
-    const district = districts.find((d) => d.code === Number(value));
-    setWards(district ? district.wards : []);
-    form.setFieldsValue({ ward: null });
+    setWards([]); // Reset wards when district changes
+    setSelectedDistrict(value);
+    setSelectedWard(null); // Reset selectedWard when district changes
+
+    if (!value) {
+      console.error("Invalid district ID:", value);
+      return;
+    }
+    console.log("DistrictID:", value);
+    // Find the district from selected districts
+    const selectedDistrictData = districts.find((d) => d.DistrictID === value);
+    if (!selectedDistrictData) {
+      console.error("District not found for value:", value);
+      return;
+    }
+
+    const districtId = selectedDistrictData.DistrictID;
+
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+    fetch(
+      `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${districtId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.data)) {
+          setWards(data.data); // Update wards with the fetched data
+        } else {
+          console.error("Error fetching wards:", data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching wards:", error);
+      });
+  };
+  const handleWardChange = (value) => {
+    setSelectedWard(value); // Cập nhật selectedWard khi chọn phường xã
+
+    if (!value) {
+      console.error("Invalid ward code:", value);
+      return;
+    }
+
+    // Log WardCode khi thay đổi phường xã
+    console.log("WardCode:", value);
   };
 
   // thêm địa chỉ mới
+  // Thêm địa chỉ mới
   const { mutate } = useMutation({
     mutationFn: async (userData) => {
       const response = await AuthServices.addAddress(userData);
@@ -162,8 +268,8 @@ const Checkout = () => {
       notification.success({
         message: "Địa chỉ mới đã được thêm",
       });
-      form.setFieldsValue();
-      setIsModalVisible(false);
+      form.resetFields(); // Reset form fields after success
+      setIsModalVisible(false); // Đóng modal sau khi thêm thành công
     },
     onError: (error) => {
       notification.error({
@@ -174,56 +280,36 @@ const Checkout = () => {
   });
 
   const handleAdd = (values) => {
+    // Xây dựng chuỗi địa chỉ từ các giá trị người dùng nhập
     const formattedAddress = [
       values.ward
-        ? wards.find((w) => w.code === Number(values.ward))?.name
+        ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
         : "",
       values.district
-        ? districts.find((d) => d.code === Number(values.district))?.name
+        ? districts.find((d) => d.DistrictID === Number(values.district))
+            ?.DistrictName
         : "",
       values.province
-        ? provinces.find((p) => p.code === Number(values.province))?.name
+        ? provinces.find((p) => p.ProvinceID === Number(values.province))
+            ?.ProvinceName
         : "",
     ]
       .filter(Boolean)
       .join(", ");
 
+    // Tạo dữ liệu để gửi đi
     const userData = {
-      address: formattedAddress,
-      detail_address: values.detail_address,
-      id_default: values.id_default,
+      address: formattedAddress, // Địa chỉ đã xâu chuỗi
+      detail_address: values.detail_address, // Địa chỉ chi tiết
+      id_default: values.id_default, // Địa chỉ mặc định
+      ProvinceID: values.province, // ProvinceID tương ứng với tỉnh thành
+      DistrictID: values.district, // DistrictID tương ứng với quận huyện
+      WardCode: values.ward, // WardCode tương ứng với phường xã
     };
 
     console.log("Dữ liệu gửi đi:", userData);
-    mutate(userData);
+    mutate(userData); // Gửi dữ liệu tới API
   };
-
-  // Tạo chuỗi địa chỉ theo định dạng mong muốn
-  const formattedAddress =
-    `${detailaddress}, ` +
-    `${
-      selectedWard
-        ? wards.find((w) => w.code === Number(selectedWard))?.name
-        : ""
-    }, ` +
-    `${
-      selectedDistrict
-        ? districts.find((d) => d.code === Number(selectedDistrict))?.name
-        : ""
-    }, ` +
-    `${
-      selectedProvince
-        ? provinces.find((p) => p.code === Number(selectedProvince))?.name
-        : ""
-    }, `;
-
-  // Cập nhật userData.address mỗi khi `formattedAddress` thay đổi
-  useEffect(() => {
-    setUserData((prevData) => ({
-      ...prevData,
-      address: formattedAddress, // Gán địa chỉ đã định dạng vào userData
-    }));
-  }, [formattedAddress]);
 
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
@@ -380,7 +466,7 @@ const Checkout = () => {
         try {
           const data = await AuthServices.getAddressByIdUser(userId); // Lấy địa chỉ người dùng
           setAddresses(data);
-
+          console.log("Dữ liệu địa chỉ:", data); // ✅ Log ra console
           // Tự động chọn địa chỉ mặc định nếu có
           const defaultAddress = data.find((address) => address.id_default);
           if (defaultAddress) {
@@ -572,12 +658,14 @@ const Checkout = () => {
                         >
                           <Select
                             onChange={handleProvinceChange}
-                            className="input-item"
                             placeholder="Chọn tỉnh/thành phố"
                           >
-                            {provinces.map((p) => (
-                              <Select.Option key={p.code} value={p.code}>
-                                {p.name}
+                            {provinces.map((province) => (
+                              <Select.Option
+                                key={province.ProvinceID} // Sử dụng ProvinceID làm key
+                                value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                              >
+                                {province.ProvinceName}
                               </Select.Option>
                             ))}
                           </Select>
@@ -594,14 +682,16 @@ const Checkout = () => {
                           ]}
                         >
                           <Select
+                            placeholder="Chọn Quận/Huyện"
                             onChange={handleDistrictChange}
-                            disabled={!districts.length}
-                            className="input-item"
-                            placeholder="Chọn quận/huyện"
+                            disabled={!selectedProvince}
                           >
-                            {districts.map((d) => (
-                              <Select.Option key={d.code} value={d.code}>
-                                {d.name}
+                            {districts.map((district) => (
+                              <Select.Option
+                                key={district.DistrictID} // Sử dụng DistrictID làm key
+                                value={district.DistrictID} // Sử dụng DistrictID làm value
+                              >
+                                {district.DistrictName}
                               </Select.Option>
                             ))}
                           </Select>
@@ -618,13 +708,16 @@ const Checkout = () => {
                           ]}
                         >
                           <Select
-                            disabled={!wards.length}
-                            className="input-item"
-                            placeholder="Chọn phường/xã"
+                            placeholder="Chọn Phường/Xã"
+                            disabled={!selectedDistrict}
+                            onChange={handleWardChange}
                           >
-                            {wards.map((w) => (
-                              <Select.Option key={w.code} value={w.code}>
-                                {w.name}
+                            {wards.map((ward) => (
+                              <Select.Option
+                                key={ward.WardCode}
+                                value={ward.WardCode}
+                              >
+                                {ward.WardName}
                               </Select.Option>
                             ))}
                           </Select>
