@@ -84,38 +84,16 @@ const addCartItem = async (productId, payload) => {
 
 // Cập nhật số lượng sản phẩm trong giỏ hàng
 const updateCartItem = async (productId, newQuantity, variantId = null) => {
-  try {
-    const user = localStorage.getItem("user");
-    const parsedUser = user ? JSON.parse(user) : null;
-    const userId = parsedUser ? parsedUser.id : null;
+  const token = localStorage.getItem("client_token"); // or wherever the token is stored
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    if (userId) {
-      // Nếu người dùng đã đăng nhập, gọi backend để cập nhật giỏ hàng trong cơ sở dữ liệu
-      const response = await instance.put(
-        `/cart/update/${productId}${variantId ? `/${variantId}` : ""}`,
-        {
-          quantity: newQuantity,
-        }
-      );
-      return response.data;
-    } else {
-      // Nếu người dùng chưa đăng nhập, gọi backend để cập nhật giỏ hàng trong session
-      const response = await instance.put(
-        `/cart/update/${productId}${variantId ? `/${variantId}` : ""}`,
-        {
-          quantity: newQuantity,
-          user_id: userId, // <-- thêm user_id vào đây
-        }
-      );
-      return response.data;
-    }
-  } catch (error) {
-    console.error(
-      "❌ Lỗi khi cập nhật số lượng:",
-      error.response?.data || error
-    );
-    throw error;
-  }
+  const response = await instance.put(
+    `/cart/update/${productId}${variantId ? `/${variantId}` : ""}`,
+    {
+      quantity: newQuantity,
+    },
+    { headers }
+  );
 };
 
 // Xóa sản phẩm khỏi giỏ hàng
