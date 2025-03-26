@@ -5,32 +5,26 @@ import dayjs from 'dayjs';
 import TextArea from 'antd/es/input/TextArea';
 import { CouponServices } from '../services/coupon';
 import formatDate from '../utils/formatDate';
+import { AuthServices } from '../services/auth';
 
 const Coupon = () => {
     const [coupon, setCoupon] = useState([]);
+    const [users, setUsers] = useState([]);
+
     const [editingCoupon, setEditingCoupon] = useState(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
+    const couponType = Form.useWatch('coupon_type', form);
 
     const showDetailModal = async (id) => {
-
         const response = await CouponServices.getCounponById(id);
-        console.log(response);
-
-
         if (response.success && response.data) {
             setSelectedCoupon([response.data]);
         }
-
         setIsDetailModalVisible(true);
-
-
     };
-
-    console.log(selectedCoupon);
-
 
     const handleShowModal = async (coupon) => {
         setEditingCoupon(coupon);
@@ -63,7 +57,6 @@ const Coupon = () => {
         setIsModalVisible(false);
     };
 
-    // bấm nút chi tiết
     const detailColumn = [
         {
             title: "STT",
@@ -242,7 +235,7 @@ const Coupon = () => {
         }
 
         if (response) {
-            fetchData();
+            fetchCoupons();
             notification.success({
                 message: editingCoupon ? "Cập nhật mã giảm giá thành công!" : "Tạo mã giảm giá thành công!",
             });
@@ -253,15 +246,19 @@ const Coupon = () => {
     };
 
 
-    const fetchData = async () => {
+    const fetchCoupons = async () => {
         const { data } = await CouponServices.fetchCoupons();
         setCoupon(data);
-
     };
 
+    const fetchUsers = async () => {
+        const { data } = await AuthServices.fetchAuth();
+        setUsers(data);
+    }
 
     useEffect(() => {
-        fetchData();
+        fetchCoupons();
+        fetchUsers();
     }, []);
 
 
@@ -383,13 +380,44 @@ const Coupon = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    <Form.Item
-                        label="Số lần áp dụng"
-                        name="usage_limit"
-                        rules={[{ required: true, message: "Vui lòng chọn số lần áp dụng" }]}
-                    >
-                        <Input className='input-item' />
-                    </Form.Item>
+                    <Row gutter={24}>
+                        <Col span={12} className='col-item'>
+                            <Form.Item label="Loại phiếu" name="coupon_type" rules={[{ required: true, message: "Chọn loại" }]}>
+                                <Select placeholder="Chọn loại" className='input-item'>
+                                    <Option value="public">Công khai</Option>
+                                    <Option value="private">Riêng tư</Option>
+                                    <Option value="rank">Theo hạng</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={12} className='col-item'>
+                            <Form.Item
+                                label="Số lần áp dụng"
+                                name="usage_limit"
+                                rules={[{ required: true, message: "Vui lòng chọn số lần áp dụng" }]}
+                            >
+                                <Input className='input-item' />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    {couponType === 'rank' && (
+                        <Form.Item label="Hạng thành viên" name="rank" rules={[{ required: true, message: "Chọn hạng" }]}>
+                            <Select>
+                                <Option value="bronze">Bronze</Option>
+                                <Option value="silver">Silver</Option>
+                                <Option value="gold">Gold</Option>
+                                <Option value="diamond">Diamond</Option>
+                            </Select>
+                        </Form.Item>
+                    )}
+
+                    {couponType === 'private' && (
+                        <Form.Item  label="Chọn người dùng" name="user_ids" rules={[{ required: true, message: "Chọn người dùng" }]}>
+                            <Select mode="multiple">
+                                {users.map(user => <Option key={user.id} value={user.id}>{user.name}</Option>)}
+                            </Select>
+                        </Form.Item>
+                    )}
 
                     <Row gutter={24}>
                         <Col span={12} className="col-item">
