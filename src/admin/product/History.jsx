@@ -1,8 +1,8 @@
-import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton } from 'antd';
+import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton, Checkbox } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
-import { EditOutlined, EyeOutlined, ImportOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, ImportOutlined, ToTopOutlined } from '@ant-design/icons';
 import viVN from "antd/es/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -10,6 +10,7 @@ dayjs.locale("vi");
 import { Link } from 'react-router-dom';
 import "../../css/add.css";
 import "../../css/list.css";
+import { saveAs } from 'file-saver';
 
 const History = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -20,7 +21,10 @@ const History = () => {
     const [filterStatus, setFilterStatus] = useState(null); // ✅ Trạng thái lọc bảng
     const [confirmStatus, setConfirmStatus] = useState(null); // ✅ Trạng thái khi xác nhận trong modal
     const [modalData, setModalData] = useState([]);
-    const [form] = Form.useForm();  
+    const [form] = Form.useForm();
+    const [selectedRows, setSelectedRows] = useState([]);
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+    const [loggedInUserRole, setLoggedInUserRole] = useState([]);
 
     // Fetch danh sách đơn nhập hàng
     const { data: stocks, isLoading: isProductsLoading, refetch: refetchStocks } = useQuery({
@@ -29,7 +33,7 @@ const History = () => {
             const response = await productsServices.history();
             return response.data;
         },
-    });    
+    });
 
     const { data: products } = useQuery({
         queryKey: ["products"],
@@ -38,6 +42,13 @@ const History = () => {
             return response.data;
         },
     });
+
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("user"));
+        if (userData) {
+            setLoggedInUserRole(userData.role);
+        }
+    }, []);
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -64,30 +75,30 @@ const History = () => {
         ...stock,
         ngaytao: stock.ngaytao ? dayjs(stock.ngaytao).add(7, 'hour').format() : null, // Điều chỉnh sang GMT+7
     }))
-    .filter(stock => {
-        if (!dateRange[0] || !dateRange[1]) return true; // ✅ Khi clear ngày, hiển thị tất cả
-        return (
-            dayjs(stock.ngaytao).isAfter(dateRange[0].startOf('day')) &&
-            dayjs(stock.ngaytao).isBefore(dateRange[1].endOf('day'))
-        );
-    })
-    .filter(stock => filterStatus === null || filterStatus === undefined || stock.status === filterStatus); // ✅ Lọc theo trạng thái
+        .filter(stock => {
+            if (!dateRange[0] || !dateRange[1]) return true; // ✅ Khi clear ngày, hiển thị tất cả
+            return (
+                dayjs(stock.ngaytao).isAfter(dateRange[0].startOf('day')) &&
+                dayjs(stock.ngaytao).isBefore(dateRange[1].endOf('day'))
+            );
+        })
+        .filter(stock => filterStatus === null || filterStatus === undefined || stock.status === filterStatus); // ✅ Lọc theo trạng thái
 
     useEffect(() => {
         if (selectedStock) {
             const newData = selectedStock.products.flatMap(product => {
                 const fullProduct = products?.find(p => p.id === product.id);
                 if (!fullProduct) return [];
-    
+
                 return (product.variants && product.variants.length > 0)
                     ? product.variants.map(variant => {
                         const fullVariant = fullProduct.variants?.find(v => v.id === variant.id);
                         if (!fullVariant) return null;
-    
+
                         const attributes = fullVariant.attribute_value_product_variants
                             ?.map(attr => attr.attribute_value?.value)
                             .join(" - ") || "Không có thuộc tính";
-    
+
                         return {
                             key: `V-${variant.id}`, // ✅ Thêm tiền tố để tránh trùng key
                             originalProductId: product.id, // ✅ Lưu ID sản phẩm gốc
@@ -102,7 +113,7 @@ const History = () => {
                     }).filter(Boolean)
                     : [{
                         key: `P-${product.id}`, // ✅ Thêm tiền tố để tránh trùng key
-                        originalProductId: product.id, 
+                        originalProductId: product.id,
                         isVariant: false,
                         name: product.name,
                         price: product.price,
@@ -112,10 +123,10 @@ const History = () => {
                         total: product.price * product.quantity,
                     }];
             });
-    
+
             setModalData(newData);
         }
-    }, [selectedStock, products]);    
+    }, [selectedStock, products]);
 
     const handleInputChange = (key, field, value) => {
         setModalData(prevData =>
@@ -124,121 +135,37 @@ const History = () => {
                     ? {
                         ...item,
                         [field]: value || 0,
-                        total: (field === "price" || field === "quantity") 
-                            ? ((field === "price" ? value || 0 : item.price) * 
-                               (field === "quantity" ? value || 0 : item.quantity))
+                        total: (field === "price" || field === "quantity")
+                            ? ((field === "price" ? value || 0 : item.price) *
+                                (field === "quantity" ? value || 0 : item.quantity))
                             : (item.price * item.quantity) // Đảm bảo tổng tiền luôn cập nhật đúng
                     }
                     : item
             )
         );
-    };     
-
-    // Cột danh sách nhập hàng
-    const columns = [
-        {
-            title:"",
-            render:() => { return <input className="tick" type="checkbox" />},
-            align: "center"
-          },
-        {
-            title: "STT",
-            dataIndex: "index",
-            render: (_, __, index) => index + 1,
-            align: "center",
-        },
-        {
-            title: "Giá trị đơn hàng (VNĐ)",
-            dataIndex: "total_amount",
-            key: "total_amount",
-            render: (total_amount) => (total_amount ? formatPrice(total_amount) : ""),
-            align: "center",
-        },
-        {
-            title: "Ngày nhập hàng",
-            dataIndex: "ngaytao",
-            key: "ngaytao",
-            render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD/MM/YYYY") : ""),
-            align: "center",
-        },
-        {
-            title: "Người nhập hàng",
-            dataIndex: "created_by", 
-            key: "created_by",
-            align: "center",
-        },
-        {
-            title: 'Trạng thái',
-            key: 'status',
-            dataIndex: 'status',
-            align: 'center',
-            render: (status) => {
-                let statusText = "Chờ xác nhận"; 
-                let statusClass = "action-link-blue"; 
-        
-                if (status === -1) {
-                    statusText = "Đã hủy";
-                    statusClass = "action-link-red";
-                } else if (status === 1) {
-                    statusText = "Hoàn thành";
-                    statusClass = "action-link-green";
-                }
-        
-                return <span className={statusClass}>{statusText}</span>;
-            },
-        },        
-        {
-            title: "Thao tác",
-            key: "action",
-            align: "center",
-            render: (_, record) => (
-                <div className="action-container">
-                    <Tooltip title="Chi tiết">
-                        <Button 
-                            color="purple" 
-                            variant="solid" 
-                            icon={<EyeOutlined />} 
-                            type='link'
-                            onClick={() => handleShow(record)}
-                        />
-                    </Tooltip>
-
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined/>}
-                            type="link"
-                            onClick={() => handleShowDetails(record)}
-                            disabled={record.status === -1 || record.status === 1} // ❌ Vô hiệu hóa nếu đã hủy hoặc hoàn thành
-                        />
-                    </Tooltip>
-                </div>
-            ),
-        },
-    ];
+    };
 
     // Xử lý dữ liệu cho bảng modal (Chi tiết đơn nhập hàng)
     const getModalDataSource = () => {
         if (!selectedStock) return [];
-    
+
         let index = 1;
         return selectedStock.products.flatMap(product => {
             // Lấy thông tin đầy đủ của sản phẩm từ API products
             const fullProduct = products?.find(p => p.id === product.id);
             if (!fullProduct) return [];
-    
+
             return (product.variants && product.variants.length > 0)
                 ? product.variants.map(variant => {
                     // Tìm biến thể đầy đủ trong fullProduct
                     const fullVariant = fullProduct.variants?.find(v => v.id === variant.id);
                     if (!fullVariant) return null;
-    
+
                     // Lấy danh sách thuộc tính của biến thể
                     const attributes = fullVariant.attribute_value_product_variants
                         ?.map(attr => attr.attribute_value?.value)
                         .join(" - ") || "Không có thuộc tính";
-    
+
                     return {
                         key: index++,  // Đánh số thứ tự đúng
                         name: `${product.name} - ${attributes}`, // Gộp tên sản phẩm với thuộc tính
@@ -259,14 +186,14 @@ const History = () => {
                     total: product.price * product.quantity,  // ✅ Tính tổng tiền
                 }];
         });
-    };    
+    };
 
     const handleConfirm = async () => {
         if (!selectedStock) return;
-    
+
         // Nếu chưa chọn trạng thái, mặc định là 0 (Chờ xác nhận)
         const updatedStatus = confirmStatus ?? 0;
-    
+
         // Nếu chọn "Hủy" hoặc "Hoàn thành", hiển thị hộp thoại xác nhận trước khi gửi
         if (updatedStatus === -1 || updatedStatus === 1) {
             Modal.confirm({
@@ -280,19 +207,19 @@ const History = () => {
             await processUpdate(updatedStatus, false);
         }
     };
-    
+
     const processUpdate = async (status, showNotification) => {
         if (!isModalVisible) return;
-    
+
         const groupedProducts = {};
-    
+
         modalData.forEach(item => {
             const productId = item.originalProductId || item.key.replace(/^V-|^P-/, "");
-    
+
             if (!groupedProducts[productId]) {
                 groupedProducts[productId] = { id: Number(productId), variants: [] };
             }
-    
+
             if (item.isVariant) {
                 groupedProducts[productId].variants.push({
                     id: Number(item.key.replace("V-", "")),
@@ -311,25 +238,25 @@ const History = () => {
                 };
             }
         });
-    
+
         const payload = {
             status: status, // ✅ Gửi trạng thái được cập nhật (mặc định là 0 nếu chưa chọn)
             reason: "Nhập hàng bổ sung",
             products: Object.values(groupedProducts),
         };
-    
+
         console.log("Dữ liệu gửi đi:", JSON.stringify(payload, null, 2));
-    
+
         try {
             await productsServices.confirm(selectedStock.id, payload);
-    
+
             // ✅ Hiển thị thông báo nếu chọn trạng thái -1 hoặc 1
             if (showNotification) {
                 notification.success({
                     message: `Đơn nhập hàng đã được ${status === -1 ? "hủy" : "hoàn thành"}!`,
                 });
             }
-    
+
             setIsModalVisible(false);
             setSelectedStock(null);
             setConfirmStatus(null);
@@ -342,6 +269,137 @@ const History = () => {
             });
         }
     };
+
+    const handleExportExcel = async () => {
+        try {
+            // Gọi API để lấy dữ liệu (dùng fetch thay cho service)
+            const response = await fetch('http://127.0.0.1:8000/api/export-product-stocks'); // Thay 'YOUR_API_URL' bằng URL API của bạn
+
+            // Kiểm tra nếu API trả về file nhị phân
+            const blob = await response.blob();
+
+            // Kiểm tra kích thước của file (optional)
+            if (blob.size === 0) {
+                throw new Error('File xuất ra rỗng');
+            }
+
+            // Tải file Excel về máy người dùng
+            saveAs(blob, 'product_stocks.xlsx');
+
+            notification.success({
+                message: 'Xuất Excel thành công!',
+                description: 'Dữ liệu đã được xuất và tải xuống thành công.',
+            });
+        } catch (error) {
+            console.error("Lỗi khi xuất Excel:", error);
+            notification.error({
+                message: 'Xuất Excel thất bại!',
+                description: error.message || 'Có lỗi xảy ra khi xuất dữ liệu.',
+            });
+        }
+    };
+
+    // Cột danh sách nhập hàng
+    const columns = [
+        {
+            title: (
+                <Checkbox
+                    onChange={(e) => {
+                        setSelectedRows(e.target.checked ? adjustedStocks.map((stock) => stock.id) : []);
+                    }}
+                    checked={selectedRows.length === adjustedStocks?.length}
+                />
+            ),
+            dataIndex: "checkbox",
+            render: (_, record) => (
+                <Checkbox
+                    checked={selectedRows.includes(record.id)}
+                    onChange={(e) => {
+                        const newSelectedRows = e.target.checked
+                            ? [...selectedRows, record.id]
+                            : selectedRows.filter((id) => id !== record.id);
+                        setSelectedRows(newSelectedRows);
+                    }}
+                />
+            ),
+            align: "center",
+        },
+        {
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
+        },
+        {
+            title: "Giá trị đơn hàng (VNĐ)",
+            dataIndex: "total_amount",
+            key: "total_amount",
+            render: (total_amount) => (total_amount ? formatPrice(total_amount) : ""),
+            align: "center",
+        },
+        {
+            title: "Ngày nhập hàng",
+            dataIndex: "ngaytao",
+            key: "ngaytao",
+            render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD/MM/YYYY") : ""),
+            align: "center",
+        },
+        {
+            title: "Người nhập hàng",
+            dataIndex: "created_by",
+            key: "created_by",
+            align: "center",
+        },
+        {
+            title: 'Trạng thái',
+            key: 'status',
+            dataIndex: 'status',
+            align: 'center',
+            render: (status) => {
+                let statusText = "Chờ xác nhận";
+                let statusClass = "action-link-blue";
+
+                if (status === -1) {
+                    statusText = "Đã hủy";
+                    statusClass = "action-link-red";
+                } else if (status === 1) {
+                    statusText = "Hoàn thành";
+                    statusClass = "action-link-green";
+                }
+
+                return <span className={statusClass}>{statusText}</span>;
+            },
+        },
+        {
+            title: "Thao tác",
+            key: "action",
+            align: "center",
+            render: (_, record) => (
+                <div className="action-container">
+                    <Tooltip title="Chi tiết">
+                        <Button
+                            color="purple"
+                            variant="solid"
+                            icon={<EyeOutlined />}
+                            type='link'
+                            onClick={() => handleShow(record)}
+                        />
+                    </Tooltip>
+
+                    <Tooltip title="Cập nhật">
+                        <Button
+                            color="primary"
+                            variant="solid"
+                            icon={<EditOutlined />}
+                            type="link"
+                            onClick={() => handleShowDetails(record)}
+                            disabled={record.status === -1 || record.status === 1 || loggedInUserRole === 'manager'} // ❌ Vô hiệu hóa nếu đã hủy hoặc hoàn thành
+                        />
+                    </Tooltip>
+                </div>
+            ),
+        },
+    ];
 
     // bảng cập nhật đơn nhập hàng
     const detailColumns = [
@@ -499,9 +557,9 @@ const History = () => {
             align: "center",
             render: (_, record) => formatPrice(record.price * record.quantity),  // ✅ Hiển thị tổng tiền sau khi chỉnh sửa
         },
-    ];   
-    
-    // bảng chi tiết đơn hàng
+    ];
+
+    // bảng chi tiết đơn nhập hàng
     const modalcolumns = [
         {
             title: "STT",
@@ -577,18 +635,18 @@ const History = () => {
                 </div>
 
                 <div className="group2">
-                    <Button 
-                        color="primary" 
-                        variant="solid"
-                        icon={<EditOutlined />} 
+                    <Button
+                        color="primary" variant="solid"
+                        icon={<ToTopOutlined />}
+                        onClick={handleExportExcel}
                     >
-                        Cập nhật
+                        Xuất Excel
                     </Button>
-                    
+
                     <Link to="/admin/import">
-                        <Button 
-                            color="primary" variant="solid" 
-                            icon={<ImportOutlined />} 
+                        <Button
+                            color="primary" variant="solid"
+                            icon={<ImportOutlined />}
                         >
                             Nhập hàng
                         </Button>
@@ -597,12 +655,16 @@ const History = () => {
             </div>
 
             <Skeleton active loading={isProductsLoading}>
-                <Table 
-                    columns={columns} 
-                    dataSource={adjustedStocks} 
+                <Table
+                    columns={columns}
+                    dataSource={adjustedStocks}
                     rowKey="id"
-                    pagination={{ pageSize: 10 }}
-                    bordered 
+                    pagination={{
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
+                    }}
+                    bordered
                 />
             </Skeleton>
 
@@ -671,7 +733,7 @@ const History = () => {
             >
                 <Table
                     columns={modalcolumns}
-                    dataSource={getModalDataSource()}                
+                    dataSource={getModalDataSource()}
                     rowKey="key"  // Đảm bảo mỗi hàng có key duy nhất
                     pagination={false}
                     bordered
