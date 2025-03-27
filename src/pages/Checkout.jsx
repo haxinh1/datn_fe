@@ -35,20 +35,22 @@ const Checkout = () => {
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
-  const [detailaddress, setDetailaddress] = useState("");
+
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [payMents, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
-  const [loading, setLoading] = useState(false);
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [shippingFee, setShippingFee] = useState(0);
+  const [usedLoyaltyPoints, setUsedLoyaltyPoints] = useState(0);
   const [userData, setUserData] = useState({
     fullname: "",
     email: "",
     phone_number: "",
     address: "",
+    loyalty_points: 0,
   });
   const [userId, setUserId] = useState(null);
 
@@ -118,17 +120,32 @@ const Checkout = () => {
   }, []);
 
   useEffect(() => {
-    // Lấy userId và thông tin người dùng từ localStorage
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser?.id) {
-      setUserId(storedUser.id);
-      setUserData({
-        fullname: storedUser.fullname || "", // Lấy fullname từ user
-        email: storedUser.email || "", // Lấy email từ user
-        phone_number: storedUser.phone_number || "", // Lấy phone_number từ user
-        address: storedUser.address || "", // Nếu có address, bạn có thể thêm vào
-      });
-    }
+    const fetchUserData = async () => {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+        if (!storedUser?.id) return;
+
+        setUserId(storedUser.id);
+        const response = await AuthServices.getAUser(storedUser.id);
+        if (response) {
+          const data = response; // ✅ Vì response đã là user object
+          console.log("✅ Dữ liệu người dùng từ API:", data);
+          setUserData({
+            fullname: data.fullname || "",
+            email: data.email || "",
+            phone_number: data.phone_number || "",
+            address: data.address?.address || "", // 👈 chú ý nếu address là object như ảnh
+            loyalty_points: data.loyalty_points || 0,
+          });
+        } else {
+          console.warn("❗ Không có dữ liệu user từ response:", response);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu người dùng từ DB:", error);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   useEffect(() => {
@@ -324,7 +341,7 @@ const Checkout = () => {
         return total + productPrice * (item.quantity || 1);
       }, 0)
     : 0;
-
+  const finalTotal = subtotal + shippingFee - usedLoyaltyPoints;
   useEffect(() => {
     const fetchPayments = async () => {
       try {
@@ -390,7 +407,9 @@ const Checkout = () => {
         address: selectedAddressData
           ? selectedAddressData.detail_address && selectedAddressData.address
           : userData.address, // Nếu là khách vãng lai thì lấy userData.address
-        total_amount: subtotal,
+        used_points: usedLoyaltyPoints || 0,
+        shipping_fee: shippingFee,
+        total_amount: finalTotal,
         payment_method:
           selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
         products: cartItems.map((item) => ({
@@ -1040,7 +1059,9 @@ const Checkout = () => {
                             <tr
                               style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                             >
-                              <td style={{ padding: "10px" }}>Đổi điểm:</td>
+                              <td style={{ padding: "10px" }}>
+                                Điểm thưởng ({userData.loyalty_points || 0} ):
+                              </td>
                               <td
                                 style={{ textAlign: "right", padding: "10px" }}
                               >
@@ -1048,6 +1069,21 @@ const Checkout = () => {
                                   type="number"
                                   placeholder="Nhập điểm đổi"
                                   min={0}
+                                  max={userData.loyalty_points}
+                                  value={usedLoyaltyPoints}
+                                  onChange={(e) => {
+                                    const inputValue = Number(e.target.value);
+                                    if (inputValue <= userData.loyalty_points) {
+                                      setUsedLoyaltyPoints(inputValue);
+                                    } else {
+                                      message.warning(
+                                        "Bạn không thể dùng quá số điểm hiện có!"
+                                      );
+                                      setUsedLoyaltyPoints(
+                                        userData.loyalty_points
+                                      );
+                                    }
+                                  }}
                                   style={{
                                     border: "none",
                                     borderBottom: "1px solid #ccc",
@@ -1078,7 +1114,7 @@ const Checkout = () => {
                                 color: "red",
                               }}
                             >
-                              {formatCurrency(subtotal + shippingFee)} VND
+                              {formatCurrency(finalTotal)} VND
                             </td>
                           </tr>
                         </tbody>
