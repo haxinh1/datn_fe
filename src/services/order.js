@@ -42,6 +42,7 @@ const placeOrder = async (orderData) => {
     // Xóa giỏ hàng trong localStorage nếu đặt hàng thành công (không đăng nhập)
     if (!userId) {
       localStorage.removeItem("cart_items");
+      localStorage.removeItem("cartAttributes");
     }
 
     console.log("✅ Đặt hàng thành công:", response.data);
@@ -73,7 +74,7 @@ const getOrderStatus = async (id) => {
 // cập nhật trạng thái đơn hàng
 const updateOrderStatus = async (id, payload) => {
   // Lấy client_token từ localStorage
-  const clientToken = localStorage.getItem('client_token');
+  const clientToken = localStorage.getItem("client_token");
 
   // Gửi client_token trong headers khi gọi API
   const response = await instance.put(`/orders/${id}/update-status`, payload, {

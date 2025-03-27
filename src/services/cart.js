@@ -103,6 +103,7 @@ const removeCartItem = async (productId, variantId = null) => {
     const userId = user ? user.id : null;
 
     if (!userId) {
+      // Xóa sản phẩm trong giỏ hàng của khách vãng lai
       let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
       localCart = localCart.filter(
         (item) =>
@@ -112,6 +113,19 @@ const removeCartItem = async (productId, variantId = null) => {
           )
       );
       localStorage.setItem("cart_items", JSON.stringify(localCart));
+
+      // Xóa thuộc tính của sản phẩm tương ứng trong cartAttributes (localStorage)
+      let localAttributes =
+        JSON.parse(localStorage.getItem("cartAttributes")) || [];
+      localAttributes = localAttributes.filter(
+        (attr) =>
+          !(
+            attr.product_id === productId &&
+            attr.product_variant_id === variantId
+          )
+      );
+      localStorage.setItem("cartAttributes", JSON.stringify(localAttributes));
+
       return { message: "Sản phẩm đã được xóa khỏi giỏ hàng (local)!" };
     }
 
