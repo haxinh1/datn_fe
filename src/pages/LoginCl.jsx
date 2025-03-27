@@ -12,6 +12,7 @@ import "../assets/css/skins/skin-demo-8.css";
 import "../assets/css/demos/demo-8.css";
 import "../css/signup.css";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { cartServices } from "../services/cart";
 
 const Logincl = () => {
   const [form] = Form.useForm();
@@ -25,14 +26,27 @@ const Logincl = () => {
         values.phone_number,
         values.password
       );
-      console.log("Phản hồi từ server:", response);
-      console.log("Dữ liệu gửi đi:", values);
       if (response?.token) {
         localStorage.setItem("client_token", response.token);
         localStorage.setItem("client", JSON.stringify(response.user));
         localStorage.setItem("user", JSON.stringify(response.user));
 
         message.success("Đăng nhập thành công!");
+
+        // Kiểm tra và đẩy giỏ hàng từ localStorage lên database
+        const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+        if (localCart.length > 0) {
+          const userId = response.user.id;
+          // Duyệt qua từng sản phẩm trong giỏ hàng và đẩy lên database
+          for (let item of localCart) {
+            await cartServices.addCartItem(item.product_id, item);
+          }
+
+          // Sau khi giỏ hàng được đẩy lên DB, xóa giỏ hàng trong localStorage
+          localStorage.removeItem("cart_items");
+
+          message.success("Giỏ hàng của bạn đã được chuyển lên tài khoản!");
+        }
 
         navigate("/dashboard");
       } else {

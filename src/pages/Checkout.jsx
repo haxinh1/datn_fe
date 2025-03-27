@@ -419,7 +419,6 @@ const Checkout = () => {
         nav("/");
         setCartItems([]);
         localStorage.removeItem("cartAttributes");
-        sessionStorage.removeItem("cart");
       } else {
         message.error(orderResponse?.message || "Lỗi không xác định");
       }
