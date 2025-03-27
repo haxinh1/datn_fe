@@ -362,13 +362,19 @@ const Checkout = () => {
         return;
       }
 
-      if (!selectedAddressData) {
+      if (!selectedAddress && !userData.address) {
         message.error("Chưa có địa chỉ đặt hàng!");
         return;
       }
       const selectedAddressData = addresses.find(
         (address) => address.id === selectedAddress
       );
+
+      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
+      if (!selectedAddressData && !userData.address) {
+        message.error("Địa chỉ không hợp lệ!");
+        return;
+      }
 
       // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
       const user = JSON.parse(localStorage.getItem("user"));

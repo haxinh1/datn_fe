@@ -1,0 +1,41 @@
+.review-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.review-list.single {
+    justify-content: center;
+}
+.review-card {
+    width: 48%;
+    margin-top: 16px;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+.product-name{
+    font-size: 24px;
+    color: #e48948;
+    margin-bottom: 24px;
+}
+.text-ask {
+    display: block;
+    margin-top: 16px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    font-size: 18px;
+}
+.rating{
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #e48948;
+}
+.button-item{
+    height: 40px;
+    background-color: #e48948;
+    color: white;
+}
