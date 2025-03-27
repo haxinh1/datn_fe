@@ -43,6 +43,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [shippingFee, setShippingFee] = useState(0);
   const [userData, setUserData] = useState({
     fullname: "",
     email: "",
@@ -483,10 +484,6 @@ const Checkout = () => {
     fetchAddresses();
   }, []);
 
-  const handleAddressChange = (e) => {
-    setSelectedAddress(e.target.value); // Lưu id địa chỉ đã chọn
-  };
-
   const showModal = () => {
     setIsModalVisible(true);
   };
@@ -495,6 +492,89 @@ const Checkout = () => {
     setIsModalVisible(false);
   };
 
+  const handleAddressChange = async (value) => {
+    // Ensure that value is not undefined and exists in the address list
+    const address = addresses.find((addr) => addr.id === value);
+
+    if (address && address.DistrictID && address.WardCode) {
+      // If a valid address is selected, calculate shipping fee
+      const fee = await calculateShippingFee(
+        address.DistrictID,
+        address.WardCode
+      );
+      setShippingFee(fee);
+    } else {
+      // Handle invalid address selection or reset shipping fee
+      setShippingFee(0);
+    }
+
+    // Set the selected address (using `value` from the Select or Radio)
+    setSelectedAddress(value);
+  };
+
+  //hàm tính phí ship
+  const calculateShippingFee = async (DistrictId, WardCode) => {
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
+    const shop_id = "5665125";
+
+    const params = {
+      service_id: 53320, // Start with service_id: 53320
+      service_type_id: 1,
+      insurance_value: subtotal,
+      coupon: "",
+      to_ward_code: WardCode,
+      to_district_id: Number(DistrictId),
+      from_district_id: 3440,
+      weight: 1000,
+      length: 60,
+      width: 40,
+      height: 3,
+    };
+
+    const tryServiceId = async (serviceId) => {
+      params.service_id = serviceId;
+      const response = await fetch(
+        `https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            token,
+            ShopId: shop_id,
+          },
+          body: JSON.stringify(params),
+        }
+      );
+      const data = await response.json();
+      return data;
+    };
+
+    try {
+      // Try with service_id 53320 first
+      let data = await tryServiceId(53320);
+      if (data.code === 200) {
+        return data.data.total;
+      } else {
+        console.log("Service ID 53320 failed. Trying 53322...");
+        data = await tryServiceId(53322);
+        if (data.code === 200) {
+          return data.data.total;
+        } else {
+          console.log("Service ID 53322 failed. Trying 53321...");
+          data = await tryServiceId(53321);
+          if (data.code === 200) {
+            return data.data.total;
+          } else {
+            message.error("Không tính được phí vận chuyển.");
+            return 0;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi gọi API phí ship:", error);
+      return 0;
+    }
+  };
   return (
     <div>
       <main className="main">
@@ -597,7 +677,80 @@ const Checkout = () => {
                     />
                     {!userId ? (
                       <div>
-                        <label>Địa chỉ giao hàng:</label>
+                        <Form.Item
+                          name="province"
+                          label="Tỉnh/Thành phố"
+                          rules={[
+                            {
+                              message: "Vui lòng chọn tỉnh/thành phố",
+                            },
+                          ]}
+                        >
+                          <Select
+                            onChange={handleProvinceChange}
+                            placeholder="Chọn tỉnh/thành phố"
+                          >
+                            {provinces.map((province) => (
+                              <Select.Option
+                                key={province.ProvinceID} // Sử dụng ProvinceID làm key
+                                value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                              >
+                                {province.ProvinceName}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="district"
+                          label="Quận/Huyện"
+                          rules={[
+                            {
+                              message: "Vui lòng chọn quận/huyện",
+                            },
+                          ]}
+                        >
+                          <Select
+                            placeholder="Chọn Quận/Huyện"
+                            onChange={handleDistrictChange}
+                            disabled={!selectedProvince}
+                          >
+                            {districts.map((district) => (
+                              <Select.Option
+                                key={district.DistrictID} // Sử dụng DistrictID làm key
+                                value={district.DistrictID} // Sử dụng DistrictID làm value
+                              >
+                                {district.DistrictName}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="ward"
+                          label="Phường/Xã"
+                          rules={[
+                            {
+                              message: "Vui lòng chọn phường/xã",
+                            },
+                          ]}
+                        >
+                          <Select
+                            placeholder="Chọn Phường/Xã"
+                            disabled={!selectedDistrict}
+                            onChange={handleWardChange}
+                          >
+                            {wards.map((ward) => (
+                              <Select.Option
+                                key={ward.WardCode}
+                                value={ward.WardCode}
+                              >
+                                {ward.WardName}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                        <label>Địa chỉ cụ thể:</label>
                         <Input
                           value={userData.address} // Lấy giá trị từ userData.address
                           onChange={(e) =>
@@ -613,17 +766,31 @@ const Checkout = () => {
                       addresses.length > 0 && (
                         <div>
                           <label>Chọn địa chỉ</label>
-                          <Radio.Group
-                            onChange={handleAddressChange}
-                            value={selectedAddress}
+                          <Form.Item
+                            name="address"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn địa chỉ",
+                              },
+                            ]}
                           >
-                            {addresses.map((address) => (
-                              <Radio key={address.id} value={address.id}>
-                                <div>{`${address.detail_address}, ${address.address}`}</div>
-                                {address.id_default && " (Mặc định)"}
-                              </Radio>
-                            ))}
-                          </Radio.Group>
+                            <Select
+                              value={selectedAddress}
+                              onChange={handleAddressChange}
+                              placeholder="Chọn địa chỉ"
+                            >
+                              {addresses.map((address) => (
+                                <Select.Option
+                                  key={address.id}
+                                  value={address.id}
+                                >
+                                  {`${address.detail_address}, ${address.address}`}{" "}
+                                  {address.id_default && "(Mặc định)"}
+                                </Select.Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
                         </div>
                       )
                     )}
@@ -828,7 +995,8 @@ const Checkout = () => {
                                         item.product_variant.sell_price
                                     : item.product?.sale_price ||
                                         item.product?.sell_price
-                                )}
+                                )}{" "}
+                                VND
                               </td>
                             </tr>
                           ))}
@@ -856,7 +1024,7 @@ const Checkout = () => {
                                 color: "green",
                               }}
                             >
-                              Free shipping
+                              {formatCurrency(shippingFee)} VND
                             </td>
                           </tr>
 
@@ -877,7 +1045,7 @@ const Checkout = () => {
                                 color: "red",
                               }}
                             >
-                              {subtotal.toLocaleString()} VND
+                              {formatCurrency(subtotal + shippingFee)} VND
                             </td>
                           </tr>
                         </tbody>
