@@ -185,10 +185,14 @@ const ProductDetail = () => {
       key: "value",
     },
   ];
-  
+
   const productData = [
     { key: "sku", label: "Mã sản phẩm:", value: product.sku || "Không có mã" },
-    { key: "name", label: "Tên sản phẩm:", value: product.name || "Không có tên" },
+    {
+      key: "name",
+      label: "Tên sản phẩm:",
+      value: product.name || "Không có tên",
+    },
     { key: "slug", label: "Slug:", value: product.slug },
     {
       key: "link",
@@ -204,16 +208,28 @@ const ProductDetail = () => {
     {
       key: "brand",
       label: "Thương hiệu sản phẩm:",
-      value: brands?.find((b) => b.id === product.brand_id)?.name || "Không xác định",
+      value:
+        brands?.find((b) => b.id === product.brand_id)?.name ||
+        "Không xác định",
     },
     {
       key: "categories",
       label: "Danh mục sản phẩm:",
-      value: product.categories?.map((cat) => cat.name).join(", ") || "Không có danh mục",
+      value:
+        product.categories?.map((cat) => cat.name).join(", ") ||
+        "Không có danh mục",
     },
     { key: "views", label: "Lượt xem:", value: product.views || 0 },
-    { key: "sell_price", label: "Giá bán (VNĐ):", value: formatPrice(product.sell_price) },
-    { key: "sale_price", label: "Giá khuyến mại (VNĐ):", value: formatPrice(product.sale_price) },
+    {
+      key: "sell_price",
+      label: "Giá bán (VNĐ):",
+      value: formatPrice(product.sell_price),
+    },
+    {
+      key: "sale_price",
+      label: "Giá khuyến mại (VNĐ):",
+      value: formatPrice(product.sale_price),
+    },
     {
       key: "created_at",
       label: "Ngày tạo:",
@@ -271,9 +287,6 @@ const ProductDetail = () => {
                   msOverflowStyle: "none", // Ẩn thanh cuộn trên IE/Edge
                 }}
               >
-                <style>
-                  {`.d-flex.overflow-auto::-webkit-scrollbar {display: none; /* Ẩn thanh cuộn trên Chrome, Safari */}`}
-                </style>
                 {images.length > 0 ? (
                   images.map((img, index) => (
                     <img
@@ -305,7 +318,7 @@ const ProductDetail = () => {
             dataSource={productData}
             pagination={false}
             bordered
-            style={{ width: "100%"}} // Tăng chiều rộng, giảm font size để giảm chiều cao hàng
+            style={{ width: "100%" }} // Tăng chiều rộng, giảm font size để giảm chiều cao hàng
             size="small" // Giảm chiều cao của hàng
           />
         </div>
@@ -322,18 +335,14 @@ const ProductDetail = () => {
         {/* Các nút hành động */}
         <div className="btn-brand">
           <Link to={`/admin/edit-pr/${id}`}>
-            <Button
-              className="btn-import"
-              color="primary" 
-              variant="solid"
-            >
+            <Button className="btn-import" color="primary" variant="solid">
               Cập nhật sản phẩm
             </Button>
           </Link>
 
           <Button
             className="btn-import"
-            color="primary" 
+            color="primary"
             variant="solid"
             onClick={() => setIsModalOpen(true)}
           >
