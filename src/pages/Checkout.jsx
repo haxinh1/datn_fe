@@ -1,25 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import {
-  Button,
-  message,
-  Modal,
-  Radio,
-  Skeleton,
-  Table,
-  Tooltip,
-  Form,
-  Select,
-  Input,
-  notification,
-} from "antd";
-import { useNavigate, useParams } from "react-router-dom";
+import { Button, message, Modal, Radio, Form, Select, Input, notification } from "antd";
+import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
 import { AuthServices } from "../services/auth";
-import { CheckOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 
 const Checkout = () => {
@@ -88,7 +76,7 @@ const Checkout = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                  productDetails.data.sell_price;
+                productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -201,20 +189,17 @@ const Checkout = () => {
   // Tạo chuỗi địa chỉ theo định dạng mong muốn
   const formattedAddress =
     `${detailaddress}, ` +
-    `${
-      selectedWard
-        ? wards.find((w) => w.code === Number(selectedWard))?.name
-        : ""
+    `${selectedWard
+      ? wards.find((w) => w.code === Number(selectedWard))?.name
+      : ""
     }, ` +
-    `${
-      selectedDistrict
-        ? districts.find((d) => d.code === Number(selectedDistrict))?.name
-        : ""
+    `${selectedDistrict
+      ? districts.find((d) => d.code === Number(selectedDistrict))?.name
+      : ""
     }, ` +
-    `${
-      selectedProvince
-        ? provinces.find((p) => p.code === Number(selectedProvince))?.name
-        : ""
+    `${selectedProvince
+      ? provinces.find((p) => p.code === Number(selectedProvince))?.name
+      : ""
     }, `;
 
   // Cập nhật userData.address mỗi khi `formattedAddress` thay đổi
@@ -227,15 +212,15 @@ const Checkout = () => {
 
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-        // Lấy giá sản phẩm từ biến thể nếu có
-        const productPrice = item.product_variant
-          ? item.product_variant.sale_price ||
-            item.product_variant.sell_price ||
-            0
-          : item.product?.sale_price || item.product?.sell_price || 0;
+      // Lấy giá sản phẩm từ biến thể nếu có
+      const productPrice = item.product_variant
+        ? item.product_variant.sale_price ||
+        item.product_variant.sell_price ||
+        0
+        : item.product?.sale_price || item.product?.sell_price || 0;
 
-        return total + productPrice * (item.quantity || 1);
-      }, 0)
+      return total + productPrice * (item.quantity || 1);
+    }, 0)
     : 0;
 
   useEffect(() => {
@@ -731,9 +716,9 @@ const Checkout = () => {
                                 {formatCurrency(
                                   item.product_variant
                                     ? item.product_variant.sale_price ||
-                                        item.product_variant.sell_price
+                                    item.product_variant.sell_price
                                     : item.product?.sale_price ||
-                                        item.product?.sell_price
+                                    item.product?.sell_price
                                 )}
                               </td>
                             </tr>
@@ -832,34 +817,38 @@ const Checkout = () => {
             </button>,
           ]}
         >
-          <p>Chọn phương thức thanh toán :</p>
+          <span>Chọn phương thức thanh toán :</span>
           <div className="d-block my-3">
             {payMents.length > 0 ? (
-              payMents.map((method) => (
-                <div key={method.id} className="custom-control custom-radio">
-                  <input
-                    className="custom-control-input"
-                    id={`httt-${method.id}`}
-                    name="paymentMethod"
-                    type="radio"
-                    value={method.id}
-                    checked={selectedPayment === method.id}
-                    onChange={() => setSelectedPayment(method.id)}
-                    required
-                    disabled={!userId && method.name.toLowerCase() === "cod"} // Vô hiệu hóa COD nếu là khách vãng lai
-                  />
-                  <label
-                    className="custom-control-label"
-                    htmlFor={`httt-${method.id}`}
-                  >
-                    {method.name}
-                  </label>
-                </div>
-              ))
+              payMents.map((method) => {
+                const displayName =
+                  method.name.toLowerCase() === "cod"
+                    ? "Thanh toán khi nhận hàng"
+                    : method.name.toLowerCase() === "vnpay"
+                      ? "Thanh toán trực tuyến"
+                      : method.name;
+
+                return (
+                  <div key={method.id} className="custom-control custom-radio">
+                    <input
+                      className="custom-control-input"
+                      id={`httt-${method.id}`}
+                      name="paymentMethod"
+                      type="radio"
+                      value={method.id}
+                      checked={selectedPayment === method.id}
+                      onChange={() => setSelectedPayment(method.id)}
+                      required
+                      disabled={!userId && method.name.toLowerCase() === "cod"}
+                    />
+                    <label className="custom-control-label" htmlFor={`httt-${method.id}`}>
+                      {displayName}
+                    </label>
+                  </div>
+                );
+              })
             ) : (
-              <p className="text-center font-italic">
-                Loading payment methods...
-              </p>
+              <p className="text-center font-italic">Loading payment methods...</p>
             )}
           </div>
         </Modal>

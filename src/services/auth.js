@@ -25,6 +25,12 @@ const updateUser = async (id, payload) => {
   return response.data;
 };
 
+// nhật ký hoạt động của nhân viên
+const getModifiedById = async (id) => {
+  const response = await instance.get(`/orders/modified-by/${id}`);
+  return response.data;
+};
+
 const register = async (userData) => {
   try {
     const response = await instance.post("/register", userData);
@@ -163,8 +169,7 @@ const logoutad = async () => {
 };
 
 const getAddressByIdUser = async (userId) => {
-  const token =
-    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+  const token = localStorage.getItem("client_token") || localStorage.getItem("admin_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -180,8 +185,7 @@ const getAddressByIdUser = async (userId) => {
 
 //người dùng thêm địa chỉ
 const addAddress = async (payload) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -196,8 +200,7 @@ const addAddress = async (payload) => {
 };
 
 const getaAddress = async (id) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -213,14 +216,29 @@ const getaAddress = async (id) => {
 
 //người dùng sửa địa chỉ
 const updateAddress = async (id, payload) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
   }
 
   const response = await instance.put(`/user-addresses/${id}`, payload, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      },
+    });
+  return response.data;
+};
+
+const deleteAddress = async (id) => {
+  const token = localStorage.getItem("client_token");
+
+  if (!token) {
+    throw new Error("Token xác thực không có trong localStorage");
+  }
+
+  const response = await instance.delete(`/user-addresses/${id}`,
     {
       headers: {
         Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
@@ -236,6 +254,7 @@ export const AuthServices = {
   getAUser,
   register,
   verify,
+  getModifiedById,
   login,
   forget,
   update,
@@ -247,5 +266,6 @@ export const AuthServices = {
   getAddressByIdUser,
   addAddress,
   getaAddress,
-  updateAddress
+  updateAddress,
+  deleteAddress
 };
