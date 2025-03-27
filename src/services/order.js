@@ -108,6 +108,11 @@ const updateOrders = async (payload) => {
   return response.data;
 };
 
+const returnOrder = async (id, payload) => {
+  const respone = await instance.post(`orders/${id}/return`, payload);
+  return respone.data
+}
+
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
@@ -120,4 +125,5 @@ export const OrderService = {
   updateOrderStatus,
   updateOrders,
   getOrderByIdUser,
+  returnOrder
 };

@@ -1,19 +1,20 @@
 import { EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Skeleton, Image, Modal, Form, Row, Col, Select, notification } from 'antd';
+import { Button, Table, Tooltip, Skeleton, Modal, Form, Row, Col, Select, notification, Avatar } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import "../css/add.css";
 import "../css/list.css";
-import dayjs from 'dayjs';
+import { Link } from 'react-router-dom';
 
 const Customer = () => {
-    const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [loggedInUserId, setLoggedInUserId] = useState(null);
     const [loggedInUserRole, setLoggedInUserRole] = useState([]);
     const [form] = Form.useForm();
+    const handleEditCancel = () => setIsEditModalVisible(false)
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
     const { data: customer, isLoading, refetch } = useQuery({
         queryKey: ["customer"],
@@ -41,9 +42,9 @@ const Customer = () => {
             notification.success({
                 message: "Cập nhật thành công",
             });
+            handleEditCancel();
             console.log(userData)
             refetch(); // Refresh danh sách người dùng sau khi cập nhật
-            handleEditCancel();
         }
     });
 
@@ -71,21 +72,6 @@ const Customer = () => {
         }
     };
 
-    const handleEditCancel = () => {
-        setIsEditModalVisible(false);
-        setSelectedRecord(null);
-    };
-
-    const showDetailModal = (record) => {
-        setSelectedRecord(record);
-        setIsDetailModalVisible(true);
-    };
-
-    const handleDetailCancel = () => {
-        setIsDetailModalVisible(false);
-        setSelectedRecord(null);
-    };
-
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
@@ -95,69 +81,24 @@ const Customer = () => {
         return formatter.format(price);
     };
 
-    const detailColumn = [
-        {
-            title: "Tên người dùng",
-            dataIndex: "fullname",
-            key: "fullname",
-            align: "center",
-        },
-        {
-            title: "Giới tính",
-            dataIndex: "gender",
-            key: "gender",
-            align: "center",
-            render: (gender) => {
-                const genderMap = {
-                    male: "Nam",
-                    female: "Nữ",
-                    other: "Khác"
-                };
-                return genderMap[gender];
-            }
-        },        
-        {
-            title: "Ngày sinh",
-            dataIndex: "birthday",
-            key: "birthday",
-            align: "center",
-            render: (date) => date ? dayjs(date).format("DD/MM/YYYY") : null,
-        },
-        {
-            title: "Địa chỉ",
-            dataIndex: "address",
-            key: "address",
-            align: "center",
-            render: (address) => address?.address
-        },
-        {
-            title: "Địa chỉ cụ thể", 
-            dataIndex: "address",
-            key: "detail_address",
-            align: "center",
-            render: (address) => address?.detail_address
-        },
-    ]
-
     const columns = [
         {
             title: "STT",
             dataIndex: "index",
-            render: (_, __, index) => index + 1,
             align: "center",
+            render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
         },
         {
-            title: "Tên người dùng",
+            title: "Người dùng",
             dataIndex: "fullname",
             key: "fullname",
             align: "center",
-        },
-        {
-            title: "Ảnh đại diện",
-            dataIndex: "avatar",
-            key: "avatar",
-            render: (avatar) => avatar ? (<Image width={45} src={avatar} />) : null,
-            align: "center",
+            render: (fullname, record) => (
+                <div style={{ display: "flex", alignItems: "center" }}>
+                    {record.avatar && <Avatar size="large" src={record.avatar} style={{ marginRight: 10 }} />}
+                    <span>{fullname}</span>
+                </div>
+            ),
         },
         {
             title: "Số điện thoại",
@@ -179,7 +120,7 @@ const Customer = () => {
             render: (total_spent) => (total_spent ? formatPrice(total_spent) : ""),
         },
         {
-            title: "Hạng khách hàng",
+            title: "Hạng",
             dataIndex: "rank",
             key: "rank",
             align: "center",
@@ -189,6 +130,7 @@ const Customer = () => {
             dataIndex: "loyalty_points",
             key: "loyalty_points",
             align: "center",
+            render: (loyalty_points) => (loyalty_points ? formatPrice(loyalty_points) : ""),
         },
         {
             title: "Trạng thái",
@@ -208,12 +150,13 @@ const Customer = () => {
             render: (_, record) => (
                 <div className="action-container">
                     <Tooltip title="Xem thêm">
-                        <Button
-                            color="purple"
-                            variant="solid"
-                            icon={<EyeOutlined />}
-                            onClick={() => showDetailModal(record)}
-                        />
+                        <Link to={`/admin/user/${record.id}`}>
+                            <Button
+                                color="purple"
+                                variant="solid"
+                                icon={<EyeOutlined />}
+                            />
+                        </Link>         
                     </Tooltip>
                     <Tooltip title="Cập nhật">
                         <Button
@@ -240,26 +183,15 @@ const Customer = () => {
                 <Table
                     columns={columns}
                     dataSource={customer}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
+                    }}
                     bordered
                     rowKey={(record) => record.id}
                 />
             </Skeleton>
-
-            <Modal
-                title="Chi Tiết Tài Khoản"
-                open={isDetailModalVisible}
-                onCancel={handleDetailCancel}
-                footer={null}
-                width={900}
-            >
-                <Table
-                    columns={detailColumn}
-                    dataSource={selectedRecord ? [selectedRecord] : []}
-                    pagination={false} 
-                    bordered
-                />
-            </Modal>
 
             <Modal
                 title="Cập Nhật Chức Năng Và Trạng Thái Tài Khoản"

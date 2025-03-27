@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BrandsServices } from "../services/brands";
-import { DeleteOutlined, GroupOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { GroupOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import slugify from "slugify";
 import "../css/add.css";
 import "../css/list.css";
+import dayjs from "dayjs";
 
 const Brand = () => {
     const queryClient = useQueryClient();
@@ -77,9 +78,10 @@ const Brand = () => {
 
     const columns = [
         {
-            title:"",
-            render:() => { return <input className="tick" type="checkbox" />},
-            align: "center"
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => index + 1,
         },
         {
             title: "Logo",
@@ -103,18 +105,11 @@ const Brand = () => {
             align: "center",
         },
         {
-            title: "Thao tác",
-            key: "action",
+            title: "Ngày tạo",
+            dataIndex: "created_at",
+            key: "created_at",
             align: "center",
-            render: (_, item) => (
-                <div className="action-container">
-                    <span className="action-link action-link-blue">Cập nhật</span>
-                    
-                    <div className="divider"></div>
-
-                    <span className="action-link action-link-red">Xóa</span>
-                </div>
-            ),
+            render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
         },
     ];
 
@@ -133,14 +128,6 @@ const Brand = () => {
                     onClick={showModal}
                 >
                     Thêm thương hiệu
-                </Button>
-
-                <Button
-                    color="danger" 
-                    variant="solid"
-                    icon={<DeleteOutlined />}
-                >
-                    Xóa thương hiệu
                 </Button>
             </div>
 
@@ -212,6 +199,7 @@ const Brand = () => {
                     dataSource={brands || []}
                     pagination={false}
                     rowKey={(record) => record.id}
+                    bordered
                 />
             </Skeleton>
         </div>

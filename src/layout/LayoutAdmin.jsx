@@ -9,12 +9,9 @@ import logo from "../assets/images/logo-footer.png";
 const { Content, Header, Footer, Sider } = Layout;
 
 const LayoutAdmin = () => {
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
-
   const nav = useNavigate();
   const [user, setUser] = useState(null);
+  const {token: { colorBgContainer, borderRadiusLG }} = theme.useToken();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -56,11 +53,14 @@ const LayoutAdmin = () => {
         } catch (error) {
           console.error("Lỗi khi logout:", error);
         } finally {
-          nav("/loginad"); // Điều hướng về trang đăng nhập
+          nav("/loginad");
         }
       },
     });
   };
+
+  // Kiểm tra vai trò của người dùng trong localStorage
+  const isManager = user?.role === 'manager';
 
   const menu = (
     <Menu>
@@ -94,10 +94,10 @@ const LayoutAdmin = () => {
       icon: <PrinterOutlined />,
       label: <Link to="/admin/bill"><span>Quản lý hóa đơn</span></Link>,
     },
-    {
+    !isManager && {  // Ẩn mục 'Nhân sự' nếu là manager
       key: "account",
       icon: <TeamOutlined />,
-      label: <Link to="/admin/account"><span>Tài khoản</span></Link>,
+      label: <Link to="/admin/account"><span>Nhân sự</span></Link>,
     },
     {
       key: "customer",

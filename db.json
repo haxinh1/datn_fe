@@ -1,52 +1,17 @@
-[
-    {
-        "product_id": 1,
-        "name": "Áo thun polo cổ bẻ thêu hoa và màu Dior",
-        "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1742050569/eortp6kmaqkvtexjfld6.jpg",
-        "sell_price": "499000.00",
-        "quantity": 1,
-        "variants": [
-            {
-                "variant_id": 1,
-                "sell_price": "499000.00",
-                "quantity": 1,
-                "variant_thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1742050622/vwcea3lkwalonu85pve0.jpg",
-                "attributes": [
-                    {
-                        "attribute_name": "đen",
-                        "attribute_id": 1
-                    },
-                    {
-                        "attribute_name": "M",
-                        "attribute_id": 2
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "product_id": 1,
-        "name": "Áo thun polo cổ bẻ thêu hoa và màu Dior",
-        "thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1742050569/eortp6kmaqkvtexjfld6.jpg",
-        "sell_price": "499000.00",
-        "quantity": 1,
-        "variants": [
-            {
-                "variant_id": 4,
-                "sell_price": "499000.00",
-                "quantity": 1,
-                "variant_thumbnail": "https://res.cloudinary.com/dzpr0epks/image/upload/v1742053020/sndaxx6vyelvnfravdfi.jpg",
-                "attributes": [
-                    {
-                        "attribute_name": "trắng",
-                        "attribute_id": 1
-                    },
-                    {
-                        "attribute_name": "L",
-                        "attribute_id": 2
-                    }
-                ]
-            }
-        ]
-    }
-]
+{
+    "user_id": 4,
+    "reason": "Trả lại do lỗi kỹ thuật",
+    "employee_evidence": "link_video_chung_minh",
+    "products": [
+        {
+            "product_id": 1,
+            "product_variant_id": null,
+            "quantity": 1
+        },
+        {
+            "product_id": 2,
+            "product_variant_id": 3,
+            "quantity": 2
+        }
+    ]
+}

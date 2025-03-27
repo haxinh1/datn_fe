@@ -61,6 +61,7 @@ const ChangePass = () => {
               label="Mật khẩu hiện tại"
               rules={[
                 { required: true, message: "Vui lòng nhập mật khẩu hiện tại" },
+                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
               ]}
               name="current_password"
             >
@@ -72,6 +73,7 @@ const ChangePass = () => {
               name="new_password"
               rules={[
                 { required: true, message: "Vui lòng nhập mật khẩu mới" },
+                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     if (!value || value !== getFieldValue("current_password")) {

@@ -7,6 +7,8 @@ import dayjs from 'dayjs';
 import { paymentServices } from '../services/payments';
 import viVN from "antd/es/locale/vi_VN";
 import { ConfigProvider } from 'antd';
+import logo from "../assets/images/logo-footer.png";
+import "../css/bill.css";
 
 const Bill = () => {
   const { RangePicker } = DatePicker;
@@ -14,7 +16,7 @@ const Bill = () => {
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "" });
 
   // danh sách hóa đơn
   const { data: bills, isLoading } = useQuery({
@@ -33,6 +35,7 @@ const Bill = () => {
     setOrderInfo({
       email: order.email,
       address: order.address,
+      fullname: order.fullname,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -81,6 +84,7 @@ const Bill = () => {
       render: (_, order) => (
         <Checkbox />
       ),
+      align: 'center',
     },
     {
       title: "STT",
@@ -89,19 +93,19 @@ const Bill = () => {
       render: (_, __, index) => index + 1,
     },
     {
-      title: "Mã đơn hàng",
+      title: "Mã hóa đơn",
       dataIndex: "code",
       key: "code",
       align: "center",
     },
     {
-      title: "Tên người đặt",
+      title: "Khách hàng",
       dataIndex: "fullname",
       key: "fullname",
       align: "center",
     },
     {
-      title: "Giá trị đơn hàng (VNĐ)",
+      title: "Tổng thanh toán (VNĐ)",
       dataIndex: "total_amount",
       key: "total_amount",
       align: "center",
@@ -137,11 +141,12 @@ const Bill = () => {
               onClick={() => showModal(item)}
             />
           </Tooltip>
-          <Tooltip title="Xuất hóa đơn">
+          <Tooltip title="In hóa đơn">
             <Button
               color="primary"
               variant="solid"
-              icon={<ToTopOutlined />}
+              icon={<PrinterOutlined />}
+              onClick={() => printInvoice(item.id)}
             />
           </Tooltip>
         </div>
@@ -151,13 +156,7 @@ const Bill = () => {
 
   const detailColumns = [
     {
-      title: "STT",
-      dataIndex: "index",
-      align: "center",
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: "Tên sản phẩm",
+      title: "Sản phẩm",
       dataIndex: "name",
       align: "center",
       render: (text, record) => {
@@ -185,7 +184,7 @@ const Bill = () => {
       render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
     },
     {
-      title: "Tổng tiền (VNĐ)", // ✅ Thêm cột tổng tiền
+      title: "Thành tiền (VNĐ)", // ✅ Thêm cột tổng tiền
       dataIndex: "total",
       align: "center",
       render: (_, record) => formatPrice(record.quantity * record.sell_price),
@@ -228,7 +227,7 @@ const Bill = () => {
             variant="solid"
             icon={<ToTopOutlined />}
           >
-            Xuất hóa đơn
+            Xuất Excel
           </Button>
         </div>
       </div>
@@ -243,24 +242,30 @@ const Bill = () => {
       </Skeleton>
 
       <Modal
-        title="Chi tiết hóa đơn"
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={800}
+        width={500}
       >
-        <span>Email người đặt: <span className="text-quest">{orderInfo.email}</span></span> <br />
-        <span>Địa chỉ nhận hàng: <span className="text-quest">{orderInfo.address}</span></span>
+        <div className="form-name">
+          <div className="group1">
+            <img className='logo-bill' src={logo} />
+          </div>
+          <div className="group2">
+            <span className="logo-name">Molla Shop</span>
+          </div>
+        </div>
+
+        <span className="text-title">Khách hàng: <span className="text-name">{orderInfo.fullname}</span></span> <br />
+        <span className="text-title">Email: <span className="text-name">{orderInfo.email}</span></span> <br />
+        <span className="text-title">Địa chỉ: <span className="text-name">{orderInfo.address}</span></span>
 
         <Table
           columns={detailColumns}
-          dataSource={orderDetails.map((item, index) => ({
+          dataSource={orderDetails.map((item) => ({
             ...item,
-            key: index,
-            index: index + 1,
             product_name: item.product?.name,
           }))}
-          bordered
           pagination={false}
           summary={() => {
             const totalAmount = orderDetails.reduce(
@@ -269,7 +274,7 @@ const Bill = () => {
             );
             return (
               <Table.Summary.Row>
-                <Table.Summary.Cell colSpan={4} align="right">
+                <Table.Summary.Cell colSpan={3} align="right">
                   <strong>Tổng giá trị (VNĐ):</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell align="center">
@@ -279,6 +284,11 @@ const Bill = () => {
             );
           }}
         />
+
+        <div className="form-thank">
+          <span className='text-thank'>Cảm ơn quý khách đã tin tưởng Molla Shop!</span> <br />
+          <span className="text-name">Hẹn gặp lại</span>
+        </div>
       </Modal>
     </div>
   )

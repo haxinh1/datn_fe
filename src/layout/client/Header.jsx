@@ -1,5 +1,5 @@
-import React from "react";
-import { Image, Tooltip } from "antd";
+import React, { useEffect, useState } from "react";
+import { Avatar, Tooltip } from "antd";
 import "../../assets/css/bootstrap.min.css";
 import "../../assets/css/plugins/owl-carousel/owl.carousel.css";
 import "../../assets/css/plugins/magnific-popup/magnific-popup.css";
@@ -13,6 +13,15 @@ import product2 from "../../assets/images/products/cart/product2.jpg";
 import { Link } from "react-router-dom";
 
 const Header = () => {
+
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    // Lấy thông tin người dùng từ localStorage
+    const storedUserData = JSON.parse(localStorage.getItem("user"));
+    setUserData(storedUserData); // Lưu dữ liệu người dùng vào state
+  }, []);
+
   return (
     <>
       <header className="header">
@@ -89,12 +98,6 @@ const Header = () => {
                   </div>
                 </form>
               </div>
-
-              <Tooltip title="Tài khoản">
-                <Link to={"/dashboard"} className="wishlist-link">
-                  <i className="icon-user"></i>
-                </Link>
-              </Tooltip>
 
               <div className="dropdown cart-dropdown">
                 <Tooltip title="Giỏ hàng">
@@ -174,6 +177,16 @@ const Header = () => {
                   </div>
                 </div> */}
               </div>
+
+              <Tooltip title="Tài khoản">
+                <Link to={"/dashboard"} className="wishlist-link">
+                  {userData && userData.avatar ? (
+                    <Avatar size={36} src={userData.avatar} />
+                  ) : (
+                    <i className="icon-user"></i>
+                  )}
+                </Link>
+              </Tooltip>
             </div>
           </div>
         </div>

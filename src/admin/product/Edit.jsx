@@ -172,8 +172,8 @@ const Edit = () => {
             attribute_values_id: finalAttributeValuesId, // Sử dụng giá trị đã cập nhật hoặc giá trị cũ
             thumbnail: thumbnail ? thumbnail.url : null,
             product_images: images && images.map((img) => img.url), // Chỉ lấy danh sách URL ảnh
-            sell_price: values.sell_price,
-            sale_price: values.sale_price,
+            sell_price: values.sell_price || '',
+            sale_price: values.sale_price || '',
             slug: values.slug,
             content: values.content,
             category_id: values.category,
@@ -405,8 +405,8 @@ const Edit = () => {
                     .filter((attr) => attr?.id !== undefined)
                     .map((attr) => attr.id),
                 thumbnail: variant.thumbnail,  // Thêm trường thumbnail vào dữ liệu biến thể
-                sell_price: variant.sell_price,  
-                sale_price: variant.sale_price, 
+                sell_price: variant.sell_price || '',  
+                sale_price: variant.sale_price || '', 
                 sale_price_start_at: variant.sale_price_start_at
                     ? dayjs(variant.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
                     : null,
