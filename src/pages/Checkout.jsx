@@ -362,7 +362,7 @@ const Checkout = () => {
         return;
       }
 
-      if (!selectedAddress && !userData.address) {
+      if (!selectedAddressData) {
         message.error("Chưa có địa chỉ đặt hàng!");
         return;
       }
@@ -371,18 +371,10 @@ const Checkout = () => {
       );
 
       // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
-      if (!selectedAddressData && !userData.address) {
-        message.error("Địa chỉ không hợp lệ!");
-        return;
-      }
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
       // Nếu là khách vãng lai và chọn COD, sẽ báo lỗi
-      if (!userId && selectedPayment === 2) {
-        message.error("Khách vãng lai chỉ có thể thanh toán qua VNPay");
-        return;
-      }
 
       const orderData = {
         user_id: userId || null,
@@ -511,6 +503,16 @@ const Checkout = () => {
     setSelectedAddress(value);
   };
 
+  useEffect(() => {
+    const fetchShippingFeeForGuest = async () => {
+      if (!userId && selectedDistrict && selectedWard) {
+        const fee = await calculateShippingFee(selectedDistrict, selectedWard);
+        setShippingFee(fee);
+      }
+    };
+
+    fetchShippingFeeForGuest();
+  }, [userId, selectedDistrict, selectedWard]);
   //hàm tính phí ship
   const calculateShippingFee = async (DistrictId, WardCode) => {
     const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
@@ -950,7 +952,7 @@ const Checkout = () => {
                           marginBottom: "15px",
                         }}
                       >
-                        Your Order
+                        Đơn hàng của bạn
                       </h3>
 
                       <table
@@ -965,10 +967,10 @@ const Checkout = () => {
                         >
                           <tr>
                             <th style={{ textAlign: "left", padding: "10px" }}>
-                              Product
+                              Sản phẩm
                             </th>
                             <th style={{ textAlign: "right", padding: "10px" }}>
-                              Total
+                              Giá
                             </th>
                           </tr>
                         </thead>
@@ -1005,7 +1007,7 @@ const Checkout = () => {
                             className="summary-subtotal"
                             style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                           >
-                            <td style={{ padding: "10px" }}>Subtotal:</td>
+                            <td style={{ padding: "10px" }}>Tổng :</td>
                             <td style={{ textAlign: "right", padding: "10px" }}>
                               {subtotal.toLocaleString()} VND
                             </td>
@@ -1015,7 +1017,7 @@ const Checkout = () => {
                           <tr
                             style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                           >
-                            <td style={{ padding: "10px" }}>Shipping:</td>
+                            <td style={{ padding: "10px" }}>Phí ship:</td>
                             <td
                               style={{
                                 textAlign: "right",
@@ -1027,6 +1029,32 @@ const Checkout = () => {
                             </td>
                           </tr>
 
+                          {/* Đổi điểm */}
+                          {!userId ? null : (
+                            <tr
+                              style={{ fontSize: "1.1rem", fontWeight: "bold" }}
+                            >
+                              <td style={{ padding: "10px" }}>Đổi điểm:</td>
+                              <td
+                                style={{ textAlign: "right", padding: "10px" }}
+                              >
+                                <input
+                                  type="number"
+                                  placeholder="Nhập điểm đổi"
+                                  min={0}
+                                  style={{
+                                    border: "none",
+                                    borderBottom: "1px solid #ccc",
+                                    outline: "none",
+                                    fontSize: "1.3rem",
+                                    width: "80%",
+                                    textAlign: "right",
+                                    padding: "4px",
+                                  }}
+                                />
+                              </td>
+                            </tr>
+                          )}
                           {/* Tổng tiền */}
                           <tr
                             className="summary-total"
@@ -1036,7 +1064,7 @@ const Checkout = () => {
                               fontWeight: "bold",
                             }}
                           >
-                            <td style={{ padding: "10px" }}>Total:</td>
+                            <td style={{ padding: "10px" }}>Tổng tiền:</td>
                             <td
                               style={{
                                 textAlign: "right",
@@ -1061,7 +1089,89 @@ const Checkout = () => {
                           width: "100%",
                           borderRadius: "6px",
                         }}
-                        onClick={() => setIsPaymentModalOpen(true)}
+                        onClick={async () => {
+                          if (!userId) {
+                            // Người dùng chưa đăng nhập => tạo đơn hàng thanh toán VNPay
+                            try {
+                              if (
+                                !userData.fullname ||
+                                !userData.phone_number ||
+                                !userData.email ||
+                                !userData.address
+                              ) {
+                                return message.error(
+                                  "Vui lòng điền đầy đủ thông tin trước khi thanh toán."
+                                );
+                              }
+
+                              const orderData = {
+                                user_id: null,
+                                fullname: userData.fullname,
+                                email: userData.email,
+                                phone_number: userData.phone_number,
+                                address: `${userData.address}, ${
+                                  wards.find((w) => w.WardCode === selectedWard)
+                                    ?.WardName || ""
+                                }, ${
+                                  districts.find(
+                                    (d) => d.DistrictID === selectedDistrict
+                                  )?.DistrictName || ""
+                                }, ${
+                                  provinces.find(
+                                    (p) => p.ProvinceID === selectedProvince
+                                  )?.ProvinceName || ""
+                                }`
+                                  .replace(/^, | ,| , $/g, "")
+                                  .trim(),
+                                total_amount: subtotal,
+                                payment_method: "vnpay",
+                                products: cartItems.map((item) => ({
+                                  product_id: item.product_id,
+                                  product_variant_id: item.product_variant_id,
+                                  quantity: item.quantity,
+                                  price:
+                                    item.product_variant?.sale_price ||
+                                    item.product?.sale_price ||
+                                    0,
+                                })),
+                              };
+
+                              const orderResponse =
+                                await OrderService.placeOrder(orderData);
+
+                              if (orderResponse?.payment_url) {
+                                window.location.href =
+                                  orderResponse.payment_url;
+                                return;
+                              }
+
+                              if (
+                                orderResponse?.message ===
+                                "Đặt hàng thành công!"
+                              ) {
+                                message.success(
+                                  "🎉 Đơn hàng đã đặt thành công!"
+                                );
+                                nav("/");
+                                setCartItems([]);
+                                localStorage.removeItem("cartAttributes");
+                              } else {
+                                message.error(
+                                  orderResponse?.message || "Lỗi không xác định"
+                                );
+                              }
+                            } catch (error) {
+                              console.error(
+                                "Lỗi khi đặt hàng với khách vãng lai:",
+                                error
+                              );
+                              message.error("Có lỗi xảy ra khi thanh toán.");
+                            }
+                          } else {
+                            // Đã đăng nhập => mở modal để chọn phương thức thanh toán
+                            setIsPaymentModalOpen(true);
+                          }
+                        }}
                       >
                         Đến trang thanh toán
                       </button>
