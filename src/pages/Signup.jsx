@@ -15,27 +15,135 @@ const Signup = () => {
     const [wards, setWards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [image, setImage] = useState("");
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [selectedWard, setSelectedWard] = useState(null);
 
     useEffect(() => {
-        fetch("https://provinces.open-api.vn/api/?depth=3")
-            .then(res => res.json())
-            .then(data => {
-                setProvinces(data);
-                setLoading(false);
+        const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Thay token của bạn vào đây
+        fetch(
+            "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    token: token,
+                },
+            }
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data.data)) {
+                    setProvinces(data.data); // Lưu vào state provinces
+                }
+            })
+            .catch((error) => {
+                console.error("Lỗi khi lấy dữ liệu tỉnh thành phố:", error);
             });
     }, []);
 
+    // Xử lý sự kiện khi người dùng chọn tỉnh/thành phố
     const handleProvinceChange = (value) => {
-        const province = provinces.find(p => p.code === Number(value));
-        setDistricts(province ? province.districts : []);
+        // Reset districts and wards when province changes
+        setDistricts([]);
         setWards([]);
-        form.setFieldsValue({ district: null, ward: null });
+
+        setSelectedProvince(value);
+
+        if (!value) {
+            console.error("Invalid province ID:", value);
+            return;
+        }
+        console.log("ProvinceID:", value);
+        // Get the ProvinceID instead of Code
+        const selectedProvince = provinces.find((p) => p.ProvinceID === value);
+
+        if (!selectedProvince) {
+            console.error("Province not found for value:", value);
+            return;
+        }
+
+        const provinceId = selectedProvince.ProvinceID; // Use the correct ProvinceID
+
+        const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+        fetch(
+            `https://online-gateway.ghn.vn/shiip/public-api/master-data/district?province_id=${provinceId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    token: token,
+                },
+            }
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.code === 400) {
+                    console.error("Error fetching districts:", data.message);
+                } else if (Array.isArray(data.data)) {
+                    setDistricts(data.data); // Update districts with the fetched data
+                } else {
+                    console.error("Unexpected response format:", data);
+                }
+            })
+            .catch((error) => {
+                console.error("Error fetching districts:", error);
+            });
     };
 
+    // Xử lý sự kiện khi người dùng chọn quận/huyện
     const handleDistrictChange = (value) => {
-        const district = districts.find(d => d.code === Number(value));
-        setWards(district ? district.wards : []);
-        form.setFieldsValue({ ward: null });
+        setWards([]); // Reset wards when district changes
+        setSelectedDistrict(value);
+        setSelectedWard(null); // Reset selectedWard when district changes
+
+        if (!value) {
+            console.error("Invalid district ID:", value);
+            return;
+        }
+        console.log("DistrictID:", value);
+        // Find the district from selected districts
+        const selectedDistrictData = districts.find((d) => d.DistrictID === value);
+        if (!selectedDistrictData) {
+            console.error("District not found for value:", value);
+            return;
+        }
+
+        const districtId = selectedDistrictData.DistrictID;
+
+        const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+        fetch(
+            `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${districtId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    token: token,
+                },
+            }
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data.data)) {
+                    setWards(data.data); // Update wards with the fetched data
+                } else {
+                    console.error("Error fetching wards:", data);
+                }
+            })
+            .catch((error) => {
+                console.error("Error fetching wards:", error);
+            });
+    };
+    const handleWardChange = (value) => {
+        setSelectedWard(value); // Cập nhật selectedWard khi chọn phường xã
+
+        if (!value) {
+            console.error("Invalid ward code:", value);
+            return;
+        }
+
+        // Log WardCode khi thay đổi phường xã
+        console.log("WardCode:", value);
     };
 
     const { mutate } = useMutation({
@@ -57,16 +165,16 @@ const Signup = () => {
                 description: error.message,
             });
         },
-    });    
+    });
 
     const onHandleChange = (info) => {
         if (info.file.status === "done" && info.file.response) {
-          const imageUrl = info.file.response.secure_url;
-          setImage(imageUrl);
-          form.setFieldsValue({ avatar: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ avatar: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
         } else if (info.file.status === "removed") {
-          setImage(""); // Xóa ảnh khi người dùng xóa
-          form.setFieldsValue({ avatar: "" }); // Cập nhật lại giá trị trong form
+            setImage(""); // Xóa ảnh khi người dùng xóa
+            form.setFieldsValue({ avatar: "" }); // Cập nhật lại giá trị trong form
         }
     };
 
@@ -75,13 +183,21 @@ const Signup = () => {
             notification.error({ message: "Mật khẩu không khớp!" });
             return;
         }
-        
+
         const formattedAddress = [
-            values.ward ? wards.find(w => w.code === Number(values.ward))?.name : "",
-            values.district ? districts.find(d => d.code === Number(values.district))?.name : "",
-            values.province ? provinces.find(p => p.code === Number(values.province))?.name : "",
+            values.ward
+                ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
+                : "",
+            values.district
+                ? districts.find((d) => d.DistrictID === Number(values.district))
+                    ?.DistrictName
+                : "",
+            values.province
+                ? provinces.find((p) => p.ProvinceID === Number(values.province))
+                    ?.ProvinceName
+                : ""
         ].filter(Boolean).join(", ");
-    
+
         const userData = {
             phone_number: values.phone_number,
             password: values.password,
@@ -93,11 +209,14 @@ const Signup = () => {
             detail_address: values.detail_address,
             email: values.email,
             avatar: values.avatar,
+            ProvinceID: String(values.province), // Chuyển ProvinceID thành chuỗi
+            DistrictID: String(values.district), // DistrictID tương ứng với quận huyện
+            WardCode: values.ward, // WardCode tương ứng với phường xã
         };
-    
+
         console.log("Dữ liệu gửi đi:", userData);
         mutate(userData);
-    };    
+    };
 
     return (
         <div className="signup-container">
@@ -107,19 +226,19 @@ const Signup = () => {
                 <Form form={form} layout="vertical" onFinish={handleRegister}>
                     <Row gutter={24}>
                         <Col span={12}>
-                            <Form.Item 
-                                name="fullname" label="Họ và tên" 
+                            <Form.Item
+                                name="fullname" label="Họ và tên"
                                 rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
-                            > 
-                                <Input className="input-item" placeholder="Nhập họ và tên"/>
+                            >
+                                <Input className="input-item" placeholder="Nhập họ và tên" />
                             </Form.Item>
 
                             <Row gutter={24}>
                                 <Col span={12}>
-                                    <Form.Item 
-                                        name="gender" label="Giới tính" 
+                                    <Form.Item
+                                        name="gender" label="Giới tính"
                                         rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
-                                    > 
+                                    >
                                         <Select className="input-item" placeholder="Chọn giới tính">
                                             <Select.Option value="male">Nam</Select.Option>
                                             <Select.Option value="female">Nữ</Select.Option>
@@ -128,15 +247,15 @@ const Signup = () => {
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
-                                    <Form.Item 
-                                        name="birthday" label="Ngày sinh" 
+                                    <Form.Item
+                                        name="birthday" label="Ngày sinh"
                                         rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
-                                    > 
-                                        <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY"/>
+                                    >
+                                        <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
                                     </Form.Item>
                                 </Col>
                             </Row>
-                        </Col>    
+                        </Col>
 
                         <Col span={12}>
                             <Form.Item
@@ -145,17 +264,17 @@ const Signup = () => {
                                 getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
                             >
                                 <Upload
-                                listType="picture-card"
-                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                                data={{ upload_preset: "quangOsuy" }}
-                                onChange={onHandleChange}
+                                    listType="picture-card"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    onChange={onHandleChange}
                                 >
-                                {!image && ( 
-                                    <button className="upload-button" type="button">
-                                        <UploadOutlined />
-                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                    </button>
-                                )}
+                                    {!image && (
+                                        <button className="upload-button" type="button">
+                                            <UploadOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                        </button>
+                                    )}
                                 </Upload>
                             </Form.Item>
                         </Col>
@@ -163,29 +282,32 @@ const Signup = () => {
 
                     <Row gutter={24}>
                         <Col span={12}>
-                            <Form.Item  
-                                name="email" label="Email" 
+                            <Form.Item
+                                name="email" label="Email"
                                 rules={[{ required: true, type: "email", message: "Vui lòng nhập email hợp lệ" }]}
-                            > 
-                                <Input className="input-item" placeholder="Nhập Email"/>
+                            >
+                                <Input className="input-item" placeholder="Nhập Email" />
                             </Form.Item>
 
-                            <Form.Item  
-                                name="phone_number" label="Số điện thoại" 
+                            <Form.Item
+                                name="phone_number" label="Số điện thoại"
                                 rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
-                            > 
-                                <Input className="input-item" placeholder="Nhập số điện thoại"/>
+                            >
+                                <Input className="input-item" placeholder="Nhập số điện thoại" />
                             </Form.Item>
 
-                            <Form.Item  
-                                name="password" label="Mật khẩu" 
-                                rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-                            > 
-                                <Input.Password className="input-item" placeholder="Nhập mật khẩu"/>
+                            <Form.Item
+                                name="password" label="Mật khẩu"
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập mật khẩu" },
+                                    { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
+                                ]}
+                            >
+                                <Input.Password className="input-item" placeholder="Nhập mật khẩu" />
                             </Form.Item>
 
-                            <Form.Item  
-                                name="confirmPassword" label="Xác nhận mật khẩu" 
+                            <Form.Item
+                                name="confirmPassword" label="Xác nhận mật khẩu"
                                 rules={[
                                     { required: true, message: "Vui lòng nhập lại mật khẩu" },
                                     {
@@ -197,44 +319,79 @@ const Signup = () => {
                                         },
                                     },
                                 ]}
-                            > 
-                                <Input.Password className="input-item" placeholder="Xác nhận mật khẩu"/>
+                            >
+                                <Input.Password className="input-item" placeholder="Xác nhận mật khẩu" />
                             </Form.Item>
                         </Col>
 
                         <Col span={12}>
-                            <Form.Item 
-                                name="province" label="Tỉnh/Thành phố" 
-                            > 
-                                <Select onChange={handleProvinceChange} loading={loading} className="input-item" placeholder="Chọn tỉnh/thành phố">
-                                    {provinces.map(p => <Select.Option key={p.code} value={p.code}>{p.name}</Select.Option>)}
+                            <Form.Item
+                                name="province" label="Tỉnh/Thành phố"
+                            >
+                                <Select
+                                    onChange={handleProvinceChange}
+                                    placeholder="Chọn tỉnh/thành phố"
+                                    className="input-item"
+                                >
+                                    {provinces.map((province) => (
+                                        <Select.Option
+                                            key={province.ProvinceID} // Sử dụng ProvinceID làm key
+                                            value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                                        >
+                                            {province.ProvinceName}
+                                        </Select.Option>
+                                    ))}
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item  
-                                name="district" label="Quận/Huyện" 
-                            > 
-                                <Select onChange={handleDistrictChange} disabled={!districts.length} className="input-item" placeholder="Chọn quận/huyện">
-                                    {districts.map(d => <Select.Option key={d.code} value={d.code}>{d.name}</Select.Option>)}
+                            <Form.Item
+                                name="district" label="Quận/Huyện"
+                            >
+                                <Select
+                                    placeholder="Chọn Quận/Huyện"
+                                    className="input-item"
+                                    onChange={handleDistrictChange}
+                                    disabled={!selectedProvince}
+                                >
+                                    {districts.map((district) => (
+                                        <Select.Option
+                                            key={district.DistrictID} // Sử dụng DistrictID làm key
+                                            value={district.DistrictID} // Sử dụng DistrictID làm value
+                                        >
+                                            {district.DistrictName}
+                                        </Select.Option>
+                                    ))}
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item  
-                                name="ward" label="Phường/Xã" 
-                            > 
-                                <Select disabled={!wards.length} className="input-item" placeholder="Chọn phường/xã">
-                                    {wards.map(w => <Select.Option key={w.code} value={w.code}>{w.name}</Select.Option>)}
+                            <Form.Item
+                                name="ward" label="Phường/Xã"
+                            >
+                                <Select
+                                    placeholder="Chọn Phường/Xã"
+                                    className="input-item"
+                                    disabled={!selectedDistrict}
+                                    onChange={handleWardChange}
+                                >
+                                    {wards.map((ward) => (
+                                        <Select.Option
+                                            key={ward.WardCode}
+                                            value={ward.WardCode}
+                                        >
+                                            {ward.WardName}
+                                        </Select.Option>
+                                    ))}
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item 
-                                name="detail_address" label="Địa chỉ cụ thể" 
-                            > 
-                                <Input className="input-item" placeholder="Nhập địa chỉ cụ thể"/>
+                            <Form.Item
+                                name="detail_address" label="Địa chỉ cụ thể"
+                            >
+                                <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" />
                             </Form.Item>
                         </Col>
                     </Row>
-                    
+
                     <div className="add">
                         <button type="primary" htmlType="submit" className="btn btn-outline-primary-2">
                             <span>ĐĂNG KÝ</span>

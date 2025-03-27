@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button, Col, Modal, notification, Row, Table, Form, Radio, Upload, Input } from 'antd';
+import { Button, Col, Modal, notification, Row, Table, Form, Radio, Upload, Input, Skeleton } from 'antd';
 import { OrderService } from '../services/order';
 import "../css/review.css";
 import { CheckOutlined, CloseOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
@@ -19,12 +19,14 @@ const Detail = () => {
     const [video, setVideo] = useState("");
     const [form] = Form.useForm();
     const [detail, setDetail] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchOrder = async () => {
             try {
                 const data = await OrderService.getDetailOrder(id);
                 setOrder(data.order);
+                setIsLoading(false);
             } catch (error) {
                 console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
             }
@@ -38,7 +40,8 @@ const Detail = () => {
                 const data = await OrderService.getOrderById(id);
                 // Kiểm tra dữ liệu trả về có hợp lệ
                 if (data && Array.isArray(data)) {
-                    setDetail(data);  // Lưu toàn bộ mảng sản phẩm vào state
+                    setDetail(data);
+                    setIsLoading(false);
                 } else {
                     console.error("Dữ liệu chi tiết không hợp lệ.");
                 }
@@ -191,38 +194,27 @@ const Detail = () => {
 
         console.log("Dữ liệu gửi đi:", payload);
 
-        try {
-            // Gọi API để cập nhật trạng thái đơn hàng
-            const response = await OrderService.updateOrderStatus(id, payload);
-            console.log("Phản hồi từ API:", response);
+        // Gọi API để cập nhật trạng thái đơn hàng
+        const response = await OrderService.updateOrderStatus(id, payload);
+        console.log("Phản hồi từ API:", response);
 
-            // Kiểm tra phản hồi chính xác từ API
-            if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
-                notification.success({
-                    message: "Yêu cầu trả hàng đã được gửi thành công",
-                    description: "Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.",
-                });
-
-                // Cập nhật lại danh sách đơn hàng với trạng thái mới
-                setOrders((prevOrders) =>
-                    prevOrders.map((order) =>
-                        order.id === selectedOrderId ? { ...order, status: { id: 9, name: "Chờ xử lý trả hàng" } } : order
-                    )
-                );
-
-                // Ẩn form trả hàng sau khi gửi yêu cầu
-                setIsReturnFormVisible(false);
-            } else {
-                notification.error({
-                    message: "Cập nhật thất bại",
-                    description: "Có lỗi xảy ra khi gửi yêu cầu trả hàng.",
-                });
-            }
-        } catch (error) {
-            console.error("Lỗi khi gửi yêu cầu trả hàng:", error);
+        // Kiểm tra phản hồi chính xác từ API
+        if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
+            notification.success({
+                message: "Yêu cầu trả hàng đã được gửi thành công",
+                description: "Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.",
+            });
+            hideModal();
+            // Cập nhật lại danh sách đơn hàng với trạng thái mới
+            setOrders((prevOrders) =>
+                prevOrders.map((order) =>
+                    order.id === selectedOrderId ? { ...order, status: { id: 9, name: "Chờ xử lý trả hàng" } } : order
+                )
+            );
+        } else {
             notification.error({
-                message: "Lỗi",
-                description: "Không thể gửi yêu cầu trả hàng.",
+                message: "Cập nhật thất bại",
+                description: "Có lỗi xảy ra khi gửi yêu cầu trả hàng.",
             });
         }
     };
@@ -285,6 +277,11 @@ const Detail = () => {
             key: "created_at",
             label: "Ngày đặt hàng",
             value: dayjs(order.created_at).format("DD/MM/YYYY")
+        },
+        {
+            key: "address",
+            label: "Địa chỉ giao hàng",
+            value: order.address
         },
         {
             key: "payment",
@@ -364,35 +361,39 @@ const Detail = () => {
                 <div className="page-content">
                     <div className="container">
                         <div className="group1">
-                            <Table
-                                columns={orderColumns}
-                                dataSource={dataSource}
-                                pagination={false}
-                            />
-
-                            <Table
-                                columns={detailColumns}
-                                dataSource={transformedDetail}
-                                bordered
-                                style={{ width: '1200px' }}
-                                pagination={false}
-                                summary={() => {
-                                    const totalAmount = order?.order_items?.reduce(
-                                        (sum, item) => sum + item.quantity * item.sell_price,
-                                        0
-                                    );
-                                    return (
-                                        <Table.Summary.Row>
-                                            <Table.Summary.Cell colSpan={4} align="right">
-                                                <strong>Tổng giá trị (VNĐ):</strong>
-                                            </Table.Summary.Cell>
-                                            <Table.Summary.Cell align="center">
-                                                <strong>{formatPrice(totalAmount)}</strong>
-                                            </Table.Summary.Cell>
-                                        </Table.Summary.Row>
-                                    );
-                                }}
-                            />
+                            <Skeleton active loading={isLoading}>
+                                <Table
+                                    columns={orderColumns}
+                                    dataSource={dataSource}
+                                    pagination={false}
+                                />
+                            </Skeleton>
+                            
+                            <Skeleton active loading={isLoading}>
+                                <Table
+                                    columns={detailColumns}
+                                    dataSource={transformedDetail}
+                                    bordered
+                                    style={{ width: '1200px' }}
+                                    pagination={false}
+                                    summary={() => {
+                                        const totalAmount = order?.order_items?.reduce(
+                                            (sum, item) => sum + item.quantity * item.sell_price,
+                                            0
+                                        );
+                                        return (
+                                            <Table.Summary.Row>
+                                                <Table.Summary.Cell colSpan={4} align="right">
+                                                    <strong>Tổng giá trị (VNĐ):</strong>
+                                                </Table.Summary.Cell>
+                                                <Table.Summary.Cell align="center">
+                                                    <strong>{formatPrice(totalAmount)}</strong>
+                                                </Table.Summary.Cell>
+                                            </Table.Summary.Row>
+                                        );
+                                    }}
+                                />
+                            </Skeleton>
                         </div>
 
                         <Modal
