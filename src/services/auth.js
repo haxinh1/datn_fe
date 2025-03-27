@@ -13,7 +13,7 @@ const fetchAuth = async () => {
 const getAllCustomer = async (payload) => {
   const response = await instance.get(`/admin/users/customer`, payload);
   return response.data;
-}
+};
 
 const getAUser = async (id) => {
   const response = await instance.get(`/admin/users/${id}`);
@@ -52,7 +52,8 @@ const changePassword = async (id, userData) => {
 
   try {
     const response = await instance.put(
-      `/admin/change-password/${id}`, userData,
+      `/admin/change-password/${id}`,
+      userData,
       {
         headers: {
           Authorization: `Bearer ${token}`, // Gửi token trong header Authorization
@@ -180,8 +181,7 @@ const getAddressByIdUser = async (userId) => {
 
 //người dùng thêm địa chỉ
 const addAddress = async (payload) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -196,8 +196,7 @@ const addAddress = async (payload) => {
 };
 
 const getaAddress = async (id) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -209,23 +208,21 @@ const getaAddress = async (id) => {
     },
   });
   return response.data;
-}
+};
 
 //người dùng sửa địa chỉ
 const updateAddress = async (id, payload) => {
-  const token =
-    localStorage.getItem("client_token");
+  const token = localStorage.getItem("client_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
   }
 
-  const response = await instance.put(`/user-addresses/${id}`, payload, 
-    {
-      headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
-      },
-    });
+  const response = await instance.put(`/user-addresses/${id}`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+    },
+  });
   return response.data;
 };
 
@@ -247,5 +244,5 @@ export const AuthServices = {
   getAddressByIdUser,
   addAddress,
   getaAddress,
-  updateAddress
+  updateAddress,
 };
