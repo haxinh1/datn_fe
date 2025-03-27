@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
@@ -13,6 +13,7 @@ const Import = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [loggedInUserRole, setLoggedInUserRole] = useState([]);
 
     // Fetch danh sách sản phẩm và biến thể
     const { data: products = [] } = useQuery({
@@ -22,6 +23,13 @@ const Import = () => {
             return response.data;
         },
     });
+
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("user"));
+        if (userData) {
+            setLoggedInUserRole(userData.role); 
+        }
+    }, []); 
 
     // Xử lý khi chọn sản phẩm
     const handleSelectProduct = (value, option) => {
@@ -348,7 +356,7 @@ const Import = () => {
                                         <InputNumber
                                             className="input-form"
                                             min={1}
-                                            disabled 
+                                            disabled={loggedInUserRole === "manager"} 
                                             formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
@@ -360,53 +368,53 @@ const Import = () => {
                                 );
                             },
                         },         
-                        // {
-                        //     title: "Giá KM (VNĐ)",
-                        //     dataIndex: "sale_price",
-                        //     align: "center",
-                        //     render: (_, record) => {
-                        //         const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
+                        {
+                            title: "Giá KM (VNĐ)",
+                            dataIndex: "sale_price",
+                            align: "center",
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
                         
-                        //         return (
-                        //             <Form.Item
-                        //                 name={`sale_price_${uniqueKey}`}
-                        //                 initialValue={record.sale_price || 0} // Truyền giá khuyến mại từ DB vào input
-                        //                 // rules={[
-                        //                 //     {
-                        //                 //         required: true,
-                        //                 //         message: "Vui lòng nhập giá khuyến mại!",
-                        //                 //     },
-                        //                 //     {
-                        //                 //         type: "number",
-                        //                 //         min: 1,
-                        //                 //         message: "Giá khuyến mại phải lớn hơn 0!",
-                        //                 //     },
-                        //                 //     ({ getFieldValue }) => ({
-                        //                 //         validator(_, value) {
-                        //                 //             const sellPrice = form.getFieldValue(`sell_price_${uniqueKey}`);
-                        //                 //             if (value && sellPrice && value >= sellPrice) {
-                        //                 //                 return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
-                        //                 //             }
-                        //                 //             return Promise.resolve();
-                        //                 //         },
-                        //                 //     }),
-                        //                 // ]}
-                        //             >
-                        //                 <InputNumber
-                        //                     className="input-form"
-                        //                     min={1}
-                        //                     disabled 
-                        //                     formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                        //                     parser={value => value?.replace(/\./g, "")}
-                        //                     onChange={(value) => {
-                        //                         form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
-                        //                         updateItem(record.id, record.productId, "sale_price", value);
-                        //                     }}
-                        //                 />
-                        //             </Form.Item>
-                        //         );
-                        //     },
-                        // },            
+                                return (
+                                    <Form.Item
+                                        name={`sale_price_${uniqueKey}`}
+                                        initialValue={record.sale_price || 0} // Truyền giá khuyến mại từ DB vào input
+                                        rules={[
+                                            {
+                                                required: true,
+                                                message: "Vui lòng nhập giá khuyến mại!",
+                                            },
+                                            {
+                                                type: "number",
+                                                min: 1,
+                                                message: "Giá khuyến mại phải lớn hơn 0!",
+                                            },
+                                            ({ getFieldValue }) => ({
+                                                validator(_, value) {
+                                                    const sellPrice = form.getFieldValue(`sell_price_${uniqueKey}`);
+                                                    if (value && sellPrice && value >= sellPrice) {
+                                                        return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            }),
+                                        ]}
+                                    >
+                                        <InputNumber
+                                            className="input-form"
+                                            min={1}
+                                            disabled={loggedInUserRole === "manager"} 
+                                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            parser={value => value?.replace(/\./g, "")}
+                                            onChange={(value) => {
+                                                form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
+                                                updateItem(record.id, record.productId, "sale_price", value);
+                                            }}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },            
                         {
                             title: "Số lượng",
                             dataIndex: "quantity",

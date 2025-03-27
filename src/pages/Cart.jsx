@@ -255,9 +255,12 @@ const Cart = () => {
   return (
     <div>
       <main className="main">
-        <div className="page-header text-center">
+        <div
+          className="page-header text-center"
+          style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}
+        >
           <div className="container">
-            <h1 className="page-title fs-3">Giỏ hàng</h1>
+            <h1 className="page-title">Giỏ Hàng</h1>
           </div>
         </div>
         <div className="page-content">
