@@ -135,6 +135,8 @@ const Import = () => {
                 groupedProducts[item.productId].variants.push({
                     id: item.id,
                     price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
                     quantity: item.quantity
                 });
             } else {
@@ -142,6 +144,8 @@ const Import = () => {
                 groupedProducts[item.productId] = {
                     id: item.productId,
                     price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
                     quantity: item.quantity
                 };
             }
@@ -307,15 +311,12 @@ const Import = () => {
                                     initialValue={record.price}
                                     rules={[
                                         {
-                                            required: true,
-                                            message: "Vui lòng nhập giá nhập!",
-                                        },
-                                        {
                                             type: "number",
                                             min: 1,
                                             message: "Giá nhập phải lớn hơn 0!",
                                         },
-                                        ({ getFieldValue }) => ({
+                                        // Kiểm tra rule chỉ khi không phải là manager
+                                        loggedInUserRole !== "manager" && ({
                                             validator(_, value) {
                                                 if (value === undefined || value === null) {
                                                     return Promise.reject("Vui lòng nhập giá nhập!");
@@ -326,7 +327,7 @@ const Import = () => {
                                                 return Promise.resolve();
                                             },
                                         }),
-                                    ]}
+                                    ].filter(Boolean)}
                                 >
                                     <InputNumber
                                         className="input-form"
@@ -352,6 +353,20 @@ const Import = () => {
                                     <Form.Item
                                         name={`sell_price_${uniqueKey}`}
                                         initialValue={record.sell_price}
+                                        rules={[
+                                            // Kiểm tra rule chỉ khi không phải là manager
+                                            loggedInUserRole !== "manager" && ({
+                                                validator(_, value) {
+                                                    if (value === undefined || value === null) {
+                                                        return Promise.reject("Vui lòng nhập giá bán!");
+                                                    }
+                                                    if (value <= record.price) {
+                                                        return Promise.reject("Giá bán phải lớn hơn giá nhập!");
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            }),
+                                        ].filter(Boolean)}
                                     >
                                         <InputNumber
                                             className="input-form"
@@ -361,7 +376,7 @@ const Import = () => {
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
                                                 form.setFieldsValue({ [`sell_price_${uniqueKey}`]: value });
-                                                updateItem(record.id, record.productId, "sell_price", value);
+                                                updateItem(record.key, "sell_price", value);
                                             }}
                                         />
                                     </Form.Item>
@@ -378,27 +393,6 @@ const Import = () => {
                                 return (
                                     <Form.Item
                                         name={`sale_price_${uniqueKey}`}
-                                        initialValue={record.sale_price || 0} // Truyền giá khuyến mại từ DB vào input
-                                        rules={[
-                                            {
-                                                required: true,
-                                                message: "Vui lòng nhập giá khuyến mại!",
-                                            },
-                                            {
-                                                type: "number",
-                                                min: 1,
-                                                message: "Giá khuyến mại phải lớn hơn 0!",
-                                            },
-                                            ({ getFieldValue }) => ({
-                                                validator(_, value) {
-                                                    const sellPrice = form.getFieldValue(`sell_price_${uniqueKey}`);
-                                                    if (value && sellPrice && value >= sellPrice) {
-                                                        return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
-                                                    }
-                                                    return Promise.resolve();
-                                                },
-                                            }),
-                                        ]}
                                     >
                                         <InputNumber
                                             className="input-form"
@@ -408,7 +402,7 @@ const Import = () => {
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
                                                 form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
-                                                updateItem(record.id, record.productId, "sale_price", value);
+                                                updateItem(record.key, "sale_price", value);
                                             }}
                                         />
                                     </Form.Item>
@@ -434,7 +428,7 @@ const Import = () => {
                             render: (_, record) => record.total.toLocaleString(),
                         },
                         {
-                            title: "Thao tác",
+                            title: "",
                             key: "action",
                             align: "center",
                             render: (_, record) => (
@@ -451,7 +445,7 @@ const Import = () => {
                     ]}
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={6} align="right">
+                            <Table.Summary.Cell colSpan={7} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">

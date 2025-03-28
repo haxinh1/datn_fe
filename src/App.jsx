@@ -46,6 +46,9 @@ import ProductReview from "./pages/ProductReview";
 import Comment from "./admin/comment";
 import Review from "./pages/Review";
 import Detail from "./pages/Detail";
+import User from "./admin/User";
+import Staff from "./admin/Staff";
+import Return from "./pages/Return";
 
 function App() {
   return (
@@ -73,6 +76,7 @@ function App() {
             <Route path="info/:id" element={<Info />} />
             <Route path="orders/:id" element={<Orders />} />
             <Route path="address/:id" element={<Address />} />
+            <Route path="return/:id" element={<Return />} />
           </Route>
         </Route>
       </Routes>
@@ -95,7 +99,9 @@ function App() {
             <Route path="history" element={<History />} />
             <Route path="brand" element={<Brand />} />
             <Route path="account" element={<Account />} />
+            <Route path="staff/:id" element={<Staff />} />
             <Route path="customer" element={<Customer />} />
+            <Route path="user/:id" element={<User />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
             <Route path="bill" element={<Bill />} />
