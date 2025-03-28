@@ -24,7 +24,7 @@ const Order = () => {
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "" });
   const { RangePicker } = DatePicker;
   const [validStatuses, setValidStatuses] = useState([]);
   const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
@@ -219,6 +219,7 @@ const Order = () => {
     setOrderInfo({
       email: order.email,
       address: order.address,
+      fullname: order.fullname
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -378,8 +379,7 @@ const Order = () => {
       dataIndex: "created_at",
       key: "created_at",
       align: "center",
-      render: (created_at) =>
-        created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
+      render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
     },
     {
       title: "Phương thức thanh toán",
@@ -601,8 +601,9 @@ const Order = () => {
         footer={null}
         width={1000}
       >
-        <span>Email người đặt: <span className="text-quest">{orderInfo.email}</span></span> <br />
-        <span>Địa chỉ nhận hàng: <span className="text-quest">{orderInfo.address}</span></span>
+        <span>Khách hàng: <span className="text-quest">{orderInfo.fullname}</span></span> <br />
+        <span>Email: <span className="text-quest">{orderInfo.email}</span></span> <br />
+        <span>Địa chỉ giao hàng: <span className="text-quest">{orderInfo.address}</span></span>
 
         <Table
           columns={detailColumns}
@@ -634,14 +635,12 @@ const Order = () => {
 
         <hr />
         <h1 className="mb-5">Lịch sử cập nhật</h1>
-        <Skeleton active loading={isLoading}>
-          <Table
-            columns={editcolumns}
-            dataSource={orderStatusesData}
-            pagination={{ pageSize: 5 }}
-            bordered
-          />
-        </Skeleton>
+        <Table
+          columns={editcolumns}
+          dataSource={orderStatusesData}
+          pagination={{ pageSize: 5 }}
+          bordered
+        />
       </Modal>
 
       <Modal

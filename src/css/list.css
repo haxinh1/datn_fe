@@ -75,3 +75,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.card-info{
+    display: block;
+}
+.avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+    margin-top: 10px;
+  }
