@@ -71,21 +71,15 @@ const Coupon = () => {
             align: "center",
         },
         {
-            title: "Tên mã",
-            dataIndex: "title",
-            key: "title",
-            align: "center",
-        },
-        {
             title: "Loại phiếu giảm giá",
             dataIndex: "discount_type",
             key: "discount_type",
             align: "center",
         },
         {
-            title: "Số lượng",
-            dataIndex: "usage_limit",
-            key: "quantity",
+            title: "Loại Ap Dung",
+            dataIndex: "coupon_type",
+            key: "coupon_type",
             align: "center",
         },
         {
@@ -95,30 +89,22 @@ const Coupon = () => {
             align: "center",
         },
         {
-            title: "Ngày áp dụng",
-            dataIndex: "start_date",
-            key: "start_date",
-            align: "center",
-            render: (date) => formatDate(date),
+            title: "Rank",
+            dataIndex: "rank",
+            key: "rank",
         },
         {
-            title: "Ngày kết thúc",
-            dataIndex: "end_date",
-            key: "end_date",
-            align: "center",
-            render: (date) => formatDate(date),
+            title: "Người dùng",
+            dataIndex: "users",
+            key: "users",
+            render: (users, record) => {
+                if (record.coupon_type === "private" && Array.isArray(users)) {
+                    return users.map(user => user.email).join(", ");
+                }
+                return "N/A";
+            },
         },
-        {
-            title: "Trạng thái",
-            dataIndex: "is_active",
-            key: "is_active",
-            align: "center",
-            render: (isActive) => (
-                <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
-                </span>
-            ),
-        },
+
     ]
 
     const columns = [
@@ -157,6 +143,9 @@ const Coupon = () => {
             dataIndex: "discount_value",
             key: "discount_value",
             align: "center",
+            render: (value, record) => (
+                <span>{value} {record.discount_type === 'percent' ? '%' : 'đ'}</span>
+            )
         },
         {
             title: "Ngày áp dụng",
@@ -222,13 +211,19 @@ const Coupon = () => {
             usage_limit: values.usage_limit,
             start_date: values.start_date,
             end_date: values.end_date,
-            is_active: values.is_active
+            is_active: values.is_active,
+            coupon_type: values.coupon_type,
         };
+
+        if (values.coupon_type === 'private') {
+            payload.user_ids = values.user_ids || [];
+        } else if (values.coupon_type === 'rank') {
+            payload.rank = values.rank || null;
+        }
 
         let response;
 
         if (editingCoupon) {
-
             response = await CouponServices.updateCoupon(editingCoupon.id, payload);
         } else {
             response = await CouponServices.createCoupon(payload);
@@ -412,9 +407,9 @@ const Coupon = () => {
                     )}
 
                     {couponType === 'private' && (
-                        <Form.Item  label="Chọn người dùng" name="user_ids" rules={[{ required: true, message: "Chọn người dùng" }]}>
-                            <Select mode="multiple">
-                                {users.map(user => <Option key={user.id} value={user.id}>{user.name}</Option>)}
+                        <Form.Item label="Chọn người dùng" name="user_ids" rules={[{ required: true, message: "Chọn người dùng" }]}>
+                            <Select placeholder="Chọn người dùng" mode="multiple">
+                                {users.map(user => <Option key={user.id} value={user.id}>{user.fullname}</Option>)}
                             </Select>
                         </Form.Item>
                     )}
