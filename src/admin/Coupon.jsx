@@ -107,6 +107,8 @@ const Coupon = () => {
 
     ]
 
+
+
     const columns = [
         {
             title: "STT",
@@ -166,9 +168,10 @@ const Coupon = () => {
             dataIndex: "is_active",
             key: "is_active",
             align: "center",
-            render: (isActive) => (
-                <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
+            render: (isActive, record) => (
+
+                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
+                    {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
                 </span>
             ),
         },
@@ -325,7 +328,7 @@ const Coupon = () => {
                                 name="code"
                                 rules={[{ required: true, message: "Vui lòng chọn Code" }]}
                             >
-                                <Input className='input-item' />
+                                <Input className='input-item' disabled={!!editingCoupon}  />
                             </Form.Item>
                         </Col>
                     </Row>
