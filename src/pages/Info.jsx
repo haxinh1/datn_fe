@@ -184,7 +184,7 @@ const Info = () => {
         {
             key: "action",
             value: (
-                <Button type="primary" className="btn-item" icon={<EditOutlined />} onClick={showModal}>
+                <Button style={{backgroundColor: '#e48948', color:'white'}} icon={<EditOutlined />} onClick={showModal}>
                     Cập nhật
                 </Button>
             ),
@@ -216,7 +216,7 @@ const Info = () => {
 
     return (
         <>
-            <h1 className="mb-5">
+            <h1 className="mb-5" style={{color:'#e48948'}}>
                 <UserOutlined style={{ marginRight: "8px" }} />
                 Thông tin của bạn
             </h1>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
-import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined } from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined, RollbackOutlined, EyeOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -11,7 +11,7 @@ const { Content, Header, Footer, Sider } = Layout;
 const LayoutAdmin = () => {
   const nav = useNavigate();
   const [user, setUser] = useState(null);
-  const {token: { colorBgContainer, borderRadiusLG }} = theme.useToken();
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -90,6 +90,11 @@ const LayoutAdmin = () => {
       label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
     },
     {
+      key: "back",
+      icon: <RollbackOutlined />,
+      label: <Link to="/admin/back"><span>Quản lý hoàn trả</span></Link>,
+    },
+    {
       key: "bill",
       icon: <PrinterOutlined />,
       label: <Link to="/admin/bill"><span>Quản lý hóa đơn</span></Link>,
@@ -129,11 +134,6 @@ const LayoutAdmin = () => {
       icon: <CommentOutlined />,
       label: <Link to="/admin/comment"><span>Bình Luận</span></Link>,
     },
-    {
-      key: "client",
-      icon: <HomeOutlined />,
-      label: <Link to="/"><span>Trang chủ</span></Link>,
-    },
   ];
 
   return (
@@ -147,7 +147,7 @@ const LayoutAdmin = () => {
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
         <div className="demo-logo-vertical">
-          <img src={logo} className="logo-admin"/>
+          <img src={logo} className="logo-admin" />
         </div>
         <Menu
           theme="dark"
@@ -159,22 +159,30 @@ const LayoutAdmin = () => {
 
       <Layout className="main-layout">
         <Header className="header-admin">
-          {user && (
-            <div style={{ display: "flex", alignItems: "center", marginRight : "10px" }}>
-              <Avatar src={user.avatar} alt="Avatar" size="large" style={{ marginRight: 10 }} />
-              <span>{user.fullname}</span>
-            </div>
-          )}
-          
-          <Tooltip title='Thông báo'>
-            <BellOutlined style={{fontSize:'24px', marginRight:'10px', cursor:'pointer'}}/>
-          </Tooltip>
-          <Dropdown overlay={menu} trigger={['hover']}>
-            <Button color="primary" variant="solid" icon={<SettingOutlined />} />
-          </Dropdown>
-          <Tooltip title='Đăng xuất'>
-            <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad}/>
-          </Tooltip>
+          <Link to="/">
+            <Tooltip title='Trang chủ'>
+              <HomeOutlined style={{ fontSize: '24px', cursor: 'pointer', color: 'black' }} />
+            </Tooltip>
+          </Link>
+
+          <div className="group2">
+            {user && (
+              <div>
+                <Avatar src={user.avatar} alt="Avatar" size="large" style={{ marginRight: 10 }} />
+                <span>{user.fullname}</span>
+              </div>
+            )}
+
+            <Tooltip title='Thông báo'>
+              <BellOutlined style={{ fontSize: '24px', cursor: 'pointer' }} />
+            </Tooltip>
+            <Dropdown overlay={menu} trigger={['hover']}>
+              <Button color="primary" variant="solid" icon={<SettingOutlined />} />
+            </Dropdown>
+            <Tooltip title='Đăng xuất'>
+              <Button color="danger" variant="solid" icon={<LogoutOutlined />} onClick={logoutad} />
+            </Tooltip>
+          </div>
         </Header>
 
         <Content className="content-admin">

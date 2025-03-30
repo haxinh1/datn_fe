@@ -49,6 +49,8 @@ import Detail from "./pages/Detail";
 import User from "./admin/User";
 import Staff from "./admin/Staff";
 import Return from "./pages/Return";
+import Back from "./admin/Back";
+import BackCl from "./pages/BackCl";
 
 function App() {
   return (
@@ -77,6 +79,7 @@ function App() {
             <Route path="orders/:id" element={<Orders />} />
             <Route path="address/:id" element={<Address />} />
             <Route path="return/:id" element={<Return />} />
+            <Route path="backcl/:id" element={<BackCl />} />
           </Route>
         </Route>
       </Routes>
@@ -104,6 +107,7 @@ function App() {
             <Route path="user/:id" element={<User />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
+            <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />

@@ -1,5 +1,5 @@
-import { BookOutlined, CheckOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
-import { Button, Col, ConfigProvider, DatePicker, Form, Input, Modal, Radio, Row, Select, Skeleton, Table, Tooltip, Upload, notification } from 'antd';
+import { BookOutlined, CheckOutlined, EyeOutlined } from '@ant-design/icons';
+import { Button, Col, ConfigProvider, DatePicker, Image, Modal, Select, Skeleton, Table, Tooltip, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -215,18 +215,24 @@ const Orders = () => {
             render: (_, __, index) => index + 1,
         },
         {
-            title: "Tên sản phẩm",
-            dataIndex: "name",
+            title: "Sản phẩm",
+            dataIndex: "product",
             align: "center",
-            render: (text, record) => {
-                const productName = record.name ? record.name : '';
+            render: (_, record) => {
+                const thumbnail = record.variants?.[0]?.variant_thumbnail;
+                const productName = record.name || '';
                 const variantAttributes = record.variants.map(variant => {
                     const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
                     return `${productName} - ${attributes}`;
                 }).join(", ");
 
-                return variantAttributes || productName;
-            }
+                return (
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <Image src={thumbnail} width={60} />
+                        <span>{variantAttributes || productName}</span>
+                    </div>
+                );
+            },
         },
         {
             title: "Số lượng",
@@ -301,7 +307,7 @@ const Orders = () => {
             ),
         },
         {
-            title: "Thao tác",
+            title: "",
             key: "action",
             align: "center",
             render: (_, item) => {
@@ -318,15 +324,16 @@ const Orders = () => {
                             />
                         </Tooltip>
 
-                        <Tooltip title="Đã nhận hàng">
-                            <Button
-                                color="primary"
-                                variant="solid"
-                                icon={<CheckOutlined />}
-                                disabled={!isDelivered} // chỉ được bấm khi ở trạng thái 5
-                                onClick={() => handleMarkAsReceived(item.id)}
-                            />
-                        </Tooltip>
+                        {isDelivered && (
+                            <Tooltip title="Đã nhận hàng">
+                                <Button
+                                    color="primary"
+                                    variant="solid"
+                                    icon={<CheckOutlined />}
+                                    onClick={() => handleMarkAsReceived(item.id)}
+                                />
+                            </Tooltip>
+                        )}
                     </div>
                 );
             },
@@ -335,7 +342,7 @@ const Orders = () => {
 
     return (
         <div>
-            <h1 className="mb-5">
+            <h1 className="mb-5" style={{color:'#e48948'}}>
                 <BookOutlined style={{ marginRight: "8px" }} />
                 Đơn hàng của bạn
             </h1>
@@ -428,27 +435,27 @@ const Orders = () => {
                 />
 
                 <div className="add">
-                    <Link to={`/dashboard/return/${selectedOrderId}`}>
+                    {(orderStatus === 5 || orderStatus === 7) && (
+                        <Link to={`/dashboard/return/${selectedOrderId}`}>
+                            <Button
+                                color="danger"
+                                variant="solid"
+                                style={{ marginRight: '10px' }}
+                            >
+                                Trả hàng
+                            </Button>
+                        </Link>
+                    )}
+
+                    {(orderStatus === 1 || orderStatus === 2 || orderStatus === 3) && (
                         <Button
                             color="danger"
                             variant="solid"
-                            style={{ marginRight: '10px' }}
-                            // Chỉ bật nút khi trạng thái đơn hàng là 5 (Đã giao hàng) hoặc 7 (Hoàn thành)
-                            disabled={!(orderStatus === 5 || orderStatus === 7)}
+                            onClick={() => handleCancelOrder(selectedOrderId)}
                         >
-                            Trả hàng
+                            Hủy đơn
                         </Button>
-                    </Link>
-
-                    <Button
-                        color="danger"
-                        variant="solid"
-                        // Chỉ bật nút khi trạng thái đơn hàng là 1, 2, hoặc 3
-                        disabled={!(orderStatus === 1 || orderStatus === 2 || orderStatus === 3)}
-                        onClick={() => handleCancelOrder(selectedOrderId)}
-                    >
-                        Hủy đơn
-                    </Button>
+                    )}
                 </div>
             </Modal>
         </div>

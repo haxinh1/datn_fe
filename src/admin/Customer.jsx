@@ -89,13 +89,13 @@ const Customer = () => {
             render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
         },
         {
-            title: "Người dùng",
+            title: "Khách hàng",
             dataIndex: "fullname",
             key: "fullname",
             align: "center",
             render: (fullname, record) => (
-                <div style={{ display: "flex", alignItems: "center" }}>
-                    {record.avatar && <Avatar size="large" src={record.avatar} style={{ marginRight: 10 }} />}
+                <div style={{ display: "flex", alignItems: "center",  gap: "10px" }}>
+                    {record.avatar && <Avatar size="large" src={record.avatar}/>}
                     <span>{fullname}</span>
                 </div>
             ),
