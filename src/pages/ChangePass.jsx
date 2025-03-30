@@ -52,7 +52,7 @@ const ChangePass = () => {
         <Row gutter={24}>
           <Col span={3}></Col>
           <Col span={8}>
-            <h1 className="mb-5">
+            <h1 className="mb-5" style={{color:'#e48948'}}>
               <LockOutlined style={{ marginRight: "8px" }} />
               Đổi mật khẩu
             </h1>
@@ -115,8 +115,8 @@ const ChangePass = () => {
             </Form.Item>
 
             <div className="add">
-              <Button type="primary" htmlType="submit" className="btn-item">
-                Cập nhật
+              <Button type="primary" htmlType="submit" style={{backgroundColor: '#e48948', color:'white'}}>
+                Lưu
               </Button>
             </div>
           </Col>

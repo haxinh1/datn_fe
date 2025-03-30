@@ -268,11 +268,11 @@ const ListProduct = () => {
                             </div>
                           </figure>
                           <div className="product-body">
-                            <h3 className="product-title">
+                            <span className="product-title">
                               <Link to={`/product-detail/${product.id}`}>
                                 {product.name}
                               </Link>
-                            </h3>
+                            </span>
                             <div className="product-price">
                               {formatPrice(getDisplayedPrice(product))} VNĐ
                             </div>

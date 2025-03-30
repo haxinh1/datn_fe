@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ dayjs.locale("vi");
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import TextArea from "antd/es/input/TextArea";
+import { saveAs } from 'file-saver';
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -247,29 +248,24 @@ const Order = () => {
     setBatchUpdateModalVisible(true);
   };
 
-  // Kiểm tra xem có thể kích hoạt nút cập nhật không
-  const isUpdateButtonDisabled = selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0]?.status.id);
+  // Kiểm tra trạng thái của các đơn hàng đã chọn
+  const areAllOrdersSameStatus = selectedOrders.every(
+    (order) => order.status.id === selectedOrders[0]?.status.id
+  );
+
+  // Nút cập nhật sẽ được kích hoạt khi có ít nhất một đơn hàng được chọn và tất cả đơn hàng có trạng thái giống nhau
+  const isUpdateButtonDisabled = selectedOrders.length === 0 || !areAllOrdersSameStatus;
+
 
   // Đóng modal
   const hideBatchUpdateModal = () => {
     setBatchUpdateModalVisible(false);
   };
 
-  // Xử lý khi người dùng chọn đơn hàng
-  const handleSelectSingle = (order) => {
-    setSelectedOrders((prevSelectedOrders) => {
-      if (prevSelectedOrders.some(item => item.id === order.id)) {
-        return prevSelectedOrders.filter(item => item.id !== order.id);
-      } else {
-        return [...prevSelectedOrders, order];
-      }
-    });
-  };
-
   // Xử lý khi người dùng chọn tất cả đơn hàng
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedOrders(ordersData);  // Chọn tất cả đơn hàng
+      setSelectedOrders(filteredOrders);  // Chọn tất cả đơn hàng sau khi lọc
     } else {
       setSelectedOrders([]);  // Bỏ chọn tất cả
     }
@@ -279,8 +275,18 @@ const Order = () => {
   const rowSelection = {
     selectedRowKeys: selectedOrders.map(order => order.id),
     onChange: (selectedRowKeys) => {
-      setSelectedOrders(ordersData.filter(order => selectedRowKeys.includes(order.id)));
+      setSelectedOrders(filteredOrders.filter(order => selectedRowKeys.includes(order.id)));
     },
+  };
+
+  const handleSelectSingle = (order) => {
+    setSelectedOrders((prevSelectedOrders) => {
+      if (prevSelectedOrders.some(item => item.id === order.id)) {
+        return prevSelectedOrders.filter(item => item.id !== order.id);
+      } else {
+        return [...prevSelectedOrders, order];
+      }
+    });
   };
 
   const handleBatchUpdateOrder = async (values) => {
@@ -333,6 +339,46 @@ const Order = () => {
     }
   };
 
+  const handleExportExcel = async () => {
+    // Nếu không có đơn hàng nào được chọn, xuất toàn bộ dữ liệu
+    const selectedOrderIds = selectedOrders.length > 0 
+      ? selectedOrders.map((order) => order.id) 
+      : ordersData.map((order) => order.id);  // Nếu không có đơn nào được chọn, lấy tất cả các đơn hàng
+  
+    try {
+      // Gọi API để lấy dữ liệu xuất Excel
+      const response = await fetch('http://127.0.0.1:8000/api/export-orders', {
+        method: 'POST',  // Phương thức POST
+        headers: {
+          'Content-Type': 'application/json', // Đảm bảo API nhận đúng loại dữ liệu
+        },
+        body: JSON.stringify({ order_ids: selectedOrderIds }),  // Truyền order_ids vào body
+      });
+  
+      // Kiểm tra nếu API trả về file nhị phân (Excel)
+      const blob = await response.blob();
+  
+      // Kiểm tra kích thước của file (optional)
+      if (blob.size === 0) {
+        throw new Error('File xuất ra rỗng');
+      }
+  
+      // Sử dụng file-saver để lưu tệp Excel về máy người dùng
+      saveAs(blob, 'order_item.xlsx');
+  
+      notification.success({
+        message: 'Xuất Excel thành công!',
+        description: 'Dữ liệu đã được xuất và tải xuống thành công.',
+      });
+    } catch (error) {
+      console.error("Lỗi khi xuất Excel:", error);
+      notification.error({
+        message: 'Xuất Excel thất bại!',
+        description: error.message || 'Có lỗi xảy ra khi xuất dữ liệu.',
+      });
+    }
+  };   
+
   const columns = [
     {
       title: <Checkbox onChange={handleSelectAll} />,
@@ -355,7 +401,7 @@ const Order = () => {
       align: "center",
     },
     {
-      title: "Tên người đặt",
+      title: "Khách hàng",
       dataIndex: "fullname",
       key: "fullname",
       align: "center",
@@ -574,6 +620,14 @@ const Order = () => {
 
         <div className="group2">
           <Button
+            color="primary" variant="solid"
+            icon={<ToTopOutlined />}
+            onClick={handleExportExcel}
+          >
+            Xuất Excel
+          </Button>
+
+          <Button
             color="primary"
             variant="solid"
             icon={<EditOutlined />}
@@ -652,7 +706,11 @@ const Order = () => {
         <Form form={form} layout="vertical" onFinish={handleUpdateOrder}>
           <Row gutter={24}>
             <Col span={12} className="col-item">
-              <Form.Item label="Trạng thái đơn hàng" name="status_id">
+              <Form.Item 
+                label="Trạng thái đơn hàng" 
+                name="status_id"
+                rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
+              >
                 <Select
                   className="input-item"
                   placeholder="Chọn trạng thái"
@@ -712,7 +770,7 @@ const Order = () => {
           <Form.Item
             label="Trạng thái đơn hàng"
             name="status_id"
-            rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
+            rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
           >
             <Select
               className="input-item"

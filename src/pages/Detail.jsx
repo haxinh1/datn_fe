@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button, Col, Modal, notification, Row, Table, Form, Radio, Upload, Input, Skeleton } from 'antd';
+import { Button, Col, Modal, notification, Row, Table, Form, Radio, Upload, Input, Skeleton, Image } from 'antd';
 import { OrderService } from '../services/order';
 import "../css/review.css";
 import { CheckOutlined, CloseOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
@@ -64,6 +64,7 @@ const Detail = () => {
                 name: fullName,
                 quantity: variant.quantity,
                 sell_price: variant.sell_price,
+                variant_thumbnail: variant.variant_thumbnail
             };
         })
     );
@@ -236,9 +237,15 @@ const Detail = () => {
             render: (_, __, index) => index + 1,
         },
         {
-            title: "Tên sản phẩm",
-            dataIndex: "name",
+            title: "Sản phẩm",
+            dataIndex: "product",
             align: "center",
+            render: (_, record) => (
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Image src={record.variant_thumbnail} width={60}/>
+                    <span>{record.name}</span>
+                </div>
+            ),
         },
         {
             title: "Số lượng",

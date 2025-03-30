@@ -271,9 +271,16 @@ const History = () => {
     };
 
     const handleExportExcel = async () => {
+        console.log("Order IDs đã chọn:", selectedRows);
         try {
             // Gọi API để lấy dữ liệu (dùng fetch thay cho service)
-            const response = await fetch('http://127.0.0.1:8000/api/export-product-stocks'); // Thay 'YOUR_API_URL' bằng URL API của bạn
+            const response = await fetch('http://127.0.0.1:8000/api/export-product-stocks', {
+                method: 'POST',  // Nếu API yêu cầu phương thức POST
+                headers: {
+                    'Content-Type': 'application/json', // Đảm bảo API nhận đúng loại dữ liệu
+                },
+                body: JSON.stringify({ order_ids: selectedRows }),  // Nếu API yêu cầu truyền dữ liệu như order_ids
+            });
 
             // Kiểm tra nếu API trả về file nhị phân
             const blob = await response.blob();
@@ -386,16 +393,17 @@ const History = () => {
                         />
                     </Tooltip>
 
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined />}
-                            type="link"
-                            onClick={() => handleShowDetails(record)}
-                            disabled={record.status === -1 || record.status === 1 || loggedInUserRole === 'manager'} // ❌ Vô hiệu hóa nếu đã hủy hoặc hoàn thành
-                        />
-                    </Tooltip>
+                    {!(record.status === -1 || record.status === 1 || loggedInUserRole === 'manager') && (
+                        <Tooltip title="Cập nhật">
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<EditOutlined />}
+                                type="link"
+                                onClick={() => handleShowDetails(record)}
+                            />
+                        </Tooltip>
+                    )}
                 </div>
             ),
         },
@@ -429,12 +437,13 @@ const History = () => {
                         },
                         {
                             validator: (_, value) => {
-                                if (value >= record.sell_price) {
+                                // Ép kiểu value và record.sell_price thành số
+                                if (Number(value) >= Number(record.sell_price)) {
                                     return Promise.reject("Giá nhập phải nhỏ hơn giá bán!");
                                 }
                                 return Promise.resolve();
-                            },
-                        },
+                            }
+                        }
                     ]}
                 >
                     <InputNumber
@@ -465,12 +474,12 @@ const History = () => {
                         },
                         {
                             validator: (_, value) => {
-                                if (value <= record.price) {
+                                if (Number(value) <= Number(record.price)) {
                                     return Promise.reject("Giá bán phải lớn hơn giá nhập!");
                                 }
                                 return Promise.resolve();
-                            },
-                        },
+                            }
+                        }
                     ]}
                 >
                     <InputNumber
@@ -617,7 +626,6 @@ const History = () => {
                             onChange={(dates) => setDateRange(dates && dates.length === 2 ? dates : [null, null])}
                             format="DD-MM-YYYY"
                             placeholder={["Từ ngày", "Đến ngày"]}
-                            style={{ marginRight: 10 }}
                         />
                     </ConfigProvider>
 

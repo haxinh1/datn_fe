@@ -26,10 +26,8 @@
     margin-left: 200px; /* Bù lại chiều rộng của Sider */
 }
 .header-admin {
-    padding: 0;
     background: var(--colorBgContainer);
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
     align-items: center;
     padding-left: 20px;
