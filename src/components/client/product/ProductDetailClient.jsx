@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
-import { message, Modal } from "antd";
+import { Card, Col, message, Modal, Row, Typography } from "antd";
 import { cartServices } from "./../../../services/cart";
+
+import { Swiper, SwiperSlide } from "swiper/react";
+
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+
+import { Autoplay, Pagination, Navigation } from "swiper/modules";
+import formatVND from './../../../utils/formatPrice';
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
@@ -17,6 +26,9 @@ const ProductDetailClient = () => {
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSizeId, setSelectedSizeId] = useState("");
   const [attributes, setAttributes] = useState([]);
+  const [dataViewed, setDataViewed] = useState(null);
+  const [recommendedProducts, setRecommendedProducts] = useState(null);
+
   const colorMap = {
     đen: "#333333",
     trắng: "#ffffff",
@@ -25,20 +37,38 @@ const ProductDetailClient = () => {
     vàng: "#eab656",
   };
 
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) {
+      return { minPrice: null, maxPrice: null };
+    }
+
+    // Lấy danh sách giá từ sale_price nếu có, nếu không thì lấy sell_price
+    const prices = product.variants.map((variant) =>
+      variant.sale_price ? parseFloat(variant.sale_price) : parseFloat(variant.sell_price)
+    );
+
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  }, [product]);
+
+
+
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
-    setSelectedColorId(colorId); // Store the selected color ID
+    setSelectedColorId(colorId); 
     setSelectedSize("");
     setSelectedVariant(null);
   };
 
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
-    setSelectedSizeId(sizeId); // Store the selected size ID
+    setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Tách số thành định dạng tiền tệ
+
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -57,7 +87,7 @@ const ProductDetailClient = () => {
         variantAttributes.includes(Number(sizeId))
       );
     });
-    setQuantity(1); // Reset quantity when variant changes
+    setQuantity(1); 
     setSelectedVariant(variant || null);
   };
 
@@ -132,11 +162,18 @@ const ProductDetailClient = () => {
   if (!product) return <p>Đang tải...</p>;
 
   const fetchProduct = async () => {
-    const { data } = await productsServices.fetchProductById(id);
-    console.log(data);
+    const { data, dataViewed, recommended_products } = await productsServices.fetchProductById(id);
+
 
     setProduct(data);
+    setDataViewed(dataViewed);
+    setRecommendedProducts(recommended_products);
   };
+
+
+
+  const { Title } = Typography;
+
 
   useEffect(() => {
     fetchProduct();
@@ -241,7 +278,7 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-price">
-                    {formatPrice(product.sell_price)} VNĐ
+                    {formatPrice(minPrice)} VNĐ ~ {formatPrice(maxPrice)} VNĐ
                   </div>
 
                   {selectedVariant ? (
@@ -515,6 +552,83 @@ const ProductDetailClient = () => {
             </div>
           </div>
         </div>
+        {recommendedProducts.length > 0 && (
+          <div className="container" style={{ marginTop: "50px" }}>
+            <Title level={2} className="text-center" style={{ textAlign: "center", marginBottom: "20px" }}>
+              Top 2 Sản phẩm tương tự mua nhiều
+            </Title>
+            <Row gutter={[16, 16]} justify="center">
+              {recommendedProducts.map((product) => (
+                <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
+                  <Card
+                    hoverable
+                    cover={<img alt={product.name} src={product.thumbnail} />}
+                  >
+                    <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+        )}
+
+        <div className="container" style={{ marginTop: "50px" }}>
+          <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
+          <div >
+            <Swiper
+              spaceBetween={30}
+              slidesPerView={3}  
+              slidesPerGroup={1} 
+              autoplay={{
+                delay: 2500,
+                disableOnInteraction: false,
+              }}
+              pagination={{ clickable: true }}
+              navigation={true}
+              modules={[Autoplay, Pagination, Navigation]}
+              className="mySwiper"
+            >
+              {dataViewed && dataViewed.map((product, index) => (
+                <SwiperSlide key={index}>
+                  <div className="product product-7" style={{ width: "300px" }}>
+                    <figure className="product-media">
+                      <span className="product-label label-new">New</span>
+                      <a href="product.html">
+                        <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
+                      </a>
+
+                      <div className="product-action-vertical">
+                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
+                        <a href="popup/quickView.html" className="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
+                        <a href="#" className="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a>
+                      </div>
+
+                      <div className="product-action">
+                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
+                      </div>
+                    </figure>
+
+                    <div className="product-body">
+                    
+                      <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
+                      <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
+
+                      <div className="ratings-container">
+                        <div className="ratings">
+                          <div className="ratings-val" style={{ width: "80%" }}></div>
+                        </div>
+                        <span className="ratings-text">( 2 Đánh giá )</span>
+                      </div>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+          </div>
+        </div>
+
 
         <Modal
           centered
