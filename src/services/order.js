@@ -108,9 +108,45 @@ const updateOrders = async (payload) => {
   return response.data;
 };
 
+// yêu cầu trả hàng
 const returnOrder = async (id, payload) => {
   const respone = await instance.post(`orders/${id}/return`, payload);
   return respone.data
+}
+
+//danh sách đơn hoàn trả
+const getReturnOrder = async () => {
+  const response = await instance.get("/order-returns");
+  return response.data;
+};
+
+// cập nhật trạng thái đơn hoàn trả
+const updateOrderReturn = async (id, payload) => {
+  const response = await instance.post(`/order-returns/update-status/order/${id}`, payload)
+  return response.data
+}
+
+// danh sách đơn hàng theo người dùng
+const getOrderReturnByIdUser = async (userId) => {
+  const response = await instance.get(`/order-returns/user/${userId}`);
+  return response.data;
+};
+
+const getRefund = async (id) => {
+  const response = await instance.get(`/refunds/${id}`);
+  return response.data;
+};
+
+// yêu cầu hoàn tiền
+const requestBack = async (id, payload) => {
+  const response = await instance.post(`/refunds/request/${id}`, payload)
+  return response.data
+}
+
+// xác nhận hoàn tiền
+const confirmBack = async (id, payload) => {
+  const response = await instance.post(`/refunds/confirm/${id}`, payload)
+  return response.data
 }
 
 // Xuất các hàm để dùng trong các component
@@ -125,5 +161,11 @@ export const OrderService = {
   updateOrderStatus,
   updateOrders,
   getOrderByIdUser,
-  returnOrder
+  returnOrder,
+  getReturnOrder, 
+  updateOrderReturn,
+  getOrderReturnByIdUser,
+  getRefund, 
+  requestBack,
+  confirmBack
 };

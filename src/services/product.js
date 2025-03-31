@@ -57,8 +57,10 @@ const confirm = async (id, payload) => {
 };
 
 // xuất excel
-const exportExcel = async () => {
-    const response = await instance.get('/export-product-stocks')
+const exportExcel = async (orderIds = []) => {
+    const response = await instance.post('/export-product-stocks', {
+        order_ids: orderIds // Gửi order_ids dưới dạng body của POST request
+    });
     return response.data;
 }
 

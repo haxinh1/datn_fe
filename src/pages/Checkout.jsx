@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import { Button, message, Modal, Radio, Form, Select, Input, notification } from "antd";
+import { Button, message, Modal, Radio, Form, Select, Input, notification, Tooltip, Row, Col } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
@@ -263,7 +263,6 @@ const Checkout = () => {
     console.log("WardCode:", value);
   };
 
-  // thêm địa chỉ mới
   // Thêm địa chỉ mới
   const { mutate } = useMutation({
     mutationFn: async (userData) => {
@@ -293,11 +292,11 @@ const Checkout = () => {
         : "",
       values.district
         ? districts.find((d) => d.DistrictID === Number(values.district))
-            ?.DistrictName
+          ?.DistrictName
         : "",
       values.province
         ? provinces.find((p) => p.ProvinceID === Number(values.province))
-            ?.ProvinceName
+          ?.ProvinceName
         : "",
     ]
       .filter(Boolean)
@@ -597,9 +596,7 @@ const Checkout = () => {
           style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}
         >
           <div className="container">
-            <h1 className="page-title">
-              Checkout<span>Shop</span>
-            </h1>
+            <h1 className="page-title">Thanh Toán</h1>
           </div>
         </div>
 
@@ -638,149 +635,185 @@ const Checkout = () => {
                   </label>
                 </form>
               </div>
-              <form action="#">
+              <Form layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
-                    <h2 className="checkout-title">Billing Details</h2>
+                    <h1 className="mb-5" style={{ color: '#e48948' }}>Thông tin giao hàng</h1>
                     <div className="row">
                       <div className="col-sm-6">
-                        <label>Họ và tên: </label>
-                        <input
-                          className="form-control"
-                          type="text"
-                          name="fullname"
-                          value={userData.fullname} // Lấy fullname từ userData
-                          required
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              fullname: e.target.value,
-                            })
-                          }
-                        />
+                        <Form.Item
+                          label="Tên khách hàng"
+                        >
+                          <Input
+                            className="input-item"
+                            type="text"
+
+                            value={userData.fullname}
+                            onChange={(e) =>
+                              setUserData({
+                                ...userData,
+                                fullname: e.target.value,
+                              })
+                            }
+                          />
+                        </Form.Item>
                       </div>
 
                       <div className="col-sm-6">
-                        <label>Số điện thoại</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          name="phone_number"
-                          value={userData.phone_number}
-                          required
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              phone_number: e.target.value,
-                            })
-                          }
-                        />
+                        <Form.Item
+                          label="Số điện thoại"
+                        >
+                          <Input
+                            className="input-item"
+                            type="text"
+                            name="phone_number"
+                            value={userData.phone_number}
+                            onChange={(e) =>
+                              setUserData({
+                                ...userData,
+                                phone_number: e.target.value,
+                              })
+                            }
+                          />
+                        </Form.Item>
                       </div>
                     </div>
+                    <Form.Item
+                      label="Email"
+                    >
+                      <Input
+                        className="input-item"
+                        type="text"
+                        name="email"
+                        value={userData.email}
+                        onChange={(e) =>
+                          setUserData({ ...userData, email: e.target.value })
+                        }
+                      />
+                    </Form.Item>
 
-                    <label>Email:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="email"
-                      value={userData.email}
-                      required
-                      onChange={(e) =>
-                        setUserData({ ...userData, email: e.target.value })
-                      }
-                    />
                     {!userId ? (
                       <div>
-                        <Form.Item
-                          name="province"
-                          label="Tỉnh/Thành phố"
-                          rules={[
-                            {
-                              message: "Vui lòng chọn tỉnh/thành phố",
-                            },
-                          ]}
-                        >
-                          <Select
-                            onChange={handleProvinceChange}
-                            placeholder="Chọn tỉnh/thành phố"
-                          >
-                            {provinces.map((province) => (
-                              <Select.Option
-                                key={province.ProvinceID} // Sử dụng ProvinceID làm key
-                                value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                        <div className="row">
+                          <div className="col-sm-6">
+                            <Form.Item
+                              name="province"
+                              label="Tỉnh/Thành phố"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn tỉnh/thành phố",
+                                },
+                              ]}
+                            >
+                              <Select
+                                className="input-item"
+                                onChange={handleProvinceChange}
+                                placeholder="Chọn tỉnh/thành phố"
                               >
-                                {province.ProvinceName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {provinces.map((province) => (
+                                  <Select.Option
+                                    key={province.ProvinceID} // Sử dụng ProvinceID làm key
+                                    value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                                  >
+                                    {province.ProvinceName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </div>
 
-                        <Form.Item
-                          name="district"
-                          label="Quận/Huyện"
-                          rules={[
-                            {
-                              message: "Vui lòng chọn quận/huyện",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Quận/Huyện"
-                            onChange={handleDistrictChange}
-                            disabled={!selectedProvince}
-                          >
-                            {districts.map((district) => (
-                              <Select.Option
-                                key={district.DistrictID} // Sử dụng DistrictID làm key
-                                value={district.DistrictID} // Sử dụng DistrictID làm value
+                          <div className="col-sm-6">
+                            <Form.Item
+                              name="district"
+                              label="Quận/Huyện"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn quận/huyện",
+                                },
+                              ]}
+                            >
+                              <Select
+                                className="input-item"
+                                placeholder="Chọn Quận/Huyện"
+                                onChange={handleDistrictChange}
+                                disabled={!selectedProvince}
                               >
-                                {district.DistrictName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {districts.map((district) => (
+                                  <Select.Option
+                                    key={district.DistrictID} // Sử dụng DistrictID làm key
+                                    value={district.DistrictID} // Sử dụng DistrictID làm value
+                                  >
+                                    {district.DistrictName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </div>
+                        </div>
 
-                        <Form.Item
-                          name="ward"
-                          label="Phường/Xã"
-                          rules={[
-                            {
-                              message: "Vui lòng chọn phường/xã",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Phường/Xã"
-                            disabled={!selectedDistrict}
-                            onChange={handleWardChange}
-                          >
-                            {wards.map((ward) => (
-                              <Select.Option
-                                key={ward.WardCode}
-                                value={ward.WardCode}
+                        <div className="row">
+                          <div className="col-sm-6">
+                            <Form.Item
+                              name="ward"
+                              label="Phường/Xã"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn phường/xã",
+                                },
+                              ]}
+                            >
+                              <Select
+                                className="input-item"
+                                placeholder="Chọn Phường/Xã"
+                                disabled={!selectedDistrict}
+                                onChange={handleWardChange}
                               >
-                                {ward.WardName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                        <label>Địa chỉ cụ thể:</label>
-                        <Input
-                          value={userData.address} // Lấy giá trị từ userData.address
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              address: e.target.value, // Cập nhật địa chỉ mới vào userData
-                            })
-                          }
-                          placeholder="Nhập địa chỉ giao hàng"
-                        />
+                                {wards.map((ward) => (
+                                  <Select.Option
+                                    key={ward.WardCode}
+                                    value={ward.WardCode}
+                                  >
+                                    {ward.WardName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </div>
+
+                          <div className="col-sm-6">
+                            <Form.Item
+                              name="detail_address"
+                              label="Địa chỉ cụ thể"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng nhập địa chỉ cụ thể",
+                                },
+                              ]}
+                            >
+                              <Input
+                                className="input-item"
+                                value={userData.address} // Lấy giá trị từ userData.address
+                                onChange={(e) =>
+                                  setUserData({
+                                    ...userData,
+                                    address: e.target.value, // Cập nhật địa chỉ mới vào userData
+                                  })
+                                }
+                                placeholder="Nhập địa chỉ giao hàng"
+                              />
+                            </Form.Item>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       addresses.length > 0 && (
                         <div>
-                          <label>Chọn địa chỉ</label>
                           <Form.Item
+                            label='Chọn địa chỉ'
                             name="address"
                             rules={[
                               {
@@ -789,35 +822,39 @@ const Checkout = () => {
                               },
                             ]}
                           >
-                            <Select
-                              value={selectedAddress}
-                              onChange={handleAddressChange}
-                              placeholder="Chọn địa chỉ"
-                            >
-                              {addresses.map((address) => (
-                                <Select.Option
-                                  key={address.id}
-                                  value={address.id}
-                                >
-                                  {`${address.detail_address}, ${address.address}`}{" "}
-                                  {address.id_default && "(Mặc định)"}
-                                </Select.Option>
-                              ))}
-                            </Select>
+                            <div className="attribute">
+                              <Select
+                                className="input-item"
+                                value={selectedAddress}
+                                onChange={handleAddressChange}
+                                placeholder="Chọn địa chỉ"
+                                allowClear
+                              >
+                                {addresses.map((address) => (
+                                  <Select.Option
+                                    key={address.id}
+                                    value={address.id}
+                                  >
+                                    {`${address.detail_address}, ${address.address}`}{" "}
+                                    {address.id_default && "(Mặc định)"}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+
+                              {!userId ? null : (
+                                <Tooltip title='Thêm địa chỉ mới'>
+                                  <Button
+                                    className="btn-import"
+                                    variant="outlined"
+                                    icon={<PlusOutlined />}
+                                    onClick={showModal}
+                                  />
+                                </Tooltip>
+                              )}
+                            </div>
                           </Form.Item>
                         </div>
                       )
-                    )}
-
-                    {!userId ? null : (
-                      <Button
-                        color="primary"
-                        variant="solid"
-                        icon={<PlusOutlined />}
-                        onClick={showModal}
-                      >
-                        Thêm mới
-                      </Button>
                     )}
 
                     <Modal
@@ -827,98 +864,104 @@ const Checkout = () => {
                       footer={null}
                     >
                       <Form form={form} layout="vertical" onFinish={handleAdd}>
-                        <Form.Item
-                          name="province"
-                          label="Tỉnh/Thành phố"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn tỉnh/thành phố",
-                            },
-                          ]}
-                        >
-                          <Select
-                            onChange={handleProvinceChange}
-                            placeholder="Chọn tỉnh/thành phố"
-                          >
-                            {provinces.map((province) => (
-                              <Select.Option
-                                key={province.ProvinceID} // Sử dụng ProvinceID làm key
-                                value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                        <Row gutter={24}>
+                          <Col span={12}>
+                            <Form.Item
+                              name="province"
+                              label="Tỉnh/Thành phố"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn tỉnh/thành phố",
+                                },
+                              ]}
+                            >
+                              <Select
+                                onChange={handleProvinceChange}
+                                placeholder="Chọn tỉnh/thành phố"
                               >
-                                {province.ProvinceName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {provinces.map((province) => (
+                                  <Select.Option
+                                    key={province.ProvinceID}
+                                    value={province.ProvinceID}
+                                  >
+                                    {province.ProvinceName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
 
-                        <Form.Item
-                          name="district"
-                          label="Quận/Huyện"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn quận/huyện",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Quận/Huyện"
-                            onChange={handleDistrictChange}
-                            disabled={!selectedProvince}
-                          >
-                            {districts.map((district) => (
-                              <Select.Option
-                                key={district.DistrictID} // Sử dụng DistrictID làm key
-                                value={district.DistrictID} // Sử dụng DistrictID làm value
+                            <Form.Item
+                              name="ward"
+                              label="Phường/Xã"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn phường/xã",
+                                },
+                              ]}
+                            >
+                              <Select
+                                placeholder="Chọn Phường/Xã"
+                                disabled={!selectedDistrict}
+                                onChange={handleWardChange}
                               >
-                                {district.DistrictName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {wards.map((ward) => (
+                                  <Select.Option
+                                    key={ward.WardCode}
+                                    value={ward.WardCode}
+                                  >
+                                    {ward.WardName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </Col>
 
-                        <Form.Item
-                          name="ward"
-                          label="Phường/Xã"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn phường/xã",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Phường/Xã"
-                            disabled={!selectedDistrict}
-                            onChange={handleWardChange}
-                          >
-                            {wards.map((ward) => (
-                              <Select.Option
-                                key={ward.WardCode}
-                                value={ward.WardCode}
+                          <Col span={12}>
+                            <Form.Item
+                              name="district"
+                              label="Quận/Huyện"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn quận/huyện",
+                                },
+                              ]}
+                            >
+                              <Select
+                                placeholder="Chọn Quận/Huyện"
+                                onChange={handleDistrictChange}
+                                disabled={!selectedProvince}
                               >
-                                {ward.WardName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {districts.map((district) => (
+                                  <Select.Option
+                                    key={district.DistrictID} // Sử dụng DistrictID làm key
+                                    value={district.DistrictID} // Sử dụng DistrictID làm value
+                                  >
+                                    {district.DistrictName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
 
-                        <Form.Item
-                          name="detail_address"
-                          label="Địa chỉ cụ thể"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng nhập địa chỉ cụ thể",
-                            },
-                          ]}
-                        >
-                          <Input
-                            className="input-item"
-                            placeholder="Nhập địa chỉ cụ thể"
-                          />
-                        </Form.Item>
+                            <Form.Item
+                              name="detail_address"
+                              label="Địa chỉ cụ thể"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng nhập địa chỉ cụ thể",
+                                },
+                              ]}
+                            >
+                              <Input
+                                className="input-item"
+                                placeholder="Nhập địa chỉ cụ thể"
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
 
                         <Form.Item
                           name="id_default"
@@ -1008,9 +1051,9 @@ const Checkout = () => {
                                     ? item.product_variant.sale_price ||
                                     item.product_variant.sell_price
                                     : item.product?.sale_price ||
-                                        item.product?.sell_price
+                                    item.product?.sell_price
                                 )}{" "}
-                                VND
+                                VNĐ
                               </td>
                             </tr>
                           ))}
@@ -1020,9 +1063,9 @@ const Checkout = () => {
                             className="summary-subtotal"
                             style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                           >
-                            <td style={{ padding: "10px" }}>Tổng :</td>
+                            <td style={{ padding: "10px" }}>Tổng:</td>
                             <td style={{ textAlign: "right", padding: "10px" }}>
-                              {subtotal.toLocaleString()} VND
+                              {subtotal.toLocaleString()} VNĐ
                             </td>
                           </tr>
 
@@ -1030,7 +1073,7 @@ const Checkout = () => {
                           <tr
                             style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                           >
-                            <td style={{ padding: "10px" }}>Phí ship:</td>
+                            <td style={{ padding: "10px" }}>Phí vận chuyển:</td>
                             <td
                               style={{
                                 textAlign: "right",
@@ -1038,7 +1081,7 @@ const Checkout = () => {
                                 color: "green",
                               }}
                             >
-                              {formatCurrency(shippingFee)} VND
+                              {formatCurrency(shippingFee)} VNĐ
                             </td>
                           </tr>
 
@@ -1048,7 +1091,7 @@ const Checkout = () => {
                               style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                             >
                               <td style={{ padding: "10px" }}>
-                                Điểm thưởng ({userData.loyalty_points || 0} ):
+                                Điểm thưởng ({userData.loyalty_points || 0}):
                               </td>
                               <td
                                 style={{ textAlign: "right", padding: "10px" }}
@@ -1102,7 +1145,7 @@ const Checkout = () => {
                                 color: "red",
                               }}
                             >
-                              {formatCurrency(finalTotal)} VND
+                              {formatCurrency(finalTotal)} VNĐ
                             </td>
                           </tr>
                         </tbody>
@@ -1139,18 +1182,15 @@ const Checkout = () => {
                                 fullname: userData.fullname,
                                 email: userData.email,
                                 phone_number: userData.phone_number,
-                                address: `${userData.address}, ${
-                                  wards.find((w) => w.WardCode === selectedWard)
-                                    ?.WardName || ""
-                                }, ${
-                                  districts.find(
+                                address: `${userData.address}, ${wards.find((w) => w.WardCode === selectedWard)
+                                  ?.WardName || ""
+                                  }, ${districts.find(
                                     (d) => d.DistrictID === selectedDistrict
                                   )?.DistrictName || ""
-                                }, ${
-                                  provinces.find(
+                                  }, ${provinces.find(
                                     (p) => p.ProvinceID === selectedProvince
                                   )?.ProvinceName || ""
-                                }`
+                                  }`
                                   .replace(/^, | ,| , $/g, "")
                                   .trim(),
                                 total_amount: subtotal,
@@ -1208,32 +1248,16 @@ const Checkout = () => {
                     </div>
                   </aside>
                 </div>
-              </form>
+              </Form>
             </div>
           </div>
         </div>
         <Modal
-          title="Thanh Toán"
+          title="Chọn phương thức thanh toán"
           visible={isPaymentModalOpen}
           onCancel={() => setIsPaymentModalOpen(false)}
-          footer={[
-            <button
-              className="btn btn-primary"
-              key="cancel"
-              onClick={() => setIsPaymentModalOpen(false)}
-            >
-              Hủy
-            </button>,
-            <button
-              key="pay"
-              className="btn btn-success"
-              onClick={handleConfirmPayment}
-            >
-              Xác nhận thanh toán
-            </button>,
-          ]}
+          footer={null}
         >
-          <span>Chọn phương thức thanh toán :</span>
           <div className="d-block my-3">
             {payMents.length > 0 ? (
               payMents.map((method) => {
@@ -1266,6 +1290,17 @@ const Checkout = () => {
             ) : (
               <p className="text-center font-italic">Loading payment methods...</p>
             )}
+          </div>
+
+          <div className="add">
+            <Button
+              key="submit"
+              type="primary"
+              onClick={handleConfirmPayment}
+              style={{ backgroundColor: '#e48948', color: 'white' }}
+            >
+              Xác nhận
+            </Button>
           </div>
         </Modal>
       </main>
