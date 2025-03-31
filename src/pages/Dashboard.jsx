@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { AuthServices } from './../services/auth';
 import { Modal } from 'antd';
-import { BookOutlined, EnvironmentOutlined, HomeOutlined, LockOutlined, LogoutOutlined, MessageOutlined, UserOutlined } from '@ant-design/icons';
+import { BookOutlined, EnvironmentOutlined, HomeOutlined, LockOutlined, LogoutOutlined, MessageOutlined, RollbackOutlined, UserOutlined } from '@ant-design/icons';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -77,6 +77,13 @@ const Dashboard = () => {
                                         <Link to={`/dashboard/orders/${client?.id}`}>
                                             <span className="nav-link">
                                                 <BookOutlined style={{marginRight:'8px', cursor:'pointer'}}/>Đơn hàng
+                                            </span>
+                                        </Link>                                        
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link to={`/dashboard/backcl/${client?.id}`}>
+                                            <span className="nav-link">
+                                                <RollbackOutlined style={{marginRight:'8px', cursor:'pointer'}}/>Hoàn trả
                                             </span>
                                         </Link>                                        
                                     </li>
