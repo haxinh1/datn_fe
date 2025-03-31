@@ -1,12 +1,21 @@
-import { EyeOutlined, PrinterOutlined, ToTopOutlined } from '@ant-design/icons'
-import { Button, Checkbox, DatePicker, Modal, Select, Skeleton, Table, Tooltip } from 'antd';
-import React, { useState } from 'react'
-import { OrderService } from '../services/order';
-import { useQuery } from '@tanstack/react-query';
-import dayjs from 'dayjs';
-import { paymentServices } from '../services/payments';
+import { EyeOutlined, PrinterOutlined, ToTopOutlined } from "@ant-design/icons";
+import {
+  Button,
+  Checkbox,
+  DatePicker,
+  Modal,
+  Select,
+  Skeleton,
+  Table,
+  Tooltip,
+} from "antd";
+import React, { useState } from "react";
+import { OrderService } from "../services/order";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { paymentServices } from "../services/payments";
 import viVN from "antd/es/locale/vi_VN";
-import { ConfigProvider } from 'antd';
+import { ConfigProvider } from "antd";
 import logo from "../assets/images/logo-footer.png";
 import "../css/bill.css";
 
@@ -16,7 +25,11 @@ const Bill = () => {
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "" });
+  const [orderInfo, setOrderInfo] = useState({
+    email: "",
+    address: "",
+    fullname: "",
+  });
 
   // danh sách hóa đơn
   const { data: bills, isLoading } = useQuery({
@@ -52,16 +65,17 @@ const Bill = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const filteredOrders = bills?.filter((order) => {
-    const { dateRange, payment } = filters;
-    const orderDate = dayjs(order.created_at);
-    const isDateValid =
-      !dateRange ||
-      (orderDate.isSameOrAfter(dateRange[0], "day") &&
-        orderDate.isSameOrBefore(dateRange[1], "day"));
-    const isPaymentValid = !payment || order.payment?.id === payment;
-    return isDateValid && isPaymentValid;
-  }) || [];
+  const filteredOrders =
+    bills?.filter((order) => {
+      const { dateRange, payment } = filters;
+      const orderDate = dayjs(order.created_at);
+      const isDateValid =
+        !dateRange ||
+        (orderDate.isSameOrAfter(dateRange[0], "day") &&
+          orderDate.isSameOrBefore(dateRange[1], "day"));
+      const isPaymentValid = !payment || order.payment?.id === payment;
+      return isDateValid && isPaymentValid;
+    }) || [];
 
   // danh sách phương thức thanh toán
   const { data: payments } = useQuery({
@@ -81,10 +95,8 @@ const Bill = () => {
   const columns = [
     {
       title: <Checkbox />,
-      render: (_, order) => (
-        <Checkbox />
-      ),
-      align: 'center',
+      render: (_, order) => <Checkbox />,
+      align: "center",
     },
     {
       title: "STT",
@@ -161,16 +173,20 @@ const Bill = () => {
       align: "center",
       render: (text, record) => {
         // Kiểm tra nếu product có dữ liệu và lấy tên sản phẩm từ record.product.name
-        const productName = record.name ? record.name : '';
+        const productName = record.name ? record.name : "";
         // Kiểm tra nếu variants có thuộc tính và kết hợp tên sản phẩm với thuộc tính biến thể
-        const variantAttributes = record.variants.map(variant => {
-          // Lấy các thuộc tính của biến thể và nối chúng lại
-          const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
-          return `${productName} - ${attributes}`;  // Kết hợp tên sản phẩm với thuộc tính biến thể
-        }).join(", ");
+        const variantAttributes = record.variants
+          .map((variant) => {
+            // Lấy các thuộc tính của biến thể và nối chúng lại
+            const attributes = variant.attributes
+              .map((attr) => attr.attribute_name)
+              .join(" - ");
+            return `${productName} - ${attributes}`; // Kết hợp tên sản phẩm với thuộc tính biến thể
+          })
+          .join(", ");
 
-        return variantAttributes || productName;  // Nếu không có biến thể, chỉ trả về tên sản phẩm
-      }
+        return variantAttributes || productName; // Nếu không có biến thể, chỉ trả về tên sản phẩm
+      },
     },
     {
       title: "Số lượng",
@@ -222,11 +238,7 @@ const Bill = () => {
         </Select>
 
         <div className="group2">
-          <Button
-            color="primary"
-            variant="solid"
-            icon={<ToTopOutlined />}
-          >
+          <Button color="primary" variant="solid" icon={<ToTopOutlined />}>
             Xuất Excel
           </Button>
         </div>
@@ -249,17 +261,23 @@ const Bill = () => {
       >
         <div className="form-name">
           <div className="group1">
-            <img className='logo-bill' src={logo} />
+            <img className="logo-bill" src={logo} />
           </div>
           <div className="group2">
             <span className="logo-name">Molla Shop</span>
           </div>
         </div>
-
-        <span className="text-title">Khách hàng: <span className="text-name">{orderInfo.fullname}</span></span> <br />
-        <span className="text-title">Email: <span className="text-name">{orderInfo.email}</span></span> <br />
-        <span className="text-title">Địa chỉ: <span className="text-name">{orderInfo.address}</span></span>
-
+        <span className="text-title">
+          Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
+        </span>{" "}
+        <br />
+        <span className="text-title">
+          Email: <span className="text-name">{orderInfo.email}</span>
+        </span>{" "}
+        <br />
+        <span className="text-title">
+          Địa chỉ: <span className="text-name">{orderInfo.address}</span>
+        </span>
         <Table
           columns={detailColumns}
           dataSource={orderDetails.map((item) => ({
@@ -284,14 +302,16 @@ const Bill = () => {
             );
           }}
         />
-
         <div className="form-thank">
-          <span className='text-thank'>Cảm ơn quý khách đã tin tưởng Molla Shop!</span> <br />
+          <span className="text-thank">
+            Cảm ơn quý khách đã tin tưởng Molla Shop!
+          </span>{" "}
+          <br />
           <span className="text-name">Hẹn gặp lại</span>
         </div>
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default Bill
+export default Bill;

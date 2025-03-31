@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import { Button, message, Modal, Radio, Form, Select, Input, notification } from "antd";
+import {
+  Button,
+  message,
+  Modal,
+  Radio,
+  Form,
+  Select,
+  Input,
+  notification,
+} from "antd";
 import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
@@ -79,7 +88,7 @@ const Checkout = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                productDetails.data.sell_price;
+                  productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -319,15 +328,15 @@ const Checkout = () => {
 
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-      // Lấy giá sản phẩm từ biến thể nếu có
-      const productPrice = item.product_variant
-        ? item.product_variant.sale_price ||
-        item.product_variant.sell_price ||
-        0
-        : item.product?.sale_price || item.product?.sell_price || 0;
+        // Lấy giá sản phẩm từ biến thể nếu có
+        const productPrice = item.product_variant
+          ? item.product_variant.sale_price ||
+            item.product_variant.sell_price ||
+            0
+          : item.product?.sale_price || item.product?.sell_price || 0;
 
-      return total + productPrice * (item.quantity || 1);
-    }, 0)
+        return total + productPrice * (item.quantity || 1);
+      }, 0)
     : 0;
   const finalTotal = subtotal + shippingFee - usedLoyaltyPoints;
   useEffect(() => {
@@ -393,8 +402,8 @@ const Checkout = () => {
         email: userData.email,
         phone_number: userData.phone_number,
         address: selectedAddressData
-          ? selectedAddressData.detail_address && selectedAddressData.address
-          : userData.address, // Nếu là khách vãng lai thì lấy userData.address
+          ? `${selectedAddressData.detail_address}, ${selectedAddressData.address}`
+          : userData.address,
         used_points: usedLoyaltyPoints || 0,
         shipping_fee: shippingFee,
         total_amount: finalTotal,
@@ -1006,7 +1015,7 @@ const Checkout = () => {
                                 {formatCurrency(
                                   item.product_variant
                                     ? item.product_variant.sale_price ||
-                                    item.product_variant.sell_price
+                                        item.product_variant.sell_price
                                     : item.product?.sale_price ||
                                         item.product?.sell_price
                                 )}{" "}
@@ -1241,8 +1250,8 @@ const Checkout = () => {
                   method.name.toLowerCase() === "cod"
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
-                      ? "Thanh toán trực tuyến"
-                      : method.name;
+                    ? "Thanh toán trực tuyến"
+                    : method.name;
 
                 return (
                   <div key={method.id} className="custom-control custom-radio">
@@ -1257,14 +1266,19 @@ const Checkout = () => {
                       required
                       disabled={!userId && method.name.toLowerCase() === "cod"}
                     />
-                    <label className="custom-control-label" htmlFor={`httt-${method.id}`}>
+                    <label
+                      className="custom-control-label"
+                      htmlFor={`httt-${method.id}`}
+                    >
                       {displayName}
                     </label>
                   </div>
                 );
               })
             ) : (
-              <p className="text-center font-italic">Loading payment methods...</p>
+              <p className="text-center font-italic">
+                Loading payment methods...
+              </p>
             )}
           </div>
         </Modal>
