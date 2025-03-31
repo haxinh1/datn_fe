@@ -231,6 +231,7 @@ const BackCl = () => {
             title: 'Chi tiết',
             dataIndex: 'value',
             key: 'value',
+            width: 200,
         },
     ];
 
@@ -311,7 +312,7 @@ const BackCl = () => {
             </Skeleton>
 
             <Modal
-                title="Sản phẩm hoàn trả"
+                title="Chi tiết đơn hoàn trả"
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}

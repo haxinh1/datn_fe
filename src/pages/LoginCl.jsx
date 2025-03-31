@@ -65,6 +65,23 @@ const Logincl = () => {
     setLoading(false);
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await AuthServices.loginGoogle(); // Gọi API backend để đăng nhập qua Google
+      if (response?.token) {
+        localStorage.setItem("client_token", response.token);
+        localStorage.setItem("client", JSON.stringify(response.user));
+        message.success("Đăng nhập Google thành công!");
+      }
+    } catch (error) {
+      notification.error({
+        message: "Đăng nhập thất bại",
+        description: error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
+      });
+    }
+    window.location.href = "http://127.0.0.1:8000/auth/google";
+  };
+
   const validatePhoneOrEmail = (_, value) => {
     const phoneRegex = /^[0-9]{10,11}$/;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -143,7 +160,7 @@ const Logincl = () => {
           </p>
           <div className="row">
             <div className="col-sm-6">
-              <a href="#" className="btn btn-login btn-g">
+              <a href="#" className="btn btn-login btn-g" onClick={handleGoogleLogin}>
                 <i className="icon-google"></i>
                 Google
               </a>

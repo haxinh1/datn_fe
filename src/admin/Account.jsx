@@ -97,8 +97,8 @@ const Account = () => {
             key: "fullname",
             align: "center",
             render: (fullname, record) => (
-                <div style={{ display: "flex", alignItems: "center",  gap: "10px" }}>
-                    {record.avatar && <Avatar size="large" src={record.avatar}/>}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {record.avatar && <Avatar size="large" src={record.avatar} />}
                     <span>{fullname}</span>
                 </div>
             ),
@@ -176,16 +176,19 @@ const Account = () => {
                             />
                         </Link>
                     </Tooltip>
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined />}
-                            type="link"
-                            onClick={() => showEditModal(record)}
-                            disabled={record.id === loggedInUserId || loggedInUserRole === 'manager'}
-                        />
-                    </Tooltip>
+                    {
+                        !(record.id === loggedInUserId || loggedInUserRole === 'manager') && (
+                            <Tooltip title="Cập nhật">
+                                <Button
+                                    color="primary"
+                                    variant="solid"
+                                    icon={<EditOutlined />}
+                                    type="link"
+                                    onClick={() => showEditModal(record)}
+                                />
+                            </Tooltip>
+                        )
+                    }
                 </div>
             ),
         },

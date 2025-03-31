@@ -219,17 +219,17 @@ const Orders = () => {
             dataIndex: "product",
             align: "center",
             render: (_, record) => {
-                const thumbnail = record.variants?.[0]?.variant_thumbnail;
+                const thumbnail = record.variants?.[0]?.variant_thumbnail || record.thumbnail; // Kiểm tra nếu có variant, nếu không thì lấy thumbnail của sản phẩm
                 const productName = record.name || '';
-                const variantAttributes = record.variants.map(variant => {
+                const variantAttributes = record.variants?.map(variant => {
                     const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
                     return `${productName} - ${attributes}`;
-                }).join(", ");
-
+                }).join(", ") || productName;
+    
                 return (
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <Image src={thumbnail} width={60} />
-                        <span>{variantAttributes || productName}</span>
+                        <span>{variantAttributes}</span>
                     </div>
                 );
             },
