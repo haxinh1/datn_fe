@@ -1,4 +1,4 @@
-import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input } from 'antd';
+import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
@@ -79,12 +79,12 @@ const Return = () => {
         if (!selectedRowKeys.length) {
             return notification.error({ message: "Vui lòng chọn ít nhất 1 sản phẩm để trả" });
         }
-    
+
         const reasonToSend = selectedReturnReason === "other" ? returnReason : selectedReturnReason;
-    
+
         const user = JSON.parse(localStorage.getItem("user"));
         const user_id = user?.id || user?.user_id;
-    
+
         const products = selectedRowKeys.map((product_id) => {
             const selectedItem = orderDetails.find(item => item.product_id === product_id);
             return {
@@ -93,25 +93,25 @@ const Return = () => {
                 quantity: Number(quantities[product_id]) || 1,
             };
         });
-    
+
         const payload = {
             user_id,
             reason: reasonToSend,
             employee_evidence: video,
             products,
         };
-    
+
         console.log("📦 Payload gửi đi:");
         console.log(JSON.stringify(payload, null, 2));
-    
+
         try {
             await OrderService.returnOrder(id, payload);
-    
+
             notification.success({
                 message: "Thành công",
                 description: "Gửi yêu cầu trả hàng thành công.",
             });
-    
+
             // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
@@ -119,7 +119,7 @@ const Return = () => {
             setSelectedReturnReason("");
             setVideo("");
             form.resetFields();
-    
+
         } catch (error) {
             console.error("Lỗi gửi yêu cầu trả hàng:", error);
             notification.error({
@@ -127,7 +127,7 @@ const Return = () => {
                 description: "Gửi yêu cầu trả hàng thất bại.",
             });
         }
-    };    
+    };
 
     const detailColumns = [
         {
@@ -154,17 +154,24 @@ const Return = () => {
             render: (_, __, index) => index + 1,
         },
         {
-            title: "Tên sản phẩm",
-            dataIndex: "name",
+            title: "Sản phẩm",
+            dataIndex: "product",
             align: "center",
-            render: (text, record) => {
-                const productName = record.name ? record.name : '';
-                const variantAttributes = record.variants.map(variant => {
+            render: (_, record) => {
+                const thumbnail = record.variants?.[0]?.variant_thumbnail || record.thumbnail; // Kiểm tra nếu có variant, nếu không thì lấy thumbnail của sản phẩm
+                const productName = record.name || '';
+                const variantAttributes = record.variants?.map(variant => {
                     const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
                     return `${productName} - ${attributes}`;
-                }).join(", ");
-                return variantAttributes || productName;
-            }
+                }).join(", ") || productName;
+
+                return (
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <Image src={thumbnail} width={60} />
+                        <span>{variantAttributes}</span>
+                    </div>
+                );
+            },
         },
         {
             title: "Số lượng",
@@ -197,13 +204,16 @@ const Return = () => {
             title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
-            render: (_, record) => formatPrice(record.quantity * record.sell_price),
-        },
+            render: (_, record) => {
+                const quantity = quantities[record.product_id] || 0;
+                return formatPrice(quantity * record.sell_price);
+            },
+        }
     ];
 
     return (
         <div>
-            <h1 className="mb-5">
+            <h1 className="mb-5" style={{ color: '#e48948' }}>
                 <RollbackOutlined style={{ marginRight: "8px" }} />
                 Trả hàng
             </h1>
@@ -217,6 +227,26 @@ const Return = () => {
                         index: index + 1,
                     }))}
                     pagination={false}
+                    summary={() => {
+                        const totalAmount = orderDetails.reduce((sum, item) => {
+                            if (selectedRowKeys.includes(item.product_id)) {
+                                const quantity = quantities[item.product_id] || item.quantity;
+                                return sum + (quantity * item.sell_price);
+                            }
+                            return sum;
+                        }, 0);
+
+                        return (
+                            <Table.Summary.Row>
+                                <Table.Summary.Cell colSpan={5} align="right">
+                                    <strong>Tổng tiền hoàn trả (VNĐ):</strong>
+                                </Table.Summary.Cell>
+                                <Table.Summary.Cell align="center">
+                                    <strong>{formatPrice(totalAmount)}</strong>
+                                </Table.Summary.Cell>
+                            </Table.Summary.Row>
+                        );
+                    }}
                 />
             </Skeleton>
 
@@ -224,9 +254,11 @@ const Return = () => {
                 layout="vertical"
                 form={form}
                 onFinish={handleSubmit}
+                style={{ marginTop: '20px' }}
             >
-                <Row gutter={20}>
-                    <Col span={10}>
+                <Row gutter={24}>
+                    <Col span={4}></Col>
+                    <Col span={8}>
                         <Form.Item
                             label="Lý do trả hàng"
                             name='reason'
@@ -254,7 +286,7 @@ const Return = () => {
                         </Form.Item>
                     </Col>
 
-                    <Col span={10}>
+                    <Col span={8}>
                         <Form.Item
                             label="Video minh chứng"
                             name="employee_evidence"
@@ -278,7 +310,8 @@ const Return = () => {
                     </Col>
                 </Row>
 
-                <Row gutter={20}>
+                <Row gutter={24}>
+                    <Col span={4}></Col>
                     <Col span={16}>
                         {isCustomReason && (
                             <Form.Item label="Nhập lý do trả hàng">

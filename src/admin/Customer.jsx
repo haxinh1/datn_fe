@@ -29,9 +29,9 @@ const Customer = () => {
         const userData = JSON.parse(localStorage.getItem("user"));
         if (userData) {
             setLoggedInUserId(userData.id);
-            setLoggedInUserRole(userData.role); 
+            setLoggedInUserRole(userData.role);
         }
-    }, []); 
+    }, []);
 
     // Mutation để cập nhật tài khoản
     const updateUserMutation = useMutation({
@@ -51,7 +51,7 @@ const Customer = () => {
     const showEditModal = async (record) => {
         setSelectedRecord(record);
         setIsEditModalVisible(true); // Đặt modal hiển thị trước
-    
+
         try {
             const userData = await AuthServices.getAUser(record.id);
             form.setFieldsValue({
@@ -61,7 +61,7 @@ const Customer = () => {
         } catch (error) {
             console.error("Lỗi khi lấy dữ liệu người dùng:", error);
         }
-    };    
+    };
 
     const handleUpdateUser = async () => {
         try {
@@ -94,8 +94,8 @@ const Customer = () => {
             key: "fullname",
             align: "center",
             render: (fullname, record) => (
-                <div style={{ display: "flex", alignItems: "center",  gap: "10px" }}>
-                    {record.avatar && <Avatar size="large" src={record.avatar}/>}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {record.avatar && <Avatar size="large" src={record.avatar} />}
                     <span>{fullname}</span>
                 </div>
             ),
@@ -156,17 +156,20 @@ const Customer = () => {
                                 variant="solid"
                                 icon={<EyeOutlined />}
                             />
-                        </Link>         
+                        </Link>
                     </Tooltip>
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined />}
-                            onClick={() => showEditModal(record)}
-                            disabled={record.id === loggedInUserId || loggedInUserRole === 'manager'}
-                        />
-                    </Tooltip>
+                    {
+                        !(record.id === loggedInUserId || loggedInUserRole === 'manager') && (
+                            <Tooltip title="Cập nhật">
+                                <Button
+                                    color="primary"
+                                    variant="solid"
+                                    icon={<EditOutlined />}
+                                    onClick={() => showEditModal(record)}
+                                />
+                            </Tooltip>
+                        )
+                    }
                 </div>
             ),
         },
@@ -199,7 +202,7 @@ const Customer = () => {
                 onCancel={handleEditCancel}
                 footer={null}
             >
-                <Form 
+                <Form
                     layout="vertical"
                     form={form}
                 >

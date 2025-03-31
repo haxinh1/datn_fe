@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import { Button, message, Modal, Radio, Form, Select, Input, notification, Tooltip } from "antd";
+import { Button, message, Modal, Radio, Form, Select, Input, notification, Tooltip, Row, Col } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
@@ -263,7 +263,6 @@ const Checkout = () => {
     console.log("WardCode:", value);
   };
 
-  // thêm địa chỉ mới
   // Thêm địa chỉ mới
   const { mutate } = useMutation({
     mutationFn: async (userData) => {
@@ -865,98 +864,104 @@ const Checkout = () => {
                       footer={null}
                     >
                       <Form form={form} layout="vertical" onFinish={handleAdd}>
-                        <Form.Item
-                          name="province"
-                          label="Tỉnh/Thành phố"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn tỉnh/thành phố",
-                            },
-                          ]}
-                        >
-                          <Select
-                            onChange={handleProvinceChange}
-                            placeholder="Chọn tỉnh/thành phố"
-                          >
-                            {provinces.map((province) => (
-                              <Select.Option
-                                key={province.ProvinceID} // Sử dụng ProvinceID làm key
-                                value={province.ProvinceID} // Sử dụng ProvinceID làm value
+                        <Row gutter={24}>
+                          <Col span={12}>
+                            <Form.Item
+                              name="province"
+                              label="Tỉnh/Thành phố"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn tỉnh/thành phố",
+                                },
+                              ]}
+                            >
+                              <Select
+                                onChange={handleProvinceChange}
+                                placeholder="Chọn tỉnh/thành phố"
                               >
-                                {province.ProvinceName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {provinces.map((province) => (
+                                  <Select.Option
+                                    key={province.ProvinceID}
+                                    value={province.ProvinceID}
+                                  >
+                                    {province.ProvinceName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
 
-                        <Form.Item
-                          name="district"
-                          label="Quận/Huyện"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn quận/huyện",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Quận/Huyện"
-                            onChange={handleDistrictChange}
-                            disabled={!selectedProvince}
-                          >
-                            {districts.map((district) => (
-                              <Select.Option
-                                key={district.DistrictID} // Sử dụng DistrictID làm key
-                                value={district.DistrictID} // Sử dụng DistrictID làm value
+                            <Form.Item
+                              name="ward"
+                              label="Phường/Xã"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn phường/xã",
+                                },
+                              ]}
+                            >
+                              <Select
+                                placeholder="Chọn Phường/Xã"
+                                disabled={!selectedDistrict}
+                                onChange={handleWardChange}
                               >
-                                {district.DistrictName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {wards.map((ward) => (
+                                  <Select.Option
+                                    key={ward.WardCode}
+                                    value={ward.WardCode}
+                                  >
+                                    {ward.WardName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </Col>
 
-                        <Form.Item
-                          name="ward"
-                          label="Phường/Xã"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn phường/xã",
-                            },
-                          ]}
-                        >
-                          <Select
-                            placeholder="Chọn Phường/Xã"
-                            disabled={!selectedDistrict}
-                            onChange={handleWardChange}
-                          >
-                            {wards.map((ward) => (
-                              <Select.Option
-                                key={ward.WardCode}
-                                value={ward.WardCode}
+                          <Col span={12}>
+                            <Form.Item
+                              name="district"
+                              label="Quận/Huyện"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng chọn quận/huyện",
+                                },
+                              ]}
+                            >
+                              <Select
+                                placeholder="Chọn Quận/Huyện"
+                                onChange={handleDistrictChange}
+                                disabled={!selectedProvince}
                               >
-                                {ward.WardName}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
+                                {districts.map((district) => (
+                                  <Select.Option
+                                    key={district.DistrictID} // Sử dụng DistrictID làm key
+                                    value={district.DistrictID} // Sử dụng DistrictID làm value
+                                  >
+                                    {district.DistrictName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
 
-                        <Form.Item
-                          name="detail_address"
-                          label="Địa chỉ cụ thể"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng nhập địa chỉ cụ thể",
-                            },
-                          ]}
-                        >
-                          <Input
-                            className="input-item"
-                            placeholder="Nhập địa chỉ cụ thể"
-                          />
-                        </Form.Item>
+                            <Form.Item
+                              name="detail_address"
+                              label="Địa chỉ cụ thể"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Vui lòng nhập địa chỉ cụ thể",
+                                },
+                              ]}
+                            >
+                              <Input
+                                className="input-item"
+                                placeholder="Nhập địa chỉ cụ thể"
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
 
                         <Form.Item
                           name="id_default"

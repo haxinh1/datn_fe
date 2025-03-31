@@ -168,8 +168,7 @@ const Back = () => {
         },
         onSuccess: () => {
             notification.success({
-                message: "Gửi yêu cầu thành công!",
-                description: "Vui lòng đợi đến khi cửa hàng hoàn lại tiền!"
+                message: "Xác nhận hoàn tiền thành công!",
             });
 
             form.resetFields();
@@ -377,6 +376,7 @@ const Back = () => {
             title: 'Chi tiết',
             dataIndex: 'value',
             key: 'value',
+            width: 200,
         },
     ];
 
@@ -436,7 +436,6 @@ const Back = () => {
                             sell_price: formatPrice(product.sell_price),
                         }))}
                         pagination={false}
-                        bordered
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
                                 (sum, item) => sum + item.quantity * item.sell_price,

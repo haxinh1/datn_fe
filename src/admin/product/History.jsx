@@ -677,7 +677,7 @@ const History = () => {
             </Skeleton>
 
             <Modal
-                title="Cập nhật đơn nhập hàng"
+                title="Xác nhận nhập hàng"
                 visible={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
                 footer={null}
