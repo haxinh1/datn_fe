@@ -247,6 +247,12 @@ const deleteAddress = async (id) => {
   return response.data;
 };
 
+// đăng nhập Google
+const loginGoogle = async () => {
+  const response = await instance.get('/auth/google');
+  return response.data;
+};
+
 export const AuthServices = {
   fetchAuth,
   getAllCustomer,
@@ -267,5 +273,6 @@ export const AuthServices = {
   addAddress,
   getaAddress,
   updateAddress,
-  deleteAddress
+  deleteAddress,
+  loginGoogle
 };

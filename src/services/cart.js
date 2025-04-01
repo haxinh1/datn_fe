@@ -144,9 +144,36 @@ const removeCartItem = async (productId, variantId = null) => {
   }
 };
 
+const clearCart = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user ? user.id : null;
+
+    if (!userId) {
+      // Clear cart for guest users (localStorage)
+      localStorage.removeItem("cart_items");
+      localStorage.removeItem("cartAttributes");
+
+      return { message: "Giỏ hàng đã được xóa (local)!" };
+    }
+
+    const token = localStorage.getItem("client_token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Call the backend to delete all cart items (correct route is used here)
+    const response = await instance.delete(`/cart/destroy-all`, { headers });
+
+    return response.data;
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa tất cả sản phẩm khỏi giỏ hàng:", error);
+    throw error;
+  }
+};
+
 export const cartServices = {
   fetchCart,
   addCartItem,
   updateCartItem,
   removeCartItem,
+  clearCart,
 };

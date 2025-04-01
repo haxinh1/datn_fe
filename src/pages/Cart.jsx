@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartServices } from "./../services/cart";
-import { message, Modal, Button, Table, InputNumber } from "antd";
+import {
+  message,
+  Modal,
+  Button,
+  Table,
+  InputNumber,
+  Tooltip,
+  Image,
+} from "antd";
 import { productsServices } from "./../services/product";
 import { ValuesServices } from "../services/attribute_value";
+import { DeleteOutlined } from "@ant-design/icons";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -181,77 +190,91 @@ const Cart = () => {
 
   const columns = [
     {
-      title: "Hình ảnh",
-      dataIndex: "product",
-      render: (product) => (
-        <img
-          src={product.thumbnail || "/images/default-image.jpg"}
-          alt={product.name}
-          width={75}
-          height={75}
-          style={{
-            objectFit: "cover",
-            borderRadius: "8px",
-          }}
-        />
-      ),
-      width: "20%", // Thêm độ rộng cho cột Hình ảnh nếu cần
-    },
-    {
       title: "Sản phẩm",
       dataIndex: "product",
+      align: "center",
       render: (product, record) => (
-        <>
-          {product.name}
-          {record.product_variant_id && (
-            <span className="text-muted" style={{ fontSize: "14px" }}>
-              ({getAttributeValue(record)})
-            </span>
-          )}
-        </>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+          }}
+        >
+          <Image src={product.thumbnail} width={60} />
+          <div>
+            {product.name}
+            {record.product_variant_id && (
+              <span className="text-muted" style={{ fontSize: "14px" }}>
+                ({getAttributeValue(record)})
+              </span>
+            )}
+          </div>
+        </div>
       ),
-      width: "35%", // Tăng độ rộng cho cột Sản phẩm
     },
     {
-      title: "Giá",
+      title: "Giá bán",
       dataIndex: "price",
       render: (price) => formatCurrency(price),
-      width: "15%", // Điều chỉnh độ rộng nếu cần
+      align: "center",
     },
     {
       title: "Số lượng",
       dataIndex: "quantity",
+      align: "center",
       render: (quantity, record, index) => (
         <InputNumber
           min={1}
           value={quantity}
           onChange={(newQuantity) => handleQuantityChange(index, newQuantity)}
-          style={{ width: "60%" }} // Thu nhỏ cột Số lượng
         />
       ),
-      width: "17%", // Giảm độ rộng cho cột Số lượng
     },
     {
-      title: "Tổng",
+      title: "Thành tiền",
       dataIndex: "total",
+      align: "center",
       render: (_, record) => formatCurrency(record.price * record.quantity),
-      width: "15%", // Điều chỉnh độ rộng nếu cần
     },
     {
-      title: "Xóa",
+      title: "",
       render: (_, record) => (
-        <Button
-          type="link"
-          icon={<i className="fa-solid fa-xmark text-danger"></i>}
-          onClick={() =>
-            handleRemoveItem(record.product_id, record.product_variant_id)
-          }
-        />
+        <Tooltip title="Xóa sản phẩm">
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() =>
+              handleRemoveItem(record.product_id, record.product_variant_id)
+            }
+          />
+        </Tooltip>
       ),
-      width: "5%", // Độ rộng cột Xóa
     },
   ];
 
+  const clearCart = async () => {
+    Modal.confirm({
+      title: "Xác nhận xóa giỏ hàng",
+      content: "Bạn có chắc muốn xóa toàn bộ sản phẩm trong giỏ hàng?",
+      okText: "Xóa",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const response = await cartServices.clearCart();
+          message.success("xóa toàn bộ sản phẩm thành công");
+
+          // Clear the cart items locally as well
+          setCartItems([]);
+        } catch (error) {
+          console.error("Lỗi khi xóa giỏ hàng:", error);
+          message.error("Lỗi khi xóa giỏ hàng, vui lòng thử lại!");
+        }
+      },
+    });
+  };
   return (
     <div>
       <main className="main">
@@ -282,6 +305,16 @@ const Cart = () => {
                       pagination={false}
                     />
                   )}
+
+                  <Button
+                    type="primary"
+                    danger
+                    className="btn-clear-cart"
+                    onClick={clearCart}
+                    style={{ marginTop: "15px" }}
+                  >
+                    Xóa tất cả sản phẩm
+                  </Button>
                 </div>
                 <aside className="col-lg-3">
                   <div className="summary summary-cart">
@@ -302,7 +335,7 @@ const Cart = () => {
                       to="/checkout"
                       className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                     >
-                      Checkout<i className="icon-long-arrow-right"></i>
+                      Thanh Toán<i className="icon-long-arrow-right"></i>
                     </Link>
                   </div>
                 </aside>

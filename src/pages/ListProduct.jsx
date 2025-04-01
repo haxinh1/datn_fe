@@ -3,6 +3,7 @@ import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
 import { categoryServices } from "./../services/categories";
+import { Pagination } from "antd"; // Import Pagination from antd
 import bg from "../assets/images/backgrounds/bg-1.jpg";
 
 const ListProduct = () => {
@@ -20,6 +21,8 @@ const ListProduct = () => {
   );
   const [message, setMessage] = useState(""); // Thêm state message
   const [messageType, setMessageType] = useState(""); // success hoặc error
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [pageSize] = useState(9); // 9 sản phẩm mỗi trang
 
   useEffect(() => {
     const getProducts = async () => {
@@ -206,6 +209,19 @@ const ListProduct = () => {
     return product.sell_price;
   };
 
+  // Phân trang
+  const indexOfLastProduct = currentPage * pageSize;
+  const indexOfFirstProduct = indexOfLastProduct - pageSize;
+  const currentProducts = filteredProducts.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
+
+  // Thay đổi trang
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
@@ -234,7 +250,7 @@ const ListProduct = () => {
               <div className="col-lg-9">
                 <div className="products mb-3">
                   <div className="row justify-content-center">
-                    {filteredProducts.map((product) => (
+                    {currentProducts.map((product) => (
                       <div className="col-6 col-md-4 col-lg-4" key={product.id}>
                         <div className="product product-7 text-center">
                           <figure className="product-media">
@@ -253,12 +269,6 @@ const ListProduct = () => {
                               />
                             </Link>
                             <div className="product-action">
-                              {/* <button
-                                className="btn-product btn-cart"
-                                onClick={() => handleAddToCart(product)}
-                              >
-                                <span>Thêm vào giỏ hàng</span>
-                              </button> */}
                               <Link
                                 to={`/product-detail/${product.id}`}
                                 className="btn-product btn-cart"
@@ -268,11 +278,11 @@ const ListProduct = () => {
                             </div>
                           </figure>
                           <div className="product-body">
-                            <h3 className="product-title">
+                            <span className="product-title">
                               <Link to={`/product-detail/${product.id}`}>
                                 {product.name}
                               </Link>
-                            </h3>
+                            </span>
                             <div className="product-price">
                               {formatPrice(getDisplayedPrice(product))} VNĐ
                             </div>
@@ -295,52 +305,16 @@ const ListProduct = () => {
                     ))}
                   </div>
                 </div>
-                <nav aria-label="Page navigation">
-                  <ul className="pagination justify-content-center">
-                    <li className="page-item disabled">
-                      <a
-                        aria-disabled="true"
-                        aria-label="Previous"
-                        className="page-link page-link-prev"
-                        href="#"
-                        tabIndex="-1"
-                      >
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-left" />
-                        </span>
-                        Prev
-                      </a>
-                    </li>
-                    <li aria-current="page" className="page-item active">
-                      <a className="page-link" href="#">
-                        1
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        2
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        3
-                      </a>
-                    </li>
-                    <li className="page-item-total">of 6</li>
-                    <li className="page-item">
-                      <a
-                        aria-label="Next"
-                        className="page-link page-link-next"
-                        href="#"
-                      >
-                        Next{" "}
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-right" />
-                        </span>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
+
+                {/* Pagination mới */}
+                <Pagination
+                  current={currentPage}
+                  total={filteredProducts.length}
+                  pageSize={pageSize}
+                  onChange={handlePageChange}
+                  showSizeChanger={false}
+                  style={{ textAlign: "right", marginTop: "20px" }} // Cập nhật textAlign
+                />
               </div>
               <aside className="col-lg-3 order-lg-first">
                 <div className="sidebar sidebar-shop">
@@ -580,7 +554,6 @@ const ListProduct = () => {
           </div>
         </div>
       </main>
-      ;
     </div>
   );
 };

@@ -16,8 +16,9 @@ import dayjs from "dayjs";
 import { paymentServices } from "../services/payments";
 import viVN from "antd/es/locale/vi_VN";
 import { ConfigProvider } from "antd";
-import logo from "../assets/images/logo-footer.png";
+import logo from "../assets/images/logo.png";
 import "../css/bill.css";
+import html2pdf from "html2pdf.js";
 
 const Bill = () => {
   const { RangePicker } = DatePicker;
@@ -92,12 +93,27 @@ const Bill = () => {
     return formatter.format(price);
   };
 
+  const printInvoice = () => {
+    const element = document.getElementById("invoiceModalContent"); // Lấy nội dung Modal
+    const options = {
+      margin: 1,
+      filename: "hoadon.pdf",
+      image: { type: "jpeg", quality: 1 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "mm", format: "a5", orientation: "portrait" },
+    };
+
+    html2pdf().from(element).set(options).save(); // Tạo và lưu PDF
+  };
+
   const columns = [
-    {
-      title: <Checkbox />,
-      render: (_, order) => <Checkbox />,
-      align: "center",
-    },
+    // {
+    //   title: <Checkbox />,
+    //   render: (_, order) => (
+    //     <Checkbox />
+    //   ),
+    //   align: 'center',
+    // },
     {
       title: "STT",
       dataIndex: "index",
@@ -140,7 +156,7 @@ const Bill = () => {
       ),
     },
     {
-      title: "Thao tác",
+      title: "",
       key: "action",
       align: "center",
       render: (_, item) => (
@@ -153,14 +169,14 @@ const Bill = () => {
               onClick={() => showModal(item)}
             />
           </Tooltip>
-          <Tooltip title="In hóa đơn">
+          {/* <Tooltip title="In hóa đơn">
             <Button
               color="primary"
               variant="solid"
               icon={<PrinterOutlined />}
               onClick={() => printInvoice(item.id)}
             />
-          </Tooltip>
+          </Tooltip> */}
         </div>
       ),
     },
@@ -237,11 +253,15 @@ const Bill = () => {
           ))}
         </Select>
 
-        <div className="group2">
-          <Button color="primary" variant="solid" icon={<ToTopOutlined />}>
+        {/* <div className="group2">
+          <Button
+            color="primary"
+            variant="solid"
+            icon={<ToTopOutlined />}
+          >
             Xuất Excel
           </Button>
-        </div>
+        </div> */}
       </div>
 
       <Skeleton active loading={isLoading}>
@@ -249,7 +269,6 @@ const Bill = () => {
           columns={columns}
           dataSource={filteredOrders}
           pagination={{ pageSize: 10 }}
-          bordered
         />
       </Skeleton>
 
@@ -259,55 +278,64 @@ const Bill = () => {
         footer={null}
         width={500}
       >
-        <div className="form-name">
-          <div className="group1">
+        <div id="invoiceModalContent">
+          <div className="form-name">
             <img className="logo-bill" src={logo} />
           </div>
-          <div className="group2">
-            <span className="logo-name">Molla Shop</span>
-          </div>
-        </div>
-        <span className="text-title">
-          Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
-        </span>{" "}
-        <br />
-        <span className="text-title">
-          Email: <span className="text-name">{orderInfo.email}</span>
-        </span>{" "}
-        <br />
-        <span className="text-title">
-          Địa chỉ: <span className="text-name">{orderInfo.address}</span>
-        </span>
-        <Table
-          columns={detailColumns}
-          dataSource={orderDetails.map((item) => ({
-            ...item,
-            product_name: item.product?.name,
-          }))}
-          pagination={false}
-          summary={() => {
-            const totalAmount = orderDetails.reduce(
-              (sum, item) => sum + item.quantity * item.sell_price,
-              0
-            );
-            return (
-              <Table.Summary.Row>
-                <Table.Summary.Cell colSpan={3} align="right">
-                  <strong>Tổng giá trị (VNĐ):</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell align="center">
-                  <strong>{formatPrice(totalAmount)}</strong>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            );
-          }}
-        />
-        <div className="form-thank">
-          <span className="text-thank">
-            Cảm ơn quý khách đã tin tưởng Molla Shop!
+          <span className="text-title">
+            Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
           </span>{" "}
           <br />
-          <span className="text-name">Hẹn gặp lại</span>
+          <span className="text-title">
+            Email: <span className="text-name">{orderInfo.email}</span>
+          </span>{" "}
+          <br />
+          <span className="text-title">
+            Địa chỉ: <span className="text-name">{orderInfo.address}</span>
+          </span>
+          <Table
+            style={{ marginTop: "20px" }}
+            columns={detailColumns}
+            dataSource={orderDetails.map((item) => ({
+              ...item,
+              product_name: item.product?.name,
+            }))}
+            pagination={false}
+            summary={() => {
+              const totalAmount = orderDetails.reduce(
+                (sum, item) => sum + item.quantity * item.sell_price,
+                0
+              );
+              return (
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={3} align="right">
+                    <strong>Tổng giá trị (VNĐ):</strong>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    <strong>{formatPrice(totalAmount)}</strong>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              );
+            }}
+          />
+          <div className="form-thank">
+            <span className="text-thank">
+              Cảm ơn quý khách đã tin tưởng Molla Shop!
+            </span>{" "}
+            <br />
+            <span className="text-name">Hẹn gặp lại</span>
+          </div>
+        </div>
+
+        <div className="add">
+          <Button
+            key="submit"
+            type="primary"
+            icon={<PrinterOutlined />}
+            onClick={printInvoice}
+          >
+            In hóa đơn
+          </Button>
         </div>
       </Modal>
     </div>
