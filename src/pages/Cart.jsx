@@ -19,6 +19,7 @@ const Cart = () => {
   const [shippingCost, setShippingCost] = useState(0);
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getCart = async () => {
@@ -188,6 +189,34 @@ const Cart = () => {
     });
   };
 
+  const handleCheckout = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user ? user.id : null;
+
+      if (userId) {
+        // Đã đăng nhập → kiểm tra giỏ hàng từ database
+        const cartData = await cartServices.fetchCart();
+        if (!cartData || cartData.length === 0) {
+          message.warning("Giỏ hàng của bạn đang trống!");
+          return;
+        }
+      } else {
+        // Vãng lai → kiểm tra localStorage
+        const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+        if (localCart.length === 0) {
+          message.warning("Giỏ hàng của bạn đang trống!");
+          return;
+        }
+      }
+
+      // Nếu có sản phẩm trong giỏ → chuyển sang trang thanh toán
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra giỏ hàng:", error);
+      message.error("Có lỗi xảy ra. Vui lòng thử lại!");
+    }
+  };
   const columns = [
     {
       title: "Sản phẩm",
@@ -331,12 +360,13 @@ const Cart = () => {
                         </tr>
                       </tbody>
                     </table>
-                    <Link
-                      to="/checkout"
+                    <Button
+                      type="primary"
                       className="btn btn-outline-primary-2 btn-order btn-block fs-5"
+                      onClick={handleCheckout}
                     >
                       Thanh Toán<i className="icon-long-arrow-right"></i>
-                    </Link>
+                    </Button>
                   </div>
                 </aside>
               </div>
