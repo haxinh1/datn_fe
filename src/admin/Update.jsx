@@ -17,19 +17,19 @@ const Update = () => {
       try {
         const userData = await AuthServices.getAUser(id); // Gọi API để lấy dữ liệu người dùng
         setUser(userData);  // Lưu dữ liệu vào state
-  
+
         // Chuyển đổi ảnh cũ thành file list để hiển thị
         if (userData.avatar) {
           const fileList = await convertImagesToFileList([userData.avatar]);
           setImage(fileList[0]);
         }
-  
+
         form.setFieldsValue({
           fullname: userData.fullname,
           phone_number: userData.phone_number,
           email: userData.email,
           gender: userData.gender || "",
-          birthday: userData.birthday ? dayjs(userData.birthday) : null, 
+          birthday: userData.birthday ? dayjs(userData.birthday) : null,
         });
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu người dùng:", error);
@@ -39,9 +39,9 @@ const Update = () => {
         });
       }
     };
-  
+
     fetchUserData();
-  }, [id, form]);  
+  }, [id, form]);
 
   const handleSubmit = async (values) => {
     try {
@@ -71,18 +71,18 @@ const Update = () => {
 
     // Nếu ảnh mới được upload thành công, cập nhật `thumbnail`
     if (info.file.status === "done" && info.file.response) {
-        fileList = fileList.map((file) => ({
-            uid: file.uid,
-            name: file.name,
-            status: "done",
-            url: file.response.secure_url, // Lấy URL từ response Cloudinary
-        }));
+      fileList = fileList.map((file) => ({
+        uid: file.uid,
+        name: file.name,
+        status: "done",
+        url: file.response.secure_url, // Lấy URL từ response Cloudinary
+      }));
     }
 
     // Cập nhật state
     setImage(fileList.length > 0 ? fileList[0] : null);
-  };      
-  
+  };
+
   const urlToFile = async (url, filename) => {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -103,7 +103,7 @@ const Update = () => {
       })
     );
     return fileList;
-  };    
+  };
 
   return (
     <div>
@@ -176,28 +176,28 @@ const Update = () => {
           <Col span={8}>
             <Row gutter={24}>
               <Col span={12}>
-                <Form.Item 
-                    name="gender" label="Giới tính" 
-                    rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
-                > 
-                    <Select className="input-item" placeholder="Chọn giới tính">
-                      <Select.Option value="male">Nam</Select.Option>
-                      <Select.Option value="female">Nữ</Select.Option>
-                      <Select.Option value="other">Khác</Select.Option>
-                    </Select>
+                <Form.Item
+                  name="gender" label="Giới tính"
+                  rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
+                >
+                  <Select className="input-item" placeholder="Chọn giới tính">
+                    <Select.Option value="male">Nam</Select.Option>
+                    <Select.Option value="female">Nữ</Select.Option>
+                    <Select.Option value="other">Khác</Select.Option>
+                  </Select>
                 </Form.Item>
               </Col>
 
               <Col span={12}>
-                <Form.Item 
-                  name="birthday" label="Ngày sinh" 
+                <Form.Item
+                  name="birthday" label="Ngày sinh"
                   rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
-                > 
-                  <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY"/>
+                >
+                  <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
                 </Form.Item>
               </Col>
             </Row>
-          </Col>         
+          </Col>
         </Row>
 
         <div className="add">

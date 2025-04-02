@@ -59,6 +59,12 @@ const getOrderByIdUser = async (userId) => {
   return response.data;
 };
 
+//sp đã mua theo người dùng
+const productByUserId = async (userId) => {
+  const response = await instance.get(`/user/${userId}/top-products`);
+  return response.data;
+};
+
 // chi tiết đơn hàng theo id
 const getOrderById = async (orderId) => {
   const response = await instance.get(`/orders/${orderId}/items`);
@@ -167,5 +173,6 @@ export const OrderService = {
   getOrderReturnByIdUser,
   getRefund, 
   requestBack,
-  confirmBack
+  confirmBack,
+  productByUserId
 };

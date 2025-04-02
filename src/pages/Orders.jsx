@@ -1,4 +1,4 @@
-import { BookOutlined, CheckOutlined, EyeOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, EyeOutlined } from '@ant-design/icons';
 import { Button, Col, ConfigProvider, DatePicker, Image, Modal, Select, Skeleton, Table, Tooltip, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
@@ -64,31 +64,31 @@ const Orders = () => {
     }, []);
     useEffect(() => {
         const channel = echo.channel("order-status-channel");
-    
+
         channel.listen(".order-status-updated", (e) => {
-          console.log("📦 Đơn hàng được cập nhật realtime:", e);
-    
-          setOrders((prevOrders) =>
-            prevOrders.map((order) =>
-              order.id === e.order_id
-                ? {
-                    ...order,
-                    status: {
-                      id: e.status_id,
-                      name: getStatusName(e.status_id),
-                    },
-                    updated_at: e.updated_at,
-                  }
-                : order
-            )
-          );
+            console.log("📦 Đơn hàng được cập nhật realtime:", e);
+
+            setOrders((prevOrders) =>
+                prevOrders.map((order) =>
+                    order.id === e.order_id
+                        ? {
+                            ...order,
+                            status: {
+                                id: e.status_id,
+                                name: getStatusName(e.status_id),
+                            },
+                            updated_at: e.updated_at,
+                        }
+                        : order
+                )
+            );
         });
-    
+
         return () => {
-          echo.leave("order-status-channel");
+            echo.leave("order-status-channel");
         };
-      }, []);
-  
+    }, []);
+
 
     const [filters, setFilters] = useState({
         dateRange: null,
@@ -130,7 +130,7 @@ const Orders = () => {
     const getStatusName = (id) => {
         const found = statusData?.find((s) => s.id === id);
         return found ? found.name : "Đang cập nhật...";
-      };
+    };
     // hàm xác nhận đã nhận hàng
     const handleMarkAsReceived = (orderId) => {
         Modal.confirm({
@@ -255,9 +255,9 @@ const Orders = () => {
                     const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
                     return `${productName} - ${attributes}`;
                 }).join(", ") || productName;
-    
+
                 return (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <Image src={thumbnail} width={60} />
                         <span>{variantAttributes}</span>
                     </div>
@@ -342,6 +342,7 @@ const Orders = () => {
             align: "center",
             render: (_, item) => {
                 const { status } = item;
+                const isCheckout = status?.id === 1;
                 const isDelivered = status?.id === 5; // Đã giao hàng
                 return (
                     <div className="action-container">
@@ -364,6 +365,16 @@ const Orders = () => {
                                 />
                             </Tooltip>
                         )}
+
+                        {isCheckout && (
+                            <Tooltip title="Tiếp tục thanh toán">
+                                <Button
+                                    color="primary"
+                                    variant="solid"
+                                    icon={<ArrowRightOutlined />}
+                                />
+                            </Tooltip>
+                        )}
                     </div>
                 );
             },
@@ -372,7 +383,7 @@ const Orders = () => {
 
     return (
         <div>
-            <h1 className="mb-5" style={{color:'#e48948'}}>
+            <h1 className="mb-5" style={{ color: '#e48948' }}>
                 <BookOutlined style={{ marginRight: "8px" }} />
                 Đơn hàng của bạn
             </h1>

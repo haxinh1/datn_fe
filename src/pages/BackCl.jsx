@@ -270,7 +270,7 @@ const BackCl = () => {
                 const thumbnail = record.thumbnail;  // Lấy ảnh sản phẩm
 
                 return (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
                         <Image width={60} src={thumbnail} />
                         <span>{`${productName} ${attributes ? `- ${attributes}` : ""}`}</span>
                     </div>

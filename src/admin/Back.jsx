@@ -82,11 +82,7 @@ const Back = () => {
     });
 
     const validTransitions = {
-        9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
-        10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
-        12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
-        13: [14],
-        14: [15]
+        9: [10, 11],
     };
 
     const showEdit = (item) => {
@@ -305,14 +301,17 @@ const Back = () => {
                             onClick={() => showModal(item)}
                         />
                     </Tooltip>
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined />}
-                            onClick={() => showEdit(item)}
-                        />
-                    </Tooltip>
+
+                    {item.status_id === 9 && (
+                        <Tooltip title="Xác nhận">
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<EditOutlined />}
+                                onClick={() => showEdit(item)}
+                            />
+                        </Tooltip>
+                    )}
 
                     {item.status_id === 12 && (
                         <Tooltip title="Hoàn tiền">

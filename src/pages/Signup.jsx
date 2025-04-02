@@ -345,7 +345,9 @@ const Signup = () => {
                             </Form.Item>
 
                             <Form.Item
-                                name="district" label="Quận/Huyện"
+                                name="district"
+                                label="Quận/Huyện"
+                                rules={selectedProvince ? [{ required: true, message: 'Vui lòng chọn Quận/Huyện' }] : []}
                             >
                                 <Select
                                     placeholder="Chọn Quận/Huyện"
@@ -355,8 +357,8 @@ const Signup = () => {
                                 >
                                     {districts.map((district) => (
                                         <Select.Option
-                                            key={district.DistrictID} // Sử dụng DistrictID làm key
-                                            value={district.DistrictID} // Sử dụng DistrictID làm value
+                                            key={district.DistrictID}
+                                            value={district.DistrictID}
                                         >
                                             {district.DistrictName}
                                         </Select.Option>
@@ -365,7 +367,9 @@ const Signup = () => {
                             </Form.Item>
 
                             <Form.Item
-                                name="ward" label="Phường/Xã"
+                                name="ward"
+                                label="Phường/Xã"
+                                rules={selectedDistrict ? [{ required: true, message: 'Vui lòng chọn Phường/Xã' }] : []}
                             >
                                 <Select
                                     placeholder="Chọn Phường/Xã"
@@ -386,8 +390,9 @@ const Signup = () => {
 
                             <Form.Item
                                 name="detail_address" label="Địa chỉ cụ thể"
+                                rules={selectedWard ? [{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }] : []}
                             >
-                                <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" />
+                                <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" disabled={!selectedWard}/>
                             </Form.Item>
                         </Col>
                     </Row>

@@ -14,9 +14,20 @@ const LayoutAdmin = () => {
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);  // Lấy thông tin người dùng từ localStorage
-  }, []);
+    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;  // Lấy chỉ id người dùng từ localStorage
+    if (storedUserId) {
+      // Gọi service để lấy thông tin người dùng theo id
+      const fetchUserInfo = async () => {
+        try {
+          const userInfo = await AuthServices.getAUser(storedUserId);  // Gọi API để lấy thông tin người dùng
+          setUser(userInfo);  // Lưu thông tin người dùng vào state
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin người dùng:", error);
+        }
+      };
+      fetchUserInfo();
+    }
+  }, []);  
 
   const logoutad = async () => {
     // Hiển thị Modal xác nhận trước khi logout
@@ -88,6 +99,11 @@ const LayoutAdmin = () => {
       key: "order",
       icon: <BookOutlined />,
       label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
+    },
+    {
+      key: "orderstaff",
+      icon: <BookOutlined />,
+      label: <Link to="/admin/orderstaff"><span>Đơn hàng nhân viên</span></Link>,
     },
     {
       key: "back",

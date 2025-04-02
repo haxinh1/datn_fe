@@ -93,6 +93,8 @@ const Order = () => {
     9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
     10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
     12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
+    13: [14],
+    14: [15],
   };
 
   const showEdit = (order) => {
@@ -426,7 +428,8 @@ const Order = () => {
       key: "created_at",
       align: "center",
       render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
-    },
+      sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),  // Sắp xếp theo ngày
+    },    
     {
       title: "Phương thức thanh toán",
       dataIndex: "payment",

@@ -325,7 +325,7 @@ const Address = () => {
       </h1>
 
       <Button
-        variant="solid"
+        type="primary"
         icon={<PlusOutlined />}
         onClick={showModal}
         style={{backgroundColor: '#e48948', color:'white'}}
@@ -439,7 +439,7 @@ const Address = () => {
           </Form.Item>
 
           <div className="add">
-            <Button type="primary" htmlType="submit">
+            <Button style={{backgroundColor: '#e48948', color:'white'}} type="primary" htmlType="submit">
               Lưu
             </Button>
           </div>
