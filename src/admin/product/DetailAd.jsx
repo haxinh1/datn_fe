@@ -188,11 +188,6 @@ const ProductDetail = () => {
 
   const productData = [
     { key: "sku", label: "Mã sản phẩm:", value: product.sku || "Không có mã" },
-    {
-      key: "name",
-      label: "Tên sản phẩm:",
-      value: product.name || "Không có tên",
-    },
     { key: "slug", label: "Slug:", value: product.slug },
     {
       key: "link",
@@ -251,8 +246,7 @@ const ProductDetail = () => {
     product && (
       <div className="container">
         <h1 className="mb-5">
-          <EyeOutlined style={{ marginRight: "8px" }} />
-          Chi tiết sản phẩm
+          {product.name}
         </h1>
 
         <div className="group1">

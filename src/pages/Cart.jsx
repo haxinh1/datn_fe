@@ -186,7 +186,7 @@ const Cart = () => {
       dataIndex: "product",
       align: "center",
       render: (product, record) => (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
           <Image src={product.thumbnail} width={60} />
           <div>
             {product.name}

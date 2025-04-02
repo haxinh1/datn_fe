@@ -21,20 +21,20 @@ const updateProduct = async (id, payload) => {
 };
 
 // tìm kiếm sản phẩm
-const searchProducts = async (keyword) => {
+const searchProducts = async (keyword = "") => {
     try {
         const response = await instance.get('/admin/products/search', {
-            params: { keyword }, // Truyền từ khóa vào tham số của URL
+            params: { keyword },
         });
 
-        if (response.data.success) {
-            return response.data.data; // Trả về danh sách sản phẩm
-        } else {
-            return []; // Nếu không tìm thấy sản phẩm, trả về mảng trống
+        if (response.data?.success) {
+            return response.data.data || []; // Nếu `data` null thì trả về []
         }
+
+        throw new Error(response.data?.message || "Không tìm thấy sản phẩm");
     } catch (error) {
         console.error("Lỗi khi gọi API tìm kiếm sản phẩm:", error);
-        throw error; // Nếu có lỗi, ném lại lỗi để xử lý ở nơi gọi
+        return []; // Trả về mảng rỗng thay vì ném lỗi, tránh crash UI
     }
 };
 

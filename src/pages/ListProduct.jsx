@@ -217,13 +217,10 @@ const ListProduct = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="index.html">Home</a>
+                <span>Trang Chủ</span>
               </li>
               <li className="breadcrumb-item">
-                <a href="#">Shop</a>
-              </li>
-              <li aria-current="page" className="breadcrumb-item active">
-                Grid 3 Columns
+                <span>Sản Phẩm</span>
               </li>
             </ol>
           </div>
@@ -545,8 +542,8 @@ const ListProduct = () => {
                                   {range.min === 0
                                     ? `Dưới ${formatPrice(range.max)} VNĐ`
                                     : range.max === Infinity
-                                    ? `Trên ${formatPrice(range.min)} VNĐ`
-                                    : `${formatPrice(
+                                      ? `Trên ${formatPrice(range.min)} VNĐ`
+                                      : `${formatPrice(
                                         range.min
                                       )} - ${formatPrice(range.max)} VNĐ`}
                                 </label>

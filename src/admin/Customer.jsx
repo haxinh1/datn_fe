@@ -1,5 +1,5 @@
-import { EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Skeleton, Modal, Form, Row, Col, Select, notification, Avatar } from 'antd';
+import { EditOutlined, EyeOutlined, SearchOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Skeleton, Modal, Form, Row, Col, Select, notification, Avatar, Input } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -15,13 +15,14 @@ const Customer = () => {
     const [form] = Form.useForm();
     const handleEditCancel = () => setIsEditModalVisible(false)
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     const { data: customer, isLoading, refetch } = useQuery({
-        queryKey: ["customer"],
+        queryKey: ["customer", searchKeyword],
         queryFn: async () => {
-            const response = await AuthServices.getAllCustomer();
-            console.log("Dữ liệu API:", response);
-            return response || [];
+            return searchKeyword
+                ? await AuthServices.searchUsers(searchKeyword)
+                : await AuthServices.getAllCustomer();
         },
     });
 
@@ -94,7 +95,7 @@ const Customer = () => {
             key: "fullname",
             align: "center",
             render: (fullname, record) => (
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                     {record.avatar && <Avatar size="large" src={record.avatar} />}
                     <span>{fullname}</span>
                 </div>
@@ -181,6 +182,14 @@ const Customer = () => {
                 <TeamOutlined style={{ marginRight: "8px" }} />
                 Danh sách khách hàng
             </h1>
+
+            <Input.Search
+                className="search-input"
+                placeholder="Tìm kiếm khách hàng..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                onSearch={setSearchKeyword}
+            />
 
             <Skeleton active loading={isLoading}>
                 <Table

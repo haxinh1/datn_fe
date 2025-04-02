@@ -8,18 +8,26 @@ import "../../assets/css/style.css";
 import "../../assets/css/skins/skin-demo-8.css";
 import "../../assets/css/demos/demo-8.css";
 import logo from "../../assets/images/demos/demo-8/logo.png";
-import product1 from "../../assets/images/products/cart/product1.jpg";
-import product2 from "../../assets/images/products/cart/product2.jpg";
 import { Link } from "react-router-dom";
+import { AuthServices } from './../../services/auth';
 
 const Header = () => {
 
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    // Lấy thông tin người dùng từ localStorage
-    const storedUserData = JSON.parse(localStorage.getItem("user"));
-    setUserData(storedUserData); // Lưu dữ liệu người dùng vào state
+    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;  // Lấy id người dùng từ localStorage
+    if (storedUserId) {
+      const fetchUserInfo = async () => {
+        try {
+          const userInfo = await AuthServices.getAUser(storedUserId);  // Gọi API để lấy thông tin người dùng
+          setUserData(userInfo);  // Lưu thông tin người dùng vào state
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin người dùng:", error);
+        }
+      };
+      fetchUserInfo();
+    }
   }, []);
 
   return (

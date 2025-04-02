@@ -13,6 +13,7 @@ import "../assets/css/demos/demo-8.css";
 import "../css/signup.css";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { cartServices } from "../services/cart";
+import { GoogleLogin } from "@react-oauth/google";
 
 const Logincl = () => {
   const [form] = Form.useForm();
@@ -65,13 +66,18 @@ const Logincl = () => {
     setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLoginSuccess = (response) => {
     try {
-      const response = await AuthServices.loginGoogle(); // Gọi API backend để đăng nhập qua Google
-      if (response?.token) {
-        localStorage.setItem("client_token", response.token);
-        localStorage.setItem("client", JSON.stringify(response.user));
+      // Gửi token tới backend để đăng nhập
+      const token = response.credential;
+      const responseData = AuthServices.loginGoogle(token);
+
+      if (responseData?.token) {
+        localStorage.setItem("client_token", responseData.token);
+        localStorage.setItem("client", JSON.stringify(responseData.user));
         message.success("Đăng nhập Google thành công!");
+
+        navigate("/");  // Chuyển hướng tới trang chính hoặc dashboard
       }
     } catch (error) {
       notification.error({
@@ -79,7 +85,13 @@ const Logincl = () => {
         description: error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
       });
     }
-    window.location.href = "http://127.0.0.1:8000/auth/google";
+  };
+
+  const handleGoogleLoginFailure = (error) => {
+    notification.error({
+      message: "Đăng nhập thất bại",
+      description: error.message || "Đăng nhập Google không thành công, vui lòng thử lại!",
+    });
   };
 
   const validatePhoneOrEmail = (_, value) => {
@@ -158,20 +170,22 @@ const Logincl = () => {
           <p className="text-center">
             <span>hoặc đăng nhập bằng</span>
           </p>
-          <div className="row">
-            <div className="col-sm-6">
-              <a href="#" className="btn btn-login btn-g" onClick={handleGoogleLogin}>
-                <i className="icon-google"></i>
-                Google
-              </a>
-            </div>
-            <div className="col-sm-6">
-              <a href="#" className="btn btn-login btn-f">
-                <i className="icon-facebook-f"></i>
-                Facebook
-              </a>
-            </div>
-          </div>
+            <GoogleLogin
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginFailure}
+              useOneTap
+              render={(renderProps) => (
+                <a
+                  href="#"
+                  className="btn btn-login btn-g"
+                  onClick={renderProps.onClick}
+                  disabled={renderProps.disabled}
+                >
+                  <i className="icon-google"></i>
+                  Google
+                </a>
+              )}
+            />
         </div>
       </Card>
     </div>
