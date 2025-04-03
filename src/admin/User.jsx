@@ -340,7 +340,6 @@ const User = () => {
                             style={{ width: '100%' }}
                             pagination={{ pageSize: 5 }}
                             dataSource={orders}
-                            bordered
                         />
                     </Skeleton>
 
@@ -354,7 +353,6 @@ const User = () => {
                             dataSource={productData}
                             style={{ width: '100%' }}
                             pagination={{ pageSize: 5 }}
-                            bordered
                         />
                     </Skeleton>
                 </div>
@@ -375,7 +373,6 @@ const User = () => {
                         index: index + 1,
                         product_name: item.product?.name,
                     }))}
-                    bordered
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce(
@@ -392,6 +389,7 @@ const User = () => {
                                         {formatPrice(totalAmount)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         Phí vận chuyển:
@@ -400,6 +398,7 @@ const User = () => {
                                         {formatPrice(orderInfo.shipping_fee)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         Giảm giá điểm tiêu dùng:
@@ -408,6 +407,7 @@ const User = () => {
                                         {formatPrice(orderInfo.discount_points)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+                                
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         <strong>Tổng giá trị đơn hàng:</strong>

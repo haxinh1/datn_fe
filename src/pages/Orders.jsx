@@ -1,22 +1,5 @@
-import {
-  ArrowRightOutlined,
-  BookOutlined,
-  CheckOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  Col,
-  ConfigProvider,
-  DatePicker,
-  Image,
-  Modal,
-  Select,
-  Skeleton,
-  Table,
-  Tooltip,
-  notification,
-} from "antd";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, EyeOutlined } from "@ant-design/icons";
+import { Button, Col, ConfigProvider, DatePicker, Image, Modal, Select, Skeleton, Table, Tooltip, notification } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -34,6 +17,7 @@ const Orders = () => {
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 5 });
   const [orderInfo, setOrderInfo] = useState({
     email: "",
     address: "",
@@ -99,13 +83,13 @@ const Orders = () => {
         prevOrders.map((order) =>
           order.id === e.order_id
             ? {
-                ...order,
-                status: {
-                  id: e.status_id,
-                  name: getStatusName(e.status_id),
-                },
-                updated_at: e.updated_at,
-              }
+              ...order,
+              status: {
+                id: e.status_id,
+                name: getStatusName(e.status_id),
+              },
+              updated_at: e.updated_at,
+            }
             : order
         )
       );
@@ -157,6 +141,23 @@ const Orders = () => {
     const found = statusData?.find((s) => s.id === id);
     return found ? found.name : "Đang cập nhật...";
   };
+
+  // hàm tiếp tục thanh toán
+  const handleRetryPayment = async (orderId) => {
+    try {
+      const response = await OrderService.retryPayment(orderId); // Gọi API backend để thử thanh toán lại
+      if (response.payment_url) {
+        window.location.href = response.payment_url; // Chuyển hướng người dùng đến trang thanh toán VNPay
+      }
+    } catch (error) {
+      console.error("Lỗi khi thanh toán lại:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể thanh toán lại đơn hàng.",
+      });
+    }
+  };
+
   // hàm xác nhận đã nhận hàng
   const handleMarkAsReceived = (orderId) => {
     Modal.confirm({
@@ -346,7 +347,7 @@ const Orders = () => {
       title: "STT",
       dataIndex: "index",
       align: "center",
-      render: (_, __, index) => index + 1,
+      render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
       title: "Mã đơn hàng",
@@ -380,8 +381,8 @@ const Orders = () => {
           payment?.name === "COD"
             ? "Thanh toán khi nhận hàng"
             : payment?.name === "VNPAY"
-            ? "Thanh toán trực tuyến"
-            : payment?.name;
+              ? "Thanh toán trực tuyến"
+              : payment?.name;
         return <span>{paymentName}</span>;
       },
     },
@@ -433,6 +434,7 @@ const Orders = () => {
                   color="primary"
                   variant="solid"
                   icon={<ArrowRightOutlined />}
+                  onClick={() => handleRetryPayment(item.id)} // Gọi hàm thanh toán lại
                 />
               </Tooltip>
             )}
@@ -449,7 +451,7 @@ const Orders = () => {
         Đơn hàng của bạn
       </h1>
 
-      <div className="group1">
+      {/* <div className="group1">
         <ConfigProvider locale={viVN}>
           <RangePicker
             format="DD/MM/YYYY"
@@ -483,18 +485,22 @@ const Orders = () => {
               {method.name === "COD"
                 ? "Thanh toán khi nhận hàng"
                 : method.name === "VNPAY"
-                ? "Thanh toán trực tuyến"
-                : method.name}
+                  ? "Thanh toán trực tuyến"
+                  : method.name}
             </Select.Option>
           ))}
         </Select>
-      </div>
+      </div> */}
 
       <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
           dataSource={filteredOrders}
-          pagination={{ pageSize: 5 }}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
+          }}
         />
       </Skeleton>
 
@@ -537,6 +543,7 @@ const Orders = () => {
                     {formatPrice(totalAmount)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     Phí vận chuyển:
@@ -545,6 +552,7 @@ const Orders = () => {
                     {formatPrice(orderInfo.shipping_fee)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     Giảm giá điểm tiêu dùng:
@@ -553,6 +561,7 @@ const Orders = () => {
                     {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+                
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     <strong>Tổng giá trị đơn hàng:</strong>

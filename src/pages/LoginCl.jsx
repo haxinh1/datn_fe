@@ -162,7 +162,6 @@ const Logincl = () => {
           <div className="row">
             <div className="col-sm-6">
               <a
-                href="#"
                 className="btn btn-login btn-g"
                 onClick={handleGoogleLogin}
               >
@@ -171,7 +170,7 @@ const Logincl = () => {
               </a>
             </div>
             <div className="col-sm-6">
-              <a href="#" className="btn btn-login btn-f">
+              <a className="btn btn-login btn-f">
                 <i className="icon-facebook-f"></i>
                 Facebook
               </a>
