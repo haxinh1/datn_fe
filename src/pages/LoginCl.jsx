@@ -76,10 +76,11 @@ const Logincl = () => {
     } catch (error) {
       notification.error({
         message: "Đăng nhập thất bại",
-        description: error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
+        description:
+          error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
       });
     }
-    window.location.href = "http://127.0.0.1:8000/auth/google";
+    window.location.href = "http://127.0.0.1:8000/api/auth/google";
   };
 
   const validatePhoneOrEmail = (_, value) => {
@@ -123,7 +124,7 @@ const Logincl = () => {
             name="password"
             rules={[
               { required: true, message: "Vui lòng nhập mật khẩu" },
-              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
+              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
             ]}
           >
             <Input.Password
@@ -160,7 +161,11 @@ const Logincl = () => {
           </p>
           <div className="row">
             <div className="col-sm-6">
-              <a href="#" className="btn btn-login btn-g" onClick={handleGoogleLogin}>
+              <a
+                href="#"
+                className="btn btn-login btn-g"
+                onClick={handleGoogleLogin}
+              >
                 <i className="icon-google"></i>
                 Google
               </a>

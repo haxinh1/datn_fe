@@ -222,7 +222,17 @@ const ProductDetailClient = () => {
 
               <div className="col-md-6">
                 <div className="product-details">
-                  <h1 className="product-title">{product.name}</h1>
+                  <h1 className="product-title">
+                    {product.name}
+                    {product.is_active === 0 && (
+                      <span
+                        className="text-danger"
+                        style={{ marginLeft: "10px" }}
+                      >
+                        (Sản phẩm này ngừng kinh doanh)
+                      </span>
+                    )}
+                  </h1>
 
                   <div className="ratings-container">
                     <div className="ratings">
@@ -351,11 +361,23 @@ const ProductDetailClient = () => {
 
                   <div className="product-details-action">
                     <a
-                      onClick={handleAddToCart}
+                      onClick={(e) => {
+                        if (product.is_active === 0) {
+                          e.preventDefault(); // Prevent the default action if the product is inactive
+                          message.error(
+                            "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
+                          );
+                        } else {
+                          handleAddToCart();
+                        }
+                      }}
                       href="#"
-                      className="btn-product btn-cart"
+                      className={`btn-product btn-cart ${
+                        product.is_active === 0 ? "disabled" : ""
+                      }`}
+                      disabled={product.is_active === 0}
                     >
-                      <span>add to cart</span>
+                      <span>Thêm vào giỏ hàng</span>
                     </a>
 
                     <div className="details-action-wrapper">

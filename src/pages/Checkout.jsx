@@ -21,6 +21,7 @@ import { productsServices } from "./../services/product";
 import { AuthServices } from "../services/auth";
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
+import { CouponServices } from "../services/coupon";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -35,12 +36,10 @@ const Checkout = () => {
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
-
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [payMents, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
-
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [shippingFee, setShippingFee] = useState(0);
@@ -53,6 +52,12 @@ const Checkout = () => {
     loyalty_points: 0,
   });
   const [userId, setUserId] = useState(null);
+  const [coupons, setCoupons] = useState([]); // Lưu các phiếu giảm giá chung
+  const [userCoupons, setUserCoupons] = useState([]); // Lưu các phiếu giảm giá của người dùng
+  const [discountCode, setDiscountCode] = useState(""); // Mã giảm giá người dùng nhập vào
+  const [discountAmount, setDiscountAmount] = useState(0); // Số tiền giảm giá
+  const [isCouponModalVisible, setIsCouponModalVisible] = useState(false); // Quản lý trạng thái Modal mã giảm giá
+  const [selectedCoupon, setSelectedCoupon] = useState(null); // Mã giảm giá người dùng đã chọn
 
   useEffect(() => {
     const fetchCartData = async () => {
@@ -328,6 +333,7 @@ const Checkout = () => {
     mutate(userData); // Gửi dữ liệu tới API
   };
 
+  //tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
         // Lấy giá sản phẩm từ biến thể nếu có
@@ -340,7 +346,10 @@ const Checkout = () => {
         return total + productPrice * (item.quantity || 1);
       }, 0)
     : 0;
-  const finalTotal = subtotal + shippingFee - usedLoyaltyPoints;
+  const finalTotal =
+    subtotal + shippingFee - usedLoyaltyPoints - discountAmount;
+
+  //lấy phương thức thanh toán
   useEffect(() => {
     const fetchPayments = async () => {
       try {
@@ -354,6 +363,7 @@ const Checkout = () => {
     fetchPayments();
   }, []);
 
+  //lấy giá trị thuộc tính
   useEffect(() => {
     const fetchAttributeValues = async () => {
       try {
@@ -395,8 +405,6 @@ const Checkout = () => {
       // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
-
-      // Nếu là khách vãng lai và chọn COD, sẽ báo lỗi
 
       const orderData = {
         user_id: userId || null,
@@ -601,6 +609,48 @@ const Checkout = () => {
       return 0;
     }
   };
+
+  useEffect(() => {
+    const fetchCouponsData = async () => {
+      try {
+        // Lấy phiếu giảm giá chung
+        const couponsData = await CouponServices.fetchCoupons();
+        setCoupons(couponsData.data);
+        console.log("Dữ liệu phiếu giảm giá chung:", couponsData.data);
+
+        // Lấy phiếu giảm giá theo ID người dùng (nếu có)
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+        if (storedUser?.id) {
+          const userCouponsData = await CouponServices.getCounponById(
+            storedUser.id
+          );
+          setUserCoupons(userCouponsData);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy phiếu giảm giá:", error);
+      }
+    };
+
+    fetchCouponsData();
+  }, []);
+
+  const applyDiscount = () => {
+    if (!selectedCoupon) {
+      message.error("Vui lòng chọn mã giảm giá.");
+      return;
+    }
+
+    let discountValue = 0;
+    if (selectedCoupon.discount_type === "percent") {
+      discountValue = (subtotal * selectedCoupon.discount) / 100;
+    } else if (selectedCoupon.discount_type === "fix_amount") {
+      discountValue = selectedCoupon.discount;
+    }
+
+    setDiscountAmount(discountValue); // Cập nhật giá trị giảm giá
+    message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
+    setIsCouponModalVisible(false); // Đóng modal sau khi chọn
+  };
   return (
     <div>
       <main className="main">
@@ -632,22 +682,6 @@ const Checkout = () => {
         <div className="page-content">
           <div className="checkout">
             <div className="container">
-              <div className="checkout-discount">
-                <form onSubmit={(e) => e.preventDefault()}>
-                  <input
-                    type="text"
-                    className="form-control"
-                    required
-                    id="checkout-discount-input"
-                  />
-                  <label
-                    for="checkout-discount-input"
-                    className="text-truncate"
-                  >
-                    Have a coupon? <span>Click here to enter your code</span>
-                  </label>
-                </form>
-              </div>
               <Form layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
@@ -1094,46 +1128,136 @@ const Checkout = () => {
 
                           {/* Đổi điểm */}
                           {!userId ? null : (
-                            <tr
-                              style={{ fontSize: "1.1rem", fontWeight: "bold" }}
-                            >
-                              <td style={{ padding: "10px" }}>
-                                Điểm thưởng ({userData.loyalty_points || 0}):
-                              </td>
-                              <td
-                                style={{ textAlign: "right", padding: "10px" }}
+                            <>
+                              <tr
+                                style={{
+                                  fontSize: "1.1rem",
+                                  fontWeight: "bold",
+                                }}
                               >
-                                <input
-                                  type="number"
-                                  placeholder="Nhập điểm đổi"
-                                  min={0}
-                                  max={userData.loyalty_points}
-                                  value={usedLoyaltyPoints}
-                                  onChange={(e) => {
-                                    const inputValue = Number(e.target.value);
-                                    if (inputValue <= userData.loyalty_points) {
-                                      setUsedLoyaltyPoints(inputValue);
-                                    } else {
-                                      message.warning(
-                                        "Bạn không thể dùng quá số điểm hiện có!"
-                                      );
-                                      setUsedLoyaltyPoints(
-                                        userData.loyalty_points
-                                      );
-                                    }
-                                  }}
+                                <td style={{ padding: "10px" }}>
+                                  Điểm thưởng ({userData.loyalty_points || 0}):
+                                </td>
+                                <td
                                   style={{
-                                    border: "none",
-                                    borderBottom: "1px solid #ccc",
-                                    outline: "none",
-                                    fontSize: "1.3rem",
-                                    width: "80%",
                                     textAlign: "right",
-                                    padding: "4px",
+                                    padding: "10px",
                                   }}
-                                />
-                              </td>
-                            </tr>
+                                >
+                                  <input
+                                    type="number"
+                                    placeholder="Nhập điểm đổi"
+                                    min={0}
+                                    max={userData.loyalty_points}
+                                    value={usedLoyaltyPoints}
+                                    onChange={(e) => {
+                                      const inputValue = Number(e.target.value);
+                                      if (
+                                        inputValue <= userData.loyalty_points
+                                      ) {
+                                        setUsedLoyaltyPoints(inputValue);
+                                      } else {
+                                        message.warning(
+                                          "Bạn không thể dùng quá số điểm hiện có!"
+                                        );
+                                        setUsedLoyaltyPoints(
+                                          userData.loyalty_points
+                                        );
+                                      }
+                                    }}
+                                    style={{
+                                      border: "none",
+                                      borderBottom: "1px solid #ccc",
+                                      outline: "none",
+                                      fontSize: "1.3rem",
+                                      width: "80%",
+                                      textAlign: "right",
+                                      padding: "4px",
+                                    }}
+                                  />
+                                </td>
+                              </tr>
+                              <tr
+                                style={{
+                                  fontSize: "1.1rem",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                <td style={{ padding: "10px" }}>
+                                  Mã giảm giá:
+                                </td>
+                                <td
+                                  style={{
+                                    textAlign: "right",
+                                    padding: "10px",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      cursor: "pointer",
+                                      color: "#e48948",
+                                    }}
+                                    onClick={() =>
+                                      setIsCouponModalVisible(true)
+                                    } // Mở modal khi nhấn vào
+                                  >
+                                    Chọn mã giảm giá
+                                  </span>
+                                </td>
+                              </tr>
+
+                              {/* Modal hiển thị danh sách mã giảm giá */}
+                              <Modal
+                                title="Chọn mã giảm giá"
+                                visible={isCouponModalVisible}
+                                onCancel={() => setIsCouponModalVisible(false)} // Đóng modal khi bấm cancel
+                                footer={null}
+                                width={300} // Điều chỉnh modal nhỏ hơn
+                                centered
+                              >
+                                <div className="coupon-list">
+                                  {coupons && coupons.length > 0 ? (
+                                    coupons.map((coupon) => (
+                                      <div
+                                        key={coupon.id}
+                                        style={{
+                                          padding: "10px",
+                                          marginBottom: "10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "4px",
+                                          cursor: "pointer",
+                                          backgroundColor:
+                                            selectedCoupon?.id === coupon.id
+                                              ? "#e48948"
+                                              : "",
+                                          color:
+                                            selectedCoupon?.id === coupon.id
+                                              ? "white"
+                                              : "",
+                                        }}
+                                        onClick={() =>
+                                          setSelectedCoupon(coupon)
+                                        } // Set the selected coupon
+                                      >
+                                        {coupon.title} -{" "}
+                                        {coupon.discount_type === "percent"
+                                          ? `${coupon.discount_value}%`
+                                          : `${coupon.discount_value} VND`}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p>Không có mã giảm giá nào.</p> // Display this if there are no coupons
+                                  )}
+                                </div>
+                                <Button
+                                  type="primary"
+                                  onClick={applyDiscount}
+                                  style={{ width: "100%" }}
+                                >
+                                  Áp dụng mã giảm giá
+                                </Button>
+                              </Modal>
+                            </>
                           )}
                           {/* Tổng tiền */}
                           <tr

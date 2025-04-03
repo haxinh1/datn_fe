@@ -116,12 +116,19 @@ const Cart = () => {
   };
 
   const subtotal = cartItems.reduce((total, item) => {
+    // Kiểm tra sản phẩm có còn bán hay không
+    if (item.product.is_active === 0) {
+      return total; // Nếu sản phẩm ngừng bán, không cộng vào tổng
+    }
+
     const price = item.product_variant
       ? item.product_variant.sale_price || item.product_variant.sell_price
       : item.price;
-    return total + price * item.quantity;
+
+    return total + price * item.quantity; // Thêm sản phẩm vào tổng nếu còn bán
   }, 0);
 
+  // Tổng tiền = subtotal + phí vận chuyển
   const total = subtotal + shippingCost;
 
   const handleQuantityChange = async (index, newQuantity) => {
@@ -191,26 +198,57 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user ? user.id : null;
+      let updatedCartItems = [...cartItems];
 
-      if (userId) {
-        // Đã đăng nhập → kiểm tra giỏ hàng từ database
-        const cartData = await cartServices.fetchCart();
-        if (!cartData || cartData.length === 0) {
-          message.warning("Giỏ hàng của bạn đang trống!");
-          return;
-        }
-      } else {
-        // Vãng lai → kiểm tra localStorage
-        const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
-        if (localCart.length === 0) {
-          message.warning("Giỏ hàng của bạn đang trống!");
-          return;
+      // Lọc các sản phẩm ngừng bán
+      const productsInactive = updatedCartItems.filter(
+        (item) => item.product.is_active === 0
+      );
+
+      // Nếu có sản phẩm không còn bán, xóa khỏi giỏ hàng
+      if (productsInactive.length > 0) {
+        updatedCartItems = updatedCartItems.filter(
+          (item) => item.product.is_active !== 0
+        );
+
+        // Xóa sản phẩm ngừng bán từ giỏ hàng
+        if (localStorage.getItem("user")) {
+          // Đã đăng nhập → gọi API để xóa sản phẩm ngừng bán
+          for (const product of productsInactive) {
+            await cartServices.removeCartItem(
+              product.product_id,
+              product.product_variant_id
+            );
+          }
+          message.warning(
+            `${productsInactive.length} sản phẩm ngừng bán đã bị xóa!`
+          );
+        } else {
+          // Vãng lai → xóa sản phẩm ngừng bán trong localStorage
+          const localCart =
+            JSON.parse(localStorage.getItem("cart_items")) || [];
+          const updatedLocalCart = localCart.filter(
+            (item) =>
+              !productsInactive.some(
+                (inactive) =>
+                  inactive.product_id === item.product_id &&
+                  inactive.product_variant_id === item.product_variant_id
+              )
+          );
+          localStorage.setItem("cart_items", JSON.stringify(updatedLocalCart));
+          message.warning(
+            `${productsInactive.length} sản phẩm ngừng bán đã bị xóa!`
+          );
         }
       }
 
-      // Nếu có sản phẩm trong giỏ → chuyển sang trang thanh toán
+      // Kiểm tra giỏ hàng đã còn sản phẩm chưa
+      if (updatedCartItems.length === 0) {
+        message.warning("Giỏ hàng của bạn đang trống!");
+        return;
+      }
+
+      // Chuyển hướng đến trang checkout nếu giỏ hàng còn sản phẩm
       navigate("/checkout");
     } catch (error) {
       console.error("Lỗi khi kiểm tra giỏ hàng:", error);
@@ -222,26 +260,51 @@ const Cart = () => {
       title: "Sản phẩm",
       dataIndex: "product",
       align: "center",
-      render: (product, record) => (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-          }}
-        >
-          <Image src={product.thumbnail} width={60} />
-          <div>
-            {product.name}
-            {record.product_variant_id && (
-              <span className="text-muted" style={{ fontSize: "14px" }}>
-                ({getAttributeValue(record)})
-              </span>
-            )}
+      render: (product, record) => {
+        // Kiểm tra trạng thái is_active của sản phẩm
+        const isProductInactive = product.is_active === 0;
+
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              opacity: isProductInactive ? 0.5 : 1, // Làm mờ nếu sản phẩm không còn bán
+              position: "relative",
+            }}
+          >
+            <Image src={product.thumbnail} width={60} />
+            <div>
+              {product.name}
+              {record.product_variant_id && (
+                <span className="text-muted" style={{ fontSize: "14px" }}>
+                  ({getAttributeValue(record)})
+                </span>
+              )}
+
+              {/* Hiển thị thông báo "Sản phẩm này ngừng bán" nếu sản phẩm không còn bán */}
+              {isProductInactive && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "10px",
+                    left: "0",
+                    width: "100%",
+                    textAlign: "center",
+                    color: "red",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Sản phẩm này ngừng bán
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Giá bán",
@@ -258,6 +321,7 @@ const Cart = () => {
           min={1}
           value={quantity}
           onChange={(newQuantity) => handleQuantityChange(index, newQuantity)}
+          disabled={record.product.is_active === 0} // Vô hiệu hóa chỉnh sửa nếu sản phẩm không còn bán
         />
       ),
     },
@@ -265,7 +329,12 @@ const Cart = () => {
       title: "Thành tiền",
       dataIndex: "total",
       align: "center",
-      render: (_, record) => formatCurrency(record.price * record.quantity),
+      render: (_, record) => {
+        if (record.product.is_active === 0) {
+          return "Không tính"; // Không tính tiền nếu sản phẩm ngừng bán
+        }
+        return formatCurrency(record.price * record.quantity);
+      },
     },
     {
       title: "",

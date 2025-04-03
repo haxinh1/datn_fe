@@ -170,7 +170,8 @@ const logoutad = async () => {
 };
 
 const getAddressByIdUser = async (userId) => {
-  const token = localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+  const token =
+    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -238,18 +239,17 @@ const deleteAddress = async (id) => {
     throw new Error("Token xác thực không có trong localStorage");
   }
 
-  const response = await instance.delete(`/user-addresses/${id}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
-      },
-    });
+  const response = await instance.delete(`/user-addresses/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+    },
+  });
   return response.data;
 };
 
 // đăng nhập Google
 const loginGoogle = async () => {
-  const response = await instance.get('/auth/google');
+  const response = await instance.get("/auth/google");
   return response.data;
 };
 
@@ -274,5 +274,5 @@ export const AuthServices = {
   getaAddress,
   updateAddress,
   deleteAddress,
-  loginGoogle
+  loginGoogle,
 };

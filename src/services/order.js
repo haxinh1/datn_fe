@@ -111,8 +111,8 @@ const updateOrders = async (payload) => {
 // yêu cầu trả hàng
 const returnOrder = async (id, payload) => {
   const respone = await instance.post(`orders/${id}/return`, payload);
-  return respone.data
-}
+  return respone.data;
+};
 
 //danh sách đơn hoàn trả
 const getReturnOrder = async () => {
@@ -122,9 +122,12 @@ const getReturnOrder = async () => {
 
 // cập nhật trạng thái đơn hoàn trả
 const updateOrderReturn = async (id, payload) => {
-  const response = await instance.post(`/order-returns/update-status/order/${id}`, payload)
-  return response.data
-}
+  const response = await instance.post(
+    `/order-returns/update-status/order/${id}`,
+    payload
+  );
+  return response.data;
+};
 
 // danh sách đơn hàng theo người dùng
 const getOrderReturnByIdUser = async (userId) => {
@@ -139,16 +142,35 @@ const getRefund = async (id) => {
 
 // yêu cầu hoàn tiền
 const requestBack = async (id, payload) => {
-  const response = await instance.post(`/refunds/request/${id}`, payload)
-  return response.data
-}
+  const response = await instance.post(`/refunds/request/${id}`, payload);
+  return response.data;
+};
 
 // xác nhận hoàn tiền
 const confirmBack = async (id, payload) => {
-  const response = await instance.post(`/refunds/confirm/${id}`, payload)
-  return response.data
-}
+  const response = await instance.post(`/refunds/confirm/${id}`, payload);
+  return response.data;
+};
 
+const retryPayment = async (orderId) => {
+  const clientToken = localStorage.getItem("client_token");
+
+  try {
+    const response = await instance.post(
+      `/orders/${orderId}/retry-payment`,
+      {}, // Payload có thể rỗng nếu không cần thêm dữ liệu
+      {
+        headers: {
+          Authorization: `Bearer ${clientToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ Lỗi khi thanh toán lại:", error.response?.data || error);
+    throw error;
+  }
+};
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
@@ -162,10 +184,11 @@ export const OrderService = {
   updateOrders,
   getOrderByIdUser,
   returnOrder,
-  getReturnOrder, 
+  getReturnOrder,
   updateOrderReturn,
   getOrderReturnByIdUser,
-  getRefund, 
+  getRefund,
   requestBack,
-  confirmBack
+  confirmBack,
+  retryPayment,
 };

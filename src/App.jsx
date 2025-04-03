@@ -51,6 +51,8 @@ import Staff from "./admin/Staff";
 import Return from "./pages/Return";
 import Back from "./admin/Back";
 import BackCl from "./pages/BackCl";
+import DashboardAd from "./admin/DashboardAd";
+import GoogleCallbackHandler from "./pages/GoogleCallbackHandler";
 
 function App() {
   return (
@@ -73,7 +75,15 @@ function App() {
           <Route path="product-review/:id" element={<ProductReview />} />
           <Route path="review/:id" element={<Review />} />
           <Route path="detail/:id" element={<Detail />} />
-          <Route path="dashboard"element={<PrivateClient><Dashboard /></PrivateClient>}>
+          <Route path="google-callback" element={<GoogleCallbackHandler />} />
+          <Route
+            path="dashboard"
+            element={
+              <PrivateClient>
+                <Dashboard />
+              </PrivateClient>
+            }
+          >
             <Route path="changepass/:id" element={<ChangePass />} />
             <Route path="info/:id" element={<Info />} />
             <Route path="orders/:id" element={<Orders />} />
@@ -92,6 +102,7 @@ function App() {
         {/* Các trang cần đăng nhập */}
         <Route element={<PrivateRoute />}>
           <Route path="/admin" element={<LayoutAdmin />}>
+            <Route path="dashboardad" element={<DashboardAd />} />
             <Route path="list-pr" element={<List />} />
             <Route path="detailad/:id" element={<ProductDetail />} />
             <Route path="add-pr" element={<Add />} />
