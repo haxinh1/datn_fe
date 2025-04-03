@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -25,7 +25,7 @@ const OrderStaff = () => {
     const [form] = Form.useForm();
     const [image, setImage] = useState("");
     const [orderDetails, setOrderDetails] = useState([]);
-    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "" });
+    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
     const { RangePicker } = DatePicker;
     const [validStatuses, setValidStatuses] = useState([]);
     const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
@@ -233,7 +233,10 @@ const OrderStaff = () => {
         setOrderInfo({
             email: order.email,
             address: order.address,
-            fullname: order.fullname
+            fullname: order.fullname,
+            discount_points: order.discount_points,
+            shipping_fee: order.shipping_fee,
+            total_amount: order.total_amount
         });
 
         const orderDetails = await OrderService.getOrderById(order.id);
@@ -495,6 +498,10 @@ const OrderStaff = () => {
 
             <div className="group1">
                 <div>
+                    <Button 
+                        onClick={resetFilters}
+                        icon={<MenuOutlined />}
+                    />
                     <Button
                         type={filters.status === 1 ? "primary" : "default"}
                         onClick={() => handleFilterChange(1)}
@@ -513,19 +520,16 @@ const OrderStaff = () => {
                     >
                         Đang xử lý ({statusCounts[3]})
                     </Button>
-                    <Button onClick={resetFilters} style={{ marginLeft: 10 }}>
-                        Xóa bộ lọc
-                    </Button>
                 </div>
 
                 <div className="group2">
-                    <Button
+                    {/* <Button
                         color="primary" variant="solid"
                         icon={<ToTopOutlined />}
                         onClick={handleExportExcel}
                     >
                         Xuất Excel
-                    </Button>
+                    </Button> */}
 
                     <Button
                         color="primary"
@@ -567,7 +571,6 @@ const OrderStaff = () => {
                         index: index + 1,
                         product_name: item.product?.name,
                     }))}
-                    bordered
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce(
@@ -575,14 +578,40 @@ const OrderStaff = () => {
                             0
                         );
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={4} align="right">
-                                    <strong>Tổng giá trị (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Tổng tiền:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(totalAmount)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phí vận chuyển:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.shipping_fee)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Giảm giá điểm tiêu dùng:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.discount_points)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        <strong>Tổng giá trị đơn hàng:</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />

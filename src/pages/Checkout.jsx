@@ -1246,7 +1246,7 @@ const Checkout = () => {
                           }
                         }}
                       >
-                        Đến trang thanh toán
+                        Thanh Toán
                       </button>
                     </div>
                   </aside>

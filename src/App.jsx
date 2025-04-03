@@ -57,7 +57,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 function App() {
   return (
     <>
-      <GoogleOAuthProvider clientId="351645639930-lfe09b651g5ht1pr5kj7n9ig3i3nu25o.apps.googleusercontent.com">
+      <GoogleOAuthProvider clientId="879711091678-csf6s33b2njlf76j3j11l5lud48kbmgu.apps.googleusercontent.com">
         {/*router cho khách hàng */}
         <Routes>
           <Route path="/" element={<LayoutClient />}>

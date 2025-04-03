@@ -168,7 +168,7 @@ const Logincl = () => {
 
         <div className="form-choice">
           <p className="text-center">
-            <span>hoặc đăng nhập bằng</span>
+            <span>hoặc</span>
           </p>
             <GoogleLogin
               onSuccess={handleGoogleLoginSuccess}

@@ -17,6 +17,7 @@ const User = () => {
     const [orderCount, setOrderCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [productData, setProductData] = useState([])
+    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -77,6 +78,12 @@ const User = () => {
     const showModal = async (order) => {
         setIsModalVisible(true);
         setSelectedOrderId(order.id);
+
+        setOrderInfo({
+            discount_points: order.discount_points,
+            shipping_fee: order.shipping_fee,
+            total_amount: order.total_amount
+        });
 
         // Lọc danh sách sản phẩm của đơn hàng từ ordersData
         const orderDetails = await OrderService.getOrderById(order.id);
@@ -286,7 +293,7 @@ const User = () => {
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <Image src={productImage} alt="product" width={50} />
-                        <span>{productName}{productAttributes}</span>
+                        <Link to={`/admin/detailad/${record.product_id}`}><span>{productName}{productAttributes}</span></Link>
                     </div>
                 );
             },
@@ -304,24 +311,6 @@ const User = () => {
             key: "sell_price",
             align: "center",
             render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
-        },
-        {
-            title: "",
-            key: "action",
-            align: "center",
-            render: (_, item) => (
-                <div className="action-container">
-                    <Link to={`/admin/detailad/${item.product_id}`}>
-                        <Tooltip title='Xem sản phẩm'>
-                            <Button
-                                color="primary"
-                                variant="solid"
-                                icon={<ArrowRightOutlined />}
-                            />
-                        </Tooltip>
-                    </Link>
-                </div>
-            ),
         },
     ];
 
@@ -394,14 +383,40 @@ const User = () => {
                             0
                         );
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={4} align="right">
-                                    <strong>Tổng giá trị (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Tổng tiền:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(totalAmount)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phí vận chuyển:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.shipping_fee)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Giảm giá điểm tiêu dùng:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.discount_points)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        <strong>Tổng giá trị đơn hàng:</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />

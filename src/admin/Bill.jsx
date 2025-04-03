@@ -209,7 +209,7 @@ const Bill = () => {
     <div>
       <h1 className="mb-5">
         <PrinterOutlined style={{ marginRight: "8px" }} />
-        Quản lý hóa đơn
+        Hóa đơn
       </h1>
 
       <div className="group1">

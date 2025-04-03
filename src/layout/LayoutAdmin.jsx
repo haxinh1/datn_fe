@@ -72,6 +72,7 @@ const LayoutAdmin = () => {
 
   // Kiểm tra vai trò của người dùng trong localStorage
   const isManager = user?.role === 'manager';
+  const isAdmin = user?.role === 'admin';
 
   const menu = (
     <Menu>
@@ -88,32 +89,32 @@ const LayoutAdmin = () => {
     {
       key: "list-pr",
       icon: <ProductOutlined />,
-      label: <Link to="/admin/list-pr"><span>Quản lý sản phẩm</span></Link>,
+      label: <Link to="/admin/list-pr"><span>Sản phẩm</span></Link>,
     },
     {
       key: "history",
       icon: <ImportOutlined />,
-      label: <Link to="/admin/history"><span>Quản lý nhập hàng</span></Link>,
+      label: <Link to="/admin/history"><span>Nhập hàng</span></Link>,
     },
-    {
+    !isManager && {
       key: "order",
       icon: <BookOutlined />,
-      label: <Link to="/admin/order"><span>Quản lý đơn hàng</span></Link>,
+      label: <Link to="/admin/order"><span>Đơn hàng</span></Link>,
     },
-    {
+    !isAdmin && {
       key: "orderstaff",
       icon: <BookOutlined />,
-      label: <Link to="/admin/orderstaff"><span>Đơn hàng nhân viên</span></Link>,
+      label: <Link to="/admin/orderstaff"><span>Đơn hàng</span></Link>, 
     },
     {
       key: "back",
       icon: <RollbackOutlined />,
-      label: <Link to="/admin/back"><span>Quản lý hoàn trả</span></Link>,
+      label: <Link to="/admin/back"><span>Hoàn trả</span></Link>,
     },
     {
       key: "bill",
       icon: <PrinterOutlined />,
-      label: <Link to="/admin/bill"><span>Quản lý hóa đơn</span></Link>,
+      label: <Link to="/admin/bill"><span>Hóa đơn</span></Link>,
     },
     !isManager && {  // Ẩn mục 'Nhân sự' nếu là manager
       key: "account",

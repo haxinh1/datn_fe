@@ -25,7 +25,7 @@ const Order = () => {
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "" });
+  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
   const { RangePicker } = DatePicker;
   const [validStatuses, setValidStatuses] = useState([]);
   const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
@@ -222,7 +222,10 @@ const Order = () => {
     setOrderInfo({
       email: order.email,
       address: order.address,
-      fullname: order.fullname
+      fullname: order.fullname,
+      discount_points: order.discount_points,
+      shipping_fee: order.shipping_fee,
+      total_amount: order.total_amount
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -343,10 +346,10 @@ const Order = () => {
 
   const handleExportExcel = async () => {
     // Nếu không có đơn hàng nào được chọn, xuất toàn bộ dữ liệu
-    const selectedOrderIds = selectedOrders.length > 0 
-      ? selectedOrders.map((order) => order.id) 
+    const selectedOrderIds = selectedOrders.length > 0
+      ? selectedOrders.map((order) => order.id)
       : ordersData.map((order) => order.id);  // Nếu không có đơn nào được chọn, lấy tất cả các đơn hàng
-  
+
     try {
       // Gọi API để lấy dữ liệu xuất Excel
       const response = await fetch('http://127.0.0.1:8000/api/export-orders', {
@@ -356,18 +359,18 @@ const Order = () => {
         },
         body: JSON.stringify({ order_ids: selectedOrderIds }),  // Truyền order_ids vào body
       });
-  
+
       // Kiểm tra nếu API trả về file nhị phân (Excel)
       const blob = await response.blob();
-  
+
       // Kiểm tra kích thước của file (optional)
       if (blob.size === 0) {
         throw new Error('File xuất ra rỗng');
       }
-  
+
       // Sử dụng file-saver để lưu tệp Excel về máy người dùng
       saveAs(blob, 'order_item.xlsx');
-  
+
       notification.success({
         message: 'Xuất Excel thành công!',
         description: 'Dữ liệu đã được xuất và tải xuống thành công.',
@@ -379,7 +382,7 @@ const Order = () => {
         description: error.message || 'Có lỗi xảy ra khi xuất dữ liệu.',
       });
     }
-  };   
+  };
 
   const columns = [
     {
@@ -429,7 +432,7 @@ const Order = () => {
       align: "center",
       render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
       sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),  // Sắp xếp theo ngày
-    },    
+    },
     {
       title: "Phương thức thanh toán",
       dataIndex: "payment",
@@ -579,7 +582,7 @@ const Order = () => {
     <div>
       <h1 className="mb-5">
         <BookOutlined style={{ marginRight: "8px" }} />
-        Quản lý đơn hàng
+        Đơn hàng
       </h1>
 
       <div className="group1">
@@ -670,7 +673,6 @@ const Order = () => {
             index: index + 1,
             product_name: item.product?.name,
           }))}
-          bordered
           pagination={false}
           summary={() => {
             const totalAmount = orderDetails.reduce(
@@ -678,14 +680,40 @@ const Order = () => {
               0
             );
             return (
-              <Table.Summary.Row>
-                <Table.Summary.Cell colSpan={4} align="right">
-                  <strong>Tổng giá trị (VNĐ):</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell align="center">
-                  <strong>{formatPrice(totalAmount)}</strong>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
+              <>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Tổng tiền:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(totalAmount)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Phí vận chuyển:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(orderInfo.shipping_fee)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Giảm giá điểm tiêu dùng:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(orderInfo.discount_points)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    <strong>Tổng giá trị đơn hàng:</strong>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              </>
             );
           }}
         />
@@ -709,8 +737,8 @@ const Order = () => {
         <Form form={form} layout="vertical" onFinish={handleUpdateOrder}>
           <Row gutter={24}>
             <Col span={12} className="col-item">
-              <Form.Item 
-                label="Trạng thái đơn hàng" 
+              <Form.Item
+                label="Trạng thái đơn hàng"
                 name="status_id"
                 rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
               >

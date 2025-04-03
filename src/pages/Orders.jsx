@@ -17,7 +17,7 @@ const Orders = () => {
     const hideModal = () => setIsModalVisible(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [orderDetails, setOrderDetails] = useState([]);
-    const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
     const navigate = useNavigate()
 
     // Tách số thành định dạng tiền tệ
@@ -37,6 +37,9 @@ const Orders = () => {
         setOrderInfo({
             email: order.email,
             address: order.address,
+            discount_points: order.discount_points,
+            shipping_fee: order.shipping_fee,
+            total_amount: order.total_amount
         });
 
         // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -259,7 +262,9 @@ const Orders = () => {
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <Image src={thumbnail} width={60} />
-                        <span>{variantAttributes}</span>
+                        <Link to={`/product-detail/${record.product_id}`}>
+                            <span>{variantAttributes}</span>
+                        </Link>
                     </div>
                 );
             },
@@ -455,7 +460,6 @@ const Orders = () => {
                         index: index + 1,
                         product_name: item.product?.name,
                     }))}
-                    bordered
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce(
@@ -463,14 +467,40 @@ const Orders = () => {
                             0
                         );
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={4} align="right">
-                                    <strong>Tổng giá trị (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Tổng tiền:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(totalAmount)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phí vận chuyển:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.shipping_fee)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Giảm giá điểm tiêu dùng:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.discount_points)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        <strong>Tổng giá trị đơn hàng:</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />

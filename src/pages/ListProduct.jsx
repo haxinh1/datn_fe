@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
 import { categoryServices } from "./../services/categories";
 import bg from "../assets/images/backgrounds/bg-1.jpg";
+import { Pagination } from "antd";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -15,11 +16,10 @@ const ListProduct = () => {
   const [selectedVariantData, setSelectedVariantData] = useState({});
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedPrices, setSelectedPrices] = useState([]);
-  const [cart, setCart] = useState(
-    JSON.parse(sessionStorage.getItem("session_cart")) || []
-  );
-  const [message, setMessage] = useState(""); // Thêm state message
-  const [messageType, setMessageType] = useState(""); // success hoặc error
+  const [keyword, setKeyword] = useState("");
+  const [isFiltered, setIsFiltered] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(9);
 
   useEffect(() => {
     const getProducts = async () => {
@@ -31,10 +31,32 @@ const ListProduct = () => {
       );
 
       setProducts(activeProducts);
-      setFilteredProducts(activeProducts); // Cập nhật filteredProducts luôn
+      setFilteredProducts(activeProducts.slice(0, pageSize)); // Cập nhật filteredProducts luôn
     };
     getProducts();
-  }, []);
+  }, [pageSize]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = page * pageSize;
+    setFilteredProducts(products.slice(startIndex, endIndex)); // Lấy các sản phẩm tương ứng với trang
+  };
+
+  const handleSearch = async (keyword) => {
+    try {
+      if (keyword.trim() === "") {
+        setFilteredProducts(products); // Nếu từ khóa trống, hiển thị lại tất cả sản phẩm
+      } else {
+        const searchResults = await productsServices.searchProducts(keyword); // Gọi service tìm kiếm sản phẩm
+        setFilteredProducts(searchResults); // Cập nhật lại danh sách sản phẩm
+      }
+      setIsFiltered(true);
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+      setFilteredProducts([]); // Nếu có lỗi, để mảng sản phẩm trống
+    }
+  };
 
   useEffect(() => {
     setFilteredProducts(products); // Cập nhật khi products thay đổi
@@ -157,6 +179,7 @@ const ListProduct = () => {
     });
 
     setFilteredProducts(filtered);
+    setIsFiltered(true); // Đánh dấu là đang lọc
   };
 
   const handleClear = () => {
@@ -164,6 +187,8 @@ const ListProduct = () => {
     setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
     setSelectedCategories([]); // Bỏ chọn tất cả danh mục
     setSelectedPrices([]); // Bỏ chọn tất cả mức giá
+    setIsFiltered(false); // Đánh dấu là không lọc nữa
+    setKeyword("");
   };
 
   useEffect(() => {
@@ -225,12 +250,29 @@ const ListProduct = () => {
             </ol>
           </div>
         </nav>
+
         <div className="page-content">
           <div className="container">
             <div className="row">
               <div className="col-lg-9">
                 <div className="products mb-3">
                   <div className="row justify-content-center">
+                    <div className="group1">
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Tìm kiếm sản phẩm..."
+                        value={keyword} // Lưu trữ từ khóa trong state keyword
+                        onChange={(e) => setKeyword(e.target.value)} // Cập nhật giá trị khi người dùng nhập
+                      />
+                      <button
+                        onClick={isFiltered ? handleClear : () => handleSearch(keyword)} // Gọi hàm tìm kiếm khi nhấn nút
+                        className="btn btn-outline-primary-2"
+                      >
+                        {isFiltered ? "QUAY LẠI" : "TÌM KIẾM"}
+                      </button>
+                    </div>
+
                     {filteredProducts.map((product) => (
                       <div className="col-6 col-md-4 col-lg-4" key={product.id}>
                         <div className="product product-7 text-center">
@@ -249,20 +291,6 @@ const ListProduct = () => {
                                 }}
                               />
                             </Link>
-                            <div className="product-action">
-                              {/* <button
-                                className="btn-product btn-cart"
-                                onClick={() => handleAddToCart(product)}
-                              >
-                                <span>Thêm vào giỏ hàng</span>
-                              </button> */}
-                              <Link
-                                to={`/product-detail/${product.id}`}
-                                className="btn-product btn-cart"
-                              >
-                                <span>Chi tiết sản phẩm</span>
-                              </Link>
-                            </div>
                           </figure>
                           <div className="product-body">
                             <span className="product-title">
@@ -292,67 +320,23 @@ const ListProduct = () => {
                     ))}
                   </div>
                 </div>
-                <nav aria-label="Page navigation">
-                  <ul className="pagination justify-content-center">
-                    <li className="page-item disabled">
-                      <a
-                        aria-disabled="true"
-                        aria-label="Previous"
-                        className="page-link page-link-prev"
-                        href="#"
-                        tabIndex="-1"
-                      >
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-left" />
-                        </span>
-                        Prev
-                      </a>
-                    </li>
-                    <li aria-current="page" className="page-item active">
-                      <a className="page-link" href="#">
-                        1
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        2
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        3
-                      </a>
-                    </li>
-                    <li className="page-item-total">of 6</li>
-                    <li className="page-item">
-                      <a
-                        aria-label="Next"
-                        className="page-link page-link-next"
-                        href="#"
-                      >
-                        Next{" "}
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-right" />
-                        </span>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
+
+                <div className="avatar">
+                  <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={products.length}
+                    onChange={handlePageChange}
+                  />
+                </div>
               </div>
+              
               <aside className="col-lg-3 order-lg-first">
                 <div className="sidebar sidebar-shop">
                   {/* List danh mục */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-1"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-1"
-                        role="button"
-                      >
-                        <span>Danh mục</span>
-                      </a>
+                      <span>Danh mục</span>
                     </h3>
 
                     <div className="show" id="widget-1">
@@ -397,15 +381,7 @@ const ListProduct = () => {
                   {/* List thương hiệu */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <Link
-                        aria-controls="widget-4"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-4"
-                        role="button"
-                      >
-                        <span>Thương hiệu</span>
-                      </Link>
+                      <span>Thương hiệu</span>
                     </h3>
 
                     <div className="" id="widget-4">
@@ -439,15 +415,7 @@ const ListProduct = () => {
                   {/* List size */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-2"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-2"
-                        role="button"
-                      >
-                        <span>Kích cỡ</span>
-                      </a>
+                      <span>Kích cỡ</span>
                     </h3>
 
                     <div className=" show" id="widget-2">
@@ -476,15 +444,7 @@ const ListProduct = () => {
                   {/* List màu */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-3"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-3"
-                        role="button"
-                      >
-                        <span>Màu sắc</span>
-                      </a>
+                      <span>Màu sắc</span>
                     </h3>
 
                     <div className=" show" id="widget-3">
@@ -505,15 +465,7 @@ const ListProduct = () => {
 
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-5"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-5"
-                        role="button"
-                      >
-                        <span>Mức Giá</span>
-                      </a>
+                      <span>Mức Giá</span>
                     </h3>
 
                     <div className=" show" id="widget-5">
@@ -559,16 +511,9 @@ const ListProduct = () => {
                     <button
                       type="submit"
                       className="btn btn-outline-primary-2"
-                      onClick={handleFilter}
+                      onClick={isFiltered ? handleClear : handleFilter}
                     >
-                      <span>TÌM KIẾM</span>
-                    </button>
-
-                    <button
-                      onClick={handleClear}
-                      className="btn btn-outline-primary-2"
-                    >
-                      <span>QUAY LẠI</span>
+                      <span>{isFiltered ? "QUAY LẠI" : "TÌM KIẾM"}</span>
                     </button>
                   </div>
                 </div>
@@ -577,7 +522,6 @@ const ListProduct = () => {
           </div>
         </div>
       </main>
-      ;
     </div>
   );
 };
