@@ -52,76 +52,73 @@ import Return from "./pages/Return";
 import Back from "./admin/Back";
 import BackCl from "./pages/BackCl";
 import OrderStaff from "./admin/OrderStaff";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 
 function App() {
   return (
     <>
-      <GoogleOAuthProvider clientId="879711091678-csf6s33b2njlf76j3j11l5lud48kbmgu.apps.googleusercontent.com">
-        {/*router cho khách hàng */}
-        <Routes>
-          <Route path="/" element={<LayoutClient />}>
-            <Route index element={<Home />} />
-            <Route path="product-detail/:id" element={<ProductDetailClient />} />
-            <Route path="cart" element={<Cart />} />
-            <Route path="signup" element={<Signup />} />
-            <Route path="confirm" element={<Confirm />} />
-            <Route path="forget" element={<Forget />} />
-            <Route path="reset/:token" element={<Reset />} />
-            <Route path="checkout" element={<Checkout />} />
-            <Route path="payments" element={<Payments />} />
-            <Route path="logincl" element={<LoginCl />} />
-            <Route path="list-prcl" element={<ListProduct />} />
-            <Route path="thanks" element={<Thankyoupage />} />
-            <Route path="product-review/:id" element={<ProductReview />} />
-            <Route path="review/:id" element={<Review />} />
-            <Route path="detail/:id" element={<Detail />} />
-            <Route path="dashboard" element={<PrivateClient><Dashboard /></PrivateClient>}>
-              <Route path="changepass/:id" element={<ChangePass />} />
-              <Route path="info/:id" element={<Info />} />
-              <Route path="orders/:id" element={<Orders />} />
-              <Route path="address/:id" element={<Address />} />
-              <Route path="return/:id" element={<Return />} />
-              <Route path="backcl/:id" element={<BackCl />} />
-            </Route>
+      {/*router cho khách hàng */}
+      <Routes>
+        <Route path="/" element={<LayoutClient />}>
+          <Route index element={<Home />} />
+          <Route path="product-detail/:id" element={<ProductDetailClient />} />
+          <Route path="cart" element={<Cart />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="confirm" element={<Confirm />} />
+          <Route path="forget" element={<Forget />} />
+          <Route path="reset/:token" element={<Reset />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="logincl" element={<LoginCl />} />
+          <Route path="list-prcl" element={<ListProduct />} />
+          <Route path="thanks" element={<Thankyoupage />} />
+          <Route path="product-review/:id" element={<ProductReview />} />
+          <Route path="review/:id" element={<Review />} />
+          <Route path="detail/:id" element={<Detail />} />
+          <Route path="dashboard" element={<PrivateClient><Dashboard /></PrivateClient>}>
+            <Route path="changepass/:id" element={<ChangePass />} />
+            <Route path="info/:id" element={<Info />} />
+            <Route path="orders/:id" element={<Orders />} />
+            <Route path="address/:id" element={<Address />} />
+            <Route path="return/:id" element={<Return />} />
+            <Route path="backcl/:id" element={<BackCl />} />
           </Route>
-        </Routes>
+        </Route>
+      </Routes>
 
-        <Routes>
-          <Route path="/loginad" index element={<LoginAd />} />
-          <Route path="/forgetad" element={<ForgetAd />} />
-          <Route path="/resetad/:token" element={<ResetAd />} />
+      <Routes>
+        <Route path="/loginad" index element={<LoginAd />} />
+        <Route path="/forgetad" element={<ForgetAd />} />
+        <Route path="/resetad/:token" element={<ResetAd />} />
 
-          {/* Các trang cần đăng nhập */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/admin" element={<LayoutAdmin />}>
-              <Route path="list-pr" element={<List />} />
-              <Route path="detailad/:id" element={<ProductDetail />} />
-              <Route path="add-pr" element={<Add />} />
-              <Route path="edit-pr/:id" element={<Edit />} />
-              <Route path="import" element={<Import />} />
-              <Route path="creat" element={<Creat />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="history" element={<History />} />
-              <Route path="brand" element={<Brand />} />
-              <Route path="account" element={<Account />} />
-              <Route path="staff/:id" element={<Staff />} />
-              <Route path="customer" element={<Customer />} />
-              <Route path="user/:id" element={<User />} />
-              <Route path="test" element={<Test />} />
-              <Route path="order" element={<Order />} />
-              <Route path="orderstaff" element={<OrderStaff />} />
-              <Route path="back" element={<Back />} />
-              <Route path="bill" element={<Bill />} />
-              <Route path="inbox" element={<Inbox />} />
-              <Route path="coupon" element={<Coupon />} />
-              <Route path="update/:id" element={<Update />} />
-              <Route path="change/:id" element={<Change />} />
-              <Route path="comment" element={<Comment />} />
-            </Route>
+        {/* Các trang cần đăng nhập */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/admin" element={<LayoutAdmin />}>
+            <Route path="list-pr" element={<List />} />
+            <Route path="detailad/:id" element={<ProductDetail />} />
+            <Route path="add-pr" element={<Add />} />
+            <Route path="edit-pr/:id" element={<Edit />} />
+            <Route path="import" element={<Import />} />
+            <Route path="creat" element={<Creat />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="history" element={<History />} />
+            <Route path="brand" element={<Brand />} />
+            <Route path="account" element={<Account />} />
+            <Route path="staff/:id" element={<Staff />} />
+            <Route path="customer" element={<Customer />} />
+            <Route path="user/:id" element={<User />} />
+            <Route path="test" element={<Test />} />
+            <Route path="order" element={<Order />} />
+            <Route path="orderstaff" element={<OrderStaff />} />
+            <Route path="back" element={<Back />} />
+            <Route path="bill" element={<Bill />} />
+            <Route path="inbox" element={<Inbox />} />
+            <Route path="coupon" element={<Coupon />} />
+            <Route path="update/:id" element={<Update />} />
+            <Route path="change/:id" element={<Change />} />
+            <Route path="comment" element={<Comment />} />
           </Route>
-        </Routes>
-      </GoogleOAuthProvider>
+        </Route>
+      </Routes>
     </>
   );
 }

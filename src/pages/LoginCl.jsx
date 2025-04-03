@@ -66,34 +66,6 @@ const Logincl = () => {
     setLoading(false);
   };
 
-  const handleGoogleLoginSuccess = (response) => {
-    try {
-      // Gửi token tới backend để đăng nhập
-      const token = response.credential;
-      const responseData = AuthServices.loginGoogle(token);
-
-      if (responseData?.token) {
-        localStorage.setItem("client_token", responseData.token);
-        localStorage.setItem("client", JSON.stringify(responseData.user));
-        message.success("Đăng nhập Google thành công!");
-
-        navigate("/");  // Chuyển hướng tới trang chính hoặc dashboard
-      }
-    } catch (error) {
-      notification.error({
-        message: "Đăng nhập thất bại",
-        description: error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
-      });
-    }
-  };
-
-  const handleGoogleLoginFailure = (error) => {
-    notification.error({
-      message: "Đăng nhập thất bại",
-      description: error.message || "Đăng nhập Google không thành công, vui lòng thử lại!",
-    });
-  };
-
   const validatePhoneOrEmail = (_, value) => {
     const phoneRegex = /^[0-9]{10,11}$/;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
