@@ -214,7 +214,7 @@ const Info = () => {
         },
         {
             key: "loyalty_points",
-            label: "Diểm tích lũy",
+            label: "Diểm tiêu dùng",
             value: formatPrice(user.loyalty_points)
         },
     ] : [];

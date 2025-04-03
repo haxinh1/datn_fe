@@ -93,6 +93,8 @@ const OrderStaff = () => {
         9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
         10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
         12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
+        13: [14],
+        14: [15],
     };
 
     const showEdit = (order) => {
@@ -498,7 +500,7 @@ const OrderStaff = () => {
 
             <div className="group1">
                 <div>
-                    <Button 
+                    <Button
                         onClick={resetFilters}
                         icon={<MenuOutlined />}
                     />
