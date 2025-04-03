@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Modal, Table, Tooltip, Image, Form, Input, Upload, Row, Col, notification, Skeleton } from 'antd';
 import { OrderService } from '../services/order';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { EditOutlined, EyeOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import TextArea from 'antd/es/input/TextArea';
@@ -270,9 +270,11 @@ const BackCl = () => {
                 const thumbnail = record.thumbnail;  // Lấy ảnh sản phẩm
 
                 return (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
                         <Image width={60} src={thumbnail} />
-                        <span>{`${productName} ${attributes ? `- ${attributes}` : ""}`}</span>
+                        <Link to={`/product-detail/${record.id}`}>
+                            <span>{`${productName} ${attributes ? `- ${attributes}` : ""}`}</span>
+                        </Link>
                     </div>
                 );
             },
@@ -330,6 +332,7 @@ const BackCl = () => {
                         columns={detailColumns}
                         dataSource={productData.map((item, index) => ({
                             key: index,
+                            id: item.product.product_id,
                             name: item.product.name,
                             quantity: item.product.quantity,
                             sell_price: parseFloat(item.product.sell_price),

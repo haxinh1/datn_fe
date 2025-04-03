@@ -918,6 +918,7 @@ const Checkout = () => {
                               ]}
                             >
                               <Select
+                                className="input-item"
                                 onChange={handleProvinceChange}
                                 placeholder="Chọn tỉnh/thành phố"
                               >
@@ -943,6 +944,7 @@ const Checkout = () => {
                               ]}
                             >
                               <Select
+                                className="input-item"
                                 placeholder="Chọn Phường/Xã"
                                 disabled={!selectedDistrict}
                                 onChange={handleWardChange}
@@ -971,6 +973,7 @@ const Checkout = () => {
                               ]}
                             >
                               <Select
+                                className="input-item"
                                 placeholder="Chọn Quận/Huyện"
                                 onChange={handleDistrictChange}
                                 disabled={!selectedProvince}
@@ -1021,7 +1024,7 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button type="primary" htmlType="submit">
+                          <Button style={{backgroundColor: '#e48948', color:'white'}} type="primary" htmlType="submit">
                             Lưu
                           </Button>
                         </div>
@@ -1377,7 +1380,7 @@ const Checkout = () => {
                           }
                         }}
                       >
-                        Đến trang thanh toán
+                        Thanh Toán
                       </button>
                     </div>
                   </aside>

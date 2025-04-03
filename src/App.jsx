@@ -53,6 +53,7 @@ import Back from "./admin/Back";
 import BackCl from "./pages/BackCl";
 import DashboardAd from "./admin/DashboardAd";
 import GoogleCallbackHandler from "./pages/GoogleCallbackHandler";
+import OrderStaff from "./admin/OrderStaff";
 
 function App() {
   return (
@@ -118,6 +119,7 @@ function App() {
             <Route path="user/:id" element={<User />} />
             <Route path="test" element={<Test />} />
             <Route path="order" element={<Order />} />
+            <Route path="orderstaff" element={<OrderStaff />} />
             <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />
             <Route path="inbox" element={<Inbox />} />

@@ -184,7 +184,12 @@ const Info = () => {
         {
             key: "action",
             value: (
-                <Button style={{backgroundColor: '#e48948', color:'white'}} icon={<EditOutlined />} onClick={showModal}>
+                <Button 
+                    type="primary"
+                    style={{backgroundColor: '#e48948', color:'white'}} 
+                    icon={<EditOutlined />} 
+                    onClick={showModal}
+                >
                     Cập nhật
                 </Button>
             ),
@@ -338,7 +343,7 @@ const Info = () => {
                     </Row>
 
                     <div className="add">
-                        <Button type="primary" htmlType="submit">
+                        <Button type="primary" style={{backgroundColor: '#e48948', color:'white'}} htmlType="submit">
                             Cập nhật
                         </Button>
                     </div>

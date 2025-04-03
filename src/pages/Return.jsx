@@ -1,6 +1,6 @@
 import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
 import { RollbackOutlined, UploadOutlined } from '@ant-design/icons';
 
@@ -15,6 +15,7 @@ const Return = () => {
     const [video, setVideo] = useState("");
     const [form] = Form.useForm();
     const [quantities, setQuantities] = useState({});
+    const navigate = useNavigate()
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -111,7 +112,7 @@ const Return = () => {
                 message: "Thành công",
                 description: "Gửi yêu cầu trả hàng thành công.",
             });
-
+            
             // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
@@ -119,7 +120,7 @@ const Return = () => {
             setSelectedReturnReason("");
             setVideo("");
             form.resetFields();
-
+            navigate(`/dashboard/backcl/${user_id}`);
         } catch (error) {
             console.error("Lỗi gửi yêu cầu trả hàng:", error);
             notification.error({
@@ -166,7 +167,7 @@ const Return = () => {
                 }).join(", ") || productName;
 
                 return (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
                         <Image src={thumbnail} width={60} />
                         <span>{variantAttributes}</span>
                     </div>

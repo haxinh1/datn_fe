@@ -1,0 +1,727 @@
+import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
+import React, { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { OrderService } from "./../services/order";
+import viVN from "antd/es/locale/vi_VN";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import { paymentServices } from "../services/payments";
+dayjs.locale("vi");
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import TextArea from "antd/es/input/TextArea";
+import { saveAs } from 'file-saver';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+
+const OrderStaff = () => {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isModal, setIsModal] = useState(false);
+    const hideModal = () => setIsModalVisible(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const hideEdit = () => setIsModal(false);
+    const [form] = Form.useForm();
+    const [image, setImage] = useState("");
+    const [orderDetails, setOrderDetails] = useState([]);
+    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
+    const { RangePicker } = DatePicker;
+    const [validStatuses, setValidStatuses] = useState([]);
+    const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
+    const [batchUpdateStatuses, setBatchUpdateStatuses] = useState([]);
+    const [batchUpdateNote, setBatchUpdateNote] = useState("");
+    const [selectedOrders, setSelectedOrders] = useState([]);
+    const [filters, setFilters] = useState({
+        dateRange: null,
+        status: null,
+        paymentMethod: null,
+    });
+
+    // danh sách đơn hàng
+    const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
+        queryKey: ["orders"],
+        queryFn: async () => {
+            const response = await OrderService.getAllOrder();
+            return response.orders || { data: [] };
+        },
+    });
+
+    // danh sách phương thức thanh toán
+    const { data: payments } = useQuery({
+        queryKey: ["payments"],
+        queryFn: paymentServices.getPayment,
+    });
+
+    // danh sách trạng thái
+    const { data: statusData } = useQuery({
+        queryKey: ["status"],
+        queryFn: async () => {
+            const response = await OrderService.getAllStatus();
+            return response.data;
+        },
+    });
+    const status = statusData ? [...statusData].sort((a, b) => a.id - b.id) : [];
+
+    // lấy ra đơn hàng theo ID
+    const { data: orderStatuses = [] } = useQuery({
+        queryKey: ["orderStatuses", selectedOrderId], // Dùng selectedOrderId thay vì id từ URL
+        queryFn: async () => {
+            if (!selectedOrderId) return [];
+            const response = await OrderService.getOrderStatus(selectedOrderId);
+            return response?.data || [];
+        },
+        enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
+    });
+
+    const orderStatusesData = (orderStatuses || []).map((item, index) => ({
+        key: index,
+        index: index + 1,
+        status: item.status?.name,
+        note: item.note,
+        employee_evidence: item.employee_evidence,
+        modified_by: item.modified_by?.fullname || 'Khách hàng',
+        created_at: dayjs(item.created_at).format("DD/MM/YYYY - HH:mm"),
+    }));
+
+    const validTransitions = {
+        1: [2], // Chờ thanh toán -> Đã thanh toán
+        2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
+        3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
+        4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+        // 5: [7], // Đã giao hàng -> Hoàn thành
+        9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
+        10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
+        12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
+    };
+
+    const showEdit = (order) => {
+        setSelectedOrderId(order.id); // Lưu ID đơn hàng
+        const currentStatusId = order.status?.id; // Lấy trạng thái hiện tại
+
+        form.setFieldsValue({
+            status_id: undefined, // Không đặt giá trị mặc định cho status_id
+            note: "",
+            employee_evidence: "",
+        });
+
+        // Lọc các trạng thái hợp lệ dựa trên trạng thái hiện tại
+        const validStatuses = validTransitions[currentStatusId] || [];
+        const filteredStatus = status.filter(item => validStatuses.includes(item.id));
+
+        setValidStatuses(filteredStatus); // Lưu lại các trạng thái hợp lệ
+
+        setIsModal(true);
+    };
+
+    const { mutate: updateOrderStatus } = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await OrderService.updateOrderStatus(id, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            notification.success({
+                message: "Cập nhật trạng thái đơn hàng thành công!",
+            });
+        },
+        onError: (error) => {
+            console.error("Lỗi cập nhật:", error);
+            notification.error({
+                message: "Lỗi cập nhật",
+            });
+        },
+    });
+
+    // ✅ Hàm cập nhật trạng thái đơn hàng
+    const handleUpdateOrder = async (values) => {
+        if (!selectedOrderId) {
+            notification.error({ message: "Không tìm thấy đơn hàng để cập nhật!" });
+            return;
+        }
+
+        // Lấy id người dùng từ localStorage
+        const user = JSON.parse(localStorage.getItem("user"));
+        const modifiedBy = user?.id;
+
+        const payload = {
+            order_status_id: values.status_id,
+            note: values.note || "",
+            employee_evidence: values.employee_evidence || image || "",
+            user_id: modifiedBy,
+        };
+
+        console.log("Dữ liệu gửi đi:", payload); // Debug
+        updateOrderStatus(
+            { id: selectedOrderId, data: payload },
+            {
+                onSuccess: () => {
+                    hideEdit(); // Đóng modal sau khi cập nhật
+                    form.resetFields(); // Reset form về trạng thái ban đầu
+                    setSelectedOrderId(null); // Xóa ID đã chọn
+                    refetchOrders();
+                },
+            }
+        );
+    };
+
+    const handleFilterChange = (statusId) => {
+        setFilters((prev) => ({
+            ...prev,
+            status: statusId,  // Lưu trạng thái đã chọn vào filters
+        }));
+    };
+
+    const resetFilters = () => {
+        setFilters({
+            dateRange: null,
+            status: null,
+            paymentMethod: null,
+        });
+    };
+
+    // Tính số lượng đơn hàng cho mỗi trạng thái
+    const statusCounts = {
+        1: ordersData?.filter(order => order.status.id === 1).length || 0,  // Chờ thanh toán
+        2: ordersData?.filter(order => order.status.id === 2).length || 0,  // Đã thanh toán
+        3: ordersData?.filter(order => order.status.id === 3).length || 0,   // Đang xử lý
+    };
+
+    const filteredOrders = (ordersData || []).filter((order) => {
+        const { dateRange, status, paymentMethod } = filters;
+
+        const isWithinDateRange =
+            !dateRange ||
+            (dayjs(order.created_at).isSameOrAfter(dayjs(dateRange[0]), "day") &&
+                dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
+
+        const matchesStatus = status === null || order.status?.id === status;
+        const matchesPayment =
+            paymentMethod === null || order.payment?.id === paymentMethod;
+
+        return isWithinDateRange && matchesStatus && matchesPayment;
+    });
+
+    const dataSource = filteredOrders.map((order, index) => ({
+        ...order,
+        key: order.id,
+        index: index + 1,
+    }));
+
+    const formatPrice = (price) => {
+        const formatter = new Intl.NumberFormat("de-DE", {
+            style: "decimal",
+            maximumFractionDigits: 0,
+        });
+        return formatter.format(price);
+    };
+
+    const onHandleChange = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ employee_evidence: imageUrl });
+        } else if (info.file.status === "removed") {
+            setImage("");
+            form.setFieldsValue({ employee_evidence: "" });
+        }
+    };
+
+    const showModal = async (order) => {
+        setIsModalVisible(true);
+        setSelectedOrderId(order.id);
+
+        setOrderInfo({
+            email: order.email,
+            address: order.address,
+            fullname: order.fullname,
+            discount_points: order.discount_points,
+            shipping_fee: order.shipping_fee,
+            total_amount: order.total_amount
+        });
+
+        const orderDetails = await OrderService.getOrderById(order.id);
+        setOrderDetails(orderDetails);
+    };
+
+    const showBatchUpdateModal = () => {
+        if (selectedOrders.length === 0 || !selectedOrders.every(order => order.status.id === selectedOrders[0]?.status.id)) {
+            return;
+        }
+
+        const currentStatus = selectedOrders[0]?.status.id;
+        const validStatuses = validTransitions[currentStatus] || [];
+        const filteredStatus = status.filter(item => validStatuses.includes(item.id));
+
+        setBatchUpdateStatuses(filteredStatus);
+
+        setBatchUpdateModalVisible(true);
+    };
+
+    const areAllOrdersSameStatus = selectedOrders.every(
+        (order) => order.status.id === selectedOrders[0]?.status.id
+    );
+
+    const isUpdateButtonDisabled = selectedOrders.length === 0 || !areAllOrdersSameStatus;
+
+    const hideBatchUpdateModal = () => {
+        setBatchUpdateModalVisible(false);
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedOrders(filteredOrders);
+        } else {
+            setSelectedOrders([]);
+        }
+    };
+
+    const rowSelection = {
+        selectedRowKeys: selectedOrders.map(order => order.id),
+        onChange: (selectedRowKeys) => {
+            setSelectedOrders(filteredOrders.filter(order => selectedRowKeys.includes(order.id)));
+        },
+    };
+
+    const handleSelectSingle = (order) => {
+        setSelectedOrders((prevSelectedOrders) => {
+            if (prevSelectedOrders.some(item => item.id === order.id)) {
+                return prevSelectedOrders.filter(item => item.id !== order.id);
+            } else {
+                return [...prevSelectedOrders, order];
+            }
+        });
+    };
+
+    const handleBatchUpdateOrder = async (values) => {
+        const payload = {
+            order_ids: selectedOrders.map((order) => order.id),
+            current_status: selectedOrders[0].status.id,
+            new_status: values.status_id,
+            note: values.note || "",
+        };
+
+        console.log(payload)
+
+        try {
+            const response = await updateOrders(payload);
+            notification.success({
+                message: "Trạng thái của các đơn hàng đẫ được cập nhật!",
+            });
+            hideBatchUpdateModal();
+            refetchOrders();
+            form.resetFields();
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái cho nhiều đơn hàng: ", error);
+            notification.error({
+                message: "Lỗi cập nhật trạng thái cho nhiều đơn hàng",
+            });
+        }
+    };
+
+    const updateOrders = async (payload) => {
+        const response = await OrderService.updateOrders(payload);
+        return response.data;
+    };
+
+    const handleExportExcel = async () => {
+        const selectedOrderIds = selectedOrders.length > 0
+            ? selectedOrders.map((order) => order.id)
+            : ordersData.map((order) => order.id);
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/export-orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order_ids: selectedOrderIds }),
+            });
+            const blob = await response.blob();
+            if (blob.size === 0) {
+                throw new Error('File xuất ra rỗng');
+            }
+            saveAs(blob, 'order_item.xlsx');
+            notification.success({
+                message: 'Xuất Excel thành công!',
+                description: 'Dữ liệu đã được xuất và tải xuống thành công.',
+            });
+        } catch (error) {
+            console.error("Lỗi khi xuất Excel:", error);
+            notification.error({
+                message: 'Xuất Excel thất bại!',
+                description: error.message || 'Có lỗi xảy ra khi xuất dữ liệu.',
+            });
+        }
+    };
+
+    const columns = [
+        {
+            title: <Checkbox onChange={handleSelectAll} />,
+            render: (_, order) => (
+                <Checkbox
+                    checked={selectedOrders.some(item => item.id === order.id)}
+                    onChange={() => handleSelectSingle(order)}
+                />
+            ),
+        },
+        {
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+        },
+        {
+            title: "Mã đơn hàng",
+            dataIndex: "code",
+            key: "code",
+            align: "center",
+        },
+        {
+            title: "Khách hàng",
+            dataIndex: "fullname",
+            key: "fullname",
+            align: "center",
+        },
+        {
+            title: "Số điện thoại",
+            dataIndex: "phone_number",
+            key: "phone_number",
+            align: "center",
+        },
+        {
+            title: "Giá trị đơn hàng (VNĐ)",
+            dataIndex: "total_amount",
+            key: "total_amount",
+            align: "center",
+            width: 160,
+            render: (total_amount) => (total_amount ? formatPrice(total_amount) : ""),
+        },
+        {
+            title: "Ngày đặt hàng",
+            dataIndex: "created_at",
+            key: "created_at",
+            align: "center",
+            render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
+            sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),  // Sắp xếp theo ngày
+        },
+        {
+            title: "Phương thức thanh toán",
+            dataIndex: "payment",
+            align: "center",
+            width: 160,
+            render: (payment) => (
+                <div className="action-link-blue">{payment?.name}</div>
+            ),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "status",
+            align: "center",
+            render: (status) => (
+                <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+                    {status?.name}
+                </div>
+            ),
+        },
+        {
+            title: "Thao tác",
+            key: "action",
+            align: "center",
+            render: (_, item) => (
+                <div className="action-container">
+                    <Tooltip title="Xem thêm">
+                        <Button
+                            color="purple"
+                            variant="solid"
+                            icon={<EyeOutlined />}
+                            onClick={() => showModal(item)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Cập nhật">
+                        <Button
+                            color="primary"
+                            variant="solid"
+                            icon={<EditOutlined />}
+                            onClick={() => showEdit(item)}
+                        />
+                    </Tooltip>
+                </div>
+            ),
+        },
+    ];
+
+    const detailColumns = [
+        {
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => index + 1,
+        },
+        {
+            title: "Tên sản phẩm",
+            dataIndex: "name",
+            align: "center",
+            render: (text, record) => {
+                const productName = record.name ? record.name : '';
+                const variantAttributes = record.variants.map(variant => {
+                    const attributes = variant.attributes.map(attr => attr.attribute_name).join(" - ");
+                    return `${productName} - ${attributes}`;
+                }).join(", ");
+
+                return variantAttributes || productName;
+            }
+        },
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            align: "center",
+        },
+        {
+            title: "Giá bán (VNĐ)",
+            dataIndex: "sell_price",
+            align: "center",
+            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+        },
+        {
+            title: "Tổng tiền (VNĐ)",
+            dataIndex: "total",
+            align: "center",
+            render: (_, record) => formatPrice(record.quantity * record.sell_price),
+        },
+    ];
+
+    return (
+        <div>
+            <h1 className="mb-5">
+                <BookOutlined style={{ marginRight: "8px" }} />
+                Đơn hàng
+            </h1>
+
+            <div className="group1">
+                <div>
+                    <Button 
+                        onClick={resetFilters}
+                        icon={<MenuOutlined />}
+                    />
+                    <Button
+                        type={filters.status === 1 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(1)}
+                    >
+                        Chờ thanh toán ({statusCounts[1]})
+                    </Button>
+                    <Button
+                        type={filters.status === 2 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(2)}
+                    >
+                        Đã thanh toán ({statusCounts[2]})
+                    </Button>
+                    <Button
+                        type={filters.status === 3 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(3)}
+                    >
+                        Đang xử lý ({statusCounts[3]})
+                    </Button>
+                </div>
+
+                <div className="group2">
+                    {/* <Button
+                        color="primary" variant="solid"
+                        icon={<ToTopOutlined />}
+                        onClick={handleExportExcel}
+                    >
+                        Xuất Excel
+                    </Button> */}
+
+                    <Button
+                        color="primary"
+                        variant="solid"
+                        icon={<EditOutlined />}
+                        onClick={showBatchUpdateModal}
+                        disabled={isUpdateButtonDisabled}
+                    >
+                        Cập nhật
+                    </Button>
+                </div>
+            </div>
+
+            <Skeleton active loading={isLoading}>
+                <Table
+                    columns={columns}
+                    dataSource={dataSource}
+                    pagination={{ pageSize: 10 }}
+                    bordered
+                />
+            </Skeleton>
+
+            <Modal
+                title="Chi tiết đơn hàng"
+                visible={isModalVisible}
+                onCancel={hideModal}
+                footer={null}
+                width={800}
+            >
+                <span>Khách hàng: <span className="text-quest">{orderInfo.fullname}</span></span> <br />
+                <span>Email: <span className="text-quest">{orderInfo.email}</span></span> <br />
+                <span>Địa chỉ giao hàng: <span className="text-quest">{orderInfo.address}</span></span>
+
+                <Table
+                    columns={detailColumns}
+                    dataSource={orderDetails.map((item, index) => ({
+                        ...item,
+                        key: index,
+                        index: index + 1,
+                        product_name: item.product?.name,
+                    }))}
+                    pagination={false}
+                    summary={() => {
+                        const totalAmount = orderDetails.reduce(
+                            (sum, item) => sum + item.quantity * item.sell_price,
+                            0
+                        );
+                        return (
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Tổng tiền:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(totalAmount)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phí vận chuyển:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.shipping_fee)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Giảm giá điểm tiêu dùng:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.discount_points)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        <strong>Tổng giá trị đơn hàng:</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
+                        );
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                title="Cập nhật trạng thái đơn hàng"
+                visible={isModal}
+                onCancel={hideEdit}
+                footer={null}
+            >
+                <Form form={form} layout="vertical" onFinish={handleUpdateOrder}>
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Trạng thái đơn hàng"
+                                name="status_id"
+                                rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
+                            >
+                                <Select
+                                    className="input-item"
+                                    placeholder="Chọn trạng thái"
+                                    showSearch
+                                >
+                                    {validStatuses.map((item) => (
+                                        <Select.Option key={item.id} value={item.id}>
+                                            {item.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item label="Ghi chú" name="note">
+                                <TextArea className="input-item" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Ảnh xác nhận"
+                                name="employee_evidence"
+                                getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
+                            >
+                                <Upload
+                                    listType="picture-card"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    onChange={onHandleChange}
+                                >
+                                    {!image && (
+                                        <button className="upload-button" type="button">
+                                            <UploadOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                        </button>
+                                    )}
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <div className="add">
+                        <Button type="primary" htmlType="submit">
+                            Cập nhật
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Cập nhật trạng thái nhiều đơn hàng"
+                visible={batchUpdateModalVisible}
+                onCancel={hideBatchUpdateModal}
+                footer={null}
+            >
+                <Form layout="vertical" onFinish={handleBatchUpdateOrder}>
+                    <Form.Item
+                        label="Trạng thái đơn hàng"
+                        name="status_id"
+                        rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
+                    >
+                        <Select
+                            className="input-item"
+                            placeholder="Chọn trạng thái"
+                            showSearch
+                        >
+                            {batchUpdateStatuses.map((status) => (
+                                <Select.Option key={status.id} value={status.id}>
+                                    {status.name}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item label="Ghi chú" name="note">
+                        <Input.TextArea
+                            className="input-item"
+                            value={batchUpdateNote}
+                            onChange={(e) => setBatchUpdateNote(e.target.value)}
+                        />
+                    </Form.Item>
+
+                    <div className="add">
+                        <Button type="primary" htmlType="submit">
+                            Cập nhật
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
+        </div>
+    );
+};
+
+export default OrderStaff;

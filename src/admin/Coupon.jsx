@@ -171,7 +171,7 @@ const Coupon = () => {
         <div>
             <h1 className="mb-5">
                 <ProjectOutlined style={{ marginRight: "8px" }} />
-                Quản lý mã giảm giá
+                Mã giảm giá
             </h1>
             <div className="btn-brand">
                 <Button

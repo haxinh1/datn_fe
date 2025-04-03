@@ -1,7 +1,7 @@
-import { EyeOutlined } from '@ant-design/icons';
-import { Avatar, Button, Modal, Skeleton, Table, Tooltip, notification } from 'antd';
+import { ArrowRightOutlined, BookOutlined, EyeOutlined, ProductOutlined } from '@ant-design/icons';
+import { Avatar, Button, Image, Modal, Skeleton, Table, Tooltip, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { AuthServices } from '../services/auth';
 import { OrderService } from '../services/order';
 import dayjs from 'dayjs';
@@ -16,6 +16,8 @@ const User = () => {
     const [orderDetails, setOrderDetails] = useState([]);
     const [orderCount, setOrderCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [productData, setProductData] = useState([])
+    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -51,11 +53,37 @@ const User = () => {
         }
     }, [id, userData]); // Chỉ gọi lại khi id hoặc userData thay đổi
 
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const data = await OrderService.productByUserId(id);
+                setProductData(data.top_products);
+                setIsLoading(false);
+            } catch (error) {
+                console.error("Lỗi khi lấy sản phẩm của người dùng:", error);
+                notification.error({
+                    message: "Lỗi",
+                    description: "Không thể tải sản phẩm của người dùng.",
+                });
+            }
+        };
+
+        if (id) {
+            fetchProducts();  // Chỉ gọi service nếu có id
+        }
+    }, [id]);  // Chỉ gọi lại khi id thay đổi
+
     if (!userData) return null;
 
     const showModal = async (order) => {
         setIsModalVisible(true);
         setSelectedOrderId(order.id);
+
+        setOrderInfo({
+            discount_points: order.discount_points,
+            shipping_fee: order.shipping_fee,
+            total_amount: order.total_amount
+        });
 
         // Lọc danh sách sản phẩm của đơn hàng từ ordersData
         const orderDetails = await OrderService.getOrderById(order.id);
@@ -129,6 +157,7 @@ const User = () => {
             title: 'Chi tiết',
             dataIndex: 'value',
             key: 'value',
+            width: 200,
         },
     ];
 
@@ -240,6 +269,51 @@ const User = () => {
         },
     ];
 
+    const productColumns = [
+        {
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => index + 1,
+        },
+        {
+            title: "Sản phẩm",
+            dataIndex: "product",
+            key: "product",
+            align: "center",
+            render: (text, record) => {
+                const productName = record.name;
+                const productImage = record.variant && record.variant.variant_thumbnail ? record.variant.variant_thumbnail : record.thumbnail;
+
+                // Nếu có biến thể, kết hợp tên sản phẩm và các thuộc tính của biến thể
+                const productAttributes = record.variant && record.variant.attributes
+                    ? ` - ${record.variant.attributes.map(attr => attr.attribute_name).join(" - ")}`
+                    : "";
+
+                return (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                        <Image src={productImage} alt="product" width={50} />
+                        <Link to={`/admin/detailad/${record.product_id}`}><span>{productName}{productAttributes}</span></Link>
+                    </div>
+                );
+            },
+        },
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            key: "quantity",
+            align: "center",
+            sorter: (a, b) => b.quantity - a.quantity,
+        },
+        {
+            title: "Giá bán (VNĐ)",
+            dataIndex: "sell_price",
+            key: "sell_price",
+            align: "center",
+            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+        },
+    ];
+
     return (
         <div>
             <h1 className="mb-5">
@@ -255,15 +329,35 @@ const User = () => {
                     rowKey="key"
                 />
 
-                <Skeleton active loading={isLoading}>
-                    <Table
-                        columns={detailColumns}
-                        bordered
-                        style={{ width: '1000px' }}
-                        pagination={false}
-                        dataSource={orders}
-                    />
-                </Skeleton>
+                <div className='card-info'>
+                    <Skeleton active loading={isLoading}>
+                        <h4 className='profile-name' >
+                            <BookOutlined style={{ marginRight: "8px" }} />
+                            Lịch sử mua sắm
+                        </h4>
+                        <Table
+                            columns={detailColumns}
+                            style={{ width: '100%' }}
+                            pagination={{ pageSize: 5 }}
+                            dataSource={orders}
+                            bordered
+                        />
+                    </Skeleton>
+
+                    <Skeleton active loading={isLoading}>
+                        <h4 className='profile-name'>
+                            <ProductOutlined style={{ marginRight: "8px" }} />
+                            Sản phẩm đã mua
+                        </h4>
+                        <Table
+                            columns={productColumns}
+                            dataSource={productData}
+                            style={{ width: '100%' }}
+                            pagination={{ pageSize: 5 }}
+                            bordered
+                        />
+                    </Skeleton>
+                </div>
             </div>
 
             <Modal
@@ -289,14 +383,40 @@ const User = () => {
                             0
                         );
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={4} align="right">
-                                    <strong>Tổng giá trị (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Tổng tiền:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(totalAmount)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phí vận chuyển:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.shipping_fee)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Giảm giá điểm tiêu dùng:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {formatPrice(orderInfo.discount_points)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        <strong>Tổng giá trị đơn hàng:</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />

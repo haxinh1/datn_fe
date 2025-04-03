@@ -97,7 +97,7 @@ const Account = () => {
             key: "fullname",
             align: "center",
             render: (fullname, record) => (
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
                     {record.avatar && <Avatar size="large" src={record.avatar} />}
                     <span>{fullname}</span>
                 </div>

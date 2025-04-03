@@ -350,6 +350,7 @@ const History = () => {
             key: "ngaytao",
             render: (ngaytao) => (ngaytao ? dayjs(ngaytao).format("DD/MM/YYYY") : ""),
             align: "center",
+            sorter: (a, b) => dayjs(a.ngaytao).unix() - dayjs(b.ngaytao).unix(),
         },
         {
             title: "Người nhập hàng",

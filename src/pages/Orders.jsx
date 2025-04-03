@@ -34,7 +34,14 @@ const Orders = () => {
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "" });
+  const [orderInfo, setOrderInfo] = useState({
+    email: "",
+    address: "",
+    fullname: "",
+    shipping_fee: "",
+    discount_points: "",
+    total_amount: "",
+  });
   const navigate = useNavigate();
 
   // Tách số thành định dạng tiền tệ
@@ -54,6 +61,9 @@ const Orders = () => {
     setOrderInfo({
       email: order.email,
       address: order.address,
+      discount_points: order.discount_points,
+      shipping_fee: order.shipping_fee,
+      total_amount: order.total_amount,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -305,7 +315,9 @@ const Orders = () => {
             }}
           >
             <Image src={thumbnail} width={60} />
-            <span>{variantAttributes}</span>
+            <Link to={`/product-detail/${record.product_id}`}>
+              <span>{variantAttributes}</span>
+            </Link>
           </div>
         );
       },
@@ -391,7 +403,7 @@ const Orders = () => {
       align: "center",
       render: (_, item) => {
         const { status } = item;
-        const isCheckout = status?.id === 1; // Chỉ hiển thị "Tiếp tục thanh toán" cho đơn hàng có trạng thái "Chờ thanh toán"
+        const isCheckout = status?.id === 1;
         const isDelivered = status?.id === 5; // Đã giao hàng
         return (
           <div className="action-container">
@@ -421,7 +433,6 @@ const Orders = () => {
                   color="primary"
                   variant="solid"
                   icon={<ArrowRightOutlined />}
-                  onClick={() => handleRetryPayment(item.id)} // Gọi hàm thanh toán lại
                 />
               </Tooltip>
             )}
@@ -430,20 +441,7 @@ const Orders = () => {
       },
     },
   ];
-  const handleRetryPayment = async (orderId) => {
-    try {
-      const response = await OrderService.retryPayment(orderId); // Gọi API backend để thử thanh toán lại
-      if (response.payment_url) {
-        window.location.href = response.payment_url; // Chuyển hướng người dùng đến trang thanh toán VNPay
-      }
-    } catch (error) {
-      console.error("Lỗi khi thanh toán lại:", error);
-      notification.error({
-        message: "Lỗi",
-        description: "Không thể thanh toán lại đơn hàng.",
-      });
-    }
-  };
+
   return (
     <div>
       <h1 className="mb-5" style={{ color: "#e48948" }}>
@@ -523,7 +521,6 @@ const Orders = () => {
             index: index + 1,
             product_name: item.product?.name,
           }))}
-          bordered
           pagination={false}
           summary={() => {
             const totalAmount = orderDetails.reduce(
@@ -531,14 +528,40 @@ const Orders = () => {
               0
             );
             return (
-              <Table.Summary.Row>
-                <Table.Summary.Cell colSpan={4} align="right">
-                  <strong>Tổng giá trị (VNĐ):</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell align="center">
-                  <strong>{formatPrice(totalAmount)}</strong>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
+              <>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Tổng tiền:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(totalAmount)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Phí vận chuyển:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(orderInfo.shipping_fee)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Giảm giá điểm tiêu dùng:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(orderInfo.discount_points)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    <strong>Tổng giá trị đơn hàng:</strong>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              </>
             );
           }}
         />

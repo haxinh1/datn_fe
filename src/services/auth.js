@@ -15,6 +15,19 @@ const getAllCustomer = async (payload) => {
   return response.data;
 };
 
+// tìm kiếm khách hàng
+const searchUsers = async (keyword = "") => {
+  try {
+    const response = await instance.get("/admin/users/search", {
+      params: { keyword },
+    });
+    return response.data || []; // Trả về danh sách khách hàng hoặc mảng rỗng nếu không có kết quả
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm khách hàng:", error);
+    return [];
+  }
+};
+
 const getAUser = async (id) => {
   const response = await instance.get(`/admin/users/${id}`);
   return response.data;
@@ -256,6 +269,7 @@ const loginGoogle = async () => {
 export const AuthServices = {
   fetchAuth,
   getAllCustomer,
+  searchUsers,
   updateUser,
   getAUser,
   register,

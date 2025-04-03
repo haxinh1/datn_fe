@@ -45,8 +45,19 @@ const LayoutAdmin = () => {
   } = theme.useToken();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser); // Lấy thông tin người dùng từ localStorage
+    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id; // Lấy chỉ id người dùng từ localStorage
+    if (storedUserId) {
+      // Gọi service để lấy thông tin người dùng theo id
+      const fetchUserInfo = async () => {
+        try {
+          const userInfo = await AuthServices.getAUser(storedUserId); // Gọi API để lấy thông tin người dùng
+          setUser(userInfo); // Lưu thông tin người dùng vào state
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin người dùng:", error);
+        }
+      };
+      fetchUserInfo();
+    }
   }, []);
 
   const logoutad = async () => {
@@ -92,6 +103,7 @@ const LayoutAdmin = () => {
 
   // Kiểm tra vai trò của người dùng trong localStorage
   const isManager = user?.role === "manager";
+  const isAdmin = user?.role === "admin";
 
   const menu = (
     <Menu>
@@ -123,7 +135,7 @@ const LayoutAdmin = () => {
       icon: <ProductOutlined />,
       label: (
         <Link to="/admin/list-pr">
-          <span>Quản lý sản phẩm</span>
+          <span>Sản phẩm</span>
         </Link>
       ),
     },
@@ -132,16 +144,25 @@ const LayoutAdmin = () => {
       icon: <ImportOutlined />,
       label: (
         <Link to="/admin/history">
-          <span>Quản lý nhập hàng</span>
+          <span>Nhập hàng</span>
         </Link>
       ),
     },
-    {
+    !isManager && {
       key: "order",
       icon: <BookOutlined />,
       label: (
         <Link to="/admin/order">
-          <span>Quản lý đơn hàng</span>
+          <span>Đơn hàng</span>
+        </Link>
+      ),
+    },
+    !isAdmin && {
+      key: "orderstaff",
+      icon: <BookOutlined />,
+      label: (
+        <Link to="/admin/orderstaff">
+          <span>Đơn hàng</span>
         </Link>
       ),
     },
@@ -150,7 +171,7 @@ const LayoutAdmin = () => {
       icon: <RollbackOutlined />,
       label: (
         <Link to="/admin/back">
-          <span>Quản lý hoàn trả</span>
+          <span>Hoàn trả</span>
         </Link>
       ),
     },
@@ -159,7 +180,7 @@ const LayoutAdmin = () => {
       icon: <PrinterOutlined />,
       label: (
         <Link to="/admin/bill">
-          <span>Quản lý hóa đơn</span>
+          <span>Hóa đơn</span>
         </Link>
       ),
     },

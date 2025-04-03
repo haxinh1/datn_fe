@@ -106,3 +106,13 @@
     font-weight: bolder;
     color: green;
 }
+.profile-name{
+    color: blue;
+    font-weight: bold;
+    font-size: 20px;
+}
+.search-input {
+    width: 600px;
+    margin: 0 auto 16px;
+    display: block;
+}
