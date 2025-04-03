@@ -13,7 +13,6 @@ import "../assets/css/demos/demo-8.css";
 import "../css/signup.css";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { cartServices } from "../services/cart";
-import { GoogleLogin } from "@react-oauth/google";
 
 const Logincl = () => {
   const [form] = Form.useForm();
@@ -142,22 +141,20 @@ const Logincl = () => {
           <p className="text-center">
             <span>hoặc</span>
           </p>
-            <GoogleLogin
-              onSuccess={handleGoogleLoginSuccess}
-              onError={handleGoogleLoginFailure}
-              useOneTap
-              render={(renderProps) => (
-                <a
-                  href="#"
-                  className="btn btn-login btn-g"
-                  onClick={renderProps.onClick}
-                  disabled={renderProps.disabled}
-                >
-                  <i className="icon-google"></i>
-                  Google
-                </a>
-              )}
-            />
+          <div className="row">
+            <div className="col-sm-6">
+              <a href="#" className="btn btn-login btn-g">
+                <i className="icon-google"></i>
+                Google
+              </a>
+            </div>
+            <div className="col-sm-6">
+              <a href="#" className="btn btn-login btn-f">
+                <i className="icon-facebook-f"></i>
+                Facebook
+              </a>
+            </div>
+          </div>
         </div>
       </Card>
     </div>
