@@ -10,6 +10,7 @@ import "../../assets/css/demos/demo-8.css";
 import logo from "../../assets/images/demos/demo-8/logo.png";
 import { Link } from "react-router-dom";
 import { AuthServices } from './../../services/auth';
+import AIChat from "./AIChat.jsx";
 
 const Header = () => {
 
@@ -195,6 +196,7 @@ const Header = () => {
                   )}
                 </Link>
               </Tooltip>
+              <AIChat/>
             </div>
           </div>
         </div>
