@@ -1,59 +1,111 @@
-import React, { useState } from 'react';
-import { Layout, List, Avatar, Input } from 'antd';
-import { BookOutlined, SendOutlined } from '@ant-design/icons';
-import './inbox.css';
+import React, { useState, useEffect } from "react";
+import { List, Button, Input, Card, Typography, message as antdMessage } from "antd";
+import axios from "axios";
+import { closeChatSession, getChatSessions, getMessages, sendMessage } from "../services/chatBox";
 
-const { Sider, Content, Footer } = Layout;
-
-const conversations = [
-    { name: 'Nguyen Van A', avatar: 'https://i.pravatar.cc/150?img=1' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Le Van C', avatar: 'https://i.pravatar.cc/150?img=3' }
-];
+const { Text } = Typography;
+const { TextArea } = Input;
 
 const Inbox = () => {
+    const [chatSessions, setChatSessions] = useState([]);
+    const [selectedSession, setSelectedSession] = useState(null);
     const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
+    const [newMessage, setNewMessage] = useState("");
 
-    const sendMessage = () => {
-        if (!input.trim()) return;
-        setMessages([...messages, { text: input, sender: 'You' }]);
-        setInput('');
+    useEffect(() => {
+        fetchChatSessions();
+    }, []);
+
+    const fetchChatSessions = async () => {
+        try {
+            const response = await getChatSessions();
+            setChatSessions(response.data.chat_sessions);
+        } catch (error) {
+            antdMessage.error("Lỗi khi tải danh sách phiên chat");
+        }
+    };
+
+    const fetchMessages = async (sessionId) => {
+        try {
+            const response = await getMessages(sessionId);
+            setMessages(response.data.messages);
+        } catch (error) {
+            antdMessage.error("Lỗi khi tải tin nhắn");
+        }
+    };
+
+    const handleSelectSession = (session) => {
+        setSelectedSession(session);
+        fetchMessages(session.id);
+    };
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim()) return;
+        try {
+            await sendMessage({
+                chat_session_id: selectedSession.id,
+                message: newMessage,
+            });
+            setNewMessage("");
+            fetchMessages(selectedSession.id);
+        } catch (error) {
+            antdMessage.error("Lỗi khi gửi tin nhắn");
+        }
+    };
+
+    const handleCloseSession = async () => {
+        try {
+            await closeChatSession(selectedSession.id);
+            antdMessage.success("Phiên chat đã được đóng");
+            setSelectedSession(null);
+            fetchChatSessions();
+        } catch (error) {
+            antdMessage.error("Lỗi khi đóng phiên chat");
+        }
     };
 
     return (
-        <Layout className="inbox-container">
-            <Sider width={250} className="inbox-sidebar">
+        <div style={{ display: "flex", gap: 20, padding: 20 }}>
+            <Card title="Danh sách phiên chat" style={{ width: 300 }}>
                 <List
-                    dataSource={conversations}
-                    renderItem={user => (
-                        <List.Item className="inbox-user-item">
-                            <Avatar src={user.avatar} />
-                            <span>{user.name}</span>
+                    dataSource={chatSessions}
+                    renderItem={(session) => (
+                        <List.Item onClick={() => handleSelectSession(session)} style={{ cursor: "pointer" }}>
+                            <Text strong>Phiên #{session.id}</Text>
                         </List.Item>
                     )}
                 />
-            </Sider>
-            <Layout className="inbox-chat">
-                <Content className="inbox-chat-box">
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`chat-message ${msg.sender === 'You' ? 'sent' : 'received'}`}>
-                            {msg.text}
-                        </div>
-                    ))}
-                </Content>
-                <Footer className="inbox-chat-input">
-                    <Input
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onPressEnter={sendMessage}
-                        placeholder="Nhắn tin..."
-                        suffix={<SendOutlined onClick={sendMessage} />}
+            </Card>
+
+            {selectedSession && (
+                <Card title={`Chat với khách hàng #${selectedSession.id}`} style={{ flex: 1 }}>
+                    <div style={{ height: 300, overflowY: "scroll", borderBottom: "1px solid #ddd", padding: 10 }}>
+                        {messages.map((msg) => (
+                            <div key={msg.id} style={{ marginBottom: 10 }}>
+                                <Text strong>
+                                    {msg.sender_type === "customer" ? "Khách hàng" : msg.sender_type === "guest" ? "Guest" : "Nhân viên"}:
+                                </Text>
+                                <p>{msg.message}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <TextArea
+                        rows={3}
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Nhập tin nhắn..."
                     />
-                </Footer>
-            </Layout>
-        </Layout>
+                    <Button type="primary" onClick={handleSendMessage} style={{ marginTop: 10 }}>
+                        Gửi
+                    </Button>
+                    <Button danger onClick={handleCloseSession} style={{ marginTop: 10, marginLeft: 10 }}>
+                        Đóng phiên chat
+                    </Button>
+                </Card>
+            )}
+        </div>
     );
 };
+
 
 export default Inbox;
