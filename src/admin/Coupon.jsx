@@ -40,7 +40,10 @@ const Coupon = () => {
                 usage_limit: coupon.usage_limit,
                 start_date: dayjs(coupon.start_date),
                 end_date: dayjs(coupon.end_date),
-                is_active: coupon.is_active
+                is_active: coupon.is_active,
+                coupon_type: coupon.coupon_type, 
+                rank: coupon.rank || undefined, 
+                user_ids: coupon.users ? coupon.users.map(user => user.id) : undefined
             });
         } else {
             form.resetFields();
