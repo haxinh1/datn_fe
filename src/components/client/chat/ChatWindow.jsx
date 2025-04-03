@@ -48,8 +48,9 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
         try {
             const response = await getMessages(chatSessionId);
             setMessages(response.data.messages);
+            // Đánh dấu tin nhắn từ nhân viên (store) là đã đọc
             response.data.messages.forEach(async (msg) => {
-                if (msg.sender_type !== 'guest' && msg.sender_type !== 'customer') {
+                if (msg.sender_type === 'store') {
                     await markAsRead(msg.id);
                 }
             });
@@ -148,7 +149,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
                         <List
                             dataSource={messages}
                             renderItem={(item) => {
-                                // Tin nhắn từ khách hàng (bao gồm cả "guest" và "customer")
+                                // Tin nhắn từ khách hàng (guest hoặc customer)
                                 const isCustomer = item.sender_type === 'customer' || item.sender_type === 'guest';
                                 return (
                                     <List.Item
