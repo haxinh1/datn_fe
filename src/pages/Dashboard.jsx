@@ -92,17 +92,15 @@ const Dashboard = () => {
             <h1 className="page-title">Tài Khoản</h1>
           </div>
         </div>
-        <nav aria-label="breadcrumb" className="breadcrumb-nav mb-3">
+
+        <nav aria-label="breadcrumb" className="breadcrumb-nav">
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="index.html">Home</a>
+                <Link to='/'><span>Trang Chủ</span></Link>  
               </li>
               <li className="breadcrumb-item">
-                <a href="#">Shop</a>
-              </li>
-              <li className="breadcrumb-item active" aria-current="page">
-                My Account
+                <span>Tài Khoản</span>
               </li>
             </ol>
           </div>
@@ -117,16 +115,6 @@ const Dashboard = () => {
                   className="nav nav-dashboard flex-column mb-3 mb-md-0"
                   role="tablist"
                 >
-                  <li className="nav-item">
-                    <Link to="/">
-                      <span className="nav-link">
-                        <HomeOutlined
-                          style={{ marginRight: "8px", cursor: "pointer" }}
-                        />
-                        Trang chủ
-                      </span>
-                    </Link>
-                  </li>
                   <li className="nav-item">
                     <Link to={`/dashboard/orders/${client?.id}`}>
                       <span className="nav-link">

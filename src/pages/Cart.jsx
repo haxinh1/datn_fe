@@ -50,7 +50,7 @@ const Cart = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                  productDetails.data.sell_price;
+                productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -384,35 +384,53 @@ const Cart = () => {
             <h1 className="page-title">Giỏ Hàng</h1>
           </div>
         </div>
+
+        <nav aria-label="breadcrumb" className="breadcrumb-nav">
+          <div className="container">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <Link to='/'><span>Trang Chủ</span></Link>
+              </li>
+              <li className="breadcrumb-item">
+                <span>Giỏ Hàng</span>
+              </li>
+            </ol>
+          </div>
+        </nav>
+
         <div className="page-content">
           <div className="cart">
             <div className="container">
               <div className="row">
                 <div className="col-lg-9">
                   {cartItems.length === 0 ? (
-                    <p className="fs-4 text-center text-danger">
-                      Giỏ hàng của bạn đang trống!
-                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <span className="fs-4 text-center text-danger">
+                        Giỏ hàng của bạn đang trống!
+                      </span>
+                    </div>
                   ) : (
-                    <Table
-                      columns={columns}
-                      dataSource={cartItems}
-                      rowKey={(record) =>
-                        record.product_id + "-" + record.product_variant_id
-                      }
-                      pagination={false}
-                    />
-                  )}
+                    <div className="">
+                      <Table
+                        columns={columns}
+                        dataSource={cartItems}
+                        rowKey={(record) =>
+                          record.product_id + "-" + record.product_variant_id
+                        }
+                        pagination={false}
+                      />
 
-                  <Button
-                    type="primary"
-                    danger
-                    className="btn-clear-cart"
-                    onClick={clearCart}
-                    style={{ marginTop: "15px" }}
-                  >
-                    Xóa tất cả sản phẩm
-                  </Button>
+                      {/* <Tooltip title='Xóa giỏ hàng'>
+                        <Button
+                          type="primary"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={clearCart}
+                          style={{ marginTop: "15px" }}
+                        />
+                      </Tooltip> */}
+                    </div>
+                  )}
                 </div>
                 <aside className="col-lg-3">
                   <div className="summary summary-cart">
@@ -429,13 +447,14 @@ const Cart = () => {
                         </tr>
                       </tbody>
                     </table>
-                    <Button
+
+                    <button
                       type="primary"
                       className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                       onClick={handleCheckout}
                     >
                       Thanh Toán<i className="icon-long-arrow-right"></i>
-                    </Button>
+                    </button>
                   </div>
                 </aside>
               </div>

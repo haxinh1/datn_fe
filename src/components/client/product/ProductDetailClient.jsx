@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
 import { message, Modal } from "antd";
 import { cartServices } from "../../../services/cart";
@@ -155,10 +155,10 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <span>Trang Chủ</span>
+              <Link to='/'><span>Trang Chủ</span></Link>  
             </li>
             <li className="breadcrumb-item">
-              <span>Sản Phẩm</span>
+              <Link to='/list-prcl'><span>Sản Phẩm</span></Link>  
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               <span>Chi Tiết</span>
@@ -229,7 +229,7 @@ const ProductDetailClient = () => {
                         className="text-danger"
                         style={{ marginLeft: "10px" }}
                       >
-                        (Sản phẩm này ngừng kinh doanh)
+                        (Sản phẩm đã ngừng kinh doanh)
                       </span>
                     )}
                   </h1>
@@ -377,7 +377,7 @@ const ProductDetailClient = () => {
                       }`}
                       disabled={product.is_active === 0}
                     >
-                      <span>Thêm vào giỏ hàng</span>
+                      <span>add to cart</span>
                     </a>
 
                     <div className="details-action-wrapper">

@@ -14,7 +14,7 @@ import {
   Row,
   Col,
 } from "antd";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
@@ -44,6 +44,7 @@ const Checkout = () => {
   const [form] = Form.useForm();
   const [shippingFee, setShippingFee] = useState(0);
   const [usedLoyaltyPoints, setUsedLoyaltyPoints] = useState(0);
+  const [formattedLoyaltyPoints, setFormattedLoyaltyPoints] = useState("0");
   const [userData, setUserData] = useState({
     fullname: "",
     email: "",
@@ -96,7 +97,7 @@ const Checkout = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                  productDetails.data.sell_price;
+                productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -309,11 +310,11 @@ const Checkout = () => {
         : "",
       values.district
         ? districts.find((d) => d.DistrictID === Number(values.district))
-            ?.DistrictName
+          ?.DistrictName
         : "",
       values.province
         ? provinces.find((p) => p.ProvinceID === Number(values.province))
-            ?.ProvinceName
+          ?.ProvinceName
         : "",
     ]
       .filter(Boolean)
@@ -336,15 +337,15 @@ const Checkout = () => {
   //tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-        // Lấy giá sản phẩm từ biến thể nếu có
-        const productPrice = item.product_variant
-          ? item.product_variant.sale_price ||
-            item.product_variant.sell_price ||
-            0
-          : item.product?.sale_price || item.product?.sell_price || 0;
+      // Lấy giá sản phẩm từ biến thể nếu có
+      const productPrice = item.product_variant
+        ? item.product_variant.sale_price ||
+        item.product_variant.sell_price ||
+        0
+        : item.product?.sale_price || item.product?.sell_price || 0;
 
-        return total + productPrice * (item.quantity || 1);
-      }, 0)
+      return total + productPrice * (item.quantity || 1);
+    }, 0)
     : 0;
   const finalTotal =
     subtotal + shippingFee - usedLoyaltyPoints - discountAmount;
@@ -441,7 +442,7 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        nav("/");
+        nav(`/dashboard/orders/${userId}`);
         setCartItems([]);
         localStorage.removeItem("cartAttributes");
       } else {
@@ -480,6 +481,14 @@ const Checkout = () => {
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("vi-VN", {}).format(value);
+  };
+
+  const formatNumber = (value) => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const unformatNumber = (value) => {
+    return Number(value.replace(/\./g, ""));
   };
 
   useEffect(() => {
@@ -667,13 +676,13 @@ const Checkout = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="index.html">Home</a>
+                <Link to='/'><span>Trang Chủ</span></Link>
               </li>
               <li className="breadcrumb-item">
-                <a href="#">Shop</a>
+                <Link to='/cart'><span>Giỏ Hàng</span></Link>
               </li>
               <li className="breadcrumb-item active" aria-current="page">
-                Checkout
+                <span>Thanh Toán</span>
               </li>
             </ol>
           </div>
@@ -852,50 +861,50 @@ const Checkout = () => {
                         </div>
                       </div>
                     ) : (
-                      addresses.length > 0 && (
-                        <div>
-                          <Form.Item
-                            label="Chọn địa chỉ"
-                            name="address"
-                            rules={[
-                              {
-                                message: "Vui lòng chọn địa chỉ",
-                              },
-                            ]}
-                          >
-                            <div className="attribute">
-                              <Select
-                                className="input-item"
-                                value={selectedAddress}
-                                onChange={handleAddressChange}
-                                placeholder="Chọn địa chỉ"
-                                allowClear
-                              >
-                                {addresses.map((address) => (
-                                  <Select.Option
-                                    key={address.id}
-                                    value={address.id}
-                                  >
+                      <div>
+                        <Form.Item
+                          label="Chọn địa chỉ"
+                          name="address"
+                          rules={[
+                            {
+                              message: "Vui lòng chọn địa chỉ",
+                            },
+                          ]}
+                        >
+                          <div className="attribute">
+                            <Select
+                              className="input-item"
+                              value={selectedAddress}
+                              onChange={handleAddressChange}
+                              placeholder="Chọn địa chỉ"
+                              allowClear
+                            >
+                              {addresses.length > 0 ? (
+                                addresses.map((address) => (
+                                  <Select.Option key={address.id} value={address.id}>
                                     {`${address.detail_address}, ${address.address}`}{" "}
                                     {address.id_default && "(Mặc định)"}
                                   </Select.Option>
-                                ))}
-                              </Select>
-
-                              {!userId ? null : (
-                                <Tooltip title="Thêm địa chỉ mới">
-                                  <Button
-                                    className="btn-import"
-                                    variant="outlined"
-                                    icon={<PlusOutlined />}
-                                    onClick={showModal}
-                                  />
-                                </Tooltip>
+                                ))
+                              ) : (
+                                <Select.Option disabled key="no-address" value="">
+                                  Chưa có
+                                </Select.Option>
                               )}
-                            </div>
-                          </Form.Item>
-                        </div>
-                      )
+                            </Select>
+
+                            <Tooltip title="Thêm địa chỉ mới">
+                              <Button
+                                className="btn-import"
+                                style={{ backgroundColor: '#e48948', color: 'white' }}
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={showModal}
+                              />
+                            </Tooltip>
+                          </div>
+                        </Form.Item>
+                      </div>
                     )}
 
                     <Modal
@@ -1024,7 +1033,7 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button style={{backgroundColor: '#e48948', color:'white'}} type="primary" htmlType="submit">
+                          <Button style={{ backgroundColor: '#e48948', color: 'white' }} type="primary" htmlType="submit">
                             Lưu
                           </Button>
                         </div>
@@ -1093,9 +1102,9 @@ const Checkout = () => {
                                 {formatCurrency(
                                   item.product_variant
                                     ? item.product_variant.sale_price ||
-                                        item.product_variant.sell_price
+                                    item.product_variant.sell_price
                                     : item.product?.sale_price ||
-                                        item.product?.sell_price
+                                    item.product?.sell_price
                                 )}{" "}
                                 VNĐ
                               </td>
@@ -1115,7 +1124,7 @@ const Checkout = () => {
 
                           {/* Shipping */}
                           <tr
-                            style={{ fontSize: "1.1rem", fontWeight: "bold" }}
+                            style={{ fontSize: "12px", fontWeight: "bold" }}
                           >
                             <td style={{ padding: "10px" }}>Phí vận chuyển:</td>
                             <td
@@ -1134,12 +1143,12 @@ const Checkout = () => {
                             <>
                               <tr
                                 style={{
-                                  fontSize: "1.1rem",
+                                  fontSize: "12px",
                                   fontWeight: "bold",
                                 }}
                               >
                                 <td style={{ padding: "10px" }}>
-                                  Điểm thưởng ({userData.loyalty_points || 0}):
+                                  Điểm tiêu dùng ({formatCurrency(userData.loyalty_points || 0)}):
                                 </td>
                                 <td
                                   style={{
@@ -1148,24 +1157,20 @@ const Checkout = () => {
                                   }}
                                 >
                                   <input
-                                    type="number"
+                                    type="text"
                                     placeholder="Nhập điểm đổi"
-                                    min={0}
-                                    max={userData.loyalty_points}
-                                    value={usedLoyaltyPoints}
+                                    value={formattedLoyaltyPoints}
                                     onChange={(e) => {
-                                      const inputValue = Number(e.target.value);
-                                      if (
-                                        inputValue <= userData.loyalty_points
-                                      ) {
-                                        setUsedLoyaltyPoints(inputValue);
+                                      const rawValue = e.target.value;
+                                      const numericValue = unformatNumber(rawValue);
+
+                                      if (numericValue <= userData.loyalty_points) {
+                                        setUsedLoyaltyPoints(numericValue);
+                                        setFormattedLoyaltyPoints(formatNumber(numericValue));
                                       } else {
-                                        message.warning(
-                                          "Bạn không thể dùng quá số điểm hiện có!"
-                                        );
-                                        setUsedLoyaltyPoints(
-                                          userData.loyalty_points
-                                        );
+                                        message.warning("Bạn không thể dùng quá số điểm hiện có!");
+                                        setUsedLoyaltyPoints(userData.loyalty_points);
+                                        setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
                                       }
                                     }}
                                     style={{
@@ -1182,7 +1187,7 @@ const Checkout = () => {
                               </tr>
                               <tr
                                 style={{
-                                  fontSize: "1.1rem",
+                                  fontSize: "12px",
                                   fontWeight: "bold",
                                 }}
                               >
@@ -1252,13 +1257,13 @@ const Checkout = () => {
                                     <p>Không có mã giảm giá nào.</p> // Display this if there are no coupons
                                   )}
                                 </div>
-                                <Button
+                                <button
                                   type="primary"
                                   onClick={applyDiscount}
-                                  style={{ width: "100%" }}
+                                  className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                                 >
-                                  Áp dụng mã giảm giá
-                                </Button>
+                                  Sử dụng
+                                </button>
                               </Modal>
                             </>
                           )}
@@ -1316,18 +1321,15 @@ const Checkout = () => {
                                 fullname: userData.fullname,
                                 email: userData.email,
                                 phone_number: userData.phone_number,
-                                address: `${userData.address}, ${
-                                  wards.find((w) => w.WardCode === selectedWard)
-                                    ?.WardName || ""
-                                }, ${
-                                  districts.find(
+                                address: `${userData.address}, ${wards.find((w) => w.WardCode === selectedWard)
+                                  ?.WardName || ""
+                                  }, ${districts.find(
                                     (d) => d.DistrictID === selectedDistrict
                                   )?.DistrictName || ""
-                                }, ${
-                                  provinces.find(
+                                  }, ${provinces.find(
                                     (p) => p.ProvinceID === selectedProvince
                                   )?.ProvinceName || ""
-                                }`
+                                  }`
                                   .replace(/^, | ,| , $/g, "")
                                   .trim(),
                                 total_amount: subtotal,
@@ -1402,8 +1404,8 @@ const Checkout = () => {
                   method.name.toLowerCase() === "cod"
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
-                    ? "Thanh toán trực tuyến"
-                    : method.name;
+                      ? "Thanh toán trực tuyến"
+                      : method.name;
 
                 return (
                   <div key={method.id} className="custom-control custom-radio">

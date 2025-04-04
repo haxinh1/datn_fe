@@ -242,7 +242,7 @@ const ListProduct = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <span>Trang Chủ</span>
+                <Link to='/'><span>Trang Chủ</span></Link>     
               </li>
               <li className="breadcrumb-item">
                 <span>Sản Phẩm</span>

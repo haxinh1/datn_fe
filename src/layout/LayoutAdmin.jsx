@@ -122,15 +122,6 @@ const LayoutAdmin = () => {
 
   const menuItems = [
     {
-      key: "dashboardad",
-      icon: <DatabaseOutlined />,
-      label: (
-        <Link to="/admin/dashboardad">
-          <span>Thống kê</span>
-        </Link>
-      ),
-    },
-    {
       key: "list-pr",
       icon: <ProductOutlined />,
       label: (
@@ -245,6 +236,15 @@ const LayoutAdmin = () => {
       label: (
         <Link to="/admin/comment">
           <span>Bình Luận</span>
+        </Link>
+      ),
+    },
+    !isManager && {
+      key: "dashboardad",
+      icon: <DatabaseOutlined />,
+      label: (
+        <Link to="/admin/dashboardad">
+          <span>Thống kê</span>
         </Link>
       ),
     },
