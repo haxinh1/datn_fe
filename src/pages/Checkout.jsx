@@ -287,11 +287,27 @@ const Checkout = () => {
       const response = await AuthServices.addAddress(userData);
       return response;
     },
-    onSuccess: (_, userData) => {
+    onSuccess: (data, userData) => {
       notification.success({
         message: "Địa chỉ mới đã được thêm",
       });
-      form.resetFields(); // Reset form fields after success
+
+      // Cập nhật danh sách địa chỉ trong state, chỉ lấy các thuộc tính cần thiết
+      setAddresses((prevAddresses) => {
+        const newAddress = {
+          // Chỉ lưu lại các thông tin cần thiết để hiển thị, không lấy 'id' hay trạng thái quản lý
+          detail_address: userData.detail_address, // Địa chỉ chi tiết
+          address: userData.address, // Địa chỉ đã xâu chuỗi
+        };
+
+        // Thêm địa chỉ mới vào danh sách
+        return [newAddress, ...prevAddresses];
+      });
+
+      // Tự động chọn địa chỉ mới, vẫn giữ lại id để quản lý
+      setSelectedAddress(data.id); // Đảm bảo vẫn sử dụng id để quản lý
+
+      form.resetFields(); // Reset form fields sau khi thành công
       setIsModalVisible(false); // Đóng modal sau khi thêm thành công
     },
     onError: (error) => {

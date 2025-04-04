@@ -50,7 +50,7 @@ const Cart = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                productDetails.data.sell_price;
+                  productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -135,11 +135,23 @@ const Cart = () => {
     if (newQuantity < 1) return;
 
     const updatedCartItems = [...cartItems];
+    const item = updatedCartItems[index];
+
+    // Kiểm tra số lượng tồn kho
+    const availableStock = item.product_variant
+      ? item.product_variant.stock
+      : item.product.stock;
+
+    if (newQuantity > availableStock) {
+      message.error(`Số lượng vượt quá tồn kho!`);
+      return;
+    }
+
     updatedCartItems[index].quantity = newQuantity;
     setCartItems(updatedCartItems);
 
-    const productId = updatedCartItems[index].product_id;
-    const variantId = updatedCartItems[index].product_variant_id || null;
+    const productId = item.product_id;
+    const variantId = item.product_variant_id || null;
 
     try {
       const user = localStorage.getItem("user");
@@ -389,7 +401,9 @@ const Cart = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>
+                <Link to="/">
+                  <span>Trang Chủ</span>
+                </Link>
               </li>
               <li className="breadcrumb-item">
                 <span>Giỏ Hàng</span>
@@ -404,7 +418,7 @@ const Cart = () => {
               <div className="row">
                 <div className="col-lg-9">
                   {cartItems.length === 0 ? (
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
                       <span className="fs-4 text-center text-danger">
                         Giỏ hàng của bạn đang trống!
                       </span>

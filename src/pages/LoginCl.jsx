@@ -66,20 +66,20 @@ const Logincl = () => {
   };
 
   const handleGoogleLogin = async () => {
-    try {
-      const response = await AuthServices.loginGoogle(); // Gọi API backend để đăng nhập qua Google
-      if (response?.token) {
-        localStorage.setItem("client_token", response.token);
-        localStorage.setItem("client", JSON.stringify(response.user));
-        message.success("Đăng nhập Google thành công!");
-      }
-    } catch (error) {
-      notification.error({
-        message: "Đăng nhập thất bại",
-        description:
-          error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
-      });
-    }
+    // try {
+    //   const response = await AuthServices.loginGoogle(); // Gọi API backend để đăng nhập qua Google
+    //   if (response?.token) {
+    //     localStorage.setItem("client_token", response.token);
+    //     localStorage.setItem("client", JSON.stringify(response.user));
+    //     message.success("Đăng nhập Google thành công!");
+    //   }
+    // } catch (error) {
+    //   notification.error({
+    //     message: "Đăng nhập thất bại",
+    //     description:
+    //       error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
+    //   });
+    // }
     window.location.href = "http://127.0.0.1:8000/api/auth/google";
   };
 
@@ -161,10 +161,7 @@ const Logincl = () => {
           </p>
           <div className="row">
             <div className="col-sm-6">
-              <a
-                className="btn btn-login btn-g"
-                onClick={handleGoogleLogin}
-              >
+              <a className="btn btn-login btn-g" onClick={handleGoogleLogin}>
                 <i className="icon-google"></i>
                 Google
               </a>
