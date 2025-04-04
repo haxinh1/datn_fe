@@ -1,14 +1,5 @@
-import { EyeOutlined, PrinterOutlined, ToTopOutlined } from "@ant-design/icons";
-import {
-  Button,
-  Checkbox,
-  DatePicker,
-  Modal,
-  Select,
-  Skeleton,
-  Table,
-  Tooltip,
-} from "antd";
+import { EyeOutlined, PrinterOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Modal, Select, Skeleton, Table, Tooltip } from "antd";
 import React, { useState } from "react";
 import { OrderService } from "../services/order";
 import { useQuery } from "@tanstack/react-query";
@@ -30,13 +21,16 @@ const Bill = () => {
     email: "",
     address: "",
     fullname: "",
+    shipping_fee: "",
+    discount_points: "",
+    total_amount: "",
   });
 
   // danh sách hóa đơn
   const { data: bills, isLoading } = useQuery({
     queryKey: ["complete"],
     queryFn: async () => {
-      const response = await OrderService.getAllBill();
+      const response = await OrderService.getAllOrder();
       return response.orders || { data: [] };
     },
   });
@@ -50,6 +44,9 @@ const Bill = () => {
       email: order.email,
       address: order.address,
       fullname: order.fullname,
+      shipping_fee: order.shipping_fee,
+      discount_points: order.discount_points,
+      total_amount: order.total_amount,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -66,23 +63,16 @@ const Bill = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const filteredOrders =
-    bills?.filter((order) => {
-      const { dateRange, payment } = filters;
-      const orderDate = dayjs(order.created_at);
-      const isDateValid =
-        !dateRange ||
-        (orderDate.isSameOrAfter(dateRange[0], "day") &&
-          orderDate.isSameOrBefore(dateRange[1], "day"));
-      const isPaymentValid = !payment || order.payment?.id === payment;
-      return isDateValid && isPaymentValid;
-    }) || [];
-
-  // danh sách phương thức thanh toán
-  const { data: payments } = useQuery({
-    queryKey: ["payments"],
-    queryFn: paymentServices.getPayment,
-  });
+  const filteredOrders = bills?.filter((order) => {
+    const { dateRange, payment } = filters;
+    const orderDate = dayjs(order.created_at);
+    const isDateValid =
+      !dateRange ||
+      (orderDate.isSameOrAfter(dateRange[0], "day") &&
+        orderDate.isSameOrBefore(dateRange[1], "day"));
+    const isPaymentValid = !payment || order.payment?.id === payment;
+    return isDateValid && isPaymentValid;
+  }) || [];
 
   // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
@@ -107,13 +97,6 @@ const Bill = () => {
   };
 
   const columns = [
-    // {
-    //   title: <Checkbox />,
-    //   render: (_, order) => (
-    //     <Checkbox />
-    //   ),
-    //   align: 'center',
-    // },
     {
       title: "STT",
       dataIndex: "index",
@@ -133,7 +116,7 @@ const Bill = () => {
       align: "center",
     },
     {
-      title: "Tổng thanh toán (VNĐ)",
+      title: "Giá trị đơn hàng (VNĐ)",
       dataIndex: "total_amount",
       key: "total_amount",
       align: "center",
@@ -144,16 +127,8 @@ const Bill = () => {
       dataIndex: "created_at",
       key: "created_at",
       align: "center",
-      render: (created_at) =>
-        created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
-    },
-    {
-      title: "Phương thức thanh toán",
-      dataIndex: "payment",
-      align: "center",
-      render: (payment) => (
-        <div className="action-link-blue">{payment?.name}</div>
-      ),
+      render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
+      sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
     },
     {
       title: "",
@@ -163,20 +138,12 @@ const Bill = () => {
         <div className="action-container">
           <Tooltip title="Xem hóa đơn">
             <Button
-              color="purple"
-              variant="solid"
-              icon={<EyeOutlined />}
-              onClick={() => showModal(item)}
-            />
-          </Tooltip>
-          {/* <Tooltip title="In hóa đơn">
-            <Button
               color="primary"
               variant="solid"
               icon={<PrinterOutlined />}
-              onClick={() => printInvoice(item.id)}
+              onClick={() => showModal(item)}
             />
-          </Tooltip> */}
+          </Tooltip>
         </div>
       ),
     },
@@ -188,20 +155,17 @@ const Bill = () => {
       dataIndex: "name",
       align: "center",
       render: (text, record) => {
-        // Kiểm tra nếu product có dữ liệu và lấy tên sản phẩm từ record.product.name
         const productName = record.name ? record.name : "";
-        // Kiểm tra nếu variants có thuộc tính và kết hợp tên sản phẩm với thuộc tính biến thể
         const variantAttributes = record.variants
           .map((variant) => {
-            // Lấy các thuộc tính của biến thể và nối chúng lại
             const attributes = variant.attributes
               .map((attr) => attr.attribute_name)
               .join(" - ");
-            return `${productName} - ${attributes}`; // Kết hợp tên sản phẩm với thuộc tính biến thể
+            return `${productName} - ${attributes}`;
           })
           .join(", ");
 
-        return variantAttributes || productName; // Nếu không có biến thể, chỉ trả về tên sản phẩm
+        return variantAttributes || productName;
       },
     },
     {
@@ -239,29 +203,6 @@ const Bill = () => {
             allowClear
           />
         </ConfigProvider>
-
-        <Select
-          placeholder="Phương thức thanh toán"
-          className="select-item"
-          onChange={(value) => handleFilterChange("payment", value)}
-          allowClear
-        >
-          {payments?.map((method) => (
-            <Select.Option key={method.id} value={method.id}>
-              {method.name}
-            </Select.Option>
-          ))}
-        </Select>
-
-        {/* <div className="group2">
-          <Button
-            color="primary"
-            variant="solid"
-            icon={<ToTopOutlined />}
-          >
-            Xuất Excel
-          </Button>
-        </div> */}
       </div>
 
       <Skeleton active loading={isLoading}>
@@ -307,14 +248,40 @@ const Bill = () => {
                 0
               );
               return (
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={3} align="right">
-                    <strong>Tổng giá trị (VNĐ):</strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    <strong>{formatPrice(totalAmount)}</strong>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
+                <>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Tổng tiền:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(totalAmount)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Giảm giá điểm tiêu dùng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.discount_points)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Tổng giá trị đơn hàng:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </>
               );
             }}
           />
