@@ -97,7 +97,7 @@ const Checkout = () => {
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
                 : productDetails.data.sale_price ||
-                productDetails.data.sell_price;
+                  productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -310,11 +310,11 @@ const Checkout = () => {
         : "",
       values.district
         ? districts.find((d) => d.DistrictID === Number(values.district))
-          ?.DistrictName
+            ?.DistrictName
         : "",
       values.province
         ? provinces.find((p) => p.ProvinceID === Number(values.province))
-          ?.ProvinceName
+            ?.ProvinceName
         : "",
     ]
       .filter(Boolean)
@@ -337,18 +337,16 @@ const Checkout = () => {
   //tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-      // Lấy giá sản phẩm từ biến thể nếu có
-      const productPrice = item.product_variant
-        ? item.product_variant.sale_price ||
-        item.product_variant.sell_price ||
-        0
-        : item.product?.sale_price || item.product?.sell_price || 0;
+        // Lấy giá sản phẩm từ biến thể nếu có
+        const productPrice = item.product_variant
+          ? item.product_variant.sale_price ||
+            item.product_variant.sell_price ||
+            0
+          : item.product?.sale_price || item.product?.sell_price || 0;
 
-      return total + productPrice * (item.quantity || 1);
-    }, 0)
+        return total + productPrice * (item.quantity || 1);
+      }, 0)
     : 0;
-  const finalTotal =
-    subtotal + shippingFee - usedLoyaltyPoints - discountAmount;
 
   //lấy phương thức thanh toán
   useEffect(() => {
@@ -417,6 +415,8 @@ const Checkout = () => {
           : userData.address,
         used_points: usedLoyaltyPoints || 0,
         shipping_fee: shippingFee,
+        coupon_code: selectedCoupon ? selectedCoupon.code : null, // Gửi mã coupon
+        discount_amount: discountAmount, // Gửi số tiền giảm giá
         total_amount: finalTotal,
         payment_method:
           selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
@@ -650,16 +650,26 @@ const Checkout = () => {
     }
 
     let discountValue = 0;
+
+    // Kiểm tra loại giảm giá của coupon
     if (selectedCoupon.discount_type === "percent") {
-      discountValue = (subtotal * selectedCoupon.discount) / 100;
+      // Nếu là phần trăm, tính phần trăm từ subtotal
+      discountValue = (subtotal * selectedCoupon.discount_value) / 100;
     } else if (selectedCoupon.discount_type === "fix_amount") {
-      discountValue = selectedCoupon.discount;
+      // Nếu là số tiền cố định, lấy số tiền cố định từ coupon
+      discountValue = selectedCoupon.discount_value;
     }
 
-    setDiscountAmount(discountValue); // Cập nhật giá trị giảm giá
+    // Cập nhật giá trị giảm giá vào tổng tiền
+    setDiscountAmount(discountValue);
     message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
-    setIsCouponModalVisible(false); // Đóng modal sau khi chọn
+    setIsCouponModalVisible(false); // Đóng modal sau khi chọn coupon
   };
+
+  // Tính tổng tiền finalTotal sau khi áp dụng mã giảm giá
+  const finalTotal =
+    subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
+
   return (
     <div>
       <main className="main">
@@ -676,10 +686,14 @@ const Checkout = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>
+                <Link to="/">
+                  <span>Trang Chủ</span>
+                </Link>
               </li>
               <li className="breadcrumb-item">
-                <Link to='/cart'><span>Giỏ Hàng</span></Link>
+                <Link to="/cart">
+                  <span>Giỏ Hàng</span>
+                </Link>
               </li>
               <li className="breadcrumb-item active" aria-current="page">
                 <span>Thanh Toán</span>
@@ -881,13 +895,20 @@ const Checkout = () => {
                             >
                               {addresses.length > 0 ? (
                                 addresses.map((address) => (
-                                  <Select.Option key={address.id} value={address.id}>
+                                  <Select.Option
+                                    key={address.id}
+                                    value={address.id}
+                                  >
                                     {`${address.detail_address}, ${address.address}`}{" "}
                                     {address.id_default && "(Mặc định)"}
                                   </Select.Option>
                                 ))
                               ) : (
-                                <Select.Option disabled key="no-address" value="">
+                                <Select.Option
+                                  disabled
+                                  key="no-address"
+                                  value=""
+                                >
                                   Chưa có
                                 </Select.Option>
                               )}
@@ -896,7 +917,10 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{ backgroundColor: '#e48948', color: 'white' }}
+                                style={{
+                                  backgroundColor: "#e48948",
+                                  color: "white",
+                                }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1033,7 +1057,14 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button style={{ backgroundColor: '#e48948', color: 'white' }} type="primary" htmlType="submit">
+                          <Button
+                            style={{
+                              backgroundColor: "#e48948",
+                              color: "white",
+                            }}
+                            type="primary"
+                            htmlType="submit"
+                          >
                             Lưu
                           </Button>
                         </div>
@@ -1102,9 +1133,9 @@ const Checkout = () => {
                                 {formatCurrency(
                                   item.product_variant
                                     ? item.product_variant.sale_price ||
-                                    item.product_variant.sell_price
+                                        item.product_variant.sell_price
                                     : item.product?.sale_price ||
-                                    item.product?.sell_price
+                                        item.product?.sell_price
                                 )}{" "}
                                 VNĐ
                               </td>
@@ -1123,9 +1154,7 @@ const Checkout = () => {
                           </tr>
 
                           {/* Shipping */}
-                          <tr
-                            style={{ fontSize: "12px", fontWeight: "bold" }}
-                          >
+                          <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
                             <td style={{ padding: "10px" }}>Phí vận chuyển:</td>
                             <td
                               style={{
@@ -1148,7 +1177,9 @@ const Checkout = () => {
                                 }}
                               >
                                 <td style={{ padding: "10px" }}>
-                                  Điểm tiêu dùng ({formatCurrency(userData.loyalty_points || 0)}):
+                                  Điểm tiêu dùng (
+                                  {formatCurrency(userData.loyalty_points || 0)}
+                                  ):
                                 </td>
                                 <td
                                   style={{
@@ -1162,15 +1193,26 @@ const Checkout = () => {
                                     value={formattedLoyaltyPoints}
                                     onChange={(e) => {
                                       const rawValue = e.target.value;
-                                      const numericValue = unformatNumber(rawValue);
+                                      const numericValue =
+                                        unformatNumber(rawValue);
 
-                                      if (numericValue <= userData.loyalty_points) {
+                                      if (
+                                        numericValue <= userData.loyalty_points
+                                      ) {
                                         setUsedLoyaltyPoints(numericValue);
-                                        setFormattedLoyaltyPoints(formatNumber(numericValue));
+                                        setFormattedLoyaltyPoints(
+                                          formatNumber(numericValue)
+                                        );
                                       } else {
-                                        message.warning("Bạn không thể dùng quá số điểm hiện có!");
-                                        setUsedLoyaltyPoints(userData.loyalty_points);
-                                        setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
+                                        message.warning(
+                                          "Bạn không thể dùng quá số điểm hiện có!"
+                                        );
+                                        setUsedLoyaltyPoints(
+                                          userData.loyalty_points
+                                        );
+                                        setFormattedLoyaltyPoints(
+                                          formatNumber(userData.loyalty_points)
+                                        );
                                       }
                                     }}
                                     style={{
@@ -1321,15 +1363,18 @@ const Checkout = () => {
                                 fullname: userData.fullname,
                                 email: userData.email,
                                 phone_number: userData.phone_number,
-                                address: `${userData.address}, ${wards.find((w) => w.WardCode === selectedWard)
-                                  ?.WardName || ""
-                                  }, ${districts.find(
+                                address: `${userData.address}, ${
+                                  wards.find((w) => w.WardCode === selectedWard)
+                                    ?.WardName || ""
+                                }, ${
+                                  districts.find(
                                     (d) => d.DistrictID === selectedDistrict
                                   )?.DistrictName || ""
-                                  }, ${provinces.find(
+                                }, ${
+                                  provinces.find(
                                     (p) => p.ProvinceID === selectedProvince
                                   )?.ProvinceName || ""
-                                  }`
+                                }`
                                   .replace(/^, | ,| , $/g, "")
                                   .trim(),
                                 total_amount: subtotal,
@@ -1404,8 +1449,8 @@ const Checkout = () => {
                   method.name.toLowerCase() === "cod"
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
-                      ? "Thanh toán trực tuyến"
-                      : method.name;
+                    ? "Thanh toán trực tuyến"
+                    : method.name;
 
                 return (
                   <div key={method.id} className="custom-control custom-radio">
