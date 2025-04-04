@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Avatar, Button, Drawer, Input } from "antd";
+import { Avatar, Button, Drawer, Input, Tooltip } from "antd";
 import { SendOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import "../../assets/css/style.css";
 
 const AIChat = () => {
     const [aiQuestion, setAiQuestion] = useState("");
-    const [chatHistory, setChatHistory] = useState([
-        { sender: "ai", text: "Xin chào! Tôi có thể giúp gì cho bạn?" },
-    ]);
+    const [chatHistory, setChatHistory] = useState([{ sender: "ai", text: "Xin chào! Tôi có thể giúp gì cho bạn?" }]);
     const [isAIModalVisible, setIsAIModalVisible] = useState(false);
     const messagesEndRef = useRef(null);
     const vitegeminiurl = import.meta.env.VITE_GEMINI_URL;
@@ -55,18 +53,22 @@ const AIChat = () => {
             >
                 <img
                     style={{ width: 120 }}
-                    src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg" alt=""/>
+                    src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg" alt=""
+                />
             </Button>
 
             <Drawer
                 closable={false}
                 placement="bottom"
                 title={
-                    <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <Avatar size={32}
-                                src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg"
-                                style={{backgroundColor: "#3A4ADD"}}>AI</Avatar>
-                        <span style={{fontWeight: "bold", fontSize: "16px"}}>Trợ lý ảo Mol</span>
+                            src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg"
+                            style={{ backgroundColor: "#3A4ADD" }}
+                        >
+                            AI
+                        </Avatar>
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>Molla Shop</span>
                     </div>
                 }
                 onClose={() => setIsAIModalVisible(false)}
@@ -74,9 +76,11 @@ const AIChat = () => {
                 mask={false}
                 height={450}
                 extra={
-                    <Button type="text" onClick={() => setIsAIModalVisible(false)}>
-                        <CloseCircleOutlined style={{fontSize: 20, color: "#3A4ADD"}}/>
-                    </Button>
+                    <Tooltip title='Đóng hộp chat'>
+                        <Button type="text" onClick={() => setIsAIModalVisible(false)}>
+                            <CloseCircleOutlined style={{ fontSize: 20, color: "#3A4ADD" }} />
+                        </Button>
+                    </Tooltip>
                 }
                 contentWrapperStyle={{
                     width: 360,
@@ -87,44 +91,49 @@ const AIChat = () => {
                     borderRadius: "12px 12px 0 0",
                 }}
             >
-                <div style={{display: "flex", flexDirection: "column", height: "100%"}}>
-                    <div style={{flex: 1, padding: "10px", overflowY: "auto", backgroundColor: "#fafafa"}}>
+                <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                    <div style={{ flex: 1, padding: "10px", overflowY: "auto", backgroundColor: "#fafafa" }}>
                         {chatHistory.map((msg, index) => (
-                            <div key={index}
-                                 style={{display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px"}}>
+                            <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
                                 <Avatar size={34}
-                                        src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg"
-                                        style={{backgroundColor: msg.sender === "user" ? "#3A4ADD" : "#3A4ADD"}}>{msg.sender === "user" ? "U" : "AI"}</Avatar>
-                                <div style={{
-                                    padding: "10px",
-                                    backgroundColor: msg.sender === "user" ? "#d1e7ff" : "#f5f5f5",
-                                    borderRadius: "8px",
-                                    maxWidth: "80%",
-                                }}>
-                                    <p style={{margin: 0}}>{msg.text}</p>
+                                    src="https://img.freepik.com/free-vector/chatbot-chat-message-vectorart_78370-4104.jpg"
+                                    style={{ backgroundColor: msg.sender === "user" ? "#3A4ADD" : "#3A4ADD" }}>{msg.sender === "user" ? "U" : "AI"}
+                                </Avatar>
+
+                                <div
+                                    style={{
+                                        padding: "10px",
+                                        backgroundColor: msg.sender === "user" ? "#d1e7ff" : "#f5f5f5",
+                                        borderRadius: "8px",
+                                        maxWidth: "80%",
+                                    }}
+                                >
+                                    <span style={{ margin: 0 }}>{msg.text}</span>
                                 </div>
                             </div>
                         ))}
-                        <div ref={messagesEndRef}/>
+                        <div ref={messagesEndRef} />
                     </div>
-                    <div style={{padding: "10px", backgroundColor: "white", borderTop: "1px solid #ddd"}}>
-                        <Input.TextArea
-                            rows={2}
+
+                    <div className="group1">
+                        <Input
+                            className="input-item"
                             placeholder="Nhập câu hỏi của bạn..."
                             value={aiQuestion}
                             onChange={(e) => setAiQuestion(e.target.value)}
                             onPressEnter={handleAskAI}
-                            style={{marginBottom: "10px"}}
                         />
-                        <Button
-                            type="primary"
-                            onClick={handleAskAI}
-                            block
-                            icon={<SendOutlined/>}
-                            style={{backgroundColor: "#3A4ADD", borderColor: "#3A4ADD"}}
-                        >
-                            Gửi câu hỏi
-                        </Button>
+                        
+                        <Tooltip title='Gửi'>
+                            <Button
+                                className="btn-import"
+                                style={{ width: '50px' }}
+                                type="text"
+                                onClick={handleAskAI}
+                                block
+                                icon={<SendOutlined style={{ fontSize: '20px' }} />}
+                            />
+                        </Tooltip>
                     </div>
                 </div>
             </Drawer>

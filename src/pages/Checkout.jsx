@@ -22,6 +22,7 @@ import { AuthServices } from "../services/auth";
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import { CouponServices } from "../services/coupon";
+import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -675,7 +676,7 @@ const Checkout = () => {
       <main className="main">
         <div
           className="page-header text-center"
-          style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}
+          style={{ backgroundImage: `url(${headerBg})` }}
         >
           <div className="container">
             <h1 className="page-title">Thanh Toán</h1>
@@ -708,7 +709,7 @@ const Checkout = () => {
               <Form layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
-                    <h1 className="mb-5" style={{ color: "#e48948" }}>
+                    <h1 className="mb-5" style={{ color: "#eea287" }}>
                       Thông tin giao hàng
                     </h1>
                     <div className="row">
@@ -917,10 +918,7 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{
-                                  backgroundColor: "#e48948",
-                                  color: "white",
-                                }}
+                                style={{ backgroundColor: '#eea287', color: 'white' }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1057,14 +1055,7 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button
-                            style={{
-                              backgroundColor: "#e48948",
-                              color: "white",
-                            }}
-                            type="primary"
-                            htmlType="submit"
-                          >
+                          <Button style={{ backgroundColor: '#eea287', color: 'white' }} type="primary" htmlType="submit">
                             Lưu
                           </Button>
                         </div>

@@ -13,6 +13,7 @@ import {
 import { productsServices } from "./../services/product";
 import { ValuesServices } from "../services/attribute_value";
 import { DeleteOutlined } from "@ant-design/icons";
+import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -269,7 +270,6 @@ const Cart = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
               gap: "8px",
               opacity: isProductInactive ? 0.5 : 1, // Làm mờ nếu sản phẩm không còn bán
               position: "relative",
@@ -362,7 +362,7 @@ const Cart = () => {
       onOk: async () => {
         try {
           const response = await cartServices.clearCart();
-          message.success("xóa toàn bộ sản phẩm thành công");
+          message.success("Xóa toàn bộ sản phẩm thành công");
 
           // Clear the cart items locally as well
           setCartItems([]);
@@ -378,7 +378,7 @@ const Cart = () => {
       <main className="main">
         <div
           className="page-header text-center"
-          style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}
+          style={{ backgroundImage: `url(${headerBg})` }}
         >
           <div className="container">
             <h1 className="page-title">Giỏ Hàng</h1>
@@ -411,6 +411,17 @@ const Cart = () => {
                     </div>
                   ) : (
                     <div className="">
+                      <div className="btn-brand">
+                        <Tooltip title='Xóa giỏ hàng'>
+                          <Button
+                            danger
+                            variant="outlined"
+                            icon={<DeleteOutlined />}
+                            onClick={clearCart}
+                            style={{ marginTop: "15px" }}
+                          />
+                        </Tooltip>
+                      </div>
                       <Table
                         columns={columns}
                         dataSource={cartItems}
@@ -419,16 +430,6 @@ const Cart = () => {
                         }
                         pagination={false}
                       />
-
-                      {/* <Tooltip title='Xóa giỏ hàng'>
-                        <Button
-                          type="primary"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={clearCart}
-                          style={{ marginTop: "15px" }}
-                        />
-                      </Tooltip> */}
                     </div>
                   )}
                 </div>

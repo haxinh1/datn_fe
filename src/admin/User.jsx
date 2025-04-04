@@ -291,7 +291,7 @@ const User = () => {
                     : "";
 
                 return (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Image src={productImage} alt="product" width={50} />
                         <Link to={`/admin/detailad/${record.product_id}`}><span>{productName}{productAttributes}</span></Link>
                     </div>

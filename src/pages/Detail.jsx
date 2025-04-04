@@ -5,6 +5,7 @@ import { OrderService } from '../services/order';
 import "../css/review.css";
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Detail = () => {
     const { id } = useParams();
@@ -296,11 +297,15 @@ const Detail = () => {
     return (
         <div>
             <main className="main">
-                <div className="page-header text-center" style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}>
+                <div
+                    className="page-header text-center"
+                    style={{ backgroundImage: `url(${headerBg})` }}
+                >
                     <div className="container">
                         <h1 className="page-title">Đơn Đặt Hàng</h1>
                     </div>
                 </div>
+
                 <div className="page-content">
                     <div className="container">
                         <div className="group1">
