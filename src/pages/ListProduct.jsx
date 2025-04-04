@@ -234,8 +234,14 @@ const ListProduct = () => {
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
-        <div className="text-center">
-          <img src={bg} alt="" />
+
+        <div 
+          className="page-header text-center"
+          style={{ backgroundImage: `url(${bg})` }}
+        >
+          <div className="container">
+            <h1 style={{color: '#eea287'}}>MOLLA SHOP</h1>
+          </div>
         </div>
 
         <nav aria-label="breadcrumb" className="breadcrumb-nav mb-2">
@@ -296,7 +302,7 @@ const ListProduct = () => {
                           <div className="product-body">
                             <span className="product-title">
                               <Link to={`/product-detail/${product.id}`}>
-                                {product.name}
+                                <span>{product.name}</span>
                               </Link>
                             </span>
                             <div className="product-price">

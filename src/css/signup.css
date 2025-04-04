@@ -18,13 +18,13 @@
     text-align: center;
     font-size: 32px;
     font-weight: 700;
-    color: #e48948;
+    color: #eea287;
     margin-bottom: 20px;
 }
 hr{
     border: 0;
     height: 3px;
-    background: #e48948;
+    background: #eea287;
 }
 .signup-card {
     width: 800px;
@@ -53,11 +53,11 @@ hr{
     display: block;
     text-align: center;
     font-size: 16px;
-    color: #e48948;
+    color: #eea287;
 }
 .text-quest {
     font-size: 16px;
-    color: #e48948;
+    color: #eea287;
 }
 .text-quest:hover {
     text-decoration: underline;

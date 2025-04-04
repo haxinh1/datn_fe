@@ -446,7 +446,7 @@ const Orders = () => {
 
   return (
     <div>
-      <h1 className="mb-5" style={{ color: "#e48948" }}>
+      <h1 className="mb-5" style={{ color: "#eea287" }}>
         <BookOutlined style={{ marginRight: "8px" }} />
         Đơn hàng của bạn
       </h1>

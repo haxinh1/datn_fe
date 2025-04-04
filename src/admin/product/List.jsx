@@ -528,12 +528,23 @@ const List = () => {
                             <Form.Item
                                 label="Giá bán (VNĐ)"
                                 name="sell_price"
-                                initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
-                                rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                                initialValue={newPrice}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập giá bán" },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const salePrice = getFieldValue("sale_price");
+                                            if (salePrice && value <= salePrice) {
+                                                return Promise.reject("Giá bán phải lớn hơn giá khuyến mại");
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
                             >
                                 <InputNumber
-                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                    parser={value => value?.replace(/\./g, "")}
                                     className="input-item"
                                     value={newPrice}
                                     onChange={setNewPrice}
@@ -579,10 +590,22 @@ const List = () => {
                         <Col span={12} className="col-item">
                             <Form.Item
                                 label="Giá khuyến mại (VNĐ)"
+                                name="sale_price"
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const price = getFieldValue("sell_price");
+                                            if (value && value >= price) {
+                                                return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán");
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
                             >
                                 <InputNumber
-                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                    parser={value => value?.replace(/\./g, "")}
                                     className="input-item"
                                     value={newSalePrice}
                                     onChange={setNewSalePrice}
