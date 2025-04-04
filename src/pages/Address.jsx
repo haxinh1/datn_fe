@@ -298,7 +298,7 @@ const Address = () => {
           checked={Boolean(record.id_default)}
           onChange={() => handleDefaultSwitchChange(record.id)}
           style={{
-            backgroundColor: record.id_default ? '#e48948' : '', // Xanh khi bật, xám khi tắt
+            backgroundColor: record.id_default ? '#eea287' : '', // Xanh khi bật, xám khi tắt
           }}
         />
       ),
@@ -319,7 +319,7 @@ const Address = () => {
 
   return (
     <div>
-      <h1 className="mb-5" style={{color:'#e48948'}}>
+      <h1 className="mb-5" style={{color:'#eea287'}}>
         <EnvironmentOutlined style={{ marginRight: "8px" }} />
         Địa chỉ của bạn
       </h1>
@@ -328,7 +328,7 @@ const Address = () => {
         type="primary"
         icon={<PlusOutlined />}
         onClick={showModal}
-        style={{backgroundColor: '#e48948', color:'white'}}
+        style={{backgroundColor: '#eea287', color:'white'}}
       >
         Thêm mới
       </Button>
@@ -439,7 +439,7 @@ const Address = () => {
           </Form.Item>
 
           <div className="add">
-            <Button style={{backgroundColor: '#e48948', color:'white'}} type="primary" htmlType="submit">
+            <Button style={{backgroundColor: '#eea287', color:'white'}} type="primary" htmlType="submit">
               Lưu
             </Button>
           </div>

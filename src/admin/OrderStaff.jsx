@@ -185,7 +185,19 @@ const OrderStaff = () => {
     const statusCounts = {
         1: ordersData?.filter(order => order.status.id === 1).length || 0,  // Chờ thanh toán
         2: ordersData?.filter(order => order.status.id === 2).length || 0,  // Đã thanh toán
-        3: ordersData?.filter(order => order.status.id === 3).length || 0,   // Đang xử lý
+        3: ordersData?.filter(order => order.status.id === 3).length || 0,
+        4: ordersData?.filter(order => order.status.id === 4).length || 0,
+        5: ordersData?.filter(order => order.status.id === 5).length || 0,
+        6: ordersData?.filter(order => order.status.id === 6).length || 0,
+        7: ordersData?.filter(order => order.status.id === 7).length || 0,   // Đang xử lý
+        8: ordersData?.filter(order => order.status.id === 8).length || 0,
+        9: ordersData?.filter(order => order.status.id === 9).length || 0,
+        10: ordersData?.filter(order => order.status.id === 10).length || 0,
+        11: ordersData?.filter(order => order.status.id === 11).length || 0,
+        12: ordersData?.filter(order => order.status.id === 12).length || 0,
+        13: ordersData?.filter(order => order.status.id === 13).length || 0,
+        14: ordersData?.filter(order => order.status.id === 14).length || 0,
+        15: ordersData?.filter(order => order.status.id === 15).length || 0,
     };
 
     const filteredOrders = (ordersData || []).filter((order) => {
@@ -499,11 +511,13 @@ const OrderStaff = () => {
             </h1>
 
             <div className="group1">
-                <div>
-                    <Button
-                        onClick={resetFilters}
-                        icon={<MenuOutlined />}
-                    />
+                <div
+                    style={{
+                        overflowX: "auto",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        gap: "5px",
+                    }}>
                     <Button
                         type={filters.status === 1 ? "primary" : "default"}
                         onClick={() => handleFilterChange(1)}
@@ -522,16 +536,85 @@ const OrderStaff = () => {
                     >
                         Đang xử lý ({statusCounts[3]})
                     </Button>
+                    <Button
+                        type={filters.status === 4 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(4)}
+                    >
+                        Đang giao hàng ({statusCounts[4]})
+                    </Button>
+                    <Button
+                        type={filters.status === 5 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(5)}
+                    >
+                        Đã giao hàng ({statusCounts[5]})
+                    </Button>
+                    <Button
+                        type={filters.status === 6 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(6)}
+                    >
+                        Giao hàng thất bại ({statusCounts[6]})
+                    </Button>
+                    <Button
+                        type={filters.status === 7 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(7)}
+                    >
+                        Hoàn thành ({statusCounts[7]})
+                    </Button>
+                    <Button
+                        type={filters.status === 8 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(8)}
+                    >
+                        Hủy đơn ({statusCounts[8]})
+                    </Button>
+                    <Button
+                        type={filters.status === 9 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(9)}
+                    >
+                        Trả hàng ({statusCounts[9]})
+                    </Button>
+                    <Button
+                        type={filters.status === 10 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(10)}
+                    >
+                        Châp nhận trả hàng ({statusCounts[10]})
+                    </Button>
+                    <Button
+                        type={filters.status === 11 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(11)}
+                    >
+                        Từ chối trả hàng ({statusCounts[11]})
+                    </Button>
+                    <Button
+                        type={filters.status === 12 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(12)}
+                    >
+                        Xử lý hoàn tiền ({statusCounts[12]})
+                    </Button>
+                    <Button
+                        type={filters.status === 13 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(13)}
+                    >
+                        Đã hoàn tiền ({statusCounts[13]})
+                    </Button>
+                    <Button
+                        type={filters.status === 14 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(14)}
+                    >
+                        Đang trả hàng về shop ({statusCounts[14]})
+                    </Button>
+                    <Button
+                        type={filters.status === 15 ? "primary" : "default"}
+                        onClick={() => handleFilterChange(15)}
+                    >
+                        Shop đã nhận hàng ({statusCounts[15]})
+                    </Button>
                 </div>
 
                 <div className="group2">
-                    {/* <Button
-                        color="primary" variant="solid"
-                        icon={<ToTopOutlined />}
-                        onClick={handleExportExcel}
-                    >
-                        Xuất Excel
-                    </Button> */}
+                    <Button
+                        onClick={resetFilters}
+                        icon={<MenuOutlined />}
+                    />
 
                     <Button
                         color="primary"

@@ -300,7 +300,7 @@ const BackCl = () => {
 
     return (
         <div>
-            <h1 className="mb-5" style={{ color: '#e48948' }}>
+            <h1 className="mb-5" style={{ color: '#eea287' }}>
                 <RollbackOutlined style={{ marginRight: "8px" }} />
                 Đơn hàng hoàn trả
             </h1>

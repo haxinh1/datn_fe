@@ -141,12 +141,13 @@ const Info = () => {
             title: "Thông tin",
             dataIndex: "label",
             key: "label",
-            width: 160,
+            width: 200,
         },
         {
             title: "Chi tiết",
             dataIndex: "value",
             key: "value",
+            width: 200,
         },
     ];
 
@@ -186,7 +187,7 @@ const Info = () => {
             value: (
                 <Button 
                     type="primary"
-                    style={{backgroundColor: '#e48948', color:'white'}} 
+                    style={{backgroundColor: '#eea287', color:'white'}} 
                     icon={<EditOutlined />} 
                     onClick={showModal}
                 >
@@ -214,14 +215,14 @@ const Info = () => {
         },
         {
             key: "loyalty_points",
-            label: "Diểm tiêu dùng",
+            label: "Điểm tiêu dùng",
             value: formatPrice(user.loyalty_points)
         },
     ] : [];
 
     return (
         <>
-            <h1 className="mb-5" style={{color:'#e48948'}}>
+            <h1 className="mb-5" style={{color:'#eea287'}}>
                 <UserOutlined style={{ marginRight: "8px" }} />
                 Thông tin của bạn
             </h1>
@@ -343,7 +344,7 @@ const Info = () => {
                     </Row>
 
                     <div className="add">
-                        <Button type="primary" style={{backgroundColor: '#e48948', color:'white'}} htmlType="submit">
+                        <Button type="primary" style={{backgroundColor: '#eea287', color:'white'}} htmlType="submit">
                             Cập nhật
                         </Button>
                     </div>

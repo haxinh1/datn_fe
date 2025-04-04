@@ -167,7 +167,7 @@ const Return = () => {
                 }).join(", ") || productName;
 
                 return (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Image src={thumbnail} width={60} />
                         <span>{variantAttributes}</span>
                     </div>
@@ -214,7 +214,7 @@ const Return = () => {
 
     return (
         <div>
-            <h1 className="mb-5" style={{ color: '#e48948' }}>
+            <h1 className="mb-5" style={{ color: '#eea287' }}>
                 <RollbackOutlined style={{ marginRight: "8px" }} />
                 Trả hàng
             </h1>

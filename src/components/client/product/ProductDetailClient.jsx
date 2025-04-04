@@ -155,10 +155,14 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <Link to='/'><span>Trang Chủ</span></Link>  
+              <Link to="/">
+                <span>Trang Chủ</span>
+              </Link>
             </li>
             <li className="breadcrumb-item">
-              <Link to='/list-prcl'><span>Sản Phẩm</span></Link>  
+              <Link to="/list-prcl">
+                <span>Sản Phẩm</span>
+              </Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               <span>Chi Tiết</span>
@@ -377,7 +381,7 @@ const ProductDetailClient = () => {
                       }`}
                       disabled={product.is_active === 0}
                     >
-                      <span>add to cart</span>
+                      <span>Thêm vào giỏ hàng</span>
                     </a>
 
                     <div className="details-action-wrapper">

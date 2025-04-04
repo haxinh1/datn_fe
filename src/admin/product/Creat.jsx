@@ -78,28 +78,6 @@ const Creat = () => {
     });
 
     const onFinish = (values) => {
-        // Kiểm tra nếu giá khuyến mại của biến thể lớn hơn hoặc bằng giá bán
-        const invalidVariants = tableData.filter(variant =>
-            variant.sale_price >= variant.sell_price
-        );
-
-        if (invalidVariants.length > 0) {
-            notification.error({
-                message: "Lỗi nhập liệu",
-                description: "Có biến thể có giá khuyến mại lớn hơn hoặc bằng giá bán! Vui lòng kiểm tra lại.",
-            });
-            return; // Dừng lại không gửi dữ liệu
-        }
-
-        // Kiểm tra giá sản phẩm đơn
-        if (values.sale_price && values.sell_price && parseFloat(values.sale_price) >= parseFloat(values.sell_price)) {
-            notification.error({
-                message: "Lỗi nhập liệu",
-                description: "Giá khuyến mại không thể cao hơn hoặc bằng giá bán!",
-            });
-            return; // Dừng lại không gửi dữ liệu
-        }
-
         // Chuẩn bị dữ liệu trước khi gửi
         const productData = prepareProductData(values);
 
@@ -107,8 +85,8 @@ const Creat = () => {
             ...productData,
             thumbnail,
             product_images: images.map((img) => img.url),
-            sell_price: values.sell_price,
-            sale_price: values.sale_price,
+            sell_price: values.sell_price || '',
+            sale_price: values.sale_price || '',
             slug: values.slug,
             content: values.content,
             category_id: values.category,
@@ -367,8 +345,8 @@ const Creat = () => {
                     .filter((attr) => attr?.id !== undefined)
                     .map((attr) => attr.id),
                 thumbnail: variant.thumbnail,
-                sell_price: variant.sell_price,
-                sale_price: variant.sale_price,
+                sell_price: variant.sell_price || '',
+                sale_price: variant.sale_price || '',
                 sale_price_start_at: variant.sale_price_start_at
                     ? dayjs(variant.sale_price_start_at).format("YYYY-MM-DD HH:mm:ss")
                     : null,
@@ -492,6 +470,17 @@ const Creat = () => {
                 <Form.Item
                     name={["variants", index, "sell_price"]}
                     initialValue={record.sell_price}
+                    rules={[
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                const salePrice = getFieldValue(["variants", index, "sale_price"]);
+                                if (!value || value > salePrice) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error("Giá bán phải lớn hơn giá khuyến mại"));
+                            },
+                        }),
+                    ]}
                 >
                     <InputNumber
                         className="input-form"
@@ -515,6 +504,7 @@ const Creat = () => {
             render: (_, record, index) => (
                 <Form.Item
                     name={["variants", index, "sale_price"]}
+                    initialValue={record.sale_price}
                     rules={[
                         ({ getFieldValue }) => ({
                             validator(_, value) {
@@ -525,8 +515,7 @@ const Creat = () => {
                                 return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán"));
                             },
                         }),
-                    ]}
-                    initialValue={record.sale_price}
+                    ]}                 
                 >
                     <InputNumber
                         className="input-form"
@@ -817,8 +806,21 @@ const Creat = () => {
                                 <Form.Item
                                     label="Giá bán (VNĐ)"
                                     name="sell_price"
+                                    dependencies={["sale_price"]}
+                                    rules={[
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                const salePrice = getFieldValue("sale_price");
+                                                if (!value || !salePrice || value > salePrice) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(new Error("Giá bán phải lớn hơn giá khuyến mại!"));
+                                            }
+                                        })
+                                    ]}
                                 >
                                     <InputNumber
+                                        min={0}
                                         className="input-item"
                                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
@@ -856,6 +858,7 @@ const Creat = () => {
                                     ]}
                                 >
                                     <InputNumber
+                                        min={0}
                                         className="input-item"
                                         formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
                                         parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào

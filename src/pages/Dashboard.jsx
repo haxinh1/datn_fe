@@ -12,6 +12,7 @@ import {
   RollbackOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ const Dashboard = () => {
       <main className="main">
         <div
           className="page-header text-center"
-          style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}
+          style={{ backgroundImage: `url(${headerBg})` }}
         >
           <div className="container">
             <h1 className="page-title">Tài Khoản</h1>

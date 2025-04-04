@@ -9,20 +9,19 @@ import "../../assets/css/skins/skin-demo-8.css";
 import "../../assets/css/demos/demo-8.css";
 import logo from "../../assets/images/demos/demo-8/logo.png";
 import { Link } from "react-router-dom";
-import { AuthServices } from './../../services/auth';
+import { AuthServices } from "./../../services/auth";
 import AIChat from "./AIChat.jsx";
 
 const Header = () => {
-
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;  // Lấy id người dùng từ localStorage
+    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id; // Lấy id người dùng từ localStorage
     if (storedUserId) {
       const fetchUserInfo = async () => {
         try {
-          const userInfo = await AuthServices.getAUser(storedUserId);  // Gọi API để lấy thông tin người dùng
-          setUserData(userInfo);  // Lưu thông tin người dùng vào state
+          const userInfo = await AuthServices.getAUser(storedUserId); // Gọi API để lấy thông tin người dùng
+          setUserData(userInfo); // Lưu thông tin người dùng vào state
         } catch (error) {
           console.error("Lỗi khi lấy thông tin người dùng:", error);
         }
@@ -51,43 +50,43 @@ const Header = () => {
             </div>
             <div className="header-center">
               <nav className="main-nav">
-                <ul className="menu sf-arrows">
-                  <li className="megamenu-container active">
+                <ul className="menu">
+                  <li className="megamenu-container">
                     <Link to="/" href="" className="sf-with-ul">
-                      Home
+                      <span>Trang Chủ</span>
                     </Link>
                   </li>
                   <li>
                     <Link to="list-prcl" href="" className="sf-with-ul">
-                      Shop
+                      <span>Sản Phẩm</span>
                     </Link>
                   </li>
                   <li>
-                    <a href="product.html" className="sf-with-ul">
-                      Product
-                    </a>
+                    <Link to="list-prcl" href="" className="sf-with-ul">
+                      <span>Danh mục</span>
+                    </Link>
                   </li>
                   <li>
-                    <a href="#" className="sf-with-ul">
-                      Pages
-                    </a>
+                    <Link to="list-prcl" href="" className="sf-with-ul">
+                      <span>Giới thiệu</span>
+                    </Link>
                   </li>
                   <li>
-                    <a href="blog.html" className="sf-with-ul">
-                      Blog
-                    </a>
+                    <Link to="list-prcl" href="" className="sf-with-ul">
+                      <span>Chính Sách</span>
+                    </Link>
                   </li>
                   <li>
-                    <a href="elements-list.html" className="sf-with-ul">
-                      Elements
-                    </a>
+                    <Link to="list-prcl" href="" className="sf-with-ul">
+                      <span>Liên Hệ</span>
+                    </Link>
                   </li>
                 </ul>
               </nav>
             </div>
 
             <div className="header-right">
-              <div className="header-search">
+              {/* <div className="header-search">
                 <a href="#" className="search-toggle" role="button">
                   <i className="icon-search"></i>
                 </a>
@@ -106,7 +105,7 @@ const Header = () => {
                     />
                   </div>
                 </form>
-              </div>
+              </div> */}
 
               <div className="dropdown cart-dropdown">
                 <Tooltip title="Giỏ hàng">
@@ -188,7 +187,10 @@ const Header = () => {
               </div>
 
               <Tooltip title="Tài khoản">
-                <Link to={"/dashboard"} className="wishlist-link">
+                <Link
+                  to={`/dashboard/orders/${userData?.id}`}
+                  className="wishlist-link"
+                >
                   {userData && userData.avatar ? (
                     <Avatar size={36} src={userData.avatar} />
                   ) : (
@@ -196,7 +198,7 @@ const Header = () => {
                   )}
                 </Link>
               </Tooltip>
-              <AIChat/>
+              <AIChat />
             </div>
           </div>
         </div>
