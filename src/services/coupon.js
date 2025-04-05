@@ -8,18 +8,14 @@ const fetchCoupons = async () => {
     console.log(error);
   }
 };
-const getCounponById = async (id, userId) => {
+const getCounponById = async (id) => {
   try {
-    const { data } = await instance.get(`/coupons`, {
-      params: {
-        user_id: userId, // Thêm tham số user_id vào URL
-      },
-    });
-    return data;
+      const { data } = await instance.get(`/coupons/${id}`)
+      return data
   } catch (error) {
-    console.log(error);
+      console.log(error)
   }
-};
+}
 const createCoupon = async (payload) => {
   try {
     const { data } = await instance.post("/coupons/create", payload);

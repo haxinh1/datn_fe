@@ -9,6 +9,12 @@ const echo = new Echo({
   cluster: "ap1",
   forceTLS: true,
   encrypted: true,
+  authEndpoint: "http://127.0.0.1:8000/broadcasting/auth",
+  auth: {
+    headers: {
+      Authorization: 'Bearer ' + localStorage.getItem('client_token'), 
+    },
+  },
 });
 
 export default echo;

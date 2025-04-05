@@ -18,63 +18,10 @@ const Coupon = () => {
     const [form] = Form.useForm();
     const couponType = Form.useWatch('coupon_type', form);
 
-    const fetchCoupons = async () => {
-        const { data } = await CouponServices.fetchCoupons();
-        setCoupon(data);
-        setIsLoading(false);
-    };
-
-    const fetchUsers = async () => {
-        const { data } = await AuthServices.fetchAuth();
-        setUsers(data);
-    }
-
-    useEffect(() => {
-        fetchCoupons();
-        fetchUsers();
-    }, []);
-
-    const onSubmit = async (values) => {
-        const payload = {
-            title: values.title,
-            code: values.code,
-            description: values.description,
-            discount_type: values.discount_type,
-            discount_value: values.discount_value,
-            usage_limit: values.usage_limit,
-            start_date: values.start_date,
-            end_date: values.end_date,
-            is_active: values.is_active,
-            coupon_type: values.coupon_type,
-        };
-
-        if (values.coupon_type === 'private') {
-            payload.user_ids = values.user_ids || [];
-        } else if (values.coupon_type === 'rank') {
-            payload.rank = values.rank || null;
-        }
-
-        let response;
-
-        if (editingCoupon) {
-            response = await CouponServices.updateCoupon(editingCoupon.id, payload);
-        } else {
-            response = await CouponServices.createCoupon(payload);
-        }
-
-        if (response) {
-            fetchCoupons();
-            notification.success({
-                message: editingCoupon ? "Cập nhật mã giảm giá thành công!" : "Tạo mã giảm giá thành công!",
-            });
-        }
-
-        setIsModalVisible(false);
-        form.resetFields();
-    };    
-
     const showDetailModal = async (id) => {
         const response = await CouponServices.getCounponById(id);
+        console.log(response);
+        
         if (response.success && response.data) {
             setSelectedCoupon([response.data]);
         }
@@ -96,8 +43,8 @@ const Coupon = () => {
                 start_date: dayjs(coupon.start_date),
                 end_date: dayjs(coupon.end_date),
                 is_active: coupon.is_active,
-                coupon_type: coupon.coupon_type,
-                rank: coupon.rank || undefined,
+                coupon_type: coupon.coupon_type, 
+                rank: coupon.rank || undefined, 
                 user_ids: coupon.users ? coupon.users.map(user => user.id) : undefined
             });
         } else {
@@ -135,7 +82,7 @@ const Coupon = () => {
             align: "center",
         },
         {
-            title: "Loại áp dụng",
+            title: "Loại Ap Dung",
             dataIndex: "coupon_type",
             key: "coupon_type",
             align: "center",
@@ -164,6 +111,8 @@ const Coupon = () => {
         },
 
     ]
+
+
 
     const columns = [
         {
@@ -225,12 +174,10 @@ const Coupon = () => {
             key: "is_active",
             align: "center",
             render: (isActive, record) => {
-                // Kiểm tra thêm nếu coupon đã hết hạn
                 if (record.is_expired) {
                     return <span className='action-link-red'>Dừng áp dụng</span>;
                 }
 
-                // Kiểm tra giá trị boolean của is_active
                 return <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
                     {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
                 </span>;
@@ -264,6 +211,63 @@ const Coupon = () => {
             ),
         },
     ];
+
+    const onSubmit = async (values) => {
+        const payload = {
+            title: values.title,
+            code: values.code,
+            description: values.description,
+            discount_type: values.discount_type,
+            discount_value: values.discount_value,
+            usage_limit: values.usage_limit,
+            start_date: values.start_date,
+            end_date: values.end_date,
+            is_active: values.is_active,
+            coupon_type: values.coupon_type,
+        };
+
+        if (values.coupon_type === 'private') {
+            payload.user_ids = values.user_ids || [];
+        } else if (values.coupon_type === 'rank') {
+            payload.rank = values.rank || null;
+        }
+
+        let response;
+
+        if (editingCoupon) {
+            response = await CouponServices.updateCoupon(editingCoupon.id, payload);
+        } else {
+            response = await CouponServices.createCoupon(payload);
+        }
+
+        if (response) {
+            fetchCoupons();
+            notification.success({
+                message: editingCoupon ? "Cập nhật mã giảm giá thành công!" : "Tạo mã giảm giá thành công!",
+            });
+        }
+
+        setIsModalVisible(false);
+        form.resetFields();
+    };
+
+
+    const fetchCoupons = async () => {
+        const { data } = await CouponServices.fetchCoupons();
+        setCoupon(data);
+        setIsLoading(false);
+    };
+
+    const fetchUsers = async () => {
+        const { data } = await AuthServices.fetchAuth();
+        setUsers(data);
+    }
+
+    useEffect(() => {
+        fetchCoupons();
+        fetchUsers();
+    }, []);
+
 
     return (
         <div>
@@ -332,7 +336,7 @@ const Coupon = () => {
                                 name="code"
                                 rules={[{ required: true, message: "Vui lòng chọn Code" }]}
                             >
-                                <Input className='input-item' disabled={!!editingCoupon} />
+                                <Input className='input-item' disabled={!!editingCoupon}  />
                             </Form.Item>
                         </Col>
                     </Row>

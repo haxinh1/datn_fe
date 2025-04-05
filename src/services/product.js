@@ -6,7 +6,7 @@ const fetchProducts = async () => {
 };
 
 const fetchProductById = async (id) => {
-    const response = await instance.get(`/products/${id}`);
+    const response = await instance.get(`/product-detail/${id}`);
     return response.data;
 };
 

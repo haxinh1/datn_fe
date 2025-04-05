@@ -73,6 +73,7 @@ function App() {
           <Route path="logincl" element={<LoginCl />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
+          <Route path="product-review" element={<ProductReview />} />
           <Route path="product-review/:id" element={<ProductReview />} />
           <Route path="review/:id" element={<Review />} />
           <Route path="detail/:id" element={<Detail />} />
@@ -101,7 +102,7 @@ function App() {
         <Route path="/resetad/:token" element={<ResetAd />} />
 
         {/* Các trang cần đăng nhập */}
-        <Route element={<PrivateRoute />}>
+        {/* <Route element={<PrivateRoute />}> */}
           <Route path="/admin" element={<LayoutAdmin />}>
             <Route path="dashboardad" element={<DashboardAd />} />
             <Route path="list-pr" element={<List />} />
@@ -128,7 +129,7 @@ function App() {
             <Route path="change/:id" element={<Change />} />
             <Route path="comment" element={<Comment />} />
           </Route>
-        </Route>
+        {/* </Route> */}
       </Routes>
     </>
   );
