@@ -25,7 +25,15 @@ const Order = () => {
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
+  const [orderInfo, setOrderInfo] = useState({ 
+    email: "", 
+    address: "", 
+    fullname: "", 
+    shipping_fee: "", 
+    discount_points: "", 
+    total_amount: "",
+    coupon_discount_value: "",
+  });
   const { RangePicker } = DatePicker;
   const [validStatuses, setValidStatuses] = useState([]);
   const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
@@ -225,7 +233,8 @@ const Order = () => {
       fullname: order.fullname,
       discount_points: order.discount_points,
       shipping_fee: order.shipping_fee,
-      total_amount: order.total_amount
+      total_amount: order.total_amount,
+      coupon_discount_value: order.coupon_discount_value,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -689,6 +698,7 @@ const Order = () => {
                     {formatPrice(totalAmount)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     Phí vận chuyển:
@@ -697,6 +707,7 @@ const Order = () => {
                     {formatPrice(orderInfo.shipping_fee)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     Giảm giá điểm tiêu dùng:
@@ -705,6 +716,16 @@ const Order = () => {
                     {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
+
+                {/* <Table.Summary.Row>
+                  <Table.Summary.Cell colSpan={4} align="right">
+                    Phiếu giảm giá:
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell align="center">
+                    {formatPrice(orderInfo.coupon_discount_value)}
+                  </Table.Summary.Cell>
+                </Table.Summary.Row> */}
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     <strong>Tổng giá trị đơn hàng:</strong>

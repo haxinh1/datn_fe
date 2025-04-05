@@ -187,10 +187,7 @@ const Header = () => {
               </div>
 
               <Tooltip title="Tài khoản">
-                <Link
-                  to={`/dashboard/orders/${userData?.id}`}
-                  className="wishlist-link"
-                >
+                <Link to={`/dashboard/orders/${userData?.id}`} className="wishlist-link">
                   {userData && userData.avatar ? (
                     <Avatar size={36} src={userData.avatar} />
                   ) : (

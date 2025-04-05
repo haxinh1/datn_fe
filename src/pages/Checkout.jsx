@@ -1493,7 +1493,7 @@ const Checkout = () => {
               key="submit"
               type="primary"
               onClick={handleConfirmPayment}
-              style={{ backgroundColor: "#e48948", color: "white" }}
+              style={{ backgroundColor: "#eea287", color: "white" }}
             >
               Xác nhận
             </Button>
