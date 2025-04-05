@@ -308,7 +308,7 @@ const ListProduct = () => {
                             <div className="product-price">
                               {formatPrice(getDisplayedPrice(product))} VNĐ
                             </div>
-                            <div className="product-nav product-nav-thumbs">
+                            {/* <div className="product-nav product-nav-thumbs">
                               {product.variants?.map((variant) => (
                                 <span key={variant.id}>
                                   <img
@@ -320,7 +320,7 @@ const ListProduct = () => {
                                   />
                                 </span>
                               ))}
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

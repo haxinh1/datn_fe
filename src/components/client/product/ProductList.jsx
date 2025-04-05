@@ -16,15 +16,19 @@ const ProductList = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
   return (
     <div>
       <div className="products">
         <div className="row justify-content-center">
-          {products.map((product) => (
-            <div key={product.id} className="col-6 col-md-4 col-lg-3">
-              <Product status="sale" product={product} />
-            </div>
-          ))}
+          {products
+            .filter((product) => product.is_active === 1)
+            .slice(0, 4)
+            .map((product) => (
+              <div key={product.id} className="col-6 col-md-4 col-lg-3">
+                <Product status="sale" product={product} />
+              </div>
+            ))}
         </div>
       </div>
     </div>

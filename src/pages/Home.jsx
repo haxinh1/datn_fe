@@ -43,6 +43,7 @@ import productThumb2 from "../assets/images/demos/demo-8/products/product-1-2-th
 import productThumb3 from "../assets/images/demos/demo-8/products/product-1-3-thumb.jpg";
 
 import ProductList from "../components/client/product/ProductList";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -602,7 +603,7 @@ const Home = () => {
 
       <div className="container recent-arrivals">
         <div className="heading heading-flex align-items-center mb-3">
-          <h2 className="title title-lg">Recent Arrivals</h2>
+          <h2 className="title title-lg">sản phẩm mới</h2>
           <ul
             className="nav nav-pills nav-border-anim justify-content-center"
             role="tablist"
@@ -905,10 +906,12 @@ const Home = () => {
         </div>
 
         <div className="more-container text-center mt-3 mb-3">
-          <a href="category.html" className="btn btn-outline-dark-3 btn-more">
-            <span>View More</span>
-            <i className="icon-long-arrow-right"></i>
-          </a>
+          <Link to='/list-prcl'>
+            <button className="btn btn-outline-dark-3 btn-more">
+              <span>Xem Thêm</span>
+              <i className="icon-long-arrow-right"></i>
+            </button>
+          </Link>
         </div>
       </div>
 

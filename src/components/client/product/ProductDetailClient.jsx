@@ -199,10 +199,14 @@ const ProductDetailClient = () => {
                   </figure>
                   <div
                     id="product-zoom-gallery"
-                    className="product-image-gallery"
+                    style={{
+                      display: "flex",
+                      overflowX: "auto",
+                      gap: "5px",
+                    }}
                   >
                     {product.galleries &&
-                      product.galleries.slice(0, 4).map((item, index) => (
+                      product.galleries.map((item, index) => (
                         <a
                           key={index}
                           className="product-gallery-item"
@@ -364,7 +368,7 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-details-action">
-                    <a
+                    <button
                       onClick={(e) => {
                         if (product.is_active === 0) {
                           e.preventDefault(); // Prevent the default action if the product is inactive
@@ -375,16 +379,14 @@ const ProductDetailClient = () => {
                           handleAddToCart();
                         }
                       }}
-                      href="#"
-                      className={`btn-product btn-cart ${
-                        product.is_active === 0 ? "disabled" : ""
-                      }`}
+                      className={` btn btn-product btn-cart ${product.is_active === 0 ? "disabled" : ""
+                        }`}
                       disabled={product.is_active === 0}
                     >
-                      <span>Thêm vào giỏ hàng</span>
-                    </a>
+                      Thêm giỏ hàng
+                    </button>
 
-                    <div className="details-action-wrapper">
+                    {/* <div className="details-action-wrapper">
                       <a
                         href="#"
                         className="btn-product btn-wishlist"
@@ -392,6 +394,7 @@ const ProductDetailClient = () => {
                       >
                         <span>Add to Wishlist</span>
                       </a>
+
                       <a
                         href="#"
                         className="btn-product btn-compare"
@@ -399,7 +402,7 @@ const ProductDetailClient = () => {
                       >
                         <span>Add to Compare</span>
                       </a>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="product-details-footer">

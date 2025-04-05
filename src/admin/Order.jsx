@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -25,12 +25,12 @@ const Order = () => {
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
-  const [orderInfo, setOrderInfo] = useState({ 
-    email: "", 
-    address: "", 
-    fullname: "", 
-    shipping_fee: "", 
-    discount_points: "", 
+  const [orderInfo, setOrderInfo] = useState({
+    email: "",
+    address: "",
+    fullname: "",
+    shipping_fee: "",
+    discount_points: "",
     total_amount: "",
     coupon_discount_value: "",
   });
@@ -97,6 +97,7 @@ const Order = () => {
     2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
     3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
     4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+    6: [4, 8],
     // 5: [7], // Đã giao hàng -> Hoàn thành
     9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
     10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
@@ -632,6 +633,13 @@ const Order = () => {
             </Select.Option>
           ))}
         </Select>
+
+        <Input.Search
+          style={{ width: '400px' }}
+          placeholder="Tìm kiếm đơn hàng..."
+          allowClear
+          enterButton={<SearchOutlined />}
+        />
 
         <div className="group2">
           <Button

@@ -127,7 +127,7 @@ const Customer = () => {
             align: "center",
         },
         {
-            title: "Điểm tích lũy",
+            title: "Điểm tiêu dùng",
             dataIndex: "loyalty_points",
             key: "loyalty_points",
             align: "center",

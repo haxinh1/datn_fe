@@ -967,7 +967,7 @@ const Add = () => {
                             <InsertRowLeftOutlined style={{ marginRight: "8px" }} />
                             Danh sách sản phẩm cùng loại
                         </h1>
-                        <Table columns={columns} dataSource={tableData} rowKey="id" />
+                        <Table columns={columns} dataSource={tableData} rowKey="id" pagination={false}/>
                     </>
                 )}
 

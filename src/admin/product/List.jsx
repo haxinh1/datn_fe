@@ -591,6 +591,7 @@ const List = () => {
                             <Form.Item
                                 label="Giá khuyến mại (VNĐ)"
                                 name="sale_price"
+                                initialValue={newSalePrice}
                                 rules={[
                                     ({ getFieldValue }) => ({
                                         validator(_, value) {
@@ -623,7 +624,7 @@ const List = () => {
                                 />
                             </Form.Item>
 
-                            <Form.Item label="Trạng thái kinh doanh">
+                            {/* <Form.Item label="Trạng thái kinh doanh">
                                 <Switch
                                     checked={isActive === 1}
                                     onChange={(checked) => setIsActive(checked ? 1 : 0)}
@@ -631,7 +632,7 @@ const List = () => {
                                 <span style={{ marginLeft: 10 }}>
                                     {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
                                 </span>
-                            </Form.Item>
+                            </Form.Item> */}
                         </Col>
                     </Row>
 
