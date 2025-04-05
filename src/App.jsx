@@ -23,7 +23,6 @@ import Cart from "./pages/Cart";
 import Thankyoupage from "./pages/Thankyou";
 import Order from "./admin/Order";
 import Checkout from "./pages/Checkout";
-import Payments from "./pages/Payments";
 import LoginCl from "./pages/LoginCl";
 import ListProduct from "./pages/ListProduct";
 import Inbox from "./admin/Inbox";
@@ -54,6 +53,7 @@ import BackCl from "./pages/BackCl";
 import DashboardAd from "./admin/DashboardAd";
 import GoogleCallbackHandler from "./pages/GoogleCallbackHandler";
 import OrderStaff from "./admin/OrderStaff";
+import Cate from "./pages/Cate";
 
 function App() {
   return (
@@ -69,8 +69,8 @@ function App() {
           <Route path="forget" element={<Forget />} />
           <Route path="reset/:token" element={<Reset />} />
           <Route path="checkout" element={<Checkout />} />
-          <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
+          <Route path="cate" element={<Cate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
           <Route path="product-review" element={<ProductReview />} />

@@ -421,7 +421,7 @@ const ProductDetailClient = () => {
                         }`}
                       disabled={product.is_active === 0}
                     >
-                      Thêm giỏ hàng
+                      Giỏ hàng
                     </button>
                   </div>
 

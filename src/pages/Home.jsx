@@ -609,7 +609,7 @@ const Home = () => {
 
       <div className="container recent-arrivals">
         <div className="heading heading-flex align-items-center mb-3">
-          <h2 className="title title-lg">sản phẩm mới</h2>
+          <h2 className="title title-lg">sản phẩm mới ra mắt</h2>
           <ul
             className="nav nav-pills nav-border-anim justify-content-center"
             role="tablist"
