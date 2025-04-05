@@ -80,6 +80,7 @@ const Coupon = () => {
             dataIndex: "discount_type",
             key: "discount_type",
             align: "center",
+            render: (discount_type) => (discount_type === "percent" ? "%" : "VNĐ"),
         },
         {
             title: "Loại Ap Dung",
@@ -138,6 +139,7 @@ const Coupon = () => {
             dataIndex: "discount_type",
             key: "discount_type",
             align: "center",
+            render: (discount_type) => (discount_type === "percent" ? "%" : "VNĐ"),
         },
         {
             title: "Số lượng",
