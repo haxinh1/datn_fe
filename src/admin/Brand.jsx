@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Skeleton, Table, notification, Modal, Row, Col, Upload, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import "../admin/product/add.css";
-import "../admin/product/list.css";
 import { BrandsServices } from "../services/brands";
-import { BookOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { GroupOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import slugify from "slugify";
+import "../css/add.css";
+import "../css/list.css";
+import dayjs from "dayjs";
 
 const Brand = () => {
     const queryClient = useQueryClient();
@@ -78,9 +78,10 @@ const Brand = () => {
 
     const columns = [
         {
-            title:"",
-            render:() => { return <input className="tick" type="checkbox" />},
-            align: "center"
+            title: "STT",
+            dataIndex: "index",
+            align: "center",
+            render: (_, __, index) => index + 1,
         },
         {
             title: "Logo",
@@ -104,25 +105,18 @@ const Brand = () => {
             align: "center",
         },
         {
-            title: "Thao tác",
-            key: "action",
+            title: "Ngày tạo",
+            dataIndex: "created_at",
+            key: "created_at",
             align: "center",
-            render: (_, item) => (
-                <div className="action-container">
-                    <span className="action-link action-link-blue">Cập nhật</span>
-                    
-                    <div className="divider"></div>
-
-                    <span className="action-link action-link-red">Xóa</span>
-                </div>
-            ),
+            render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
         },
     ];
 
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <GroupOutlined style={{ marginRight: "8px" }} />
                 Danh sách thương hiệu
             </h1>
 
@@ -134,14 +128,6 @@ const Brand = () => {
                     onClick={showModal}
                 >
                     Thêm thương hiệu
-                </Button>
-
-                <Button
-                    color="danger" 
-                    variant="solid"
-                    icon={<DeleteOutlined />}
-                >
-                    Xóa thương hiệu
                 </Button>
             </div>
 
@@ -213,6 +199,7 @@ const Brand = () => {
                     dataSource={brands || []}
                     pagination={false}
                     rowKey={(record) => record.id}
+                    bordered
                 />
             </Skeleton>
         </div>

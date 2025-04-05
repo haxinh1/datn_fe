@@ -42,7 +42,7 @@ const useAuth = () => {
     };
   }, []); // Chạy effect này một lần khi component được mount
 
-  return { user, isAdmin: user?.role === "admin" };
+  return { user, isAdmin: user?.role === "admin" || "manager" };
 };
 
 export default useAuth;

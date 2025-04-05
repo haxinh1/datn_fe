@@ -1,3 +1,6 @@
+* {
+    font-family: 'Roboto', sans-serif;
+}
 .layout-admin {
     min-height: 100vh;
 }
@@ -11,13 +14,24 @@
 .demo-logo-vertical {
     height: 32px;
     margin: 16px;
-    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+.logo-admin {
+    width: 90px;
+    height: 20px;
+}   
 .main-layout {
     margin-left: 200px; /* Bù lại chiều rộng của Sider */
 }
 .header-admin {
-    padding: 0;
+    background: var(--colorBgContainer);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding-left: 20px;
+    padding-right: 20px;
 }
 .content-admin {
     margin: 24px 16px 0;

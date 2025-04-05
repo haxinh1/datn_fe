@@ -1,102 +1,99 @@
 import React, { useState } from "react";
 import { AuthServices } from "./../services/auth";
-import { useNavigate } from "react-router-dom"; // Thêm useNavigate
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./LoginAd.css"; // Import CSS tùy chỉnh
+import { Link, useNavigate } from "react-router-dom";
+import { Form, Input, Button, Card, message } from "antd";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import "../css/loginad.css";
 
 const LoginAd = () => {
-  const [phone_number, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // Dùng useNavigate thay cho window.location.href
+  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (values) => {
     setLoading(true);
-    setError(null);
-
     try {
-      // Kiểm tra xem bạn đã có token hay chưa, nếu có thì thêm vào header
       const adminToken = localStorage.getItem("admin_token");
 
-      const response = await AuthServices.loginad(phone_number, password, {
+      const response = await AuthServices.loginad(values.phone_number, values.password, {
         headers: {
-          Authorization: adminToken ? `Bearer ${adminToken}` : "", // Thêm token vào header nếu có
+          Authorization: adminToken ? `Bearer ${adminToken}` : "",
         },
       });
 
-      console.log("Phản hồi từ server:", response); // Kiểm tra phản hồi từ API
-
       if (response && response.access_token) {
-        // Lưu access_token và thông tin người dùng vào localStorage
-        localStorage.setItem("admin_token", response.access_token); // Lưu `access_token`
-        localStorage.setItem("user", JSON.stringify(response.admin)); // Lưu thông tin user
+        localStorage.setItem("admin_token", response.access_token);
+        localStorage.setItem("user", JSON.stringify(response.admin));
 
-        navigate("/admin/list-pr"); // Điều hướng sau khi đăng nhập thành công
-        alert("Đăng nhập thành công");
+        message.success("Đăng nhập thành công!");
+        navigate("/admin/list-pr");
       } else {
-        setError("Không nhận được access_token từ server");
+        message.error("Không nhận được access_token từ server");
       }
     } catch (err) {
-      console.log("Lỗi:", err.response); // Kiểm tra thông tin lỗi
-      setError(err.response?.data?.message || "Đăng nhập thất bại");
+      message.error(err.response?.data?.message || "Đăng nhập thất bại");
     }
-
     setLoading(false);
   };
+
+  const validatePhoneOrEmail = (_, value) => {
+    const phoneRegex = /^[0-9]{10,11}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+    if (!value) {
+      return Promise.reject("Vui lòng nhập số điện thoại hoặc Email");
+    }
+  
+    if (!phoneRegex.test(value) && !emailRegex.test(value)) {
+      return Promise.reject("Nhập sai định dạng. Vui lòng nhập số điện thoại hoặc Email hợp lệ");
+    }
+  
+    return Promise.resolve();
+  };
+
   return (
-    <div className="login-container d-flex justify-content-center align-items-center vh-100">
-      <div className="login-box bg-white p-4 rounded shadow-lg">
-        <h2 className="text-center mb-3">Admin Login</h2>
-        {error && <p className="text-danger text-center">{error}</p>}
-        <form onSubmit={handleLogin}>
-          {/* Ô nhập số điện thoại */}
-          <div className="mb-3">
-            <label className="form-label">Số điện thoại</label>
-            <div className="input-group">
-              <span className="input-group-text">
-                <i className="fa-solid fa-user"></i>
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Nhập số điện thoại"
-                value={phone_number}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Ô nhập mật khẩu */}
-          <div className="mb-3">
-            <label className="form-label">Mật khẩu</label>
-            <div className="input-group">
-              <span className="input-group-text">
-                <i className="fa-solid fa-lock"></i>
-              </span>
-              <input
-                type="password"
-                className="form-control"
-                placeholder="Nhập mật khẩu"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Nút đăng nhập */}
-          <button
-            type="submit"
-            className="btn btn-primary w-100"
-            disabled={loading}
+    <div className="loginad-container">
+      <Card title="Đăng Nhập Quản Lý" className="login-card">
+        <Form 
+          onFinish={handleLogin} 
+          layout="vertical"
+        >
+          <Form.Item
+            className="form-log"
+            label="Số điện thoại / Email"
+            name="phone_number"
+            rules={[{ validator: validatePhoneOrEmail }]}
           >
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
-        </form>
-      </div>
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Nhập số điện thoại / Email"
+              className="input-item"
+            />
+          </Form.Item>
+
+          <Form.Item
+            className="form-log"
+            label="Mật khẩu"
+            name="password"
+            rules={[
+              { required: true, message: "Vui lòng nhập mật khẩu" },
+              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
+            ]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu" className="input-item"/>
+          </Form.Item>
+
+          <Link to='/forgetad'>
+            <span className="admin-quest">Quên mật khẩu</span>
+          </Link>
+          
+          <Button 
+            type="primary" htmlType="submit" 
+            block loading={loading} className="btn-item"
+          >
+            Đăng nhập
+          </Button>
+        </Form>
+      </Card>
     </div>
   );
 };

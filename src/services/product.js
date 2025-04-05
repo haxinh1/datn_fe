@@ -20,6 +20,24 @@ const updateProduct = async (id, payload) => {
     return response.data;
 };
 
+// tìm kiếm sản phẩm
+const searchProducts = async (keyword = "") => {
+    try {
+        const response = await instance.get('/admin/products/search', {
+            params: { keyword },
+        });
+
+        if (response.data?.success) {
+            return response.data.data || []; // Nếu `data` null thì trả về []
+        }
+
+        throw new Error(response.data?.message || "Không tìm thấy sản phẩm");
+    } catch (error) {
+        console.error("Lỗi khi gọi API tìm kiếm sản phẩm:", error);
+        return []; // Trả về mảng rỗng thay vì ném lỗi, tránh crash UI
+    }
+};
+
 // hàm nhập hàng
 const importProduct = async (payload) => {
     const response = await instance.post("/postStock", payload);
@@ -38,13 +56,23 @@ const confirm = async (id, payload) => {
     return response.data; // Trả về data từ BE
 };
 
+// xuất excel
+const exportExcel = async (orderIds = []) => {
+    const response = await instance.post('/export-product-stocks', {
+        order_ids: orderIds // Gửi order_ids dưới dạng body của POST request
+    });
+    return response.data;
+}
+
 // Xuất các hàm để dùng trong các component
 export const productsServices = {
     fetchProducts,
     fetchProductById,
     createProduct,
     updateProduct,
+    searchProducts,
     importProduct,
     history,
-    confirm
+    confirm,
+    exportExcel
 };

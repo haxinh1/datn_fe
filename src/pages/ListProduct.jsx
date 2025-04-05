@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { productsServices } from "../services/product";
 import { Link } from "react-router-dom";
 import { BrandsServices } from "../services/brands";
-import { categoryServices } from './../services/categories';
+import { categoryServices } from "./../services/categories";
+import bg from "../assets/images/backgrounds/bg-1.jpg";
+import { Pagination } from "antd";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
@@ -14,19 +16,47 @@ const ListProduct = () => {
   const [selectedVariantData, setSelectedVariantData] = useState({});
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedPrices, setSelectedPrices] = useState([]);
-  const [cart, setCart] = useState(
-    JSON.parse(sessionStorage.getItem("session_cart")) || []
-  );
-  const [message, setMessage] = useState(""); // Thêm state message
-  const [messageType, setMessageType] = useState(""); // success hoặc error
+  const [keyword, setKeyword] = useState("");
+  const [isFiltered, setIsFiltered] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(9);
 
   useEffect(() => {
     const getProducts = async () => {
       const data = await productsServices.fetchProducts();
-      setProducts(data.data);
+
+      // Lọc sản phẩm có is_active = 1
+      const activeProducts = data.data.filter(
+        (product) => product.is_active === 1
+      );
+
+      setProducts(activeProducts);
+      setFilteredProducts(activeProducts.slice(0, pageSize)); // Cập nhật filteredProducts luôn
     };
     getProducts();
-  }, []);
+  }, [pageSize]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = page * pageSize;
+    setFilteredProducts(products.slice(startIndex, endIndex)); // Lấy các sản phẩm tương ứng với trang
+  };
+
+  const handleSearch = async (keyword) => {
+    try {
+      if (keyword.trim() === "") {
+        setFilteredProducts(products); // Nếu từ khóa trống, hiển thị lại tất cả sản phẩm
+      } else {
+        const searchResults = await productsServices.searchProducts(keyword); // Gọi service tìm kiếm sản phẩm
+        setFilteredProducts(searchResults); // Cập nhật lại danh sách sản phẩm
+      }
+      setIsFiltered(true);
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+      setFilteredProducts([]); // Nếu có lỗi, để mảng sản phẩm trống
+    }
+  };
 
   useEffect(() => {
     setFilteredProducts(products); // Cập nhật khi products thay đổi
@@ -42,7 +72,9 @@ const ListProduct = () => {
 
   const handleBrandChange = (brandId) => {
     setSelectedBrands((prev) =>
-      prev.includes(brandId) ? prev.filter((id) => id !== brandId) : [...prev, brandId]
+      prev.includes(brandId)
+        ? prev.filter((id) => id !== brandId)
+        : [...prev, brandId]
     );
   };
 
@@ -56,7 +88,9 @@ const ListProduct = () => {
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
     );
   };
 
@@ -71,13 +105,48 @@ const ListProduct = () => {
 
   // Danh sách khoảng giá
   const priceRanges = [
-    { id: "price-1", label: `Dưới ${formatPrice(200000)} VNĐ`, min: 0, max: 200000 },
-    { id: "price-2", label: `${formatPrice(200000)} - ${formatPrice(300000)} VNĐ`, min: 200000, max: 300000 },
-    { id: "price-3", label: `${formatPrice(300000)} - ${formatPrice(400000)} VNĐ`, min: 300000, max: 400000 },
-    { id: "price-4", label: `${formatPrice(400000)} - ${formatPrice(500000)} VNĐ`, min: 400000, max: 500000 },
-    { id: "price-5", label: `${formatPrice(500000)} - ${formatPrice(600000)} VNĐ`, min: 500000, max: 600000 },
-    { id: "price-6", label: `${formatPrice(600000)} - ${formatPrice(700000)} VNĐ`, min: 600000, max: 700000 },
-    { id: "price-7", label: `Trên ${formatPrice(700000)} VNĐ`, min: 700000, max: Infinity }
+    {
+      id: "price-1",
+      label: `Dưới ${formatPrice(200000)} VNĐ`,
+      min: 0,
+      max: 200000,
+    },
+    {
+      id: "price-2",
+      label: `${formatPrice(200000)} - ${formatPrice(300000)} VNĐ`,
+      min: 200000,
+      max: 300000,
+    },
+    {
+      id: "price-3",
+      label: `${formatPrice(300000)} - ${formatPrice(400000)} VNĐ`,
+      min: 300000,
+      max: 400000,
+    },
+    {
+      id: "price-4",
+      label: `${formatPrice(400000)} - ${formatPrice(500000)} VNĐ`,
+      min: 400000,
+      max: 500000,
+    },
+    {
+      id: "price-5",
+      label: `${formatPrice(500000)} - ${formatPrice(600000)} VNĐ`,
+      min: 500000,
+      max: 600000,
+    },
+    {
+      id: "price-6",
+      label: `${formatPrice(600000)} - ${formatPrice(700000)} VNĐ`,
+      min: 600000,
+      max: 700000,
+    },
+    {
+      id: "price-7",
+      label: `Trên ${formatPrice(700000)} VNĐ`,
+      min: 700000,
+      max: Infinity,
+    },
   ];
 
   const handlePriceChange = (range) => {
@@ -91,8 +160,9 @@ const ListProduct = () => {
   const handleFilter = () => {
     const filtered = products.filter((product) => {
       const matchesBrand =
-        selectedBrands.length === 0 || selectedBrands.includes(product.brand_id);
-  
+        selectedBrands.length === 0 ||
+        selectedBrands.includes(product.brand_id);
+
       const matchesCategory =
         selectedCategories.length === 0 ||
         product.categories.some((cat) => selectedCategories.includes(cat.id));
@@ -102,11 +172,14 @@ const ListProduct = () => {
 
       const matchesPrice =
         selectedPrices.length === 0 ||
-        selectedPrices.some((range) => productPrice >= range.min && productPrice <= range.max);
-        return matchesBrand && matchesCategory && matchesPrice;
-      });
-  
+        selectedPrices.some(
+          (range) => productPrice >= range.min && productPrice <= range.max
+        );
+      return matchesBrand && matchesCategory && matchesPrice;
+    });
+
     setFilteredProducts(filtered);
+    setIsFiltered(true); // Đánh dấu là đang lọc
   };
 
   const handleClear = () => {
@@ -114,6 +187,8 @@ const ListProduct = () => {
     setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
     setSelectedCategories([]); // Bỏ chọn tất cả danh mục
     setSelectedPrices([]); // Bỏ chọn tất cả mức giá
+    setIsFiltered(false); // Đánh dấu là không lọc nữa
+    setKeyword("");
   };
 
   useEffect(() => {
@@ -159,53 +234,24 @@ const ListProduct = () => {
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
-        {message && (
-          <div
-            className={`message-box ${
-              messageType === "success" ? "message-success" : "message-error"
-            }`}
-            style={{
-              padding: "10px",
-              marginBottom: "10px",
-              borderRadius: "5px",
-              textAlign: "center",
-              fontWeight: "bold",
-              backgroundColor:
-                messageType === "success" ? "#d4edda" : "#f8d7da",
-              color: messageType === "success" ? "#155724" : "#721c24",
-              border:
-                messageType === "success"
-                  ? "1px solid #c3e6cb"
-                  : "1px solid #f5c6cb",
-            }}
-          >
-            {message}
-          </div>
-        )}
-        <div
+
+        <div 
           className="page-header text-center"
-          style={{
-            backgroundImage: "url('assets/images/page-header-bg.jpg')",
-          }}
+          style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="container">
-            <h1 className="page-title">
-              Grid 3 Columns
-              <span>Shop</span>
-            </h1>
+            <h1 style={{color: '#eea287'}}>MOLLA SHOP</h1>
           </div>
         </div>
+
         <nav aria-label="breadcrumb" className="breadcrumb-nav mb-2">
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="index.html">Home</a>
+                <Link to='/'><span>Trang Chủ</span></Link>     
               </li>
               <li className="breadcrumb-item">
-                <a href="#">Shop</a>
-              </li>
-              <li aria-current="page" className="breadcrumb-item active">
-                Grid 3 Columns
+                <span>Sản Phẩm</span>
               </li>
             </ol>
           </div>
@@ -216,6 +262,24 @@ const ListProduct = () => {
               <div className="col-lg-9">
                 <div className="products mb-3">
                   <div className="row justify-content-center">
+                    <div className="group1">
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Tìm kiếm sản phẩm..."
+                        value={keyword} // Lưu trữ từ khóa trong state keyword
+                        onChange={(e) => setKeyword(e.target.value)} // Cập nhật giá trị khi người dùng nhập
+                      />
+                      <button
+                        onClick={
+                          isFiltered ? handleClear : () => handleSearch(keyword)
+                        } // Gọi hàm tìm kiếm khi nhấn nút
+                        className="btn btn-outline-primary-2"
+                      >
+                        {isFiltered ? "QUAY LẠI" : "TÌM KIẾM"}
+                      </button>
+                    </div>
+
                     {filteredProducts.map((product) => (
                       <div className="col-6 col-md-4 col-lg-4" key={product.id}>
                         <div className="product product-7 text-center">
@@ -234,31 +298,17 @@ const ListProduct = () => {
                                 }}
                               />
                             </Link>
-                            <div className="product-action">
-                              {/* <button
-                                className="btn-product btn-cart"
-                                onClick={() => handleAddToCart(product)}
-                              >
-                                <span>Thêm vào giỏ hàng</span>
-                              </button> */}
-                              <Link
-                                to={`/product-detail/${product.id}`}
-                                className="btn-product btn-cart"
-                              >
-                                Chi tiết sản phẩm
-                              </Link>
-                            </div>
                           </figure>
                           <div className="product-body">
-                            <h3 className="product-title">
+                            <span className="product-title">
                               <Link to={`/product-detail/${product.id}`}>
-                                {product.name}
+                                <span>{product.name}</span>
                               </Link>
-                            </h3>
+                            </span>
                             <div className="product-price">
                               {formatPrice(getDisplayedPrice(product))} VNĐ
                             </div>
-                            <div className="product-nav product-nav-thumbs">
+                            {/* <div className="product-nav product-nav-thumbs">
                               {product.variants?.map((variant) => (
                                 <span key={variant.id}>
                                   <img
@@ -270,108 +320,66 @@ const ListProduct = () => {
                                   />
                                 </span>
                               ))}
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <nav aria-label="Page navigation">
-                  <ul className="pagination justify-content-center">
-                    <li className="page-item disabled">
-                      <a
-                        aria-disabled="true"
-                        aria-label="Previous"
-                        className="page-link page-link-prev"
-                        href="#"
-                        tabIndex="-1"
-                      >
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-left" />
-                        </span>
-                        Prev
-                      </a>
-                    </li>
-                    <li aria-current="page" className="page-item active">
-                      <a className="page-link" href="#">
-                        1
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        2
-                      </a>
-                    </li>
-                    <li className="page-item">
-                      <a className="page-link" href="#">
-                        3
-                      </a>
-                    </li>
-                    <li className="page-item-total">of 6</li>
-                    <li className="page-item">
-                      <a
-                        aria-label="Next"
-                        className="page-link page-link-next"
-                        href="#"
-                      >
-                        Next{" "}
-                        <span aria-hidden="true">
-                          <i className="icon-long-arrow-right" />
-                        </span>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
+
+                <div className="avatar">
+                  <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={products.length}
+                    onChange={handlePageChange}
+                  />
+                </div>
               </div>
+
               <aside className="col-lg-3 order-lg-first">
                 <div className="sidebar sidebar-shop">
-                  <div className="widget widget-clean">
-                    <label>Tìm kiếm:</label>
-                  </div>
-
                   {/* List danh mục */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-1"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-1"
-                        role="button"
-                      >
-                        Danh mục
-                      </a>
+                      <span>Danh mục</span>
                     </h3>
 
                     <div className="show" id="widget-1">
                       <div className="widget-body">
                         <div className="filter-items">
-                          {categories.length > 0 ? (
+                          {categories.length > 0 &&
                             categories.flatMap((category) =>
-                              (category.children || [category]).map((subCategory) => (
-                                <div key={subCategory.id} className="filter-item">
-                                  <div className="custom-control custom-checkbox">
-                                    <input
-                                      className="custom-control-input"
-                                      id={`cat-${subCategory.id}`}
-                                      type="checkbox"
-                                      onChange={() => handleCategoryChange(subCategory.id)}
-                                      checked={selectedCategories.includes(subCategory.id)}
-                                    />
-                                    <label
-                                      className="custom-control-label"
-                                      htmlFor={`cat-${subCategory.id}`}
-                                    >
-                                      {subCategory.name}
-                                    </label>
+                              (category.children || [category]).map(
+                                (subCategory) => (
+                                  <div
+                                    key={subCategory.id}
+                                    className="filter-item"
+                                  >
+                                    <div className="custom-control custom-checkbox">
+                                      <input
+                                        className="custom-control-input"
+                                        id={`cat-${subCategory.id}`}
+                                        type="checkbox"
+                                        onChange={() =>
+                                          handleCategoryChange(subCategory.id)
+                                        }
+                                        checked={selectedCategories.includes(
+                                          subCategory.id
+                                        )}
+                                      />
+                                      <label
+                                        className="custom-control-label"
+                                        htmlFor={`cat-${subCategory.id}`}
+                                      >
+                                        {subCategory.name}
+                                      </label>
+                                    </div>
                                   </div>
-                                </div>
-                              ))
-                            )
-                          ) : (
-                            <p>Không có danh mục</p>
-                          )}
+                                )
+                              )
+                            )}
                         </div>
                       </div>
                     </div>
@@ -380,21 +388,13 @@ const ListProduct = () => {
                   {/* List thương hiệu */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <Link
-                        aria-controls="widget-4"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-4"
-                        role="button"
-                      >
-                        Thương hiệu
-                      </Link>
+                      <span>Thương hiệu</span>
                     </h3>
 
                     <div className="" id="widget-4">
                       <div className="widget-body">
                         <div className="filter-items">
-                          {brands.length > 0 ? (
+                          {brands.length > 0 &&
                             brands.map((brand) => (
                               <div key={brand.id} className="filter-item">
                                 <div className="custom-control custom-checkbox">
@@ -405,15 +405,15 @@ const ListProduct = () => {
                                     onChange={() => handleBrandChange(brand.id)}
                                     checked={selectedBrands.includes(brand.id)}
                                   />
-                                  <label className="custom-control-label" htmlFor={`brand-${brand.id}`}>
+                                  <label
+                                    className="custom-control-label"
+                                    htmlFor={`brand-${brand.id}`}
+                                  >
                                     {brand.name}
                                   </label>
                                 </div>
                               </div>
-                            ))
-                          ) : (
-                            <p>Không có thương hiệu</p>
-                          )}
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -422,15 +422,7 @@ const ListProduct = () => {
                   {/* List size */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-2"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-2"
-                        role="button"
-                      >
-                        Kích cỡ
-                      </a>
+                      <span>Kích cỡ</span>
                     </h3>
 
                     <div className=" show" id="widget-2">
@@ -459,15 +451,7 @@ const ListProduct = () => {
                   {/* List màu */}
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-3"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-3"
-                        role="button"
-                      >
-                        Màu sắc
-                      </a>
+                      <span>Màu sắc</span>
                     </h3>
 
                     <div className=" show" id="widget-3">
@@ -488,15 +472,7 @@ const ListProduct = () => {
 
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
-                      <a
-                        aria-controls="widget-5"
-                        aria-expanded="true"
-                        data-toggle="collapse"
-                        href="#widget-5"
-                        role="button"
-                      >
-                        Mức Giá
-                      </a>
+                      <span>Mức Giá</span>
                     </h3>
 
                     <div className=" show" id="widget-5">
@@ -504,20 +480,31 @@ const ListProduct = () => {
                         <div className="filter-price">
                           <div className="filter-item">
                             {priceRanges.map((range, index) => (
-                              <div className="custom-control custom-checkbox" key={index}>
+                              <div
+                                className="custom-control custom-checkbox"
+                                key={index}
+                              >
                                 <input
                                   className="custom-control-input"
                                   type="checkbox"
                                   id={`price-${index}`}
-                                  checked={selectedPrices.some((r) => r.min === range.min && r.max === range.max)}
+                                  checked={selectedPrices.some(
+                                    (r) =>
+                                      r.min === range.min && r.max === range.max
+                                  )}
                                   onChange={() => handlePriceChange(range)}
                                 />
-                                <label className="custom-control-label" htmlFor={`price-${index}`}>
+                                <label
+                                  className="custom-control-label"
+                                  htmlFor={`price-${index}`}
+                                >
                                   {range.min === 0
                                     ? `Dưới ${formatPrice(range.max)} VNĐ`
                                     : range.max === Infinity
-                                      ? `Trên ${formatPrice(range.min)} VNĐ`
-                                      : `${formatPrice(range.min)} - ${formatPrice(range.max)} VNĐ`}
+                                    ? `Trên ${formatPrice(range.min)} VNĐ`
+                                    : `${formatPrice(
+                                        range.min
+                                      )} - ${formatPrice(range.max)} VNĐ`}
                                 </label>
                               </div>
                             ))}
@@ -526,21 +513,14 @@ const ListProduct = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="attribute">
-                    <button 
-                      type="submit" 
-                      className="btn btn-outline-primary-2"
-                      onClick={handleFilter}
-                    >
-                      <span>TÌM KIẾM</span>
-                    </button>
 
-                    <button 
-                      onClick={handleClear} 
+                  <div className="attribute">
+                    <button
+                      type="submit"
                       className="btn btn-outline-primary-2"
+                      onClick={isFiltered ? handleClear : handleFilter}
                     >
-                      <span>QUAY LẠI</span>
+                      <span>{isFiltered ? "QUAY LẠI" : "TÌM KIẾM"}</span>
                     </button>
                   </div>
                 </div>
@@ -549,7 +529,6 @@ const ListProduct = () => {
           </div>
         </div>
       </main>
-      ;
     </div>
   );
 };

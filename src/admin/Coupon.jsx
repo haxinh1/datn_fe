@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, ProjectOutlined } from '@ant-design/icons';
 import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Input, DatePicker, Switch, Descriptions } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
@@ -10,7 +10,7 @@ import { AuthServices } from '../services/auth';
 const Coupon = () => {
     const [coupon, setCoupon] = useState([]);
     const [users, setUsers] = useState([]);
-
+    const [isLoading, setIsLoading] = useState(true);
     const [editingCoupon, setEditingCoupon] = useState(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -20,6 +20,8 @@ const Coupon = () => {
 
     const showDetailModal = async (id) => {
         const response = await CouponServices.getCounponById(id);
+        console.log(response);
+        
         if (response.success && response.data) {
             setSelectedCoupon([response.data]);
         }
@@ -171,12 +173,15 @@ const Coupon = () => {
             dataIndex: "is_active",
             key: "is_active",
             align: "center",
-            render: (isActive, record) => (
+            render: (isActive, record) => {
+                if (record.is_expired) {
+                    return <span className='action-link-red'>Dừng áp dụng</span>;
+                }
 
-                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
-                </span>
-            ),
+                return <span className={isActive ? 'action-link-blue' : 'action-link-red'}>
+                    {isActive ? 'Đang áp dụng' : 'Dừng áp dụng'}
+                </span>;
+            },
         },
         {
             title: "Thao tác",
@@ -250,6 +255,7 @@ const Coupon = () => {
     const fetchCoupons = async () => {
         const { data } = await CouponServices.fetchCoupons();
         setCoupon(data);
+        setIsLoading(false);
     };
 
     const fetchUsers = async () => {
@@ -266,8 +272,8 @@ const Coupon = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
-                Quản lý mã giảm giá
+                <ProjectOutlined style={{ marginRight: "8px" }} />
+                Mã giảm giá
             </h1>
             <div className="btn-brand">
                 <Button
@@ -275,18 +281,18 @@ const Coupon = () => {
                     icon={<PlusOutlined />}
                     onClick={() => handleShowModal()}
                 >
-                    Thêm Mã Giam Gia
+                    Thêm mới
                 </Button>
             </div>
 
-
-
-            <Table
-                dataSource={coupon}
-                columns={columns}
-                rowKey="id"
-                pagination={{ pageSize: 10 }}
-            />
+            <Skeleton active loading={isLoading}>
+                <Table
+                    dataSource={coupon}
+                    columns={columns}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                />
+            </Skeleton>
 
             {/* Modal Chi Tiết */}
             <Modal
@@ -303,7 +309,6 @@ const Coupon = () => {
                     pagination={false}
                 />
             </Modal>
-
 
             <Modal
                 title={editingCoupon ? "Cập nhật mã giảm giá" : "Thêm mã giảm giá"}
@@ -433,6 +438,7 @@ const Coupon = () => {
                                 ]}
                             >
                                 <DatePicker
+                                    format="DD/MM/YYYY"
                                     className="input-item"
                                     disabledDate={(current) => current && current.isBefore(dayjs(), "day")}
                                 />
@@ -464,6 +470,7 @@ const Coupon = () => {
                             >
                                 <DatePicker
                                     className="input-item"
+                                    format="DD/MM/YYYY"
                                     disabledDate={(current) => {
                                         const startDate = form.getFieldValue("start_date");
                                         return current && startDate && current.isBefore(startDate, "day");

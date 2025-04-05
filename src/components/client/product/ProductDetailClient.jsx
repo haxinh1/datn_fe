@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
 import { Card, Col, message, Modal, Row, Typography } from "antd";
 import { cartServices } from "./../../../services/cart";
@@ -27,7 +27,7 @@ const ProductDetailClient = () => {
   const [selectedSizeId, setSelectedSizeId] = useState("");
   const [attributes, setAttributes] = useState([]);
   const [dataViewed, setDataViewed] = useState(null);
-  const [recommendedProducts, setRecommendedProducts] = useState(null);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   const colorMap = {
     đen: "#333333",
@@ -42,7 +42,6 @@ const ProductDetailClient = () => {
       return { minPrice: null, maxPrice: null };
     }
 
-    // Lấy danh sách giá từ sale_price nếu có, nếu không thì lấy sell_price
     const prices = product.variants.map((variant) =>
       variant.sale_price ? parseFloat(variant.sale_price) : parseFloat(variant.sell_price)
     );
@@ -57,7 +56,7 @@ const ProductDetailClient = () => {
 
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
-    setSelectedColorId(colorId); 
+    setSelectedColorId(colorId);
     setSelectedSize("");
     setSelectedVariant(null);
   };
@@ -87,7 +86,7 @@ const ProductDetailClient = () => {
         variantAttributes.includes(Number(sizeId))
       );
     });
-    setQuantity(1); 
+    setQuantity(1);
     setSelectedVariant(variant || null);
   };
 
@@ -97,25 +96,28 @@ const ProductDetailClient = () => {
       setQuantity(value);
     }
   };
+
   const handleAddToCart = async () => {
     if (product.variants.length > 0 && !selectedVariant) {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
-
     let existingAttributes =
       JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
     const newAttributes = {
       product_id: product.id,
-      product_variant_id: selectedVariant ? selectedVariant.id : null, // ✅ Lưu thêm ID biến thể
+      product_variant_id: selectedVariant ? selectedVariant.id : null,
+      quantity: quantity,
+      price: selectedVariant
+        ? selectedVariant.price
+        : product.sale_price || product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
       ],
     };
 
-    // Kiểm tra xem sản phẩm có cùng ID và cùng biến thể đã có trong giỏ hàng chưa
     const existingProductIndex = existingAttributes.findIndex(
       (item) =>
         item.product_id === product.id &&
@@ -123,48 +125,44 @@ const ProductDetailClient = () => {
     );
 
     if (existingProductIndex !== -1) {
-      // Nếu đã tồn tại cùng sản phẩm & biến thể, cập nhật thuộc tính
-      existingAttributes[existingProductIndex].attributes =
-        newAttributes.attributes;
+      // If product exists, update quantity
+      existingAttributes[existingProductIndex].quantity +=
+        newAttributes.quantity;
     } else {
-      // Nếu chưa có, thêm mới vào giỏ hàng
+      // If product doesn't exist, add to cart
       existingAttributes.push(newAttributes);
     }
 
     localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
 
     const user = JSON.parse(localStorage.getItem("user"));
-    const sessionId = sessionStorage.getItem("session_id");
-
     const itemToAdd = {
-      user_id: user?.id || null,
-      session_id: user ? null : sessionId,
+      user_id: user?.id || null, // 0 nếu chưa đăng nhập
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
-      price: selectedVariant ? selectedVariant.price : product.sell_price,
+      price: selectedVariant
+        ? selectedVariant.price
+        : product.sale_price || product.sell_price,
       attributes: newAttributes.attributes,
     };
-    console.log(itemToAdd);
 
     try {
-      const response = await cartServices.addCartItem(product.id, itemToAdd);
-      if (response?.message?.includes("Sản phẩm đã thêm vào giỏ hàng")) {
-        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+      if (user?.id) {
+        await cartServices.addCartItem(product.id, itemToAdd);
       } else {
-        message.error("Thêm vào giỏ hàng thất bại. Vui lòng thử lại.");
+        await cartServices.addCartItem(product.id, itemToAdd);
       }
+
+      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
     }
   };
-  if (!product) return <p>Đang tải...</p>;
 
   const fetchProduct = async () => {
     const { data, dataViewed, recommended_products } = await productsServices.fetchProductById(id);
-
-
     setProduct(data);
     setDataViewed(dataViewed);
     setRecommendedProducts(recommended_products);
@@ -184,19 +182,24 @@ const ProductDetailClient = () => {
       setMainImage(product.thumbnail);
     }
   }, [product.thumbnail]);
+
   return (
     <>
       <nav aria-label="breadcrumb" className="breadcrumb-nav border-0 mb-0">
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <a href="#">Home</a>
+              <Link to="/">
+                <span>Trang Chủ</span>
+              </Link>
             </li>
             <li className="breadcrumb-item">
-              <a href="#">Products</a>
+              <Link to="/list-prcl">
+                <span>Sản Phẩm</span>
+              </Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
-              Extended Description
+              <span>Chi Tiết</span>
             </li>
           </ol>
         </div>
@@ -216,7 +219,6 @@ const ProductDetailClient = () => {
                       data-zoom-image={mainImage}
                       alt="product image"
                     />
-
                     <a
                       onClick={(e) => {
                         e.preventDefault();
@@ -229,13 +231,16 @@ const ProductDetailClient = () => {
                       <i className="icon-arrows"></i>
                     </a>
                   </figure>
-
                   <div
                     id="product-zoom-gallery"
-                    className="product-image-gallery"
+                    style={{
+                      display: "flex",
+                      overflowX: "auto",
+                      gap: "5px",
+                    }}
                   >
                     {product.galleries &&
-                      product.galleries.slice(0, 4).map((item, index) => (
+                      product.galleries.map((item, index) => (
                         <a
                           key={index}
                           className="product-gallery-item"
@@ -259,7 +264,17 @@ const ProductDetailClient = () => {
 
               <div className="col-md-6">
                 <div className="product-details">
-                  <h1 className="product-title">{product.name}</h1>
+                  <h1 className="product-title">
+                    {product.name}
+                    {product.is_active === 0 && (
+                      <span
+                        className="text-danger"
+                        style={{ marginLeft: "10px" }}
+                      >
+                        (Sản phẩm đã ngừng kinh doanh)
+                      </span>
+                    )}
+                  </h1>
 
                   <div className="ratings-container">
                     <div className="ratings">
@@ -278,12 +293,16 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-price">
-                    {formatPrice(minPrice)} VNĐ ~ {formatPrice(maxPrice)} VNĐ
+                    {minPrice === maxPrice ? (
+                      `${formatPrice(minPrice)} VNĐ`
+                    ) : (
+                      `${formatPrice(minPrice)} - ${formatPrice(maxPrice)} VNĐ`
+                    )}
                   </div>
 
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
-                      <label>Stock:</label>
+                      <label>Tồn kho:</label>
                       <div className="product-nav product-nav-dots">
                         <div>
                           {selectedVariant
@@ -294,7 +313,7 @@ const ProductDetailClient = () => {
                     </div>
                   ) : (
                     <div className="details-filter-row details-row-size">
-                      <label>Stock:</label>
+                      <label>Tồn kho:</label>
 
                       <div className="product-nav product-nav-dots">
                         <div>{product.stock}</div>
@@ -305,7 +324,6 @@ const ProductDetailClient = () => {
                   {product.atribute_value_product?.length > 0 && (
                     <div className="details-filter-row details-row-size">
                       <label htmlFor="Color">Màu:</label>
-
                       <div className="product-nav product-nav-dots">
                         {product.atribute_value_product
                           .filter(
@@ -343,7 +361,7 @@ const ProductDetailClient = () => {
                           value={selectedSize}
                           onChange={(e) => handleSizeSelect(e.target.value)}
                         >
-                          <option value="">Select a size</option>
+                          <option value="">Chọn size</option>
                           {product.atribute_value_product
                             .filter(
                               (attr) => attr.attribute_value.attribute_id === 2
@@ -367,7 +385,7 @@ const ProductDetailClient = () => {
                     </div>
                   )}
                   <div className="details-filter-row details-row-size">
-                    <label htmlFor="qty">Qty:</label>
+                    <label htmlFor="qty">Số lượng:</label>
                     <div className="product-details-quantity">
                       <input
                         type="number"
@@ -375,7 +393,11 @@ const ProductDetailClient = () => {
                         className="form-control"
                         value={quantity}
                         min="1"
-                        max={selectedVariant?.stock ? selectedVariant?.stock : product.stock}
+                        max={
+                          selectedVariant?.stock
+                            ? selectedVariant?.stock
+                            : product.stock
+                        }
                         step="1"
                         required
                         onChange={handleQuantityChange}
@@ -384,35 +406,28 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-details-action">
-                    <a
-                      onClick={handleAddToCart}
-                      href="#"
-                      className="btn-product btn-cart"
+                    <button
+                      onClick={(e) => {
+                        if (product.is_active === 0) {
+                          e.preventDefault(); 
+                          message.error(
+                            "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
+                          );
+                        } else {
+                          handleAddToCart();
+                        }
+                      }}
+                      className={` btn btn-product btn-cart ${product.is_active === 0 ? "disabled" : ""
+                        }`}
+                      disabled={product.is_active === 0}
                     >
-                      <span>add to cart</span>
-                    </a>
-
-                    <div className="details-action-wrapper">
-                      <a
-                        href="#"
-                        className="btn-product btn-wishlist"
-                        title="Wishlist"
-                      >
-                        <span>Add to Wishlist</span>
-                      </a>
-                      <a
-                        href="#"
-                        className="btn-product btn-compare"
-                        title="Compare"
-                      >
-                        <span>Add to Compare</span>
-                      </a>
-                    </div>
+                      Thêm giỏ hàng
+                    </button>
                   </div>
 
                   <div className="product-details-footer">
                     <div className="product-cat">
-                      <span>Category:</span>
+                      <span>Danh Mục:</span>
                       {product.categories &&
                         product.categories.map((category) => (
                           <span key={category.id}>
@@ -573,61 +588,63 @@ const ProductDetailClient = () => {
 
         )}
 
-        <div className="container" style={{ marginTop: "50px" }}>
-          <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
-          <div >
-            <Swiper
-              spaceBetween={30}
-              slidesPerView={3}  
-              slidesPerGroup={1} 
-              autoplay={{
-                delay: 2500,
-                disableOnInteraction: false,
-              }}
-              pagination={{ clickable: true }}
-              navigation={true}
-              modules={[Autoplay, Pagination, Navigation]}
-              className="mySwiper"
-            >
-              {dataViewed && dataViewed.map((product, index) => (
-                <SwiperSlide key={index}>
-                  <div className="product product-7" style={{ width: "300px" }}>
-                    <figure className="product-media">
-                      <span className="product-label label-new">New</span>
-                      <a href="product.html">
-                        <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
-                      </a>
+        {dataViewed && dataViewed.length > 0 && (
+          <div className="container" style={{ marginTop: "50px" }}>
+            <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
+            <div >
+              <Swiper
+                spaceBetween={30}
+                slidesPerView={3}
+                slidesPerGroup={1}
+                autoplay={{
+                  delay: 2500,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation]}
+                className="mySwiper"
+              >
+                {dataViewed.map((product, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="product product-7" style={{ width: "300px" }}>
+                      <figure className="product-media">
+                        <span className="product-label label-new">New</span>
+                        <a href="product.html">
+                          <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
+                        </a>
 
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                        <a href="popup/quickView.html" className="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
-                        <a href="#" className="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                    
-                      <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
-                      <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
-
-                      <div className="ratings-container">
-                        <div className="ratings">
-                          <div className="ratings-val" style={{ width: "80%" }}></div>
+                        <div className="product-action-vertical">
+                          <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
+                          <a href="popup/quickView.html" className="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
+                          <a href="#" className="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a>
                         </div>
-                        <span className="ratings-text">( 2 Đánh giá )</span>
+
+                        <div className="product-action">
+                          <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
+                        </div>
+                      </figure>
+
+                      <div className="product-body">
+
+                        <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
+                        <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
+
+                        <div className="ratings-container">
+                          <div className="ratings">
+                            <div className="ratings-val" style={{ width: "80%" }}></div>
+                          </div>
+                          <span className="ratings-text">( 2 Đánh giá )</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
 
+            </div>
           </div>
-        </div>
+        )}
 
 
         <Modal

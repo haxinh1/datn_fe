@@ -1,0 +1,35 @@
+.text-name{
+    font-size: 14px;
+    font-weight: lighter;
+    color: rgb(62, 59, 59);
+}
+.text-title{
+    font-size: 14px;
+    font-weight: bold;
+}
+.form-thank{
+    margin-top: 60px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.text-thank{
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+.form-name{
+    display: flex;
+    align-items: center; /* Căn giữa logo và tên theo chiều dọc */
+    justify-content: center; /* Căn giữa phần tử theo chiều ngang */
+    gap: 10px;
+    margin: 40px 10px;
+}
+.logo-bill{
+    width: 120px;
+}
+.logo-name{
+    font-size: 24px;
+    font-weight: bold;
+    color: #eea287;
+}
+

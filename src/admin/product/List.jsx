@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col } from "antd";
+import { Button, Image, Skeleton, Table, Select, Modal, Form, InputNumber, Upload, notification, Switch, Tooltip, DatePicker, Row, Col, Input } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import "./list.css";
-import "./add.css";
+import { EditOutlined, EyeOutlined, ImportOutlined, PlusOutlined, ProductOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
 import { productsServices } from "../../services/product";
 import { variantsServices } from "../../services/variants";
 import { BrandsServices } from "../../services/brands";
 import { categoryServices } from "../../services/categories";
 import dayjs from "dayjs";
+import "../../css/list.css";
+import "../../css/add.css";
 
 const List = () => {
     const queryClient = useQueryClient();
@@ -23,11 +23,15 @@ const List = () => {
     const [isActive, setIsActive] = useState(1);
     const [startDate, setStartDate] = useState(null); // Trạng thái ngày mở KM
     const [endDate, setEndDate] = useState(null); // Trạng thái ngày đóng KM
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     // Fetch danh sách sản phẩm
     const { data: products, isLoading: isProductsLoading } = useQuery({
-        queryKey: ["products"],
+        queryKey: ["products", searchKeyword],
         queryFn: async () => {
+            if (searchKeyword) {
+                return await productsServices.searchProducts(searchKeyword);
+            }
             const response = await productsServices.fetchProducts();
             return response.data;
         },
@@ -105,20 +109,20 @@ const List = () => {
         } else {
             setIsActive(variant.is_active ?? 1); // Lấy trạng thái gốc của biến thể
         }
-        
+
         if (variant.thumbnail) {
             const fileObject = await convertImageToFileObject(variant.thumbnail);
             setNewImage(fileObject);
         } else {
             setNewImage(null);
         }
-    
+
         setIsModalVisible(true);
     };
 
     const handleImageUpload = (info) => {
         let fileList = [...info.fileList];
-    
+
         // Nếu ảnh mới được upload thành công, cập nhật `thumbnail`
         if (info.file.status === "done" && info.file.response) {
             fileList = fileList.map((file) => ({
@@ -128,7 +132,7 @@ const List = () => {
                 url: file.response.secure_url, // Lấy URL từ response Cloudinary
             }));
         }
-    
+
         // Cập nhật state
         setNewImage(fileList.length > 0 ? fileList[0] : null);
     };
@@ -186,16 +190,16 @@ const List = () => {
             });
             return;
         }
-    
+
         const payload = {
             sell_price: newPrice,
             sale_price: newSalePrice,
-            thumbnail: newImage ? newImage.url : null, 
+            thumbnail: newImage ? newImage.url : null,
             is_active: isActive,
             sale_price_start_at: startDate ? startDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày bắt đầu được gửi
             sale_price_end_at: endDate ? endDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày kết thúc được gửi
         };
-    
+
         console.log("Sending payload to API:", payload);
         updateVariantMutation.mutate(payload, {
             onSuccess: () => {
@@ -204,11 +208,11 @@ const List = () => {
                 setIsModalVisible(false);
             }
         });
-    
+
         if (currentVariant.is_active !== isActive) {
             activeVariantMutation.mutate({ is_active: isActive });
         }
-    
+
         setIsModalVisible(false);
     };
 
@@ -230,7 +234,7 @@ const List = () => {
             title: "Ảnh",
             dataIndex: "thumbnail",
             key: "thumbnail",
-            render: (_, item) => <Image width={45} height={60} src={item.thumbnail} />,
+            render: (_, item) => <Image width={45} src={item.thumbnail} />,
             align: "center",
         },
         {
@@ -264,7 +268,7 @@ const List = () => {
                     {stock}
                 </span>
             ),
-        },            
+        },
         {
             title: "Ngày khuyến mại",
             key: "sale_price",
@@ -273,7 +277,7 @@ const List = () => {
             render: (_, product) => {
                 const startDate = product.sale_price_start_at ? dayjs(product.sale_price_start_at) : null;
                 const endDate = product.sale_price_end_at ? dayjs(product.sale_price_end_at) : null;
-    
+
                 // Kiểm tra nếu có ngày bắt đầu và kết thúc, rồi hiển thị ngày trong định dạng "DD/MM"
                 if (startDate && endDate) {
                     return `${startDate.format('DD/MM')} - ${endDate.format('DD/MM')}`;
@@ -303,7 +307,7 @@ const List = () => {
                             <Button color="purple" variant="solid" icon={<EyeOutlined />} />
                         </Link>
                     </Tooltip>
-                    
+
                     <Tooltip title="Cập nhật">
                         <Link to={`/admin/edit-pr/${item.id}`}>
                             <Button color="primary" variant="solid" icon={<EditOutlined />} />
@@ -317,7 +321,7 @@ const List = () => {
     return (
         <>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
+                <ProductOutlined style={{ marginRight: "8px" }} />
                 Danh sách sản phẩm
             </h1>
 
@@ -360,6 +364,13 @@ const List = () => {
                     </Select>
                 </div>
 
+                <Input.Search
+                    placeholder="Tìm kiếm sản phẩm..."
+                    allowClear
+                    enterButton={<SearchOutlined />}
+                    onSearch={setSearchKeyword}
+                />
+
                 <div className="group2">
                     <Link to="/admin/add-pr">
                         <Button color="primary" variant="outlined" icon={<PlusOutlined />}>
@@ -368,7 +379,7 @@ const List = () => {
                     </Link>
 
                     <Link to="/admin/import">
-                        <Button color="primary" variant="solid" icon={<PlusOutlined />}>
+                        <Button color="primary" variant="solid" icon={<ImportOutlined />}>
                             Nhập hàng
                         </Button>
                     </Link>
@@ -389,7 +400,7 @@ const List = () => {
                                             title: "Ảnh",
                                             dataIndex: "thumbnail",
                                             key: "thumbnail",
-                                            render: (thumbnail) => <Image width={45} height={60} src={thumbnail} />,
+                                            render: (thumbnail) => <Image width={45} src={thumbnail} />,
                                             align: "center",
                                             width: 80,
                                         },
@@ -432,7 +443,7 @@ const List = () => {
                                                     {stock}
                                                 </span>
                                             ),
-                                        },                                        
+                                        },
                                         {
                                             title: "Ngày khuyến mại",
                                             key: "sale_price",
@@ -442,7 +453,7 @@ const List = () => {
                                             render: (_, variant) => {
                                                 const startDate = variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null;
                                                 const endDate = variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null;
-                
+
                                                 if (startDate && endDate) {
                                                     return `${startDate.format('DD/MM')} - ${endDate.format('DD/MM')}`;
                                                 }
@@ -459,7 +470,7 @@ const List = () => {
                                                 // Nếu sản phẩm chính đã ngừng kinh doanh, buộc hiển thị trạng thái ngừng kinh doanh
                                                 const parentProduct = products.find((p) => p.id === variant.product_id);
                                                 const displayStatus = parentProduct && parentProduct.is_active === 0 ? 0 : isActive;
-                                        
+
                                                 return (
                                                     <span className={displayStatus === 1 ? 'action-link-blue' : 'action-link-red'}>
                                                         {displayStatus === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
@@ -496,18 +507,17 @@ const List = () => {
                 />
             </Skeleton>
 
-            <Modal 
-                title="Cập nhật biến thể" 
-                visible={isModalVisible} 
-                onCancel={() => setIsModalVisible(false)} 
+            <Modal
+                title="Cập nhật biến thể"
+                visible={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
                 footer={null}
             >
                 <h5 className="action">
                     {currentVariant
-                        ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${
-                            currentVariant.attribute_value_product_variants
-                                ?.map(attr => attr.attribute_value?.value)
-                                .join(" - ") || "Không có thuộc tính"
+                        ? `${products.find(p => p.id === currentVariant.product_id)?.name || ""} - ${currentVariant.attribute_value_product_variants
+                            ?.map(attr => attr.attribute_value?.value)
+                            .join(" - ") || "Không có thuộc tính"
                         }`
                         : ""}
                 </h5>
@@ -515,18 +525,29 @@ const List = () => {
                 <Form layout="vertical">
                     <Row gutter={24}>
                         <Col span={12} className="col-item">
-                            <Form.Item 
+                            <Form.Item
                                 label="Giá bán (VNĐ)"
                                 name="sell_price"
-                                initialValue={newPrice}  // Đảm bảo hiển thị giá trị mặc định
-                                rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+                                initialValue={newPrice}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập giá bán" },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const salePrice = getFieldValue("sale_price");
+                                            if (salePrice && value <= salePrice) {
+                                                return Promise.reject("Giá bán phải lớn hơn giá khuyến mại");
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
                             >
-                                <InputNumber 
-                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    className="input-item" 
-                                    value={newPrice} 
-                                    onChange={setNewPrice} 
+                                <InputNumber
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                    parser={value => value?.replace(/\./g, "")}
+                                    className="input-item"
+                                    value={newPrice}
+                                    onChange={setNewPrice}
                                 />
                             </Form.Item>
 
@@ -534,24 +555,61 @@ const List = () => {
                                 label="Ngày mở khuyến mại"
                             >
                                 <DatePicker
-                                    value={startDate} 
-                                    onChange={(date) => setStartDate(date)} 
+                                    value={startDate}
+                                    onChange={(date) => setStartDate(date)}
                                     className="input-item"
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            <Form.Item
+                                label="Ảnh"
+                                name="newImage"
+                                rules={[{
+                                    validator: (_, value) =>
+                                        newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
+                                }]}
+                            >
+                                <Upload
+                                    listType="picture"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    fileList={newImage ? [newImage] : []}
+                                    onChange={handleImageUpload}
+                                    onRemove={() => setNewImage(null)}
+                                >
+                                    {!newImage && (
+                                        <Button icon={<UploadOutlined />} className="btn-item">
+                                            Tải ảnh lên
+                                        </Button>
+                                    )}
+                                </Upload>
+                            </Form.Item>
                         </Col>
 
                         <Col span={12} className="col-item">
-                            <Form.Item 
+                            <Form.Item
                                 label="Giá khuyến mại (VNĐ)"
+                                name="sale_price"
+                                initialValue={newSalePrice}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const price = getFieldValue("sell_price");
+                                            if (value && value >= price) {
+                                                return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán");
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
                             >
-                                <InputNumber 
-                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} // Thêm dấu chấm
-                                    parser={value => value?.replace(/\./g, "")} // Xóa dấu chấm khi nhập vào
-                                    className="input-item" 
-                                    value={newSalePrice} 
-                                    onChange={setNewSalePrice} 
+                                <InputNumber
+                                    formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                    parser={value => value?.replace(/\./g, "")}
+                                    className="input-item"
+                                    value={newSalePrice}
+                                    onChange={setNewSalePrice}
                                 />
                             </Form.Item>
 
@@ -559,48 +617,24 @@ const List = () => {
                                 label="Ngày đóng khuyến mại"
                             >
                                 <DatePicker
-                                    value={endDate} 
-                                    onChange={(date) => setEndDate(date)} 
+                                    value={endDate}
+                                    onChange={(date) => setEndDate(date)}
                                     className="input-item"
                                     format="DD-MM-YYYY"
                                 />
                             </Form.Item>
+
+                            {/* <Form.Item label="Trạng thái kinh doanh">
+                                <Switch
+                                    checked={isActive === 1}
+                                    onChange={(checked) => setIsActive(checked ? 1 : 0)}
+                                />
+                                <span style={{ marginLeft: 10 }}>
+                                    {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
+                                </span>
+                            </Form.Item> */}
                         </Col>
                     </Row>
-
-                    <Form.Item
-                        label="Ảnh"
-                        name="newImage"
-                        rules={[{
-                            validator: (_, value) =>
-                            newImage ? Promise.resolve() : Promise.reject("Vui lòng tải lên ảnh"),
-                        }]}
-                    >
-                        <Upload
-                            listType="picture"
-                            action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
-                            data={{ upload_preset: "quangOsuy" }}
-                            fileList={newImage ? [newImage] : []}
-                            onChange={handleImageUpload}
-                            onRemove={() => setNewImage(null)} 
-                        >
-                            {!newImage && ( 
-                                <Button icon={<UploadOutlined />} className="btn-item">
-                                    Tải ảnh lên
-                                </Button>
-                            )}
-                        </Upload>
-                    </Form.Item>
-
-                    <Form.Item label="Trạng thái kinh doanh">
-                        <Switch 
-                            checked={isActive === 1} 
-                            onChange={(checked) => setIsActive(checked ? 1 : 0)} 
-                        />
-                        <span style={{ marginLeft: 10 }}>
-                            {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
-                        </span>
-                    </Form.Item>
 
                     <div className="add">
                         <Button type="primary" onClick={handleSaveVariant}>Cập nhật</Button>

@@ -1,18 +1,23 @@
-import { BookOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col } from 'antd';
-import React, { useState } from 'react';
+import { EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Avatar } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import "../css/add.css";
+import "../css/list.css";
+import { Link } from 'react-router-dom';
 
 const Account = () => {
-    const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [filteredUsers, setFilteredUsers] = useState(null);
     const [form] = Form.useForm();
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
+    const [loggedInUserRole, setLoggedInUserRole] = useState([]);
+    const handleEditCancel = () => setIsEditModalVisible(false);
 
-    const { data: users, isLoading, refetch  } = useQuery({
+    const { data: users, isLoading, refetch } = useQuery({
         queryKey: ["users"],
         queryFn: async () => {
             const response = await AuthServices.fetchAuth();
@@ -29,37 +34,11 @@ const Account = () => {
             notification.success({
                 message: "Cập nhật thành công",
             });
-            refetch(); // Refresh danh sách người dùng sau khi cập nhật
             handleEditCancel();
+            console.log(userData)
+            refetch(); // Refresh danh sách người dùng sau khi cập nhật
         }
     });
-
-    const showDetailModal = (record) => {
-        setSelectedRecord(record);
-        setIsDetailModalVisible(true);
-    };
-
-    const showEditModal = async (record) => {
-        setSelectedRecord(record);
-
-        try {
-            const userData = await AuthServices.getAUser(record.id);
-            form.setFieldsValue({
-                fullname: userData.fullname,
-                email: userData.email,
-                phone_number: userData.phone_number,
-                password: userData.password,
-                gender: userData.gender,
-                birthday: userData.birthday ? dayjs(userData.birthday) : null,
-                address: userData.address,
-                role: userData.role,
-                status: userData.status,
-            });
-            setIsEditModalVisible(true);
-        } catch (error) {
-            console.error("Lỗi khi lấy dữ liệu người dùng:", error);
-        }
-    };
 
     const handleUpdateUser = async () => {
         try {
@@ -74,22 +53,66 @@ const Account = () => {
         }
     };
 
-    const handleDetailCancel = () => {
-        setIsDetailModalVisible(false);
-        setSelectedRecord(null);
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("user"));
+        if (userData) {
+            setLoggedInUserId(userData.id);
+            setLoggedInUserRole(userData.role);
+        }
+    }, []);
+
+    const showEditModal = async (record) => {
+        setSelectedRecord(record);
+        setIsEditModalVisible(true);
+
+        try {
+            const userData = await AuthServices.getAUser(record.id);
+            form.setFieldsValue({
+                fullname: userData.fullname,
+                email: userData.email,
+                phone_number: userData.phone_number,
+                password: userData.password,
+                gender: userData.gender,
+                birthday: userData.birthday ? dayjs(userData.birthday) : null,
+                address: userData.address,
+                detail_address: userData.detail_address,
+                role: userData.role,
+                status: userData.status,
+            });
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu người dùng:", error);
+        }
     };
 
-    const handleEditCancel = () => {
-        setIsEditModalVisible(false);
-        setSelectedRecord(null);
-    };
-
-    // bấm nút chi tiết
-    const detailColumn = [
+    const columns = [
         {
-            title: "Tên người dùng",
+            title: "STT",
+            dataIndex: "index",
+            render: (_, __, index) => index + 1,
+            align: "center",
+        },
+        {
+            title: "Người dùng",
             dataIndex: "fullname",
             key: "fullname",
+            align: "center",
+            render: (fullname, record) => (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent:'center', gap: '10px' }}>
+                    {record.avatar && <Avatar size="large" src={record.avatar} />}
+                    <span>{fullname}</span>
+                </div>
+            ),
+        },
+        {
+            title: "Số điện thoại",
+            dataIndex: "phone_number",
+            key: "phone_number",
+            align: "center",
+        },
+        {
+            title: "Email",
+            dataIndex: "email",
+            key: "email",
             align: "center",
         },
         {
@@ -105,53 +128,13 @@ const Account = () => {
                 };
                 return genderMap[gender];
             }
-        },        
+        },
         {
             title: "Ngày sinh",
             dataIndex: "birthday",
             key: "birthday",
             align: "center",
             render: (date) => date ? dayjs(date).format("DD/MM/YYYY") : null,
-        },
-        {
-            title: "Địa chỉ",
-            dataIndex: "address",
-            key: "address",
-            align: "center",
-            render: (address) => address?.address
-        },
-    ]
-
-    const columns = [
-        {
-            title: "STT",
-            dataIndex: "index",
-            render: (_, __, index) => index + 1,
-            align: "center",
-        },
-        {
-            title: "Tên người dùng",
-            dataIndex: "fullname",
-            key: "fullname",
-            align: "center",
-        },
-        {
-            title: "Số điện thoại",
-            dataIndex: "phone_number",
-            key: "phone_number",
-            align: "center",
-        },
-        {
-            title: "Email",
-            dataIndex: "email",
-            key: "email",
-            align: "center",
-        },
-        {
-            title: "Điểm tích lũy",
-            dataIndex: "loyalty_point",
-            key: "loyalty_point",
-            align: "center",
         },
         {
             title: "Chức năng",
@@ -175,7 +158,7 @@ const Account = () => {
                 <span className={status === "active" ? "action-link-blue" : "action-link-red"}>
                     {status === "active" ? "Hoạt động" : "Dừng hoạt động"}
                 </span>
-            )            
+            )
         },
         {
             title: "Thao tác",
@@ -184,23 +167,28 @@ const Account = () => {
             render: (_, record) => (
                 <div className="action-container">
                     <Tooltip title="Xem thêm">
-                        <Button 
-                            color="purple" 
-                            variant="solid" 
-                            icon={<EyeOutlined />} 
-                            type='link'
-                            onClick={() => showDetailModal(record)}
-                        />
+                        <Link to={`/admin/staff/${record.id}`}>
+                            <Button
+                                color="purple"
+                                variant="solid"
+                                icon={<EyeOutlined />}
+                                type='link'
+                            />
+                        </Link>
                     </Tooltip>
-                    <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined/>}
-                            type="link"
-                            onClick={() => showEditModal(record)}
-                        />
-                    </Tooltip>
+                    {
+                        !(record.id === loggedInUserId || loggedInUserRole === 'manager') && (
+                            <Tooltip title="Cập nhật">
+                                <Button
+                                    color="primary"
+                                    variant="solid"
+                                    icon={<EditOutlined />}
+                                    type="link"
+                                    onClick={() => showEditModal(record)}
+                                />
+                            </Tooltip>
+                        )
+                    }
                 </div>
             ),
         },
@@ -209,8 +197,8 @@ const Account = () => {
     return (
         <div>
             <h1 className="mb-5">
-                <BookOutlined style={{ marginRight: "8px" }} />
-                Danh sách tài khoản
+                <TeamOutlined style={{ marginRight: "8px" }} />
+                Danh sách nhân sự
             </h1>
 
             <div className="group1">
@@ -238,22 +226,6 @@ const Account = () => {
                 />
             </Skeleton>
 
-            {/* Modal Chi Tiết */}
-            <Modal
-                title="Chi Tiết Tài Khoản"
-                open={isDetailModalVisible}
-                onCancel={handleDetailCancel}
-                footer={null}
-                width={800}
-            >
-                <Table
-                    columns={detailColumn}
-                    dataSource={selectedRecord ? [selectedRecord] : []} // Chỉ hiển thị thông tin khách hàng đã chọn
-                    pagination={false} // Không cần phân trang vì chỉ có một bản ghi
-                    bordered
-                />
-            </Modal>
-
             {/* Modal Cập Nhật */}
             <Modal
                 title="Cập Nhật Chức Năng Và Trạng Thái Tài Khoản"
@@ -261,7 +233,7 @@ const Account = () => {
                 onCancel={handleEditCancel}
                 footer={null}
             >
-                <Form 
+                <Form
                     layout="vertical"
                     form={form}
                 >

@@ -1,15 +1,19 @@
-import React, { useState } from "react";
-import { Button, Select, Table, InputNumber, notification, AutoComplete, Tooltip, Form } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
+import "../../css/add.css";
+import "../../css/list.css";
 
 const Import = () => {
     const [form] = Form.useForm();
     const [addedVariants, setAddedVariants] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredProducts, setFilteredProducts] = useState([]);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [loggedInUserRole, setLoggedInUserRole] = useState([]);
 
     // Fetch danh sách sản phẩm và biến thể
     const { data: products = [] } = useQuery({
@@ -19,6 +23,13 @@ const Import = () => {
             return response.data;
         },
     });
+
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("user"));
+        if (userData) {
+            setLoggedInUserRole(userData.role); 
+        }
+    }, []); 
 
     // Xử lý khi chọn sản phẩm
     const handleSelectProduct = (value, option) => {
@@ -124,6 +135,8 @@ const Import = () => {
                 groupedProducts[item.productId].variants.push({
                     id: item.id,
                     price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
                     quantity: item.quantity
                 });
             } else {
@@ -131,6 +144,8 @@ const Import = () => {
                 groupedProducts[item.productId] = {
                     id: item.productId,
                     price: item.price,
+                    sell_price: item.sell_price,
+                    sale_price: item.sale_price,
                     quantity: item.quantity
                 };
             }
@@ -139,7 +154,7 @@ const Import = () => {
         const productsArray = Object.values(groupedProducts);
     
         const payload = {
-            user_id: 1,
+            // user_id: 1,
             products: productsArray
         };
     
@@ -159,6 +174,24 @@ const Import = () => {
     
         // Cập nhật giá vào form để tránh lỗi khi submit
         form.setFieldsValue(changedValues);
+    };    
+
+    const handleSelectAll = (e) => {
+        const checked = e.target.checked;
+        if (checked) {
+            setSelectedRowKeys(addedVariants.map(item => item.key)); // Chọn tất cả
+        } else {
+            setSelectedRowKeys([]); // Bỏ chọn tất cả
+        }
+    };
+    
+    const handleRowSelectionChange = (selectedRowKeys) => {
+        setSelectedRowKeys(selectedRowKeys); // Cập nhật hàng được chọn
+    };
+
+    const handleRemoveSelected = () => {
+        setAddedVariants(prevItems => prevItems.filter(item => !selectedRowKeys.includes(item.key)));
+        setSelectedRowKeys([]); // Reset lại danh sách đã chọn
     };    
 
     // Gửi dữ liệu nhập hàng
@@ -193,7 +226,10 @@ const Import = () => {
 
     return (
         <div>
-            <h1 className="mb-5">Nhập hàng</h1>
+            <h1 className="mb-5">
+                <ImportOutlined style={{ marginRight: "8px" }} />
+                Nhập hàng
+            </h1>
 
             <div className="attribute">
                 <AutoComplete
@@ -202,6 +238,7 @@ const Import = () => {
                     value={searchQuery}
                     onSearch={handleSearch}
                     onSelect={(value, option) => handleSelectProduct(value, option)}
+                    prefix={<SearchOutlined />}
                 >
                     {filteredProducts.map(product => (
                         <AutoComplete.Option key={product.id} value={product.id} item={product}>
@@ -229,10 +266,28 @@ const Import = () => {
                 layout="vertical"
                 onValuesChange={handleValuesChange}
             >
+                <div className="group2">
+                    <Button 
+                        color="danger" 
+                        variant="solid"
+                        icon={<DeleteOutlined />} 
+                        onClick={handleRemoveSelected}
+                    >
+                        Xóa
+                    </Button>
+                </div>
+
                 <Table
                     dataSource={addedVariants}
                     rowKey="key"
                     pagination={false}
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: handleRowSelectionChange,
+                        getCheckboxProps: record => ({
+                            disabled: false, // Có thể tùy chỉnh để vô hiệu hóa checkbox
+                        }),
+                    }}
                     columns={[
                         {
                             title: "STT",
@@ -256,15 +311,12 @@ const Import = () => {
                                     initialValue={record.price}
                                     rules={[
                                         {
-                                            required: true,
-                                            message: "Vui lòng nhập giá nhập!",
-                                        },
-                                        {
                                             type: "number",
                                             min: 1,
                                             message: "Giá nhập phải lớn hơn 0!",
                                         },
-                                        ({ getFieldValue }) => ({
+                                        // Kiểm tra rule chỉ khi không phải là manager
+                                        loggedInUserRole !== "manager" && ({
                                             validator(_, value) {
                                                 if (value === undefined || value === null) {
                                                     return Promise.reject("Vui lòng nhập giá nhập!");
@@ -275,7 +327,7 @@ const Import = () => {
                                                 return Promise.resolve();
                                             },
                                         }),
-                                    ]}
+                                    ].filter(Boolean)}
                                 >
                                     <InputNumber
                                         className="input-form"
@@ -301,69 +353,62 @@ const Import = () => {
                                     <Form.Item
                                         name={`sell_price_${uniqueKey}`}
                                         initialValue={record.sell_price}
+                                        rules={[
+                                            // Kiểm tra rule chỉ khi không phải là manager
+                                            loggedInUserRole !== "manager" && ({
+                                                validator(_, value) {
+                                                    if (value === undefined || value === null) {
+                                                        return Promise.reject("Vui lòng nhập giá bán!");
+                                                    }
+                                                    if (value <= record.price) {
+                                                        return Promise.reject("Giá bán phải lớn hơn giá nhập!");
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            }),
+                                        ].filter(Boolean)}
                                     >
                                         <InputNumber
                                             className="input-form"
                                             min={1}
-                                            disabled 
+                                            disabled={loggedInUserRole === "manager"} 
                                             formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
                                                 form.setFieldsValue({ [`sell_price_${uniqueKey}`]: value });
-                                                updateItem(record.id, record.productId, "sell_price", value);
+                                                updateItem(record.key, "sell_price", value);
                                             }}
                                         />
                                     </Form.Item>
                                 );
                             },
                         },         
-                        // {
-                        //     title: "Giá KM (VNĐ)",
-                        //     dataIndex: "sale_price",
-                        //     align: "center",
-                        //     render: (_, record) => {
-                        //         const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
+                        {
+                            title: "Giá KM (VNĐ)",
+                            dataIndex: "sale_price",
+                            align: "center",
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
                         
-                        //         return (
-                        //             <Form.Item
-                        //                 name={`sale_price_${uniqueKey}`}
-                        //                 initialValue={record.sale_price || 0} // Truyền giá khuyến mại từ DB vào input
-                        //                 // rules={[
-                        //                 //     {
-                        //                 //         required: true,
-                        //                 //         message: "Vui lòng nhập giá khuyến mại!",
-                        //                 //     },
-                        //                 //     {
-                        //                 //         type: "number",
-                        //                 //         min: 1,
-                        //                 //         message: "Giá khuyến mại phải lớn hơn 0!",
-                        //                 //     },
-                        //                 //     ({ getFieldValue }) => ({
-                        //                 //         validator(_, value) {
-                        //                 //             const sellPrice = form.getFieldValue(`sell_price_${uniqueKey}`);
-                        //                 //             if (value && sellPrice && value >= sellPrice) {
-                        //                 //                 return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
-                        //                 //             }
-                        //                 //             return Promise.resolve();
-                        //                 //         },
-                        //                 //     }),
-                        //                 // ]}
-                        //             >
-                        //                 <InputNumber
-                        //                     className="input-form"
-                        //                     min={1}
-                        //                     disabled 
-                        //                     formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                        //                     parser={value => value?.replace(/\./g, "")}
-                        //                     onChange={(value) => {
-                        //                         form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
-                        //                         updateItem(record.id, record.productId, "sale_price", value);
-                        //                     }}
-                        //                 />
-                        //             </Form.Item>
-                        //         );
-                        //     },
-                        // },            
+                                return (
+                                    <Form.Item
+                                        name={`sale_price_${uniqueKey}`}
+                                    >
+                                        <InputNumber
+                                            className="input-form"
+                                            min={1}
+                                            disabled={loggedInUserRole === "manager"} 
+                                            formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            parser={value => value?.replace(/\./g, "")}
+                                            onChange={(value) => {
+                                                form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
+                                                updateItem(record.key, "sale_price", value);
+                                            }}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },            
                         {
                             title: "Số lượng",
                             dataIndex: "quantity",
@@ -383,7 +428,7 @@ const Import = () => {
                             render: (_, record) => record.total.toLocaleString(),
                         },
                         {
-                            title: "Thao tác",
+                            title: "",
                             key: "action",
                             align: "center",
                             render: (_, record) => (
@@ -400,7 +445,7 @@ const Import = () => {
                     ]}
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={6} align="right">
+                            <Table.Summary.Cell colSpan={7} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">
