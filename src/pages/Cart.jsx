@@ -149,7 +149,6 @@ const Cart = () => {
 
       if (userId) {
         await cartServices.updateCartItem(productId, newQuantity, variantId);
-        message.success("Cập nhật số lượng thành công");
       } else {
         let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
         const key = productId + "-" + (variantId ?? "default");
