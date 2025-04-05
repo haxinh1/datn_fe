@@ -383,7 +383,7 @@ const ProductDetailClient = () => {
                         }`}
                       disabled={product.is_active === 0}
                     >
-                      Thêm giỏ hàng
+                      Giỏ hàng
                     </button>
 
                     {/* <div className="details-action-wrapper">

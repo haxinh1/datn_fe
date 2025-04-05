@@ -62,7 +62,7 @@ const Header = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
+                    <Link to="cate" href="" className="sf-with-ul">
                       <span>Danh mục</span>
                     </Link>
                   </li>
