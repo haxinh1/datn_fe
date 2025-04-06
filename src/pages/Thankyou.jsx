@@ -33,22 +33,6 @@ const Thankyoupage = () => {
   const customerEmail = ""; // Logic to get customer's email if needed
   const customerName = ""; // Logic to get customer's name if needed
 
-  // Function to update order status
-  // const updateOrderStatus = async () => {
-  //   if (paymentStatus === "00" && orderId) {
-  //     try {
-  //       await OrderService.updateOrderStatus(orderId, { status_id: 2 });
-  //       console.log(`Order status for order ID ${orderId} updated to 2.`);
-  //     } catch (error) {
-  //       console.error("Failed to update order status:", error.message);
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   updateOrderStatus();
-  // }, [paymentStatus, orderId]);
-
   return (
     <div className="container mt-5">
       <div
