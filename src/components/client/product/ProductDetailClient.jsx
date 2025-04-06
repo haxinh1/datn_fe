@@ -148,6 +148,8 @@ const ProductDetailClient = () => {
       setMainImage(product.thumbnail);
     }
   }, [product.thumbnail]);
+  const stockAvailable =
+    (selectedVariant ? selectedVariant.stock : product.stock) > 0;
 
   return (
     <>
@@ -364,42 +366,30 @@ const ProductDetailClient = () => {
                   </div>
 
                   <div className="product-details-action">
-                    <a
-                      onClick={(e) => {
-                        if (product.is_active === 0) {
-                          e.preventDefault(); // Prevent the default action if the product is inactive
-                          message.error(
-                            "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
-                          );
-                        } else {
-                          handleAddToCart();
-                        }
-                      }}
-                      href="#"
-                      className={`btn-product btn-cart ${
-                        product.is_active === 0 ? "disabled" : ""
-                      }`}
-                      disabled={product.is_active === 0}
-                    >
-                      <span>Thêm vào giỏ hàng</span>
-                    </a>
-
-                    <div className="details-action-wrapper">
+                    {stockAvailable ? (
                       <a
+                        onClick={(e) => {
+                          if (product.is_active === 0) {
+                            e.preventDefault();
+                            message.error(
+                              "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
+                            );
+                          } else {
+                            handleAddToCart();
+                          }
+                        }}
                         href="#"
-                        className="btn-product btn-wishlist"
-                        title="Wishlist"
+                        className={`btn-product btn-cart ${
+                          product.is_active === 0 ? "disabled" : ""
+                        }`}
                       >
-                        <span>Add to Wishlist</span>
+                        <span>Thêm vào giỏ hàng</span>
                       </a>
-                      <a
-                        href="#"
-                        className="btn-product btn-compare"
-                        title="Compare"
-                      >
-                        <span>Add to Compare</span>
-                      </a>
-                    </div>
+                    ) : (
+                      <span className="btn-product btn-cart disabled text-muted">
+                        Hết hàng
+                      </span>
+                    )}
                   </div>
 
                   <div className="product-details-footer">

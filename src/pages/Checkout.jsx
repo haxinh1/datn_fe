@@ -436,7 +436,13 @@ const Checkout = () => {
         discount_amount: discountAmount, // Gửi số tiền giảm giá
         total_amount: finalTotal,
         payment_method:
-          selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
+          selectedPayment === 2
+            ? "cod"
+            : selectedPayment === 1
+            ? "vnpay"
+            : selectedPayment === 3
+            ? "momo"
+            : null,
         products: cartItems.map((item) => ({
           product_id: item.product_id,
           product_variant_id: item.product_variant_id,
@@ -934,7 +940,10 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{ backgroundColor: '#eea287', color: 'white' }}
+                                style={{
+                                  backgroundColor: "#eea287",
+                                  color: "white",
+                                }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1071,7 +1080,14 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button style={{ backgroundColor: '#eea287', color: 'white' }} type="primary" htmlType="submit">
+                          <Button
+                            style={{
+                              backgroundColor: "#eea287",
+                              color: "white",
+                            }}
+                            type="primary"
+                            htmlType="submit"
+                          >
                             Lưu
                           </Button>
                         </div>
@@ -1457,6 +1473,8 @@ const Checkout = () => {
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
                     ? "Thanh toán trực tuyến"
+                    : method.name.toLowerCase() === "momo"
+                    ? "Thanh toán qua Momo"
                     : method.name;
 
                 return (
