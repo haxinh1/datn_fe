@@ -15,7 +15,18 @@ const Thankyoupage = () => {
 
   const orderInfo = query.get("vnp_OrderInfo") || momoOrderInfo;
   const orderId = orderInfo ? orderInfo.split(" ").pop() : "Không có thông tin";
-  const totalAmount = query.get("vnp_Amount") || momoAmount;
+  const totalAmount = query.get("vnp_Amount")
+    ? (Number(query.get("vnp_Amount")) / 100).toLocaleString("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      })
+    : query.get("momo_Amount")
+    ? Number(query.get("momo_Amount")).toLocaleString("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      })
+    : "Không có thông tin";
+
   const paymentStatus = query.get("vnp_ResponseCode") || momoResponseCode;
   const paymentMethod = query.get("vnp_CardType") || momoPaymentType;
 
@@ -68,15 +79,7 @@ const Thankyoupage = () => {
               Mã đơn hàng: <strong>{orderId || "Không có thông tin"}</strong>
             </li>
             <li>
-              Tổng tiền:{" "}
-              <strong>
-                {totalAmount
-                  ? Number(totalAmount).toLocaleString("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    })
-                  : "Không có thông tin"}
-              </strong>
+              Tổng tiền: <strong>{totalAmount || "Không có thông tin"}</strong>
             </li>
             <li>
               Phương thức thanh toán:{" "}
