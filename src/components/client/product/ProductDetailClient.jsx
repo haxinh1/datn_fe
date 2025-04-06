@@ -178,15 +178,52 @@ const ProductDetailClient = () => {
             <div className="row">
               <div className="col-md-6">
                 <div className="product-gallery">
-                  <figure className="product-main-image">
+                  <figure
+                    className="product-main-image"
+                    style={{ position: "relative" }}
+                  >
                     <img
-                      width={574}
-                      height={574}
                       id="product-zoom"
                       src={mainImage}
                       data-zoom-image={mainImage}
                       alt="product image"
+                      style={{
+                        width: "100%", // Chiếm full khung cha
+                        maxWidth: "400px", // Giới hạn kích thước tối đa
+                        height: "500px", // Chiều cao cố định
+                        objectFit: "cover", // Giữ tỷ lệ ảnh và cắt nếu dư
+                        filter:
+                          product.is_active === 0
+                            ? "blur(2px) brightness(0.7)"
+                            : "none",
+                        transition: "0.3s ease",
+                        borderRadius: "8px", // Cho ảnh bo góc nhẹ (tùy chọn)
+                        margin: "0 auto", // Canh giữa nếu cần
+                        display: "block",
+                      }}
                     />
+                    {product.is_active === 0 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          background: "rgba(176, 176, 176, 0.85)",
+                          color: "#fff",
+                          padding: "10px 24px",
+                          fontWeight: "bold",
+                          fontSize: "16px",
+                          borderRadius: "8px",
+                          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+                          zIndex: 5,
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        🚫 Sản phẩm đã ngừng kinh doanh
+                      </div>
+                    )}
                     <a
                       onClick={(e) => {
                         e.preventDefault();
@@ -228,17 +265,7 @@ const ProductDetailClient = () => {
 
               <div className="col-md-6">
                 <div className="product-details">
-                  <h1 className="product-title">
-                    {product.name}
-                    {product.is_active === 0 && (
-                      <span
-                        className="text-danger"
-                        style={{ marginLeft: "10px" }}
-                      >
-                        (Sản phẩm đã ngừng kinh doanh)
-                      </span>
-                    )}
-                  </h1>
+                  <h1 className="product-title">{product.name}</h1>
 
                   <div className="ratings-container">
                     <div className="ratings">
@@ -260,137 +287,133 @@ const ProductDetailClient = () => {
                     {formatPrice(product.sell_price)} VNĐ
                   </div>
 
-                  {selectedVariant ? (
-                    <div className="details-filter-row details-row-size">
-                      <label>Tồn kho:</label>
-                      <div className="product-nav product-nav-dots">
-                        <div>
-                          {selectedVariant
-                            ? selectedVariant.stock
-                            : product.stock}
+                  {product.is_active === 1 && (
+                    <>
+                      {selectedVariant ? (
+                        <div className="details-filter-row details-row-size">
+                          <label>Tồn kho:</label>
+                          <div className="product-nav product-nav-dots">
+                            <div>{selectedVariant.stock}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="details-filter-row details-row-size">
+                          <label>Tồn kho:</label>
+                          <div className="product-nav product-nav-dots">
+                            <div>{product.stock}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {product.atribute_value_product?.length > 0 && (
+                        <div className="details-filter-row details-row-size">
+                          <label htmlFor="Color">Màu:</label>
+                          <div className="product-nav product-nav-dots">
+                            {product.atribute_value_product
+                              .filter(
+                                (attr) =>
+                                  attr.attribute_value.attribute_id === 1
+                              )
+                              .map((item) => {
+                                const colorName = item.attribute_value.value;
+                                const colorCode = colorMap[colorName];
+                                return (
+                                  <a
+                                    key={item.attribute_value_id}
+                                    href="#"
+                                    style={{ background: colorCode }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleColorSelect(
+                                        item.attribute_value_id
+                                      );
+                                    }}
+                                  >
+                                    <span className="sr-only">{colorName}</span>
+                                  </a>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {product.atribute_value_product?.length > 0 && (
+                        <div className="details-filter-row details-row-size">
+                          <label htmlFor="size">Size:</label>
+                          <div className="select-custom">
+                            <select
+                              name="size"
+                              id="size"
+                              className="form-control"
+                              value={selectedSize}
+                              onChange={(e) => handleSizeSelect(e.target.value)}
+                            >
+                              <option value="">Chọn size</option>
+                              {product.atribute_value_product
+                                .filter(
+                                  (attr) =>
+                                    attr.attribute_value.attribute_id === 2
+                                )
+                                .map((item) => (
+                                  <option
+                                    key={item.attribute_value_id}
+                                    value={item.attribute_value_id}
+                                  >
+                                    {item.attribute_value.value}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+
+                          <a href="#" className="size-guide">
+                            <i className="icon-th-list"></i>size guide
+                          </a>
+                        </div>
+                      )}
+
+                      <div className="details-filter-row details-row-size">
+                        <label htmlFor="qty">Số lượng:</label>
+                        <div className="product-details-quantity">
+                          <input
+                            type="number"
+                            id="qty"
+                            className="form-control"
+                            value={quantity}
+                            min="1"
+                            max={
+                              selectedVariant?.stock
+                                ? selectedVariant?.stock
+                                : product.stock
+                            }
+                            step="1"
+                            required
+                            onChange={handleQuantityChange}
+                          />
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="details-filter-row details-row-size">
-                      <label>Tồn kho:</label>
 
-                      <div className="product-nav product-nav-dots">
-                        <div>{product.stock}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {product.atribute_value_product?.length > 0 && (
-                    <div className="details-filter-row details-row-size">
-                      <label htmlFor="Color">Màu:</label>
-                      <div className="product-nav product-nav-dots">
-                        {product.atribute_value_product
-                          .filter(
-                            (attr) => attr.attribute_value.attribute_id === 1
-                          )
-                          .map((item) => {
-                            const colorName = item.attribute_value.value;
-                            const colorCode = colorMap[colorName];
-                            return (
-                              <a
-                                key={item}
-                                href="#"
-                                style={{ background: colorCode }}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  handleColorSelect(item.attribute_value_id);
-                                }}
-                              >
-                                <span className="sr-only">{colorName}</span>
-                              </a>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-
-                  {product.atribute_value_product?.length > 0 && (
-                    <div className="details-filter-row details-row-size">
-                      <label htmlFor="size">Size:</label>
-                      <div className="select-custom">
-                        <select
-                          name="size"
-                          id="size"
-                          className="form-control"
-                          value={selectedSize}
-                          onChange={(e) => handleSizeSelect(e.target.value)}
-                        >
-                          <option value="">Chọn size</option>
-                          {product.atribute_value_product
-                            .filter(
-                              (attr) => attr.attribute_value.attribute_id === 2
-                            )
-                            .map((item) => {
-                              return (
-                                <option
-                                  key={item.attribute_value_id}
-                                  value={item.attribute_value_id}
-                                >
-                                  {item.attribute_value.value}
-                                </option>
-                              );
-                            })}
-                        </select>
-                      </div>
-
-                      <a href="#" className="size-guide">
-                        <i className="icon-th-list"></i>size guide
-                      </a>
-                    </div>
-                  )}
-                  <div className="details-filter-row details-row-size">
-                    <label htmlFor="qty">Số lượng:</label>
-                    <div className="product-details-quantity">
-                      <input
-                        type="number"
-                        id="qty"
-                        className="form-control"
-                        value={quantity}
-                        min="1"
-                        max={
-                          selectedVariant?.stock
-                            ? selectedVariant?.stock
-                            : product.stock
-                        }
-                        step="1"
-                        required
-                        onChange={handleQuantityChange}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="product-details-action">
-                    {stockAvailable ? (
-                      <a
-                        onClick={(e) => {
-                          if (product.is_active === 0) {
-                            e.preventDefault();
-                            message.error(
-                              "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
-                            );
-                          } else {
+                      <div className="product-details-action">
+                        <a
+                          onClick={(e) => {
+                            if (!stockAvailable) {
+                              e.preventDefault();
+                              return;
+                            }
                             handleAddToCart();
-                          }
-                        }}
-                        href="#"
-                        className={`btn-product btn-cart ${
-                          product.is_active === 0 ? "disabled" : ""
-                        }`}
-                      >
-                        <span>Thêm vào giỏ hàng</span>
-                      </a>
-                    ) : (
-                      <span className="btn-product btn-cart disabled text-muted">
-                        Hết hàng
-                      </span>
-                    )}
-                  </div>
+                          }}
+                          href="#"
+                          className={`btn-product btn-cart ${
+                            !stockAvailable ? "disabled text-muted" : ""
+                          }`}
+                          style={{
+                            pointerEvents: !stockAvailable ? "none" : "auto",
+                          }}
+                        >
+                          Thêm giỏ hàng
+                        </a>
+                      </div>
+                    </>
+                  )}
 
                   <div className="product-details-footer">
                     <div className="product-cat">

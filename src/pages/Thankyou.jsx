@@ -8,11 +8,17 @@ const Thankyoupage = () => {
   const query = new URLSearchParams(location.search); // Parse query parameters
 
   // Extract data from query parameters
-  const orderInfo = query.get("vnp_OrderInfo"); // This contains the order information
-  const orderId = orderInfo ? orderInfo.split(" ").pop() : "Không có thông tin"; // Extract order ID from the last part after splitting
-  const totalAmount = query.get("vnp_Amount"); // Amount paid
-  const paymentStatus = query.get("vnp_ResponseCode"); // Payment status
-  const paymentMethod = query.get("vnp_CardType"); // Payment method
+  const momoOrderInfo = query.get("momo_OrderInfo");
+  const momoAmount = query.get("momo_Amount");
+  const momoResponseCode = query.get("momo_ResponseCode");
+  const momoPaymentType = query.get("momo_PaymentType");
+
+  const orderInfo = query.get("vnp_OrderInfo") || momoOrderInfo;
+  const orderId = orderInfo ? orderInfo.split(" ").pop() : "Không có thông tin";
+  const totalAmount = query.get("vnp_Amount") || momoAmount;
+  const paymentStatus = query.get("vnp_ResponseCode") || momoResponseCode;
+  const paymentMethod = query.get("vnp_CardType") || momoPaymentType;
+
   const customerEmail = ""; // Logic to get customer's email if needed
   const customerName = ""; // Logic to get customer's name if needed
 
@@ -65,7 +71,7 @@ const Thankyoupage = () => {
               Tổng tiền:{" "}
               <strong>
                 {totalAmount
-                  ? (Number(totalAmount) / 100).toLocaleString("en-US", {
+                  ? Number(totalAmount).toLocaleString("vi-VN", {
                       style: "currency",
                       currency: "VND",
                     })
@@ -79,7 +85,7 @@ const Thankyoupage = () => {
             <li>
               Trạng thái thanh toán:{" "}
               <strong>
-                {paymentStatus === "00" ? "Thành công" : "Thất bại"}
+                {paymentStatus === "00" || "0" ? "Thành công" : "Thất bại"}
               </strong>
             </li>
           </ul>
@@ -90,17 +96,17 @@ const Thankyoupage = () => {
             Mọi thắc mắc về đơn hàng vui lòng liên hệ số hotline:{" "}
             <strong>09100204</strong> hoặc gửi thư vào địa chỉ{" "}
             <strong>hotro@mollashop.com</strong> để được giải đáp.
-          </span> 
+          </span>
           <hr />
-          <span className="text-confirm">Trân trọng cảm ơn và hẹn gặp lại!</span>
+          <span className="text-confirm">
+            Trân trọng cảm ơn và hẹn gặp lại!
+          </span>
         </footer>
 
         {/* Centered link button */}
         <div className="add">
           <Link to="/">
-            <Button className="button-item">
-              Quay về trang chủ
-            </Button>
+            <Button className="button-item">Quay về trang chủ</Button>
           </Link>
         </div>
       </div>

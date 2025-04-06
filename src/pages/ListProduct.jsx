@@ -103,6 +103,24 @@ const ListProduct = () => {
     return formatter.format(price);
   };
 
+  const getVariantPriceRange = (product) => {
+    const variantPrices =
+      product.variants?.map((variant) =>
+        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
+      ) || [];
+
+    if (variantPrices.length === 0) {
+      const price =
+        product.sale_price > 0 ? product.sale_price : product.sell_price;
+      return { minPrice: price, maxPrice: price };
+    }
+
+    const minPrice = Math.min(...variantPrices);
+    const maxPrice = Math.max(...variantPrices);
+
+    return { minPrice, maxPrice };
+  };
+
   // Danh sách khoảng giá
   const priceRanges = [
     {
@@ -234,13 +252,12 @@ const ListProduct = () => {
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
-
-        <div 
+        <div
           className="page-header text-center"
           style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="container">
-            <h1 style={{color: '#eea287'}}>MOLLA SHOP</h1>
+            <h1 style={{ color: "#eea287" }}>MOLLA SHOP</h1>
           </div>
         </div>
 
@@ -248,7 +265,9 @@ const ListProduct = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>     
+                <Link to="/">
+                  <span>Trang Chủ</span>
+                </Link>
               </li>
               <li className="breadcrumb-item">
                 <span>Sản Phẩm</span>
@@ -306,7 +325,15 @@ const ListProduct = () => {
                               </Link>
                             </span>
                             <div className="product-price">
-                              {formatPrice(getDisplayedPrice(product))} VNĐ
+                              {(() => {
+                                const { minPrice, maxPrice } =
+                                  getVariantPriceRange(product);
+                                return minPrice === maxPrice
+                                  ? `${formatPrice(minPrice)} VNĐ`
+                                  : `${formatPrice(minPrice)} - ${formatPrice(
+                                      maxPrice
+                                    )} VNĐ`;
+                              })()}
                             </div>
                             <div className="product-nav product-nav-thumbs">
                               {product.variants?.map((variant) => (
