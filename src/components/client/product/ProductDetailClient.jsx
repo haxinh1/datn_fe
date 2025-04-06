@@ -183,24 +183,12 @@ const ProductDetailClient = () => {
                     style={{ position: "relative" }}
                   >
                     <img
+                      width={574}
+                      height={574}
                       id="product-zoom"
                       src={mainImage}
                       data-zoom-image={mainImage}
                       alt="product image"
-                      style={{
-                        width: "100%", // Chiếm full khung cha
-                        maxWidth: "400px", // Giới hạn kích thước tối đa
-                        height: "500px", // Chiều cao cố định
-                        objectFit: "cover", // Giữ tỷ lệ ảnh và cắt nếu dư
-                        filter:
-                          product.is_active === 0
-                            ? "blur(2px) brightness(0.7)"
-                            : "none",
-                        transition: "0.3s ease",
-                        borderRadius: "8px", // Cho ảnh bo góc nhẹ (tùy chọn)
-                        margin: "0 auto", // Canh giữa nếu cần
-                        display: "block",
-                      }}
                     />
                     {product.is_active === 0 && (
                       <div
@@ -238,7 +226,11 @@ const ProductDetailClient = () => {
                   </figure>
                   <div
                     id="product-zoom-gallery"
-                    className="product-image-gallery"
+                    style={{
+                      display: "flex",
+                      overflowX: "auto",
+                      gap: "5px",
+                    }}
                   >
                     {product.galleries &&
                       product.galleries.slice(0, 4).map((item, index) => (

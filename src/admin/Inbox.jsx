@@ -1,194 +1,111 @@
-import React, { useState } from 'react';
-import { Layout, List, Avatar, Input, Button, Image, Tooltip } from 'antd';
-import { SendOutlined, SearchOutlined, PictureOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import "../css/inbox.css";
+import React, { useState, useEffect } from "react";
+import { List, Button, Input, Card, Typography, message as antdMessage } from "antd";
+import axios from "axios";
+import { closeChatSession, getChatSessions, getMessages, sendMessage } from "../services/chatBox";
 
-const { Sider, Content, Footer } = Layout;
-
-const conversations = [
-    { name: 'Nguyen Van A', avatar: 'https://i.pravatar.cc/150?img=1' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Tran Thi B', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { name: 'Le Van C', avatar: 'https://i.pravatar.cc/150?img=3' }
-];
+const { Text } = Typography;
+const { TextArea } = Input;
 
 const Inbox = () => {
+    const [chatSessions, setChatSessions] = useState([]);
+    const [selectedSession, setSelectedSession] = useState(null);
     const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
-    const [currentUser, setCurrentUser] = useState(conversations[0]); // Default to first user
-    const [images, setImages] = useState([]); // Trạng thái lưu nhiều ảnh
+    const [newMessage, setNewMessage] = useState("");
 
-    const sendMessage = () => {
-        if (!input.trim() && images.length === 0) return;
-    
-        const newMessages = [];
-        
-        // Nếu có ảnh, thêm tin nhắn ảnh trước
-        if (images.length > 0) {
-            newMessages.push({ images: images, sender: 'You' });
+    useEffect(() => {
+        fetchChatSessions();
+    }, []);
+
+    const fetchChatSessions = async () => {
+        try {
+            const response = await getChatSessions();
+            setChatSessions(response.data.chat_sessions);
+        } catch (error) {
+            antdMessage.error("Lỗi khi tải danh sách phiên chat");
         }
-        
-        // Nếu có văn bản, thêm tin nhắn văn bản sau ảnh
-        if (input.trim()) {
-            newMessages.push({ text: input, sender: 'You' });
-        }
-        
-        // Cập nhật tin nhắn
-        setMessages([...messages, ...newMessages]);
-        setInput('');
-        setImages([]); // Reset ảnh sau khi gửi
-    };       
-
-    const handleImageUpload = (e) => {
-        const files = e.target.files;
-        const newImages = Array.from(files).map((file) => {
-            const reader = new FileReader();
-            return new Promise((resolve) => {
-                reader.onloadend = () => {
-                    resolve(reader.result);
-                };
-                reader.readAsDataURL(file);
-            });
-        });
-
-        // Add images to the state after all files are processed
-        Promise.all(newImages).then((results) => {
-            setImages((prevImages) => [...prevImages, ...results]); // Thêm ảnh mới vào mảng ảnh
-        });
     };
 
-    const removeImage = (index) => {
-        setImages(images.filter((_, i) => i !== index)); // Xóa ảnh theo index
+    const fetchMessages = async (sessionId) => {
+        try {
+            const response = await getMessages(sessionId);
+            setMessages(response.data.messages);
+        } catch (error) {
+            antdMessage.error("Lỗi khi tải tin nhắn");
+        }
+    };
+
+    const handleSelectSession = (session) => {
+        setSelectedSession(session);
+        fetchMessages(session.id);
+    };
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim()) return;
+        try {
+            await sendMessage({
+                chat_session_id: selectedSession.id,
+                message: newMessage,
+            });
+            setNewMessage("");
+            fetchMessages(selectedSession.id);
+        } catch (error) {
+            antdMessage.error("Lỗi khi gửi tin nhắn");
+        }
+    };
+
+    const handleCloseSession = async () => {
+        try {
+            await closeChatSession(selectedSession.id);
+            antdMessage.success("Phiên chat đã được đóng");
+            setSelectedSession(null);
+            fetchChatSessions();
+        } catch (error) {
+            antdMessage.error("Lỗi khi đóng phiên chat");
+        }
     };
 
     return (
-        <Layout className="inbox-container">
-            <Sider width={250} className="inbox-sidebar">
-                <div className="inbox-search">
-                    <Input
-                        placeholder="Tìm kiếm"
-                        className='input-item'
-                        prefix={<SearchOutlined />}
-                    />
-                </div>
-
+        <div style={{ display: "flex", gap: 20, padding: 20 }}>
+            <Card title="Danh sách phiên chat" style={{ width: 300 }}>
                 <List
-                    dataSource={conversations}
-                    renderItem={user => (
-                        <List.Item 
-                            className="inbox-user-item" 
-                            onClick={() => setCurrentUser(user)}
-                        >
-                            <div className="user-bar">
-                                <Avatar src={user.avatar} />
-                                <span className="user-name">{user.name}</span>
-                            </div>
+                    dataSource={chatSessions}
+                    renderItem={(session) => (
+                        <List.Item onClick={() => handleSelectSession(session)} style={{ cursor: "pointer" }}>
+                            <Text strong>Phiên #{session.id}</Text>
                         </List.Item>
                     )}
                 />
-            </Sider>
-            
-            <Layout className="inbox-chat">
-                <div className="inbox-chat-header">
-                    <Avatar className="avatar" src={currentUser.avatar} />
-                    <div className="user-info">{currentUser.name}</div>
-                </div>
-                
-                <Content className="inbox-chat-box">
-                    {messages.map((msg, index) => (
-                        <div 
-                            key={index} 
-                            className={`chat-message ${msg.sender === 'You' ? 'sent' : 'received'}`}
-                        >
-                            {/* Hiển thị ảnh nếu có */}
-                            {msg.images && (
-                                <div className="image-inbox">
-                                    {msg.images.map((image, i) => (
-                                        <Image 
-                                            width={90} height={120} 
-                                            key={i} src={image} alt={`uploaded-${i}`} 
-                                            className="image-inbox-preview" 
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                            {/* Hiển thị văn bản tin nhắn dưới ảnh */}
-                            {msg.text && <div>{msg.text}</div>}
-                        </div>
-                    ))}
-                </Content>
-                
-                <Footer className="inbox-chat-input">
-                    {/* Hiển thị ảnh đã chọn trên cùng */}
-                    {images.length > 0 && (
-                        <div className="image-preview-container">
-                            {images.map((image, index) => (
-                                <div key={index} className="image-preview-item">
-                                    <img 
-                                        src={image} alt={`preview-${index}`} 
-                                        className="image-preview" 
-                                    />
-                                    <Tooltip title='Xóa ảnh'>
-                                        <CloseCircleOutlined
-                                            onClick={() => removeImage(index)}
-                                            style={{
-                                                color: 'red',
-                                                cursor: 'pointer',
-                                                position: 'absolute',
-                                                top: '5px',
-                                                right: '5px',
-                                            }}
-                                        />
-                                    </Tooltip>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            </Card>
 
-                    <div className="group1">
-                        <label htmlFor="upload-image" className='upload'>
-                            <Tooltip title='Tải ảnh lên'>
-                                <PictureOutlined style={{ fontSize: '24px' }} />
-                            </Tooltip>
-                        </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={handleImageUpload}
-                            id="upload-image"
-                            multiple // Cho phép chọn nhiều ảnh
-                        />
-
-                        <Input
-                            className="input-item"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onPressEnter={sendMessage}
-                            placeholder="Nhập tin nhắn..."
-                        />
-
-                        <Button 
-                            className="btn-import" type="primary" 
-                            icon={<SendOutlined />} onClick={sendMessage}
-                        >
-                            Gửi
-                        </Button>
+            {selectedSession && (
+                <Card title={`Chat với khách hàng #${selectedSession.id}`} style={{ flex: 1 }}>
+                    <div style={{ height: 300, overflowY: "scroll", borderBottom: "1px solid #ddd", padding: 10 }}>
+                        {messages.map((msg) => (
+                            <div key={msg.id} style={{ marginBottom: 10 }}>
+                                <Text strong>
+                                    {msg.sender_type === "customer" ? "Khách hàng" : msg.sender_type === "guest" ? "Guest" : "Nhân viên"}:
+                                </Text>
+                                <p>{msg.message}</p>
+                            </div>
+                        ))}
                     </div>
-                </Footer>
-            </Layout>
-        </Layout>
+                    <TextArea
+                        rows={3}
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Nhập tin nhắn..."
+                    />
+                    <Button type="primary" onClick={handleSendMessage} style={{ marginTop: 10 }}>
+                        Gửi
+                    </Button>
+                    <Button danger onClick={handleCloseSession} style={{ marginTop: 10, marginLeft: 10 }}>
+                        Đóng phiên chat
+                    </Button>
+                </Card>
+            )}
+        </div>
     );
 };
+
 
 export default Inbox;

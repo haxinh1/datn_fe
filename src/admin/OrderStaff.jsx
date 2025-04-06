@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -89,6 +89,7 @@ const OrderStaff = () => {
         2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
         3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
         4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+        6: [4, 8],
         // 5: [7], // Đã giao hàng -> Hoàn thành
         9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
         10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
@@ -166,10 +167,10 @@ const OrderStaff = () => {
         );
     };
 
-    const handleFilterChange = (statusId) => {
+    const handleFilterChange = (key, value) => {
         setFilters((prev) => ({
             ...prev,
-            status: statusId,  // Lưu trạng thái đã chọn vào filters
+            [key]: value,  // Cập nhật giá trị của key (status hoặc dateRange)
         }));
     };
 
@@ -510,112 +511,130 @@ const OrderStaff = () => {
                 Đơn hàng
             </h1>
 
+            <div
+                style={{
+                    overflowX: "auto",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    gap: "5px",
+                    marginBottom: "20px",
+                }}>
+                <Button
+                    type={filters.status === 1 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 1)}
+                >
+                    Chờ thanh toán ({statusCounts[1]})
+                </Button>
+                <Button
+                    type={filters.status === 2 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 2)}
+                >
+                    Đã thanh toán ({statusCounts[2]})
+                </Button>
+                <Button
+                    type={filters.status === 3 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 3)}
+                >
+                    Đang xử lý ({statusCounts[3]})
+                </Button>
+                <Button
+                    type={filters.status === 4 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 4)}
+                >
+                    Đang giao hàng ({statusCounts[4]})
+                </Button>
+                <Button
+                    type={filters.status === 5 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 5)}
+                >
+                    Đã giao hàng ({statusCounts[5]})
+                </Button>
+                <Button
+                    type={filters.status === 6 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 6)}
+                >
+                    Giao hàng thất bại ({statusCounts[6]})
+                </Button>
+                <Button
+                    type={filters.status === 7 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 7)}
+                >
+                    Hoàn thành ({statusCounts[7]})
+                </Button>
+                <Button
+                    type={filters.status === 8 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 8)}
+                >
+                    Hủy đơn ({statusCounts[8]})
+                </Button>
+                <Button
+                    type={filters.status === 9 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 9)}
+                >
+                    Trả hàng ({statusCounts[9]})
+                </Button>
+                <Button
+                    type={filters.status === 10 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 10)}
+                >
+                    Châp nhận trả hàng ({statusCounts[10]})
+                </Button>
+                <Button
+                    type={filters.status === 11 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 11)}
+                >
+                    Từ chối trả hàng ({statusCounts[11]})
+                </Button>
+                <Button
+                    type={filters.status === 12 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 12)}
+                >
+                    Xử lý hoàn tiền ({statusCounts[12]})
+                </Button>
+                <Button
+                    type={filters.status === 13 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 13)}
+                >
+                    Đã hoàn tiền ({statusCounts[13]})
+                </Button>
+                <Button
+                    type={filters.status === 14 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 14)}
+                >
+                    Đang trả hàng về shop ({statusCounts[14]})
+                </Button>
+                <Button
+                    type={filters.status === 15 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 15)}
+                >
+                    Shop đã nhận hàng ({statusCounts[15]})
+                </Button>
+            </div>
+
             <div className="group1">
-                <div
-                    style={{
-                        overflowX: "auto",
-                        whiteSpace: "nowrap",
-                        display: "flex",
-                        gap: "5px",
-                    }}>
-                    <Button
-                        type={filters.status === 1 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(1)}
-                    >
-                        Chờ thanh toán ({statusCounts[1]})
-                    </Button>
-                    <Button
-                        type={filters.status === 2 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(2)}
-                    >
-                        Đã thanh toán ({statusCounts[2]})
-                    </Button>
-                    <Button
-                        type={filters.status === 3 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(3)}
-                    >
-                        Đang xử lý ({statusCounts[3]})
-                    </Button>
-                    <Button
-                        type={filters.status === 4 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(4)}
-                    >
-                        Đang giao hàng ({statusCounts[4]})
-                    </Button>
-                    <Button
-                        type={filters.status === 5 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(5)}
-                    >
-                        Đã giao hàng ({statusCounts[5]})
-                    </Button>
-                    <Button
-                        type={filters.status === 6 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(6)}
-                    >
-                        Giao hàng thất bại ({statusCounts[6]})
-                    </Button>
-                    <Button
-                        type={filters.status === 7 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(7)}
-                    >
-                        Hoàn thành ({statusCounts[7]})
-                    </Button>
-                    <Button
-                        type={filters.status === 8 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(8)}
-                    >
-                        Hủy đơn ({statusCounts[8]})
-                    </Button>
-                    <Button
-                        type={filters.status === 9 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(9)}
-                    >
-                        Trả hàng ({statusCounts[9]})
-                    </Button>
-                    <Button
-                        type={filters.status === 10 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(10)}
-                    >
-                        Châp nhận trả hàng ({statusCounts[10]})
-                    </Button>
-                    <Button
-                        type={filters.status === 11 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(11)}
-                    >
-                        Từ chối trả hàng ({statusCounts[11]})
-                    </Button>
-                    <Button
-                        type={filters.status === 12 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(12)}
-                    >
-                        Xử lý hoàn tiền ({statusCounts[12]})
-                    </Button>
-                    <Button
-                        type={filters.status === 13 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(13)}
-                    >
-                        Đã hoàn tiền ({statusCounts[13]})
-                    </Button>
-                    <Button
-                        type={filters.status === 14 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(14)}
-                    >
-                        Đang trả hàng về shop ({statusCounts[14]})
-                    </Button>
-                    <Button
-                        type={filters.status === 15 ? "primary" : "default"}
-                        onClick={() => handleFilterChange(15)}
-                    >
-                        Shop đã nhận hàng ({statusCounts[15]})
-                    </Button>
-                </div>
+                <Button
+                    onClick={resetFilters}
+                    icon={<MenuOutlined />}
+                />
+
+                <ConfigProvider locale={viVN}>
+                    <RangePicker
+                        format="DD/MM/YYYY"
+                        placeholder={["Từ ngày", "Đến ngày"]}
+                        value={filters.dateRange}
+                        onChange={(dates) => handleFilterChange("dateRange", dates)}
+                        allowClear
+                    />
+                </ConfigProvider>
+
+                <Input.Search
+                    style={{ width: '400px' }}
+                    placeholder="Tìm kiếm đơn hàng..."
+                    allowClear
+                    enterButton={<SearchOutlined />}
+                />
 
                 <div className="group2">
-                    <Button
-                        onClick={resetFilters}
-                        icon={<MenuOutlined />}
-                    />
-
                     <Button
                         color="primary"
                         variant="solid"

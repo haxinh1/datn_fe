@@ -48,7 +48,7 @@ const Logincl = () => {
           message.success("Giỏ hàng của bạn đã được chuyển lên tài khoản!");
         }
 
-        navigate("/dashboard");
+        navigate("/");
       } else {
         notification.error({
           message: "Lỗi",

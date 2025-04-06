@@ -170,8 +170,8 @@ const History = () => {
                         key: index++,  // Đánh số thứ tự đúng
                         name: `${product.name} - ${attributes}`, // Gộp tên sản phẩm với thuộc tính
                         price: variant.price,
-                        sell_price: fullVariant.sell_price ?? "N/A", // ✅ Lấy giá bán từ API
-                        sale_price: fullVariant.sale_price ?? "N/A", // ✅ Lấy giá khuyến mại từ API
+                        sell_price: fullVariant.sell_price ?? "", // ✅ Lấy giá bán từ API
+                        sale_price: fullVariant.sale_price ?? "", // ✅ Lấy giá khuyến mại từ API
                         quantity: variant.quantity,
                         total: variant.price * variant.quantity,  // ✅ Tính tổng tiền
                     };
@@ -180,8 +180,8 @@ const History = () => {
                     key: index++,  // Đánh số thứ tự đúng
                     name: product.name, // Sản phẩm không có biến thể
                     price: product.price,
-                    sell_price: fullProduct.sell_price ?? "N/A", // ✅ Lấy giá bán từ API
-                    sale_price: fullProduct.sale_price ?? "N/A", // ✅ Lấy giá khuyến mại từ API
+                    sell_price: fullProduct.sell_price ?? "", // ✅ Lấy giá bán từ API
+                    sale_price: fullProduct.sale_price ?? "", // ✅ Lấy giá khuyến mại từ API
                     quantity: product.quantity,
                     total: product.price * product.quantity,  // ✅ Tính tổng tiền
                 }];

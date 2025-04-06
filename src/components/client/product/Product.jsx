@@ -53,21 +53,25 @@ const Product = (props) => {
           <div className="product-cat">
             <a href="#">{product.categories.name}</a>
           </div>
-          <h3 className="product-title">
-            <a href="product.html">{product.name}</a>
-          </h3>
+
+          <span className="product-title">
+            <Link to={`/product-detail/${product.id}`}>
+              <span>{product.name}</span>
+            </Link>
+          </span>
+
           <div className="product-price">
             <span className="new-price">
-              Now{" "}
+              {" "}
               {product.sale_price
                 ? formatVND(product.sale_price)
                 : product.variants.length > 0
-                ? formatVND(product.variants[0].sale_price)
-                : ""}{" "}
-              VND
+                  ? formatVND(product.variants[0].sale_price)
+                  : ""}{" "}
+              VNĐ
             </span>
 
-            <div className="product-nav product-nav-thumbs">
+            {/* <div className="product-nav product-nav-thumbs">
               {product.variants?.map((variant) => (
                 <span key={variant.id}>
                   <img
@@ -77,7 +81,7 @@ const Product = (props) => {
                   />
                 </span>
               ))}
-            </div>
+            </div> */}
           </div>
 
           {product.variants.length > 0 && (

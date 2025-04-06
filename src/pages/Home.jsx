@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Image } from "antd";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -43,8 +43,15 @@ import productThumb2 from "../assets/images/demos/demo-8/products/product-1-2-th
 import productThumb3 from "../assets/images/demos/demo-8/products/product-1-3-thumb.jpg";
 
 import ProductList from "../components/client/product/ProductList";
+import ChatBox from "../components/client/chat/ChatBox";
+import ChatIcon from "../components/client/chat/ChatIcon";
+import ChatWindow from "../components/client/chat/ChatWindow";
+import { Link } from "react-router-dom";
 
 const Home = () => {
+  const [chatVisible, setChatVisible] = useState(false);
+  const isLoggedIn = false; // Replace with your auth logic
+  const user = { name: 'Le Hien' }; // Replace with your user data
   return (
     <>
       <Swiper
@@ -602,7 +609,7 @@ const Home = () => {
 
       <div className="container recent-arrivals">
         <div className="heading heading-flex align-items-center mb-3">
-          <h2 className="title title-lg">Recent Arrivals</h2>
+          <h2 className="title title-lg">sản phẩm mới ra mắt</h2>
           <ul
             className="nav nav-pills nav-border-anim justify-content-center"
             role="tablist"
@@ -671,244 +678,15 @@ const Home = () => {
           >
             <ProductList />
           </div>
-          {/* <div className="tab-pane p-0 fade" id="recent-women-tab" role="tabpanel" aria-labelledby="recent-women-link">
-            <div className="products">
-              <div className="row justify-content-center">
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <span className="product-label label-sale">Sale</span>
-                      <a href="product.html">
-                        <img src={product51} alt="Product image" className="product-image" />
-                        <img src={product52} alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Clothing</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Tie-detail top</a></h3>
-                      <div className="product-price">
-                        <span className="new-price">Now $3.99</span>
-                        <span className="old-price">Was $6.99</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <a href="product.html">
-                        <img src="assets/images/demos/demo-8/products/product-6-1.jpg" alt="Product image" className="product-image" />
-                        <img src="assets/images/demos/demo-8/products/product-6-2.jpg" alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Shoes</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Sandals</a></h3>
-                      <div className="product-price">
-                        $12.99
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="tab-pane p-0 fade" id="recent-men-tab" role="tabpanel" aria-labelledby="recent-men-link">
-            <div className="products">
-              <div className="row justify-content-center">
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <a href="product.html">
-                        <img src={product111} alt="Product image" className="product-image" />
-                        <img src={product112} alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Shoes</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Loafers</a></h3>
-                      <div className="product-price">
-                        $9.99
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <span className="product-label label-sale">sale</span>
-                      <a href="product.html">
-                        <img src={product121} alt="Product image" className="product-image" />
-                        <img src={product122} alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Clothing</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Super Skinny High Jeggings</a></h3>
-                      <div className="product-price">
-                        <span className="new-price">Now $12.99</span>
-                        <span className="old-price">Was $17.99</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="tab-pane p-0 fade" id="recent-shoes-tab" role="tabpanel" aria-labelledby="recent-shoes-link">
-            <div className="products">
-              <div className="row justify-content-center">
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <a href="product.html">
-                        <img src={product71} alt="Product image" className="product-image" />
-                        <img src={product72} alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Bags</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Small bucket bag</a></h3>
-                      <div className="product-price">
-                        $14.99
-                      </div>
-
-                      <div className="product-nav product-nav-thumbs">
-                        <a href="#" className="active">
-                          <img src={productThumb7} alt="product desc" />
-                        </a>
-                        <a href="#">
-                          <img src={productThumb72} alt="product desc" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <a href="product.html">
-                        <img src="assets/images/demos/demo-8/products/product-8-1.jpg" alt="Product image" className="product-image" />
-                        <img src="assets/images/demos/demo-8/products/product-8-2.jpg" alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Clothing</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">Denim jacket</a></h3>
-                      <div className="product-price">
-                        $34.99
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-6 col-md-4 col-lg-3">
-                  <div className="product product-2 text-center">
-                    <figure className="product-media">
-                      <a href="product.html">
-                        <img src={product91} alt="Product image" className="product-image" />
-                        <img src={product92} alt="Product image" className="product-image-hover" />
-                      </a>
-
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                      </div>
-
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                      </div>
-                    </figure>
-
-                    <div className="product-body">
-                      <div className="product-cat">
-                        <a href="#">Clothing</a>
-                      </div>
-                      <h3 className="product-title"><a href="product.html">BShort wrap dress</a></h3>
-                      <div className="product-price">
-                        $17.99
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> */}
         </div>
 
         <div className="more-container text-center mt-3 mb-3">
-          <a href="category.html" className="btn btn-outline-dark-3 btn-more">
-            <span>View More</span>
-            <i className="icon-long-arrow-right"></i>
-          </a>
+          <Link to='/list-prcl'>
+            <button className="btn btn-outline-dark-3 btn-more">
+              <span>Xem Thêm</span>
+              <i className="icon-long-arrow-right"></i>
+            </button>
+          </Link>
         </div>
       </div>
 
@@ -960,6 +738,14 @@ const Home = () => {
           <p className="title-desc">Wanna share your style with us?</p>
         </div>
       </div>
+
+      <ChatIcon onClick={() => setChatVisible(true)} />
+      <ChatWindow
+        visible={chatVisible}
+        onClose={() => setChatVisible(false)}
+        isLoggedIn={isLoggedIn}
+        user={user}
+      />
     </>
   );
 };

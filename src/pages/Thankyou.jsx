@@ -109,7 +109,13 @@ const Thankyoupage = () => {
         {/* Centered link button */}
         <div className="add">
           <Link to="/">
-            <Button className="button-item">Quay về trang chủ</Button>
+            <Button
+              style={{ backgroundColor: "#eea287", color: "white" }}
+              type="primary"
+              htmlType="submit"
+            >
+              Quay về trang chủ
+            </Button>
           </Link>
         </div>
       </div>
