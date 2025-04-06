@@ -10,10 +10,12 @@ const DetailCate = () => {
     const [keyword, setKeyword] = useState("");
     const [isFiltered, setIsFiltered] = useState(false);
     const [filteredProducts, setFilteredProducts] = useState(products);
+    const [category, setCategory] = useState(null);
 
     useEffect(() => {
         const getProducts = async () => {
             const data = await productsServices.productByCategory(id);
+            setCategory(data.category);
 
             // Lọc sản phẩm có is_active = 1
             const activeProducts = data.data.filter(
@@ -71,7 +73,7 @@ const DetailCate = () => {
                     style={{ backgroundImage: `url(${bg})` }}
                 >
                     <div className="container">
-                        <h1 style={{ color: '#eea287' }}>MOLLA SHOP</h1>
+                        <h1 style={{ color: '#eea287' }}>{category?.name}</h1>
                     </div>
                 </div>
 
@@ -85,7 +87,7 @@ const DetailCate = () => {
                                 <Link to='/cate'><span>Danh Mục</span></Link>
                             </li>
                             <li className="breadcrumb-item">
-                                <span>Danh Mục</span>
+                                <span>{category?.name}</span>
                             </li>
                         </ol>
                     </div>
