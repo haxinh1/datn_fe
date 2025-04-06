@@ -401,7 +401,7 @@ const ProductDetailClient = () => {
                             pointerEvents: !stockAvailable ? "none" : "auto",
                           }}
                         >
-                          Thêm giỏ hàng
+                          <span>giỏ hàng</span>
                         </a>
                       </div>
                     </>

@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -45,13 +45,18 @@ const Order = () => {
     status: null,
     paymentMethod: null,
   });
+  const [searchInput, setSearchInput] = useState(""); // nhập từ ô input
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   // danh sách đơn hàng
   const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
-    queryKey: ["orders"],
+    queryKey: ["orders", searchKeyword],
     queryFn: async () => {
+      if (searchKeyword.trim()) {
+        return await OrderService.searchOrders(searchKeyword); // ✅ gọi service đã sửa
+      }
       const response = await OrderService.getAllOrder();
-      return response.orders || { data: [] };
+      return response.orders || [];
     },
   });
 
@@ -178,8 +183,35 @@ const Order = () => {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: value ?? null, // Đảm bảo khi xóa sẽ đặt lại thành null
+      [key]: value,  // Cập nhật giá trị của key (status hoặc dateRange)
     }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      dateRange: null,
+      status: null,
+      paymentMethod: null,
+    });
+  };
+
+  // Tính số lượng đơn hàng cho mỗi trạng thái
+  const statusCounts = {
+    1: ordersData?.filter(order => order.status?.id === 1).length || 0,
+    2: ordersData?.filter(order => order.status?.id === 2).length || 0,
+    3: ordersData?.filter(order => order.status?.id === 3).length || 0,
+    4: ordersData?.filter(order => order.status?.id === 4).length || 0,
+    5: ordersData?.filter(order => order.status?.id === 5).length || 0,
+    6: ordersData?.filter(order => order.status?.id === 6).length || 0,
+    7: ordersData?.filter(order => order.status?.id === 7).length || 0,
+    8: ordersData?.filter(order => order.status?.id === 8).length || 0,
+    9: ordersData?.filter(order => order.status?.id === 9).length || 0,
+    10: ordersData?.filter(order => order.status?.id === 10).length || 0,
+    11: ordersData?.filter(order => order.status?.id === 11).length || 0,
+    12: ordersData?.filter(order => order.status?.id === 12).length || 0,
+    13: ordersData?.filter(order => order.status?.id === 13).length || 0,
+    14: ordersData?.filter(order => order.status?.id === 14).length || 0,
+    15: ordersData?.filter(order => order.status?.id === 15).length || 0,
   };
 
   const filteredOrders = (ordersData || []).filter((order) => {
@@ -595,7 +627,112 @@ const Order = () => {
         Đơn hàng
       </h1>
 
+      <div
+        style={{
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+          display: "flex",
+          gap: "5px",
+          marginBottom: "20px",
+        }}>
+        <Button
+          type={filters.status === 1 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 1)}
+        >
+          Chờ thanh toán ({statusCounts[1]})
+        </Button>
+        <Button
+          type={filters.status === 2 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 2)}
+        >
+          Đã thanh toán ({statusCounts[2]})
+        </Button>
+        <Button
+          type={filters.status === 3 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 3)}
+        >
+          Đang xử lý ({statusCounts[3]})
+        </Button>
+        <Button
+          type={filters.status === 4 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 4)}
+        >
+          Đang giao hàng ({statusCounts[4]})
+        </Button>
+        <Button
+          type={filters.status === 5 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 5)}
+        >
+          Đã giao hàng ({statusCounts[5]})
+        </Button>
+        <Button
+          type={filters.status === 6 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 6)}
+        >
+          Giao hàng thất bại ({statusCounts[6]})
+        </Button>
+        <Button
+          type={filters.status === 7 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 7)}
+        >
+          Hoàn thành ({statusCounts[7]})
+        </Button>
+        <Button
+          type={filters.status === 8 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 8)}
+        >
+          Hủy đơn ({statusCounts[8]})
+        </Button>
+        <Button
+          type={filters.status === 9 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 9)}
+        >
+          Trả hàng ({statusCounts[9]})
+        </Button>
+        <Button
+          type={filters.status === 10 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 10)}
+        >
+          Châp nhận trả hàng ({statusCounts[10]})
+        </Button>
+        <Button
+          type={filters.status === 11 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 11)}
+        >
+          Từ chối trả hàng ({statusCounts[11]})
+        </Button>
+        <Button
+          type={filters.status === 12 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 12)}
+        >
+          Xử lý hoàn tiền ({statusCounts[12]})
+        </Button>
+        <Button
+          type={filters.status === 13 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 13)}
+        >
+          Đã hoàn tiền ({statusCounts[13]})
+        </Button>
+        <Button
+          type={filters.status === 14 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 14)}
+        >
+          Đang trả hàng về shop ({statusCounts[14]})
+        </Button>
+        <Button
+          type={filters.status === 15 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 15)}
+        >
+          Shop đã nhận hàng ({statusCounts[15]})
+        </Button>
+      </div>
+
       <div className="group1">
+        <Button
+          onClick={resetFilters}
+          icon={<MenuOutlined />}
+        />
+
         <ConfigProvider locale={viVN}>
           <RangePicker
             format="DD/MM/YYYY"
@@ -606,7 +743,7 @@ const Order = () => {
           />
         </ConfigProvider>
 
-        <Select
+        {/* <Select
           placeholder="Trạng thái"
           className="select-item"
           value={filters.status}
@@ -618,14 +755,13 @@ const Order = () => {
               {item.name}
             </Select.Option>
           ))}
-        </Select>
+        </Select> */}
 
         <Select
           placeholder="Phương thức thanh toán"
           className="select-item"
           value={filters.paymentMethod}
           onChange={(value) => handleFilterChange("paymentMethod", value)}
-          allowClear
         >
           {payments?.map((method) => (
             <Select.Option key={method.id} value={method.id}>
@@ -639,6 +775,16 @@ const Order = () => {
           placeholder="Tìm kiếm đơn hàng..."
           allowClear
           enterButton={<SearchOutlined />}
+          value={searchInput}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchInput(value);
+
+            if (!value) {
+              setSearchKeyword("");
+            }
+          }}
+          onSearch={() => setSearchKeyword(searchInput)}
         />
 
         <div className="group2">
