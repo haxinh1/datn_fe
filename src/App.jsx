@@ -54,6 +54,7 @@ import DashboardAd from "./admin/DashboardAd";
 import GoogleCallbackHandler from "./pages/GoogleCallbackHandler";
 import OrderStaff from "./admin/OrderStaff";
 import Cate from "./pages/Cate";
+import DetailCate from "./pages/DetailCate";
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
           <Route path="checkout" element={<Checkout />} />
           <Route path="logincl" element={<LoginCl />} />
           <Route path="cate" element={<Cate />} />
+          <Route path="detailcate/:id" element={<DetailCate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
           <Route path="product-review/:id" element={<ProductReview />} />

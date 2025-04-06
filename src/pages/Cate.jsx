@@ -86,8 +86,13 @@ const Cate = () => {
                                                     </a>
                                                     <div className="banner-link">
                                                         <h3 className="banner-title">{child.name}</h3>
-                                                        <h4 className="banner-subtitle">Sản phẩm</h4>
-                                                        <span className="banner-link-text">Xem Ngay</span>
+                                                        <Link
+                                                            to={`/detailcate/${child.id}`}
+                                                            className="banner-link-text"
+                                                        >
+                                                            <span className="banner-link-text">Xem Ngay</span>
+                                                        </Link>
+                                                        
                                                     </div>
                                                 </div>
                                             </div>
