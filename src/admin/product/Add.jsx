@@ -92,7 +92,7 @@ const Add = () => {
             category_id: values.category,
             brand_id: values.brand_id,
             name_link: values.name_link,
-            is_active: values.is_active ? 1 : 0,
+            is_active: 0,
             sale_price_start_at: productData.sale_price_start_at,
             sale_price_end_at: productData.sale_price_end_at,
         };
@@ -773,14 +773,6 @@ const Add = () => {
                                     ],
                                 }}
                             />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Trạng thái kinh doanh"
-                            name="is_active"
-                            initialValue={true}
-                        >
-                            <Switch />
                         </Form.Item>
                     </Col>
                 </Row>
