@@ -436,7 +436,13 @@ const Checkout = () => {
         discount_amount: discountAmount, // Gửi số tiền giảm giá
         total_amount: finalTotal,
         payment_method:
-          selectedPayment === 2 ? "cod" : selectedPayment === 1 ? "vnpay" : "",
+          selectedPayment === 2
+            ? "cod"
+            : selectedPayment === 1
+            ? "vnpay"
+            : selectedPayment === 3
+            ? "momo"
+            : null,
         products: cartItems.map((item) => ({
           product_id: item.product_id,
           product_variant_id: item.product_variant_id,
@@ -520,9 +526,9 @@ const Checkout = () => {
           console.log("Dữ liệu địa chỉ:", data); // ✅ Log ra console
           // Tự động chọn địa chỉ mặc định nếu có
           const defaultAddress = data.find((address) => address.id_default);
-          if (defaultAddress) {
-            setSelectedAddress(defaultAddress.id); // Đặt giá trị selectedAddress bằng id của địa chỉ mặc định
-          }
+          // if (defaultAddress) {
+          //   setSelectedAddress(defaultAddress.id); // Đặt giá trị selectedAddress bằng id của địa chỉ mặc định
+          // }
         } catch (error) {
           console.error("Lỗi khi lấy địa chỉ:", error);
         } finally {
@@ -934,7 +940,10 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{ backgroundColor: '#eea287', color: 'white' }}
+                                style={{
+                                  backgroundColor: "#eea287",
+                                  color: "white",
+                                }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1071,7 +1080,14 @@ const Checkout = () => {
                         </Form.Item>
 
                         <div className="add">
-                          <Button style={{ backgroundColor: '#eea287', color: 'white' }} type="primary" htmlType="submit">
+                          <Button
+                            style={{
+                              backgroundColor: "#eea287",
+                              color: "white",
+                            }}
+                            type="primary"
+                            htmlType="submit"
+                          >
                             Lưu
                           </Button>
                         </div>
@@ -1352,16 +1368,19 @@ const Checkout = () => {
                         }}
                         onClick={async () => {
                           if (!userId) {
-                            // Người dùng chưa đăng nhập => tạo đơn hàng thanh toán VNPay
+                            // 🟡 Trường hợp KHÁCH VÃNG LAI: kiểm tra địa chỉ đầy đủ
                             try {
                               if (
                                 !userData.fullname ||
                                 !userData.phone_number ||
                                 !userData.email ||
-                                !userData.address
+                                !userData.address ||
+                                !selectedProvince ||
+                                !selectedDistrict ||
+                                !selectedWard
                               ) {
                                 return message.error(
-                                  "Vui lòng điền đầy đủ thông tin trước khi thanh toán."
+                                  "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
                                 );
                               }
 
@@ -1384,7 +1403,7 @@ const Checkout = () => {
                                 }`
                                   .replace(/^, | ,| , $/g, "")
                                   .trim(),
-                                total_amount: subtotal,
+                                total_amount: finalTotal,
                                 payment_method: "vnpay",
                                 products: cartItems.map((item) => ({
                                   product_id: item.product_id,
@@ -1397,30 +1416,7 @@ const Checkout = () => {
                                 })),
                               };
 
-                              const orderResponse =
-                                await OrderService.placeOrder(orderData);
-
-                              if (orderResponse?.payment_url) {
-                                window.location.href =
-                                  orderResponse.payment_url;
-                                return;
-                              }
-
-                              if (
-                                orderResponse?.message ===
-                                "Đặt hàng thành công!"
-                              ) {
-                                message.success(
-                                  "🎉 Đơn hàng đã đặt thành công!"
-                                );
-                                nav("/");
-                                setCartItems([]);
-                                localStorage.removeItem("cartAttributes");
-                              } else {
-                                message.error(
-                                  orderResponse?.message || "Lỗi không xác định"
-                                );
-                              }
+                              setIsPaymentModalOpen(true);
                             } catch (error) {
                               console.error(
                                 "Lỗi khi đặt hàng với khách vãng lai:",
@@ -1429,7 +1425,14 @@ const Checkout = () => {
                               message.error("Có lỗi xảy ra khi thanh toán.");
                             }
                           } else {
-                            // Đã đăng nhập => mở modal để chọn phương thức thanh toán
+                            // 🔴 Người dùng đã đăng nhập: yêu cầu chọn địa chỉ
+                            if (!selectedAddress) {
+                              return message.error(
+                                "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
+                              );
+                            }
+
+                            // ✅ Nếu đã chọn địa chỉ => hiển thị modal chọn phương thức thanh toán
                             setIsPaymentModalOpen(true);
                           }
                         }}
@@ -1452,11 +1455,18 @@ const Checkout = () => {
           <div className="d-block my-3">
             {payMents.length > 0 ? (
               payMents.map((method) => {
+                // Kiểm tra nếu người dùng vãng lai thì ẩn phương thức "COD"
+                if (!userId && method.name.toLowerCase() === "cod") {
+                  return null; // Ẩn COD khi người dùng là vãng lai
+                }
+
                 const displayName =
                   method.name.toLowerCase() === "cod"
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
                     ? "Thanh toán trực tuyến"
+                    : method.name.toLowerCase() === "momo"
+                    ? "Thanh toán qua Momo"
                     : method.name;
 
                 return (
@@ -1470,7 +1480,6 @@ const Checkout = () => {
                       checked={selectedPayment === method.id}
                       onChange={() => setSelectedPayment(method.id)}
                       required
-                      disabled={!userId && method.name.toLowerCase() === "cod"}
                     />
                     <label
                       className="custom-control-label"

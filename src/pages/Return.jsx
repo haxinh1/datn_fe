@@ -1,8 +1,9 @@
-import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image } from 'antd';
+import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
 import { RollbackOutlined, UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
 const Return = () => {
     const { id } = useParams();
@@ -16,6 +17,8 @@ const Return = () => {
     const [form] = Form.useForm();
     const [quantities, setQuantities] = useState({});
     const navigate = useNavigate()
+    const [banks, setBanks] = useState([]);
+    const [image, setImage] = useState("");
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -35,6 +38,18 @@ const Return = () => {
 
         fetchOrderDetails();
     }, [id]);
+
+    useEffect(() => {
+        const fetchBanks = async () => {
+            try {
+                const res = await axios.get("https://api.vietqr.io/v2/banks");
+                setBanks(res.data.data);
+            } catch (err) {
+                console.error("Lỗi khi tải danh sách ngân hàng:", err);
+            }
+        };
+        fetchBanks();
+    }, []);
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -76,16 +91,27 @@ const Return = () => {
         }
     };
 
+    const onHandleBank = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ bank_qr: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+        } else if (info.file.status === "removed") {
+            setImage(""); // Xóa ảnh khi người dùng xóa
+            form.setFieldsValue({ bank_qr: "" }); // Cập nhật lại giá trị trong form
+        }
+    };
+
     const handleSubmit = async () => {
         if (!selectedRowKeys.length) {
             return notification.error({ message: "Vui lòng chọn ít nhất 1 sản phẩm để trả" });
         }
-
+    
         const reasonToSend = selectedReturnReason === "other" ? returnReason : selectedReturnReason;
-
+    
         const user = JSON.parse(localStorage.getItem("user"));
         const user_id = user?.id || user?.user_id;
-
+    
         const products = selectedRowKeys.map((product_id) => {
             const selectedItem = orderDetails.find(item => item.product_id === product_id);
             return {
@@ -94,25 +120,31 @@ const Return = () => {
                 quantity: Number(quantities[product_id]) || 1,
             };
         });
-
+    
+        // Sử dụng form.getFieldValue để lấy giá trị các trường nhập liệu
+        const bank_account_number = form.getFieldValue('bank_account_number'); 
+        const bank_name = form.getFieldValue('bank_name'); 
+    
         const payload = {
             user_id,
             reason: reasonToSend,
-            employee_evidence: video,
+            employee_evidence: video, // Video vẫn là string URL
+            bank_account_number: bank_account_number || null, // Lấy giá trị từ form
+            bank_name: bank_name || null, // Lấy giá trị từ form
+            bank_qr: image || null, // Đảm bảo đây là URL của ảnh QR
             products,
         };
-
-        console.log("📦 Payload gửi đi:");
-        console.log(JSON.stringify(payload, null, 2));
-
+    
+        console.log("📦 Payload gửi đi:", payload); // Log để kiểm tra lại
+    
         try {
             await OrderService.returnOrder(id, payload);
-
+    
             notification.success({
                 message: "Thành công",
                 description: "Gửi yêu cầu trả hàng thành công.",
             });
-            
+    
             // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
@@ -128,7 +160,7 @@ const Return = () => {
                 description: "Gửi yêu cầu trả hàng thất bại.",
             });
         }
-    };
+    };         
 
     const detailColumns = [
         {
@@ -313,7 +345,7 @@ const Return = () => {
 
                 <Row gutter={24}>
                     <Col span={4}></Col>
-                    <Col span={16}>
+                    <Col span={12}>
                         {isCustomReason && (
                             <Form.Item label="Nhập lý do trả hàng">
                                 <Input.TextArea
@@ -323,6 +355,70 @@ const Return = () => {
                                 />
                             </Form.Item>
                         )}
+                    </Col>
+                </Row>
+
+                <hr />
+                <h1 className="mb-5" style={{ color: '#eea287' }}>
+                    Thông tin hoàn tiền
+                </h1>
+                <Row gutter={24}>
+                    <Col span={12} className="col-item">
+                        <Form.Item
+                            label="Ngân hàng"
+                            name="bank_name"
+                            rules={[{ required: true, message: "Vui lòng chọn ngân hàng" }]}
+                        >
+                            <Select
+                                className="input-item"
+                                allowClear
+                                showSearch
+                                placeholder="Chọn ngân hàng"
+                                optionFilterProp="label"
+                                filterOption={(input, option) =>
+                                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                {banks.map((bank) => (
+                                    <Select.Option key={bank.code} value={bank.name} label={bank.name}>
+                                        <div className="select-option-item">
+                                            <img src={bank.logo} alt={bank.name} style={{ width: '100px' }} />
+                                            <span>{bank.name}</span>
+                                        </div>
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={6} className="col-item">
+                        <Form.Item
+                            label="Số tài khoản"
+                            name="bank_account_number"
+                            rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                        >
+                            <Input className="input-item" placeholder="Nhập số tài khoản" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={6} className="col-item">
+                        <Form.Item
+                            label="QR ngân hàng (nếu có)"
+                            name="bank_qr"
+                        >
+                            <Upload
+                                listType="picture"
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{ upload_preset: "quangOsuy" }}
+                                onChange={onHandleBank}
+                            >
+                                {!image && (
+                                    <Button icon={<UploadOutlined />} className="btn-item">
+                                        Tải ảnh lên
+                                    </Button>
+                                )}
+                            </Upload>
+                        </Form.Item>
                     </Col>
                 </Row>
 

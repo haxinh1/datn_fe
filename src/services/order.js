@@ -131,7 +131,7 @@ const updateOrders = async (payload) => {
 
 // yêu cầu trả hàng
 const returnOrder = async (id, payload) => {
-  const respone = await instance.post(`orders/${id}/return`, payload);
+  const respone = await instance.post(`order-returns/${id}/return`, payload);
   return respone.data;
 };
 

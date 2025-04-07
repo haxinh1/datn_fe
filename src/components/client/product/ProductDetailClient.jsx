@@ -254,7 +254,7 @@ const ProductDetailClient = () => {
                       href="#product-review-link"
                       id="review-link"
                     >
-                      ( 2 Reviews )
+                      <span className="text-confirm">({product.views} lượt xem)</span>
                     </a>
                   </div>
 

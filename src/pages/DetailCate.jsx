@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import bg from "../assets/images/backgrounds/bg-1.jpg";
 import { productsServices } from '../services/product';
+import { Pagination } from 'antd';
 
 const DetailCate = () => {
     const { id } = useParams();
@@ -11,6 +12,8 @@ const DetailCate = () => {
     const [isFiltered, setIsFiltered] = useState(false);
     const [filteredProducts, setFilteredProducts] = useState(products);
     const [category, setCategory] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(12);
 
     useEffect(() => {
         const getProducts = async () => {
@@ -23,6 +26,7 @@ const DetailCate = () => {
             );
 
             setProducts(activeProducts);
+            setFilteredProducts(activeProducts.slice(0, pageSize));
         };
         getProducts();
     }, [id]);
@@ -62,6 +66,31 @@ const DetailCate = () => {
             maximumFractionDigits: 0,
         });
         return formatter.format(price);
+    };
+
+    const getVariantPriceRange = (product) => {
+        const variantPrices =
+            product.variants?.map((variant) =>
+                variant.sale_price > 0 ? variant.sale_price : variant.sell_price
+            ) || [];
+
+        if (variantPrices.length === 0) {
+            const price =
+                product.sale_price > 0 ? product.sale_price : product.sell_price;
+            return { minPrice: price, maxPrice: price };
+        }
+
+        const minPrice = Math.min(...variantPrices);
+        const maxPrice = Math.max(...variantPrices);
+
+        return { minPrice, maxPrice };
+    };
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = page * pageSize;
+        setFilteredProducts(products.slice(startIndex, endIndex)); // Lấy các sản phẩm tương ứng với trang
     };
 
     return (
@@ -134,6 +163,14 @@ const DetailCate = () => {
                                                             }}
                                                         />
                                                     </Link>
+
+                                                    <div className="product-action">
+                                                        <a className="btn-product">
+                                                            <Link to={`/product-detail/${product.id}`}>
+                                                                <span>xem chi tiết</span>
+                                                            </Link>
+                                                        </a>
+                                                    </div>
                                                 </figure>
 
                                                 <div className="product-body">
@@ -143,6 +180,19 @@ const DetailCate = () => {
                                                         </Link>
                                                     </span>
 
+                                                    <div className="product-price" style={{ marginTop: "20px" }}>
+                                                        <strong>
+                                                            {(() => {
+                                                                const { minPrice, maxPrice } =
+                                                                    getVariantPriceRange(product);
+                                                                return minPrice === maxPrice
+                                                                    ? `${formatPrice(minPrice)} VNĐ`
+                                                                    : `${formatPrice(minPrice)} - ${formatPrice(
+                                                                        maxPrice
+                                                                    )} VNĐ`;
+                                                            })()}
+                                                        </strong>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -150,14 +200,14 @@ const DetailCate = () => {
                                 </div>
                             </div>
 
-                            {/* <div className="avatar">
+                            <div className="avatar">
                                 <Pagination
                                     current={currentPage}
                                     pageSize={pageSize}
                                     total={products.length}
                                     onChange={handlePageChange}
                                 />
-                            </div> */}
+                            </div>
                         </div>
                     </div>
                 </div>
