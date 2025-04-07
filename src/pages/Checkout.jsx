@@ -293,20 +293,8 @@ const Checkout = () => {
         message: "Địa chỉ mới đã được thêm",
       });
 
-      // Cập nhật danh sách địa chỉ trong state, chỉ lấy các thuộc tính cần thiết
-      setAddresses((prevAddresses) => {
-        const newAddress = {
-          // Chỉ lưu lại các thông tin cần thiết để hiển thị, không lấy 'id' hay trạng thái quản lý
-          detail_address: userData.detail_address, // Địa chỉ chi tiết
-          address: userData.address, // Địa chỉ đã xâu chuỗi
-        };
-
-        // Thêm địa chỉ mới vào danh sách
-        return [newAddress, ...prevAddresses];
-      });
-
-      // Tự động chọn địa chỉ mới, vẫn giữ lại id để quản lý
-      setSelectedAddress(data.id); // Đảm bảo vẫn sử dụng id để quản lý
+      // Cập nhật danh sách địa chỉ từ API sau khi thêm
+      fetchAddresses(); // Gọi lại hàm fetchAddresses để tải lại dữ liệu địa chỉ mới
 
       form.resetFields(); // Reset form fields sau khi thành công
       setIsModalVisible(false); // Đóng modal sau khi thêm thành công
@@ -318,6 +306,25 @@ const Checkout = () => {
       });
     },
   });
+
+  const fetchAddresses = async () => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const userId = storedUser?.id; // Lấy id từ localStorage
+
+    if (userId) {
+      try {
+        const data = await AuthServices.getAddressByIdUser(userId); // Lấy địa chỉ người dùng
+        setAddresses(data);
+        console.log("Dữ liệu địa chỉ:", data); // ✅ Log ra console
+        // Tự động chọn địa chỉ mặc định nếu có
+        const defaultAddress = data.find((address) => address.id_default);
+      } catch (error) {
+        console.error("Lỗi khi lấy địa chỉ:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const handleAdd = (values) => {
     // Xây dựng chuỗi địa chỉ từ các giá trị người dùng nhập
