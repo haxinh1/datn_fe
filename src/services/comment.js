@@ -34,9 +34,19 @@ const bulkAction = async ({ comment_ids, action }) => {
         throw error;
     }
 };
+const fetchCommentByProductId = async (productId) => {
+    try {
+        const {data} = await instance.get(`/comments/product/${productId}`);
+        return data;
+        
+    } catch (error) {
+        console.log(error);
+    }
+}
 export const CommentServices = {
     fetchComments,
     createComment,
     updateComment,
-    bulkAction
+    bulkAction,
+    fetchCommentByProductId
 }
