@@ -64,6 +64,15 @@ const exportExcel = async (orderIds = []) => {
     return response.data;
 }
 
+const fetchProductRecommendById = async (id) => {
+    try {
+        const { data } = await instance.get(`/product-recommend/${id}`);
+        return data;
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 // Xuất các hàm để dùng trong các component
 export const productsServices = {
     fetchProducts,
@@ -74,5 +83,7 @@ export const productsServices = {
     importProduct,
     history,
     confirm,
-    exportExcel
+    exportExcel,
+    fetchProductRecommendById,
+    
 };
