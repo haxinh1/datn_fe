@@ -12,6 +12,7 @@ import "swiper/css/navigation";
 
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 import formatVND from './../../../utils/formatPrice';
+import ProductTabs from "./ProductTabs";
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
@@ -88,6 +89,8 @@ const ProductDetailClient = () => {
     });
     setQuantity(1);
     setSelectedVariant(variant || null);
+    console.log("variant", variant);
+
   };
 
   const handleQuantityChange = (e) => {
@@ -291,14 +294,23 @@ const ProductDetailClient = () => {
                       ( 2 Reviews )
                     </a>
                   </div>
+                  {selectedVariant ? (
+                    <div className="product-price">
 
-                  <div className="product-price">
-                    {minPrice === maxPrice ? (
-                      `${formatPrice(minPrice)} VNĐ`
-                    ) : (
-                      `${formatPrice(minPrice)} - ${formatPrice(maxPrice)} VNĐ`
-                    )}
-                  </div>
+                     {formatPrice(selectedVariant.sell_price)} VNĐ
+
+                    </div>
+                  ) : (
+                    <div className="product-price">
+                      {minPrice === maxPrice ? (
+                        `${formatPrice(minPrice)} VNĐ`
+                      ) : (
+                        `${formatPrice(minPrice)} - ${formatPrice(maxPrice)} VNĐ`
+                      )}
+                    </div>
+                  )}
+
+
 
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
@@ -409,7 +421,7 @@ const ProductDetailClient = () => {
                     <button
                       onClick={(e) => {
                         if (product.is_active === 0) {
-                          e.preventDefault(); 
+                          e.preventDefault();
                           message.error(
                             "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
                           );
@@ -480,8 +492,8 @@ const ProductDetailClient = () => {
       </div>
 
       <div className="product-details-tab product-details-extended">
-        <div className="container">
-          <ul className="nav nav-pills justify-content-center" role="tablist">
+        {/* <div className="container"> */}
+        {/* <ul className="nav nav-pills justify-content-center" role="tablist">
             <li className="nav-item">
               <a
                 className="nav-link active"
@@ -534,8 +546,9 @@ const ProductDetailClient = () => {
                 Reviews (2)
               </a>
             </li>
-          </ul>
-        </div>
+          </ul> */}
+        <ProductTabs productId={product.id} />
+        {/* </div> */}
 
         <div className="tab-content">
           <div
