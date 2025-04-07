@@ -700,6 +700,17 @@ const Checkout = () => {
   const finalTotal =
     subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
 
+  const handleRemoveCoupon = () => {
+    // Đặt lại mã giảm giá và số tiền giảm giá về giá trị mặc định
+    setSelectedCoupon(null);
+    setDiscountAmount(0); // Đặt lại số tiền giảm giá về 0
+
+    // Hiển thị thông báo thành công
+    message.success("Mã giảm giá đã được hủy!");
+
+    // Cập nhật lại tổng tiền sau khi hủy mã giảm giá
+    setIsCouponModalVisible(false); // Đóng modal nếu mở
+  };
   return (
     <div>
       <main className="main">
@@ -1272,17 +1283,47 @@ const Checkout = () => {
                                     padding: "10px",
                                   }}
                                 >
-                                  <span
-                                    style={{
-                                      cursor: "pointer",
-                                      color: "#e48948",
-                                    }}
-                                    onClick={() =>
-                                      setIsCouponModalVisible(true)
-                                    } // Mở modal khi nhấn vào
-                                  >
-                                    Chọn mã giảm giá
-                                  </span>
+                                  {/* Hiển thị mã giảm giá nếu đã áp dụng */}
+                                  {selectedCoupon ? (
+                                    <span
+                                      style={{
+                                        cursor: "pointer",
+                                        color: "#e48948",
+                                      }}
+                                      onClick={() =>
+                                        setIsCouponModalVisible(true)
+                                      } // Mở modal khi nhấn vào
+                                    >
+                                      {selectedCoupon.code}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      style={{
+                                        cursor: "pointer",
+                                        color: "#e48948",
+                                      }}
+                                      onClick={() =>
+                                        setIsCouponModalVisible(true)
+                                      } // Mở modal khi nhấn vào
+                                    >
+                                      Chọn mã giảm giá
+                                    </span>
+                                  )}
+                                  {selectedCoupon && (
+                                    <button
+                                      style={{
+                                        marginLeft: "10px",
+                                        backgroundColor: "transparent",
+                                        color: "gray",
+                                        border: "none",
+                                        fontSize: "16px",
+                                        cursor: "pointer",
+                                      }}
+                                      onClick={handleRemoveCoupon} // Gọi hàm để hủy mã giảm giá
+                                    >
+                                      <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
 
@@ -1292,7 +1333,7 @@ const Checkout = () => {
                                 visible={isCouponModalVisible}
                                 onCancel={() => setIsCouponModalVisible(false)} // Đóng modal khi bấm cancel
                                 footer={null}
-                                width={300} // Điều chỉnh modal nhỏ hơn
+                                width={400} // Điều chỉnh modal nhỏ hơn
                                 centered
                               >
                                 <div className="coupon-list">
@@ -1319,7 +1360,7 @@ const Checkout = () => {
                                           setSelectedCoupon(coupon)
                                         } // Set the selected coupon
                                       >
-                                        {coupon.title} -{" "}
+                                        {coupon.code} -{" "}
                                         {coupon.discount_type === "percent"
                                           ? `${coupon.discount_value}%`
                                           : `${coupon.discount_value} VND`}
