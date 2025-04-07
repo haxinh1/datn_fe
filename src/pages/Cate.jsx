@@ -64,11 +64,23 @@ const Cate = () => {
                 <div className="page-content">
                     <div className="categories-page">
                         <div className="container">
-                            <div className="row">
-                                {categories.flatMap((category) =>
-                                    category.children
-                                        .filter((child) => child.parent_id !== null)
-                                        .map((child) => (
+                            {(() => {
+                                // Gộp tất cả danh mục con hợp lệ vào 1 mảng
+                                const allChildren = categories.flatMap(category =>
+                                    category.children.filter(child => child.parent_id !== null)
+                                );
+
+                                const rows = [];
+                                for (let i = 0; i < allChildren.length; i += 4) {
+                                    rows.push(allChildren.slice(i, i + 4));
+                                }
+
+                                return rows.map((row, index) => (
+                                    <div
+                                        key={index}
+                                        className={`row ${row.length < 4 ? "justify-content-center" : ""}`}
+                                    >
+                                        {row.map((child) => (
                                             <div key={child.id} className="col-sm-3 mb-4">
                                                 <div
                                                     className="banner banner-cat banner-badge"
@@ -79,10 +91,7 @@ const Cate = () => {
                                                     onClick={() => handleCategoryClick(child.id)}
                                                 >
                                                     <a>
-                                                        <img
-                                                            src={banner1}
-                                                            alt={child.name}
-                                                        />
+                                                        <img src={child.thumbnail} alt={child.name} style={{height: '300px'}}/>
                                                     </a>
                                                     <div className="banner-link">
                                                         <h3 className="banner-title">{child.name}</h3>
@@ -92,13 +101,14 @@ const Cate = () => {
                                                         >
                                                             <span className="banner-link-text">Xem Ngay</span>
                                                         </Link>
-                                                        
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))
-                                )}
-                            </div>
+                                        ))}
+                                    </div>
+                                ));
+                            })()}
+
                         </div>
                     </div>
                 </div>

@@ -6,6 +6,21 @@ const getAllOrder = async () => {
   return response.data;
 };
 
+// tìm kiếm đơn hàng
+const searchOrders = async (keyword = "") => {
+  try {
+    const response = await instance.get('/admin/orders/search', {
+      params: { keyword },
+    });
+
+    // ✅ API trả về mảng đơn hàng trực tiếp
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Lỗi khi gọi API tìm kiếm đơn hàng:", error);
+    return []; // fallback tránh crash
+  }
+};
+
 // danh sách hoá đơn
 const getAllBill = async () => {
   const response = await instance.get("/completed");
@@ -180,6 +195,7 @@ const retryPayment = async (orderId) => {
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
+  searchOrders,
   getDetailOrder,
   placeOrder,
   getAllOrder,

@@ -37,13 +37,18 @@ const OrderStaff = () => {
         status: null,
         paymentMethod: null,
     });
+    const [searchInput, setSearchInput] = useState("");
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     // danh sách đơn hàng
     const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
-        queryKey: ["orders"],
+        queryKey: ["orders", searchKeyword],
         queryFn: async () => {
+            if (searchKeyword.trim()) {
+                return await OrderService.searchOrders(searchKeyword); // gọi service search
+            }
             const response = await OrderService.getAllOrder();
-            return response.orders || { data: [] };
+            return response.orders || [];
         },
     });
 
@@ -184,21 +189,21 @@ const OrderStaff = () => {
 
     // Tính số lượng đơn hàng cho mỗi trạng thái
     const statusCounts = {
-        1: ordersData?.filter(order => order.status.id === 1).length || 0,  // Chờ thanh toán
-        2: ordersData?.filter(order => order.status.id === 2).length || 0,  // Đã thanh toán
-        3: ordersData?.filter(order => order.status.id === 3).length || 0,
-        4: ordersData?.filter(order => order.status.id === 4).length || 0,
-        5: ordersData?.filter(order => order.status.id === 5).length || 0,
-        6: ordersData?.filter(order => order.status.id === 6).length || 0,
-        7: ordersData?.filter(order => order.status.id === 7).length || 0,   // Đang xử lý
-        8: ordersData?.filter(order => order.status.id === 8).length || 0,
-        9: ordersData?.filter(order => order.status.id === 9).length || 0,
-        10: ordersData?.filter(order => order.status.id === 10).length || 0,
-        11: ordersData?.filter(order => order.status.id === 11).length || 0,
-        12: ordersData?.filter(order => order.status.id === 12).length || 0,
-        13: ordersData?.filter(order => order.status.id === 13).length || 0,
-        14: ordersData?.filter(order => order.status.id === 14).length || 0,
-        15: ordersData?.filter(order => order.status.id === 15).length || 0,
+        1: ordersData?.filter(order => order.status?.id === 1).length || 0,
+        2: ordersData?.filter(order => order.status?.id === 2).length || 0,
+        3: ordersData?.filter(order => order.status?.id === 3).length || 0,
+        4: ordersData?.filter(order => order.status?.id === 4).length || 0,
+        5: ordersData?.filter(order => order.status?.id === 5).length || 0,
+        6: ordersData?.filter(order => order.status?.id === 6).length || 0,
+        7: ordersData?.filter(order => order.status?.id === 7).length || 0,
+        8: ordersData?.filter(order => order.status?.id === 8).length || 0,
+        9: ordersData?.filter(order => order.status?.id === 9).length || 0,
+        10: ordersData?.filter(order => order.status?.id === 10).length || 0,
+        11: ordersData?.filter(order => order.status?.id === 11).length || 0,
+        12: ordersData?.filter(order => order.status?.id === 12).length || 0,
+        13: ordersData?.filter(order => order.status?.id === 13).length || 0,
+        14: ordersData?.filter(order => order.status?.id === 14).length || 0,
+        15: ordersData?.filter(order => order.status?.id === 15).length || 0,
     };
 
     const filteredOrders = (ordersData || []).filter((order) => {
@@ -632,6 +637,17 @@ const OrderStaff = () => {
                     placeholder="Tìm kiếm đơn hàng..."
                     allowClear
                     enterButton={<SearchOutlined />}
+                    value={searchInput}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setSearchInput(value);
+
+                        // ✅ Nếu người dùng clear input, reset keyword để hiển thị lại danh sách gốc
+                        if (!value) {
+                            setSearchKeyword("");
+                        }
+                    }}
+                    onSearch={() => setSearchKeyword(searchInput)} // ✅ Khi nhấn Enter / Search
                 />
 
                 <div className="group2">
