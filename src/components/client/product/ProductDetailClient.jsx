@@ -165,19 +165,21 @@ const ProductDetailClient = () => {
   };
 
   const fetchProduct = async () => {
-    const { data, dataViewed, recommended_products } = await productsServices.fetchProductById(id);
+    const { data, dataViewed } = await productsServices.fetchProductById(id);
     setProduct(data);
     setDataViewed(dataViewed);
-    setRecommendedProducts(recommended_products);
   };
-
-
-
+  const fetchProductRecommend = async () => {
+    const reponse = await productsServices.fetchProductRecommendById(id);
+    
+    setRecommendedProducts(reponse.recommended_products);
+  };
   const { Title } = Typography;
 
 
   useEffect(() => {
     fetchProduct();
+    fetchProductRecommend();
   }, [id]);
 
   useEffect(() => {
@@ -297,7 +299,7 @@ const ProductDetailClient = () => {
                   {selectedVariant ? (
                     <div className="product-price">
 
-                     {formatPrice(selectedVariant.sell_price)} VNĐ
+                      {formatPrice(selectedVariant.sell_price)} VNĐ
 
                     </div>
                   ) : (
@@ -309,9 +311,6 @@ const ProductDetailClient = () => {
                       )}
                     </div>
                   )}
-
-
-
                   {selectedVariant ? (
                     <div className="details-filter-row details-row-size">
                       <label>Tồn kho:</label>
@@ -492,94 +491,7 @@ const ProductDetailClient = () => {
       </div>
 
       <div className="product-details-tab product-details-extended">
-        {/* <div className="container"> */}
-        {/* <ul className="nav nav-pills justify-content-center" role="tablist">
-            <li className="nav-item">
-              <a
-                className="nav-link active"
-                id="product-desc-link"
-                data-toggle="tab"
-                href="#product-desc-tab"
-                role="tab"
-                aria-controls="product-desc-tab"
-                aria-selected="true"
-              >
-                Description
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-info-link"
-                data-toggle="tab"
-                href="#product-info-tab"
-                role="tab"
-                aria-controls="product-info-tab"
-                aria-selected="false"
-              >
-                Additional information
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-shipping-link"
-                data-toggle="tab"
-                href="#product-shipping-tab"
-                role="tab"
-                aria-controls="product-shipping-tab"
-                aria-selected="false"
-              >
-                Shipping & Returns
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                className="nav-link"
-                id="product-review-link"
-                data-toggle="tab"
-                href="#product-review-tab"
-                role="tab"
-                aria-controls="product-review-tab"
-                aria-selected="false"
-              >
-                Reviews (2)
-              </a>
-            </li>
-          </ul> */}
-        <ProductTabs productId={product.id} />
-        {/* </div> */}
-
-        <div className="tab-content">
-          <div
-            className="tab-pane fade show active"
-            id="product-desc-tab"
-            role="tabpanel"
-            aria-labelledby="product-desc-link"
-          >
-            <div className="product-desc-content">
-              <div
-                className="product-desc-row bg-image"
-                style={{ backgroundImage: `url(${product.thumbnail})` }}
-              >
-                <div className="container">
-                  <div className="row justify-content-end">
-                    <div className="col-sm-6 col-lg-4">
-                      <h2>Product Information</h2>
-                      <ul>
-                        <li>Faux suede fabric upper</li>
-                        <li>Tie strap buckle detail</li>
-                        <li>Block heel</li>
-                        <li>Open toe</li>
-                        <li>Heel Height: 7cm / 2.5 inches</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProductTabs productId={product.id} product={product} />
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <Title level={2} className="text-center" style={{ textAlign: "center", marginBottom: "20px" }}>
