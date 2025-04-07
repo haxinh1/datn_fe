@@ -607,10 +607,12 @@ const Home = () => {
 
       <div className="mb-5"></div>
 
+      <hr />
+
       <div className="container recent-arrivals">
         <div className="heading heading-flex align-items-center mb-3">
           <h2 className="title title-lg">sản phẩm mới ra mắt</h2>
-          <ul
+          {/* <ul
             className="nav nav-pills nav-border-anim justify-content-center"
             role="tablist"
           >
@@ -666,7 +668,7 @@ const Home = () => {
                 Shoes & Boots
               </a>
             </li>
-          </ul>
+          </ul> */}
         </div>
 
         <div className="tab-content">
@@ -691,6 +693,8 @@ const Home = () => {
       </div>
 
       <div className="mb-7"></div>
+
+      <hr />
 
       <div className="container">
         <div className="row justify-content-center">

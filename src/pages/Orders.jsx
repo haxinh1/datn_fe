@@ -381,10 +381,12 @@ const Orders = () => {
           payment?.name === "COD"
             ? "Thanh toán khi nhận hàng"
             : payment?.name === "VNPAY"
-              ? "Thanh toán trực tuyến"
-              : payment?.name;
+              ? "Thanh toán qua VNPay"
+              : payment?.name === "MOMO"
+                ? "Thanh toán qua Momo"
+                : payment?.name;
         return <span>{paymentName}</span>;
-      },
+      }
     },
     {
       title: "Trạng thái",
@@ -561,7 +563,7 @@ const Orders = () => {
                     {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
-                
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     <strong>Tổng giá trị đơn hàng:</strong>

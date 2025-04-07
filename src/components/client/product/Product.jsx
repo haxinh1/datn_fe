@@ -6,8 +6,8 @@ const Product = (props) => {
   const [products, setProducts] = useState([]);
   const [currentImages, setCurrentImages] = useState({});
   const [selectedVariantData, setSelectedVariantData] = useState({});
-
   const { product } = props;
+
   useEffect(() => {
     const defaultImages = {};
     products.forEach((product) => {
@@ -15,6 +15,7 @@ const Product = (props) => {
     });
     setCurrentImages(defaultImages);
   }, [products]);
+
   const handleThumbnailClick = (productId, variant) => {
     setCurrentImages((prevImages) => ({
       ...prevImages,
@@ -30,6 +31,34 @@ const Product = (props) => {
       },
     }));
   };
+
+  const getVariantPriceRange = (product) => {
+    const variantPrices =
+      product.variants?.map((variant) =>
+        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
+      ) || [];
+
+    if (variantPrices.length === 0) {
+      const price =
+        product.sale_price > 0 ? product.sale_price : product.sell_price;
+      return { minPrice: price, maxPrice: price };
+    }
+
+    const minPrice = Math.min(...variantPrices);
+    const maxPrice = Math.max(...variantPrices);
+
+    return { minPrice, maxPrice };
+  };
+
+  // Tách số thành định dạng tiền tệ
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
   return (
     <>
       <div className="product product-2 text-center">
@@ -47,59 +76,38 @@ const Product = (props) => {
               }}
             />
           </Link>
+
+          <div className="product-action">
+            <a className="btn-product">
+              <Link to={`/product-detail/${product.id}`}>
+                <span>xem chi tiết</span>
+              </Link>
+            </a>
+          </div>
         </figure>
 
         <div className="product-body">
-          <div className="product-cat">
-            <a href="#">{product.categories.name}</a>
-          </div>
-
           <span className="product-title">
             <Link to={`/product-detail/${product.id}`}>
               <span>{product.name}</span>
             </Link>
           </span>
 
-          <div className="product-price">
+          <div className="product-price" style={{ marginTop: "20px" }}>
             <span className="new-price">
-              {" "}
-              {product.sale_price
-                ? formatVND(product.sale_price)
-                : product.variants.length > 0
-                  ? formatVND(product.variants[0].sale_price)
-                  : ""}{" "}
-              VNĐ
+              <strong>
+                {(() => {
+                  const { minPrice, maxPrice } =
+                    getVariantPriceRange(product);
+                  return minPrice === maxPrice
+                    ? `${formatPrice(minPrice)} VNĐ`
+                    : `${formatPrice(minPrice)} - ${formatPrice(
+                      maxPrice
+                    )} VNĐ`;
+                })()}
+              </strong>
             </span>
-
-            {/* <div className="product-nav product-nav-thumbs">
-              {product.variants?.map((variant) => (
-                <span key={variant.id}>
-                  <img
-                    alt={`Biến thể của ${product.name}`}
-                    src={variant.thumbnail}
-                    onClick={() => handleThumbnailClick(product.id, variant)}
-                  />
-                </span>
-              ))}
-            </div> */}
           </div>
-
-          {product.variants.length > 0 && (
-            <div className="product-nav product-nav-thumbs">
-              {product.variants.length < 4 &&
-                product.variants.map((variant, index) => (
-                  <a
-                    href="#"
-                    key={variant.id}
-                    className={
-                      variant.id === product.variants[0].id ? "active" : ""
-                    }
-                  >
-                    <img src={variant.thumbnail} alt={`Variant ${index + 1}`} />
-                  </a>
-                ))}
-            </div>
-          )}
         </div>
       </div>
     </>
