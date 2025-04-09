@@ -1471,7 +1471,7 @@ const Checkout = () => {
                   method.name.toLowerCase() === "cod"
                     ? "Thanh toán khi nhận hàng"
                     : method.name.toLowerCase() === "vnpay"
-                    ? "Thanh toán trực tuyến"
+                    ? "Thanh toán qua VNPay"
                     : method.name.toLowerCase() === "momo"
                     ? "Thanh toán qua Momo"
                     : method.name;

@@ -97,18 +97,6 @@ const getOrderStatus = async (id) => {
   return response.data;
 };
 
-// cập nhật trạng thái đơn hàng
-// const updateOrderStatus = async (id, payload) => {
-//   const clientToken = localStorage.getItem('client_token');
-//   const response = await instance.put(`/orders/${id}/update-status`, payload, {
-//     headers: {
-//       Authorization: `Bearer ${clientToken}`,
-//     },
-//   });
-
-//   return response.data;
-// };
-
 const updateOrderStatus = async (id, payload) => {
   // Lấy client_token từ localStorage
   const clientToken = localStorage.getItem("client_token");
@@ -143,10 +131,7 @@ const getReturnOrder = async () => {
 
 // cập nhật trạng thái đơn hoàn trả
 const updateOrderReturn = async (id, payload) => {
-  const response = await instance.post(
-    `/order-returns/update-status/order/${id}`,
-    payload
-  );
+  const response = await instance.post(`/order-returns/${id}/status/update`, payload );
   return response.data;
 };
 
@@ -156,8 +141,9 @@ const getOrderReturnByIdUser = async (userId) => {
   return response.data;
 };
 
-const getRefund = async (id) => {
-  const response = await instance.get(`/refunds/${id}`);
+// chi tiết đơn hoàn trả theo id
+const getReturn = async (id) => {
+  const response = await instance.get(`/order-returns/${id}`);
   return response.data;
 };
 
@@ -169,7 +155,7 @@ const requestBack = async (id, payload) => {
 
 // xác nhận hoàn tiền
 const confirmBack = async (id, payload) => {
-  const response = await instance.post(`/refunds/confirm/${id}`, payload);
+  const response = await instance.post(`/order-returns/${id}/refund/confirm`, payload);
   return response.data;
 };
 
@@ -209,7 +195,7 @@ export const OrderService = {
   getReturnOrder,
   updateOrderReturn,
   getOrderReturnByIdUser,
-  getRefund,
+  getReturn,
   requestBack,
   confirmBack,
   retryPayment,

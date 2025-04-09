@@ -28,7 +28,6 @@ const Back = () => {
             setIsLoading(true);
             try {
                 const response = await OrderService.getReturnOrder();
-                console.log(response); // Kiểm tra dữ liệu trả về từ API
                 if (response?.order_returns && Array.isArray(response.order_returns)) {
                     setReturns(response.order_returns);
                 }
@@ -42,7 +41,7 @@ const Back = () => {
     }, []);
 
     const dataSource = returns.map((item, index) => ({
-        key: item.order_id, // quan trọng cho Table
+        key: item.order_id,
         index: index + 1,
         code: item.order.code,
         fullname: item.order.fullname,
@@ -56,9 +55,9 @@ const Back = () => {
         raw: item
     }));
 
-    const fetchRefundDetails = async (orderId) => {
+    const fetchReturnDetails = async (orderId) => {
         try {
-            const response = await OrderService.getRefund(orderId); // Gọi service getRefund với order_id
+            const response = await OrderService.getReturn(orderId); // Gọi service getRefund với order_id
             setRefundDetails(response?.refund_details?.[0]);  // Lấy chi tiết hoàn trả đầu tiên (nếu có)
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
@@ -69,7 +68,7 @@ const Back = () => {
     const showModal = (item) => {
         setIsModalVisible(true);
         setSelectedProducts(item.raw.products || []);
-        fetchRefundDetails(item.raw.order_id);  // Gọi API với order_id
+        fetchReturnDetails(item.raw.order_id);  // Gọi API với order_id
     };
 
     // danh sách trạng thái
@@ -182,7 +181,7 @@ const Back = () => {
     const handleRequestRefund = async (values) => {
 
         const note = form.getFieldValue("note");
-        const employeeEvidence = form.getFieldValue("employee_evidence");
+        const refundProof = form.getFieldValue("refund_proof");
 
         // Lấy user_id từ localStorage
         const user = JSON.parse(localStorage.getItem("user"));
@@ -192,7 +191,7 @@ const Back = () => {
         const payload = {
             user_id: userId,  // Lấy user_id từ localStorage
             note: note,  // Ghi chú yêu cầu hoàn tiền
-            employee_evidence: employeeEvidence,  // Chứng minh hoàn tiền (ảnh QR)
+            refund_proof: refundProof,  // Chứng minh hoàn tiền (ảnh QR)
         };
 
         console.log("Dữ liệu gửi đi:", payload); // Kiểm tra dữ liệu gửi đi
@@ -213,10 +212,10 @@ const Back = () => {
         if (info.file.status === "done" && info.file.response) {
             const imageUrl = info.file.response.secure_url;
             setImage(imageUrl);
-            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+            form.setFieldsValue({ refund_proof: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
         } else if (info.file.status === "removed") {
             setImage(""); // Xóa ảnh khi người dùng xóa
-            form.setFieldsValue({ employee_evidence: "" }); // Cập nhật lại giá trị trong form
+            form.setFieldsValue({ refund_proof: "" }); // Cập nhật lại giá trị trong form
         }
     };
 
@@ -313,7 +312,7 @@ const Back = () => {
                         </Tooltip>
                     )}
 
-                    {item.status_id === 12 && (
+                    {item.status_id === 10 && (
                         <Tooltip title="Hoàn tiền">
                             <Button
                                 color="danger"
@@ -354,44 +353,16 @@ const Back = () => {
         },
         {
             title: "Giá bán (VNĐ)",
-            dataIndex: "sell_price",
+            dataIndex: "price",
             align: "center",
+            render: (price) => (price ? formatPrice(price) : ""),
         },
         {
             title: "Thành tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
-        },
-    ];
-
-    const returnColumns = [
-        {
-            title: 'Thông tin',
-            dataIndex: 'label',
-            key: 'label',
-            width: 200,
-        },
-        {
-            title: 'Chi tiết',
-            dataIndex: 'value',
-            key: 'value',
-            width: 200,
-        },
-    ];
-
-    const data = [
-        {
-            key: 'note',
-            label: 'Ghi chú',
-            value: refundDetails?.note || "",
-        },
-        {
-            key: 'employee_evidence',
-            label: 'Xác nhận',
-            value: refundDetails?.employee_evidence ?
-                <Image width={100} src={refundDetails.employee_evidence} alt="Xác nhận" /> :
-                "",
-        },
+            render: (_, record) => formatPrice(record.quantity * record.price),
+        }
     ];
 
     return (
@@ -415,29 +386,21 @@ const Back = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width={1000}
+                width={800}
             >
                 <div className="group1">
-                    <Table
-                        columns={returnColumns}
-                        dataSource={data}
-                        pagination={false}
-                        rowKey="key"
-                    />
-
                     <Table
                         columns={detailColumns}
                         dataSource={selectedProducts.map((product, index) => ({
                             ...product,
                             key: index,
                             index: index + 1,
-                            total: formatPrice(product.quantity * product.sell_price),
-                            sell_price: formatPrice(product.sell_price),
+                            price: product.price,
                         }))}
                         pagination={false}
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + item.quantity * item.sell_price,
+                                (sum, item) => sum + item.quantity * item.price,
                                 0
                             );
                             return (
@@ -515,7 +478,7 @@ const Back = () => {
                         <Col span={12}>
                             <Form.Item
                                 label="Minh chứng"
-                                name="employee_evidence"
+                                name="refund_proof"
                                 rules={[{ required: true, message: "Vui lòng tải lên ảnh minh chứng" }]}
                             >
                                 <Upload

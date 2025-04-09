@@ -141,7 +141,7 @@ const User = () => {
         },
         {
             key: 'loyalty_points',
-            label: 'Điểm tích lũy',
+            label: 'Điểm tiêu dùng',
             value: formatPrice(userData.loyalty_points)
         },
     ];
@@ -305,13 +305,13 @@ const User = () => {
             align: "center",
             sorter: (a, b) => b.quantity - a.quantity,
         },
-        {
-            title: "Giá bán (VNĐ)",
-            dataIndex: "sell_price",
-            key: "sell_price",
-            align: "center",
-            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
-        },
+        // {
+        //     title: "Giá bán (VNĐ)",
+        //     dataIndex: "sell_price",
+        //     key: "sell_price",
+        //     align: "center",
+        //     render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+        // },
     ];
 
     return (

@@ -90,7 +90,6 @@ const OrderStaff = () => {
     }));
 
     const validTransitions = {
-        1: [2], // Chờ thanh toán -> Đã thanh toán
         2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
         3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
         4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
@@ -100,7 +99,6 @@ const OrderStaff = () => {
         10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
         12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
         13: [14],
-        14: [15],
     };
 
     const showEdit = (order) => {
@@ -203,7 +201,6 @@ const OrderStaff = () => {
         12: ordersData?.filter(order => order.status?.id === 12).length || 0,
         13: ordersData?.filter(order => order.status?.id === 13).length || 0,
         14: ordersData?.filter(order => order.status?.id === 14).length || 0,
-        15: ordersData?.filter(order => order.status?.id === 15).length || 0,
     };
 
     const filteredOrders = (ordersData || []).filter((order) => {
@@ -523,7 +520,8 @@ const OrderStaff = () => {
                     display: "flex",
                     gap: "5px",
                     marginBottom: "20px",
-                }}>
+                }}
+            >
                 <Button
                     type={filters.status === 1 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 1)}
@@ -594,25 +592,19 @@ const OrderStaff = () => {
                     type={filters.status === 12 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 12)}
                 >
-                    Xử lý hoàn tiền ({statusCounts[12]})
+                    Đã hoàn tiền ({statusCounts[12]})
                 </Button>
                 <Button
                     type={filters.status === 13 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 13)}
                 >
-                    Đã hoàn tiền ({statusCounts[13]})
+                    Đang trả hàng về shop ({statusCounts[13]})
                 </Button>
                 <Button
                     type={filters.status === 14 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 14)}
                 >
-                    Đang trả hàng về shop ({statusCounts[14]})
-                </Button>
-                <Button
-                    type={filters.status === 15 ? "primary" : "default"}
-                    onClick={() => handleFilterChange("status", 15)}
-                >
-                    Shop đã nhận hàng ({statusCounts[15]})
+                    Shop đã nhận hàng ({statusCounts[14]})
                 </Button>
             </div>
 

@@ -596,6 +596,18 @@ const Test = () => {
       </h1>
 
       <div className="group1">
+        <div className='card-info'>
+
+        </div>
+
+        <div className='card-info'>
+
+        </div>
+
+
+      </div>
+
+      <div className="group1">
         <ConfigProvider locale={viVN}>
           <RangePicker
             format="DD/MM/YYYY"
