@@ -486,7 +486,7 @@ const Order = () => {
       dataIndex: "status",
       align: "center",
       render: (status) => (
-        <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+        <div className={[8, 9, 11].includes(status?.id) ? "action-link-red" : "action-link-blue"}>
           {status?.name}
         </div>
       ),
@@ -540,7 +540,7 @@ const Order = () => {
       render: (note) => getReturnReason(note),
     },
     {
-      title: "Ảnh/video xác nhận",
+      title: "Ảnh xác nhận",
       dataIndex: "employee_evidence",
       key: "employee_evidence",
       align: "center",
@@ -720,10 +720,12 @@ const Order = () => {
       </div>
 
       <div className="group1">
-        <Button
-          onClick={resetFilters}
-          icon={<MenuOutlined />}
-        />
+        <Tooltip title="Danh sách đơn hàng">
+          <Button
+            onClick={resetFilters}
+            icon={<MenuOutlined />}
+          />
+        </Tooltip>
 
         <ConfigProvider locale={viVN}>
           <RangePicker
@@ -734,20 +736,6 @@ const Order = () => {
             allowClear
           />
         </ConfigProvider>
-
-        {/* <Select
-          placeholder="Trạng thái"
-          className="select-item"
-          value={filters.status}
-          onChange={(value) => handleFilterChange("status", value)}
-          allowClear
-        >
-          {status.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name}
-            </Select.Option>
-          ))}
-        </Select> */}
 
         <Select
           placeholder="Phương thức thanh toán"

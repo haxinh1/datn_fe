@@ -130,7 +130,7 @@ const DetailCate = () => {
                         <div className="row">
                             <div className="products mb-3">
                                 <div className="row justify-content-center">
-                                    <div className="group1">
+                                    {/* <div className="group1">
                                         <input
                                             type="text"
                                             class="form-control"
@@ -146,7 +146,7 @@ const DetailCate = () => {
                                         >
                                             {isFiltered ? "QUAY LẠI" : "TÌM KIẾM"}
                                         </button>
-                                    </div>
+                                    </div> */}
 
                                     {(isFiltered ? filteredProducts : products).map((product) => (
                                         <div className="col-6 col-md-4 col-lg-3" key={product.id}>

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, Table, Tooltip, Image, Form, Input, Upload, Row, Col, notification, Skeleton } from 'antd';
+import { Button, Modal, Table, Tooltip, Image, Skeleton } from 'antd';
 import { OrderService } from '../services/order';
 import { Link, useParams } from 'react-router-dom';
-import { EditOutlined, EyeOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import TextArea from 'antd/es/input/TextArea';
+import { EyeOutlined, RollbackOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 
 const BackCl = () => {
     const { id } = useParams();
@@ -12,11 +11,6 @@ const BackCl = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState([]);
     const hideModal = () => setIsModalVisible(false);
-    const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
-    const hideRefundModal = () => setIsRefundModalVisible(false);
-    const [form] = Form.useForm();
-    const [image, setImage] = useState("");
-    const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [refundDetails, setRefundDetails] = useState(null);
 
@@ -24,7 +18,6 @@ const BackCl = () => {
         const fetchData = async () => {
             try {
                 const response = await OrderService.getOrderReturnByIdUser(id);
-                console.log(response); // Kiểm tra dữ liệu trả về từ API
                 if (response?.order_returns && Array.isArray(response.order_returns)) {
                     setReturns(response.order_returns);
                 }
@@ -50,6 +43,7 @@ const BackCl = () => {
         status_id: item.order.status_id,
         reason: item.reason,
         employee_evidence: item.employee_evidence,
+        refund_proof: item.refund_proof,
         raw: item
     }));
 
@@ -124,13 +118,24 @@ const BackCl = () => {
             render: (reason) => getReturnReason(reason),
         },
         {
+            title: "Shop xác nhận hoàn tiền",
+            dataIndex: "refund_proof",
+            key: "refund_proof",
+            align: "center",
+            render: (_, item) => {
+                return item.refund_proof ? (
+                    <Image width={60} src={item.refund_proof} />
+                ) : null;
+            },
+        },
+        {
             title: "Trạng thái",
             dataIndex: "status",
             align: "center",
             render: (_, record) => {
-                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "Không xác định";
-                const statusColorClass = record.status_id >= 8 ? "action-link-red" : "action-link-blue";
-
+                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
+                const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
+        
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },

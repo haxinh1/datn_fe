@@ -1,4 +1,4 @@
-import { EditOutlined, EyeOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons'
+import { EditOutlined, EyeOutlined, MenuOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons'
 import { Button, Col, Modal, Row, Select, Skeleton, Table, Tooltip, Upload, Form, notification, Image } from 'antd'
 import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
@@ -22,6 +22,9 @@ const Back = () => {
     const hideRefundModal = () => setIsRefundModalVisible(false);
     const [image, setImage] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [filters, setFilters] = useState({
+        status: null,
+    });
 
     useEffect(() => {
         const fetchReturns = async () => {
@@ -40,7 +43,12 @@ const Back = () => {
         fetchReturns();
     }, []);
 
-    const dataSource = returns.map((item, index) => ({
+    const filteredReturns = returns.filter((item) => {
+        const status = item.order.status_id;
+        return !filters.status || status === filters.status;
+    });
+
+    const dataSource = filteredReturns.map((item, index) => ({
         key: item.order_id,
         index: index + 1,
         code: item.order.code,
@@ -48,11 +56,18 @@ const Back = () => {
         phone_number: item.order.phone_number,
         total_amount: item.order.total_amount,
         created_at: item.order.created_at,
-        payment: { id: item.order.payment_id, name: item.order.payment_id === 1 ? "COD" : "VNPAY" },
+        payment: {
+            id: item.order.payment_id,
+            name: item.order.payment_id === 1 ? "COD" : "VNPAY",
+        },
         status_id: item.order.status_id,
         reason: item.reason,
         employee_evidence: item.employee_evidence,
-        raw: item
+        refund_proof: item.refund_proof,
+        bank_name: item.bank_name,
+        bank_account_number: item.bank_account_number,
+        bank_qr: item.bank_qr,
+        raw: item,
     }));
 
     const fetchReturnDetails = async (orderId) => {
@@ -82,6 +97,19 @@ const Back = () => {
 
     const validTransitions = {
         9: [10, 11],
+    };
+
+    const statusCounts = {
+        9: returns.filter(item => item.order.status_id === 9).length,
+        10: returns.filter(item => item.order.status_id === 10).length,
+        11: returns.filter(item => item.order.status_id === 11).length,
+        12: returns.filter(item => item.order.status_id === 12).length,
+        13: returns.filter(item => item.order.status_id === 13).length,
+        14: returns.filter(item => item.order.status_id === 14).length,
+    };
+
+    const handleFilterChange = (key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const showEdit = (item) => {
@@ -276,13 +304,40 @@ const Back = () => {
             )
         },
         {
+            title: "Thông tin hoàn tiền",
+            dataIndex: "bank_name",
+            key: "bank_name",
+            align: "center",
+            render: (_, record) => (
+                <div>
+                    <div>{record.bank_account_number} - {record.bank_name}</div>
+                    {record.bank_qr && (
+                        <div>
+                            <Image width={60} src={record.bank_qr} />
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            title: "Xác nhận hoàn tiền",
+            dataIndex: "refund_proof",
+            key: "refund_proof",
+            align: "center",
+            render: (_, item) => {
+                return item.refund_proof ? (
+                    <Image width={60} src={item.refund_proof} />
+                ) : null; 
+            },
+        },
+        {
             title: "Trạng thái",
             dataIndex: "status",
             align: "center",
             render: (_, record) => {
-                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "Không xác định";
-                const statusColorClass = record.status_id >= 8 ? "action-link-red" : "action-link-blue";
-
+                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
+                const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
+        
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -372,6 +427,53 @@ const Back = () => {
                 Đơn hàng hoàn trả
             </h1>
 
+            <div className='group1'>
+                <Tooltip title="Danh sách đơn hàng">
+                    <Button
+                        type={!filters.status ? "primary" : "default"}
+                        onClick={() => handleFilterChange("status", null)}
+                        icon={<MenuOutlined />}
+                    />
+                </Tooltip>
+
+                <Button
+                    type={filters.status === 9 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 9)}
+                >
+                    Trả hàng ({statusCounts[9]})
+                </Button>
+                <Button
+                    type={filters.status === 10 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 10)}
+                >
+                    Châp nhận trả hàng ({statusCounts[10]})
+                </Button>
+                <Button
+                    type={filters.status === 11 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 11)}
+                >
+                    Từ chối trả hàng ({statusCounts[11]})
+                </Button>
+                <Button
+                    type={filters.status === 12 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 12)}
+                >
+                    Đã hoàn tiền ({statusCounts[12]})
+                </Button>
+                <Button
+                    type={filters.status === 13 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 13)}
+                >
+                    Đang trả hàng về shop ({statusCounts[13]})
+                </Button>
+                <Button
+                    type={filters.status === 14 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 14)}
+                >
+                    Shop đã nhận hàng ({statusCounts[14]})
+                </Button>
+            </div>
+
             <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
@@ -386,7 +488,7 @@ const Back = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width={800}
+                width={600}
             >
                 <div className="group1">
                     <Table

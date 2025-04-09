@@ -434,7 +434,7 @@ const OrderStaff = () => {
             dataIndex: "status",
             align: "center",
             render: (status) => (
-                <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+                <div className={[8, 9, 11].includes(status?.id) ? "action-link-red" : "action-link-blue"}>
                     {status?.name}
                 </div>
             ),
@@ -609,10 +609,12 @@ const OrderStaff = () => {
             </div>
 
             <div className="group1">
-                <Button
-                    onClick={resetFilters}
-                    icon={<MenuOutlined />}
-                />
+                <Tooltip title="Danh sách đơn hàng">
+                    <Button
+                        onClick={resetFilters}
+                        icon={<MenuOutlined />}
+                    />
+                </Tooltip>
 
                 <ConfigProvider locale={viVN}>
                     <RangePicker
