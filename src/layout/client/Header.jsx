@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Tooltip } from "antd";
+import { Avatar, Tooltip, message } from "antd";
 import { Link } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demos/demo-8/logo.png";
 
 const Header = () => {
-  const [userData, setUserData] = useState(null); // Lưu thông tin người dùng
-  const [cartItemCount, setCartItemCount] = useState(0); // Lưu số lượng sản phẩm độc đáo trong giỏ hàng
+  const [userData, setUserData] = useState(null);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
-  // Hàm cập nhật số lượng sản phẩm trong giỏ hàng
+  // Cập nhật số lượng sản phẩm trong giỏ hàng
   const updateCartCount = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
       if (userId) {
-        // Người dùng đã đăng nhập: lấy giỏ hàng từ cơ sở dữ liệu
         const cartData = await cartServices.fetchCart();
-        // Đếm số sản phẩm độc đáo dựa trên product_id và product_variant_id
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${
             item.product_variant_id || "default"
@@ -30,9 +28,7 @@ const Header = () => {
         }, {});
         setCartItemCount(Object.keys(uniqueProducts).length);
       } else {
-        // Người dùng chưa đăng nhập: lấy giỏ hàng từ localStorage
         const cartData = JSON.parse(localStorage.getItem("cart_items")) || [];
-        // Đếm số sản phẩm độc đáo dựa trên product_id và product_variant_id
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${
             item.product_variant_id || "default"
@@ -46,12 +42,11 @@ const Header = () => {
       }
     } catch (error) {
       console.error("❌ Lỗi khi lấy số lượng giỏ hàng:", error);
-      setCartItemCount(0); // Đặt về 0 nếu có lỗi để tránh hiển thị sai
+      setCartItemCount(0);
     }
   };
 
   useEffect(() => {
-    // Lấy thông tin người dùng nếu đã đăng nhập
     const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
 
     if (storedUserId) {
@@ -66,20 +61,15 @@ const Header = () => {
       fetchUserInfo();
     }
 
-    // Cập nhật số lượng giỏ hàng ban đầu
     updateCartCount();
   }, []);
 
-  // Lắng nghe sự kiện thay đổi giỏ hàng
   useEffect(() => {
     const handleCartUpdate = () => {
       updateCartCount();
     };
 
-    // Lắng nghe sự kiện tùy chỉnh 'cart-updated' cho các thay đổi trong cùng tab
     window.addEventListener("cart-updated", handleCartUpdate);
-
-    // Lắng nghe sự kiện storage cho các thay đổi từ tab/cửa sổ khác
     const handleStorageChange = (e) => {
       if (e.key === "cart_items" || e.key === "user") {
         updateCartCount();
@@ -87,12 +77,91 @@ const Header = () => {
     };
     window.addEventListener("storage", handleStorageChange);
 
-    // Dọn dẹp sự kiện khi component bị hủy
     return () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
+
+  // Xử lý sự kiện kéo qua vùng thả
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  // Xử lý sự kiện thả sản phẩm vào giỏ hàng
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData("application/json"));
+
+      let existingAttributes =
+        JSON.parse(localStorage.getItem("cartAttributes")) || [];
+
+      const newAttributes = {
+        product_id: dragData.product_id,
+        product_variant_id: dragData.product_variant_id,
+        quantity: dragData.quantity,
+        price: dragData.price,
+        attributes: dragData.attributes,
+      };
+
+      const existingProductIndex = existingAttributes.findIndex(
+        (item) =>
+          item.product_id === dragData.product_id &&
+          item.product_variant_id === dragData.product_variant_id
+      );
+
+      if (existingProductIndex !== -1) {
+        existingAttributes[existingProductIndex].quantity += dragData.quantity;
+      } else {
+        existingAttributes.push(newAttributes);
+      }
+
+      localStorage.setItem(
+        "cartAttributes",
+        JSON.stringify(existingAttributes)
+      );
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      const itemToAdd = {
+        user_id: user?.id || null,
+        product_id: dragData.product_id,
+        product_variant_id: dragData.product_variant_id,
+        quantity: dragData.quantity,
+        price: dragData.price,
+        attributes: dragData.attributes,
+      };
+
+      if (user?.id) {
+        await cartServices.addCartItem(dragData.product_id, itemToAdd);
+      } else {
+        let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+        const existingCartItemIndex = cartItems.findIndex(
+          (item) =>
+            item.product_id === dragData.product_id &&
+            item.product_variant_id === dragData.product_variant_id
+        );
+
+        if (existingCartItemIndex !== -1) {
+          cartItems[existingCartItemIndex].quantity += dragData.quantity;
+        } else {
+          cartItems.push({
+            product_id: dragData.product_id,
+            product_variant_id: dragData.product_variant_id,
+            quantity: dragData.quantity,
+          });
+        }
+        localStorage.setItem("cart_items", JSON.stringify(cartItems));
+      }
+
+      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (error) {
+      console.error("Lỗi khi thêm vào giỏ hàng qua kéo thả:", error);
+      message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
+    }
+  };
 
   return (
     <header className="header">
@@ -152,7 +221,11 @@ const Header = () => {
           </div>
 
           <div className="header-right">
-            <div className="dropdown cart-dropdown">
+            <div
+              className="dropdown cart-dropdown"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
               <Tooltip title="Giỏ hàng">
                 <Link
                   to="/cart"
@@ -184,7 +257,7 @@ const Header = () => {
                 </Link>
               </Tooltip>
             </div>
-
+            <div class="gtranslate_wrapper"></div>
             <Tooltip title="Tài khoản">
               <Link
                 to={userData ? `/dashboard/orders/${userData.id}` : "/login"}
