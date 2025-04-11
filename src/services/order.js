@@ -158,13 +158,20 @@ const confirmBack = async (id, payload) => {
   return response.data;
 };
 
-const retryPayment = async (orderId) => {
+const retryPayment = async (orderId, paymentMethod, totalMomo) => {
   const clientToken = localStorage.getItem("client_token");
-
   try {
+    const data = {
+      payment_method: paymentMethod,
+    };
+
+    if (paymentMethod === "momo" && totalMomo) {
+      data.total_momo = totalMomo; // Chỉ truyền total_momo khi phương thức là MoMo
+    }
+
     const response = await instance.post(
       `/orders/${orderId}/retry-payment`,
-      {}, // Payload có thể rỗng nếu không cần thêm dữ liệu
+      data, // Truyền thêm total_momo khi cần
       {
         headers: {
           Authorization: `Bearer ${clientToken}`,
