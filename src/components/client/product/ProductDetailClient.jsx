@@ -424,6 +424,8 @@ const ProductDetailClient = () => {
                           }`}
                           style={{
                             pointerEvents: !stockAvailable ? "none" : "auto",
+                            fontFamily:
+                              "'Roboto', 'Arial', sans-serif" /* Fix font issue */,
                           }}
                         >
                           Thêm giỏ hàng
