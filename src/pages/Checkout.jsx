@@ -411,36 +411,67 @@ const Checkout = () => {
         return;
       }
 
-      if (!selectedAddress && !userData.address) {
-        message.error("Chưa có địa chỉ đặt hàng!");
-        return;
-      }
-      const selectedAddressData = addresses.find(
-        (address) => address.id === selectedAddress
-      );
-
-      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
-      if (!selectedAddressData && !userData.address) {
-        message.error("Địa chỉ không hợp lệ!");
-        return;
-      }
-
-      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
+      // Kiểm tra địa chỉ cho người dùng đăng nhập hoặc khách vãng lai
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
+
+      let fullAddress = "";
+
+      if (userId) {
+        // Người dùng đã đăng nhập
+        if (!selectedAddress) {
+          message.error("Chưa có địa chỉ đặt hàng!");
+          return;
+        }
+        const selectedAddressData = addresses.find(
+          (address) => address.id === selectedAddress
+        );
+        if (!selectedAddressData) {
+          message.error("Địa chỉ không hợp lệ!");
+          return;
+        }
+        fullAddress = `${selectedAddressData.detail_address}, ${selectedAddressData.address}`;
+      } else {
+        // Khách vãng lai
+        if (
+          !selectedProvince ||
+          !selectedDistrict ||
+          !selectedWard ||
+          !userData.address
+        ) {
+          message.error("Vui lòng điền đầy đủ thông tin địa chỉ!");
+          return;
+        }
+
+        // Tìm tên tỉnh/thành phố, quận/huyện, phường/xã từ các mảng
+        const province = provinces.find(
+          (p) => p.ProvinceID === selectedProvince
+        );
+        const district = districts.find(
+          (d) => d.DistrictID === selectedDistrict
+        );
+        const ward = wards.find((w) => w.WardCode === selectedWard);
+
+        // Kiểm tra xem có tìm thấy dữ liệu không
+        if (!province || !district || !ward) {
+          message.error("Thông tin địa chỉ không hợp lệ!");
+          return;
+        }
+
+        // Xây dựng chuỗi địa chỉ đầy đủ
+        fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
+      }
 
       const orderData = {
         user_id: userId || null,
         fullname: userData.fullname,
         email: userData.email,
         phone_number: userData.phone_number,
-        address: selectedAddressData
-          ? `${selectedAddressData.detail_address}, ${selectedAddressData.address}`
-          : userData.address,
+        address: fullAddress, // Sử dụng chuỗi địa chỉ đầy đủ
         used_points: usedLoyaltyPoints || 0,
         shipping_fee: shippingFee,
-        coupon_code: selectedCoupon ? selectedCoupon.code : null, // Gửi mã coupon
-        discount_amount: discountAmount, // Gửi số tiền giảm giá
+        coupon_code: selectedCoupon ? selectedCoupon.code : null,
+        discount_amount: discountAmount,
         total_amount: finalTotal,
         payment_method:
           selectedPayment === 2
@@ -459,9 +490,9 @@ const Checkout = () => {
         })),
       };
 
-      const orderResponse = await OrderService.placeOrder(orderData);
-      console.log(orderData);
+      console.log("orderData:", orderData);
 
+      const orderResponse = await OrderService.placeOrder(orderData);
       console.log("orderResponse:", orderResponse);
 
       // Nếu có URL thanh toán từ VNPay, chuyển hướng người dùng
@@ -472,7 +503,7 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        nav(`/dashboard/orders/${userId}`);
+        nav(`/dashboard/orders/${userId || "guest"}`);
         setCartItems([]);
         localStorage.removeItem("cartAttributes");
       } else {
@@ -1431,38 +1462,6 @@ const Checkout = () => {
                                   "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
                                 );
                               }
-
-                              const orderData = {
-                                user_id: null,
-                                fullname: userData.fullname,
-                                email: userData.email,
-                                phone_number: userData.phone_number,
-                                address: `${userData.address}, ${
-                                  wards.find((w) => w.WardCode === selectedWard)
-                                    ?.WardName || ""
-                                }, ${
-                                  districts.find(
-                                    (d) => d.DistrictID === selectedDistrict
-                                  )?.DistrictName || ""
-                                }, ${
-                                  provinces.find(
-                                    (p) => p.ProvinceID === selectedProvince
-                                  )?.ProvinceName || ""
-                                }`
-                                  .replace(/^, | ,| , $/g, "")
-                                  .trim(),
-                                total_amount: finalTotal,
-                                payment_method: "vnpay",
-                                products: cartItems.map((item) => ({
-                                  product_id: item.product_id,
-                                  product_variant_id: item.product_variant_id,
-                                  quantity: item.quantity,
-                                  price:
-                                    item.product_variant?.sale_price ||
-                                    item.product?.sale_price ||
-                                    0,
-                                })),
-                              };
 
                               setIsPaymentModalOpen(true);
                             } catch (error) {
