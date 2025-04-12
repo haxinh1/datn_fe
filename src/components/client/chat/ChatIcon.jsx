@@ -7,13 +7,21 @@ const ChatIcon = ({ onClick }) => {
     <Button
       type="primary"
       shape="circle"
-      icon={<MessageOutlined />}
+      icon={
+        <MessageOutlined style={{ fontSize: '24px' }} />
+      }
       size="large"
       style={{
-        position: 'fixed',
-        bottom: 20,
-        right: 20,
-        zIndex: 1000,
+        padding: "10px",
+        position: "fixed",
+        bottom: "50px",
+        right: "20px",
+        width: "60px",
+        height: "60px",
+        borderRadius: "50%",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+        color: "white",
+        zIndex: 1000
       }}
       onClick={onClick}
     />
