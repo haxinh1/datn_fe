@@ -343,13 +343,11 @@ const ProductDetailClient = () => {
                       <div
                         className="ratings-val"
                         style={{ width: "80%" }}
-                      ></div>
+                      >
+                        
+                      </div>
                     </div>
-                    <a
-                      className="ratings-text"
-                      href="#product-review-link"
-                      id="review-link"
-                    >
+                    <a>
                       <span className="text-confirm">({product.views} lượt xem)</span>
                     </a>
                   </div>

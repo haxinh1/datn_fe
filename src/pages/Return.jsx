@@ -74,7 +74,10 @@ const Return = () => {
     // Hàm xử lý chọn tất cả checkbox
     const handleSelectAllChange = (e) => {
         if (e.target.checked) {
-            setSelectedRowKeys(orderDetails.map((item) => item.product_id));
+            setSelectedRowKeys(orderDetails.map((item) => {
+                const variant = item.variants?.[0];
+                return variant ? `${item.product_id}-${variant.variant_id}` : `p-${item.product_id}`;
+            }));
         } else {
             setSelectedRowKeys([]);
         }
@@ -106,25 +109,34 @@ const Return = () => {
         if (!selectedRowKeys.length) {
             return notification.error({ message: "Vui lòng chọn ít nhất 1 sản phẩm để trả" });
         }
-    
+
         const reasonToSend = selectedReturnReason === "other" ? returnReason : selectedReturnReason;
-    
+
         const user = JSON.parse(localStorage.getItem("user"));
         const user_id = user?.id || user?.user_id;
-    
-        const products = selectedRowKeys.map((product_id) => {
-            const selectedItem = orderDetails.find(item => item.product_id === product_id);
-            return {
-                product_id: selectedItem.product_id,
-                product_variant_id: selectedItem.variants?.[0]?.variant_id || null,
-                quantity: Number(quantities[product_id]) || 1,
-            };
-        });
-    
+
+        const products = selectedRowKeys.map((key) => {
+            if (key.startsWith("p-")) {
+                const product_id = parseInt(key.slice(2), 10);
+                return {
+                    product_id,
+                    product_variant_id: null,
+                    quantity: Number(quantities[key]) || 1,
+                };
+            } else if (key.includes("-")) {
+                const [product_id, variant_id] = key.split("-");
+                return {
+                    product_id: parseInt(product_id, 10),
+                    product_variant_id: parseInt(variant_id, 10),
+                    quantity: Number(quantities[key]) || 1,
+                };
+            }
+        });           
+
         // Sử dụng form.getFieldValue để lấy giá trị các trường nhập liệu
-        const bank_account_number = form.getFieldValue('bank_account_number'); 
-        const bank_name = form.getFieldValue('bank_name'); 
-    
+        const bank_account_number = form.getFieldValue('bank_account_number');
+        const bank_name = form.getFieldValue('bank_name');
+
         const payload = {
             user_id,
             reason: reasonToSend,
@@ -134,17 +146,17 @@ const Return = () => {
             bank_qr: image || null, // Đảm bảo đây là URL của ảnh QR
             products,
         };
-    
+
         console.log("📦 Payload gửi đi:", payload); // Log để kiểm tra lại
-    
+
         try {
             await OrderService.returnOrder(id, payload);
-    
+
             notification.success({
                 message: "Thành công",
                 description: "Gửi yêu cầu trả hàng thành công.",
             });
-    
+
             // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
@@ -160,7 +172,7 @@ const Return = () => {
                 description: "Gửi yêu cầu trả hàng thất bại.",
             });
         }
-    };         
+    };
 
     const detailColumns = [
         {
@@ -171,12 +183,16 @@ const Return = () => {
                     onChange={handleSelectAllChange}
                 />
             ),
-            render: (_, record) => (
-                <Checkbox
-                    checked={selectedRowKeys.includes(record.product_id)}
-                    onChange={() => handleSelectChange(record.product_id)}
-                />
-            ),
+            render: (_, record) => {
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                return (
+                    <Checkbox
+                        checked={selectedRowKeys.includes(key)}
+                        onChange={() => handleSelectChange(key)}
+                    />
+                );
+            },            
             dataIndex: "select",
             align: 'center'
         },
@@ -210,37 +226,41 @@ const Return = () => {
             title: "Số lượng",
             dataIndex: "quantity",
             align: "center",
-            render: (_, record) => (
-                selectedRowKeys.includes(record.product_id) && (
+            render: (_, record) => {
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                return selectedRowKeys.includes(key) && (
                     <Input
                         type="number"
                         min={1}
                         max={record.quantity}
-                        value={quantities[record.product_id] || ""}
+                        value={quantities[key] || ""}
                         onChange={(e) =>
                             setQuantities({
                                 ...quantities,
-                                [record.product_id]: e.target.value,
+                                [key]: e.target.value,
                             })
                         }
                     />
-                )
-            ),
+                );
+            }            
         },
         {
-            title: "Giá bán (VNĐ)",
-            dataIndex: "sell_price",
+            title: "Giá hoàn (VNĐ)",
+            dataIndex: "refund_amount",
             align: "center",
-            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+            render: (refund_amount) => (refund_amount ? formatPrice(refund_amount) : ""),
         },
         {
             title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
             render: (_, record) => {
-                const quantity = quantities[record.product_id] || 0;
-                return formatPrice(quantity * record.sell_price);
-            },
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                const quantity = quantities[key] || 0;
+                return formatPrice(quantity * record.refund_amount);
+            }            
         }
     ];
 
@@ -256,18 +276,21 @@ const Return = () => {
                     columns={detailColumns}
                     dataSource={orderDetails.map((item, index) => ({
                         ...item,
-                        key: index,
+                        key: item.variants?.[0] ? `${item.product_id}-${item.variants[0].variant_id}` : `p-${item.product_id}`,
                         index: index + 1,
-                    }))}
+                    }))}                    
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce((sum, item) => {
-                            if (selectedRowKeys.includes(item.product_id)) {
-                                const quantity = quantities[item.product_id] || item.quantity;
-                                return sum + (quantity * item.sell_price);
+                            const variant = item.variants?.[0];
+                            const key = variant ? `${item.product_id}-${variant.variant_id}` : `p-${item.product_id}`;
+                            
+                            if (selectedRowKeys.includes(key)) {
+                                const quantity = Number(quantities[key]) || 0;
+                                return sum + (quantity * item.refund_amount);
                             }
                             return sum;
-                        }, 0);
+                        }, 0);                        
 
                         return (
                             <Table.Summary.Row>

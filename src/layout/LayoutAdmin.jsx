@@ -64,8 +64,7 @@ const LayoutAdmin = () => {
     // Hiển thị Modal xác nhận trước khi logout
     Modal.confirm({
       title: "Bạn chắc chắn muốn đăng xuất?",
-      content:
-        "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
+      content: "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
       okText: "Đăng xuất",
       cancelText: "Hủy",
       onOk: async () => {

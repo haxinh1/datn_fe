@@ -24,6 +24,8 @@ const Bill = () => {
     shipping_fee: "",
     discount_points: "",
     total_amount: "",
+    coupon_discount_value: "",
+    coupon_discount_type: "",
   });
 
   // danh sách hóa đơn
@@ -47,6 +49,8 @@ const Bill = () => {
       shipping_fee: order.shipping_fee,
       discount_points: order.discount_points,
       total_amount: order.total_amount,
+      coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -234,6 +238,7 @@ const Bill = () => {
           <span className="text-title">
             Địa chỉ: <span className="text-name">{orderInfo.address}</span>
           </span>
+          
           <Table
             style={{ marginTop: "20px" }}
             columns={detailColumns}
@@ -247,16 +252,34 @@ const Bill = () => {
                 (sum, item) => sum + item.quantity * item.sell_price,
                 0
               );
+
+              const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+              const discountValue = isPercentDiscount
+                ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                : 0;
+
               return (
                 <>
                   <Table.Summary.Row>
                     <Table.Summary.Cell colSpan={3} align="right">
-                      Tổng tiền:
+                      Tổng tiền hàng:
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       {formatPrice(totalAmount)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
+
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phiếu giảm giá:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {isPercentDiscount
+                        ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                        : formatPrice(orderInfo.coupon_discount_value)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
                   <Table.Summary.Row>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Phí vận chuyển:
@@ -265,6 +288,7 @@ const Bill = () => {
                       {formatPrice(orderInfo.shipping_fee)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
+
                   <Table.Summary.Row>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Giảm giá điểm tiêu dùng:
@@ -273,9 +297,10 @@ const Bill = () => {
                       {formatPrice(orderInfo.discount_points)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
+
                   <Table.Summary.Row>
                     <Table.Summary.Cell colSpan={3} align="right">
-                      <strong>Tổng giá trị đơn hàng:</strong>
+                      <strong>Tổng thanh toán:</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       <strong>{formatPrice(orderInfo.total_amount)}</strong>

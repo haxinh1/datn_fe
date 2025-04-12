@@ -229,7 +229,6 @@ const Orders = () => {
     }
 
     try {
-      // Tìm phương thức thanh toán được chọn từ danh sách payments
       const selectedMethod = payments.find(
         (method) => method.id === selectedPayment
       );
@@ -245,19 +244,59 @@ const Orders = () => {
         return;
       }
 
-      // Gọi API retryPayment với payment_method là tên (vnpay hoặc momo)
+      const selectedOrder = orders.find(
+        (order) => order.id === selectedOrderId
+      );
+      if (!selectedOrder) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không tìm thấy đơn hàng!",
+        });
+        return;
+      }
+
+      // Kiểm tra trạng thái đơn hàng
+      if (selectedOrder.status.id !== 1) {
+        notification.error({
+          message: "Lỗi",
+          description:
+            "Đơn hàng không thể thanh toán lại do trạng thái hiện tại.",
+        });
+        return;
+      }
+
+      // Lấy total_amount từ đơn hàng để truyền cho Momo
+      const totalMomo =
+        paymentMethodName === "momo" ? selectedOrder.total_amount : undefined;
+
+      console.log("Payload thanh toán lại:", {
+        orderId: selectedOrderId,
+        paymentMethod: paymentMethodName,
+        totalMomo,
+      });
+
       const response = await OrderService.retryPayment(
         selectedOrderId,
-        paymentMethodName
+        paymentMethodName,
+        totalMomo
       );
+
+      console.log("Phản hồi thanh toán lại:", response);
+
       if (response.payment_url) {
         window.location.href = response.payment_url;
+      } else {
+        notification.error({
+          message: "Lỗi",
+          description: `Không nhận được URL thanh toán từ ${paymentMethodName.toUpperCase()}.`,
+        });
       }
     } catch (error) {
-      console.error("Lỗi khi thanh toán lại:", error);
+      console.error("Lỗi khi thanh toán lại:", error.response?.data || error);
       notification.error({
         message: "Lỗi",
-        description: "Không thể thanh toán lại đơn hàng.",
+        description:
+          error.response?.data?.message || "Không thể thanh toán lại đơn hàng.",
       });
     } finally {
       setIsPaymentModalVisible(false);

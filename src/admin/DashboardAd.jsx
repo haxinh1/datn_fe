@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { Card, List, Typography, Table, Spin, Row, Col } from "antd";
+import { Card, Table, Spin, Row, Col, Avatar } from "antd";
+import { UserOutlined, DatabaseOutlined } from "@ant-design/icons";
 import { statisticServices } from "../services/statisticServices";
 import {
   Chart as ChartJS,
@@ -12,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { DatabaseOutlined } from "@ant-design/icons";
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -43,10 +44,10 @@ const Dashboard = () => {
       const data = await statisticServices.fetchRevenueStatistics();
       const labels = data.statistics.map((item) => item.date);
       const cancelledOrders = data.statistics.map(
-        (item) => Number(item.cancelled_orders) || 0
+        (item) => Math.floor(Number(item.cancelled_orders)) || 0 // Đảm bảo số nguyên
       );
       const returnedOrders = data.statistics.map(
-        (item) => Number(item.returned_orders) || 0
+        (item) => Math.floor(Number(item.returned_orders)) || 0 // Đảm bảo số nguyên
       );
       setExpensesData({
         labels,
@@ -95,13 +96,61 @@ const Dashboard = () => {
 
   const formatDate = (str) => new Date(str).toLocaleDateString("en-GB");
 
-  // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
       maximumFractionDigits: 0,
     });
     return formatter.format(price);
+  };
+
+  const orderStats = [
+    { status_name: "Chờ thanh toán", total_orders: 1 },
+    { status_name: "Đã thanh toán trực tuyến", total_orders: 0 },
+    { status_name: "Đang xử lý", total_orders: 1 },
+    { status_name: "Đang giao hàng", total_orders: 0 },
+    { status_name: "Đã giao hàng", total_orders: 0 },
+    { status_name: "Giao hàng thất bại", total_orders: 0 },
+    { status_name: "Hoàn thành", total_orders: 3 },
+    { status_name: "Hủy đơn", total_orders: 2 },
+    { status_name: "Chờ xử lý trả hàng", total_orders: 0 },
+    { status_name: "Chờ nhận trả hàng", total_orders: 0 },
+    { status_name: "Từ chối trả hàng", total_orders: 0 },
+    { status_name: "Hoàn tiền thành công", total_orders: 0 },
+    { status_name: "Hàng đang quy về shop", total_orders: 0 },
+  ];
+
+  // Cấu hình tùy chọn cho biểu đồ
+  const chartOptions = {
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1, // Đảm bảo chỉ hiển thị số nguyên
+          callback: (value) => Math.floor(value), // Hiển thị số nguyên
+        },
+      },
+      x: {
+        title: {
+          display: true,
+
+          font: {
+            size: 14,
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) =>
+            `${context.dataset.label}: ${Math.floor(context.raw)} đơn`,
+        },
+      },
+    },
   };
 
   return (
@@ -151,8 +200,30 @@ const Dashboard = () => {
                 key: index,
                 fullname: user.fullname,
                 total_quantity: user.total_quantity,
+                avatar: user.avatar,
               }))}
               columns={[
+                {
+                  title: "Ảnh",
+                  dataIndex: "avatar",
+                  key: "avatar",
+                  align: "center",
+                  render: (avatar) =>
+                    avatar ? (
+                      <img
+                        src={avatar}
+                        alt="user"
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          objectFit: "cover",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    ) : (
+                      <Avatar icon={<UserOutlined />} size={50} />
+                    ),
+                },
                 {
                   title: "Khách hàng",
                   dataIndex: "fullname",
@@ -160,11 +231,11 @@ const Dashboard = () => {
                   align: "center",
                 },
                 {
-                  title: "Số lượng sản phẩm",
+                  title: "Số lượng đã mua",
                   dataIndex: "total_quantity",
                   key: "total_quantity",
                   align: "center",
-                  sorter: (a, b) => a.quantity - b.quantity,
+                  sorter: (a, b) => a.total_quantity - b.total_quantity,
                 },
               ]}
             />
@@ -173,17 +244,35 @@ const Dashboard = () => {
 
         <Col span={8}>
           <Card style={{ marginBottom: "20px" }}>
-            <h1 className="mb-5">Lượt bán sản phẩm</h1>
+            <h1 className="mb-5">Top 10 sản phẩm bán chạy nhất</h1>
             <Table
               size="small"
               pagination={false}
               bordered
               dataSource={topProducts.map((item, index) => ({
                 key: index,
+                thumbnail: item.thumbnail,
                 name: item.name,
                 quantity: item.quantity,
               }))}
               columns={[
+                {
+                  title: "Ảnh",
+                  dataIndex: "thumbnail",
+                  key: "thumbnail",
+                  align: "center",
+                  render: (thumbnail) => (
+                    <img
+                      src={thumbnail || "https://via.placeholder.com/50"}
+                      alt="product"
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ),
+                },
                 {
                   title: "Sản phẩm",
                   dataIndex: "name",
@@ -202,7 +291,7 @@ const Dashboard = () => {
           </Card>
 
           <Card style={{ marginBottom: "20px" }}>
-            <h1 className="mb-5">Lượt xem sản phẩm</h1>
+            <h1 className="mb-5">Top 10 lượt xem nhiều nhất</h1>
             <Table
               size="small"
               dataSource={topView}
@@ -233,11 +322,7 @@ const Dashboard = () => {
               size="small"
               pagination={false}
               bordered
-              dataSource={orderStatistics.map((item, index) => ({
-                key: index,
-                status_name: item.status_name,
-                total_orders: item.total_orders,
-              }))}
+              dataSource={orderStats}
               columns={[
                 {
                   title: "Trạng thái",
@@ -260,35 +345,8 @@ const Dashboard = () => {
 
       <Card>
         <h1 className="mb-5">Biểu đồ hoàn hủy</h1>
-        <Line data={expensesData} />
+        <Line data={expensesData} options={chartOptions} />
       </Card>
-
-      {/* <Col span={12}>
-          <Card title="Top sản phẩm được mua">
-            <Table
-              size="small"
-              dataSource={topBuy}
-              rowKey="name"
-              pagination={false}
-              columns={[
-                { title: "Tên sản phẩm", dataIndex: "name" },
-                { title: "Lượt mua", dataIndex: "total_sold" },
-              ]}
-            />
-          </Card>
-        </Col> */}
-
-      {/* <Card title="Top doanh thu" style={{ marginTop: 16 }}>
-        <List
-          size="small"
-          dataSource={topRevenueDays}
-          renderItem={(item) => (
-            <List.Item>
-              {formatDate(item.date)} {item.total_revenue} VNĐ
-            </List.Item>
-          )}
-        />
-      </Card> */}
     </div>
   );
 };
