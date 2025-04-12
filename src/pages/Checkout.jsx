@@ -1243,10 +1243,7 @@ const Checkout = () => {
                           {!userId ? null : (
                             <>
                               <tr
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                }}
+                                style={{ fontSize: "12px", fontWeight: "bold" }}
                               >
                                 <td style={{ padding: "10px" }}>
                                   Điểm tiêu dùng (
@@ -1300,10 +1297,7 @@ const Checkout = () => {
                                 </td>
                               </tr>
                               <tr
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                }}
+                                style={{ fontSize: "12px", fontWeight: "bold" }}
                               >
                                 <td style={{ padding: "10px" }}>
                                   Mã giảm giá:
@@ -1314,7 +1308,6 @@ const Checkout = () => {
                                     padding: "10px",
                                   }}
                                 >
-                                  {/* Hiển thị mã giảm giá nếu đã áp dụng */}
                                   {selectedCoupon ? (
                                     <span
                                       style={{
@@ -1323,7 +1316,7 @@ const Checkout = () => {
                                       }}
                                       onClick={() =>
                                         setIsCouponModalVisible(true)
-                                      } // Mở modal khi nhấn vào
+                                      }
                                     >
                                       {selectedCoupon.code}
                                     </span>
@@ -1335,7 +1328,7 @@ const Checkout = () => {
                                       }}
                                       onClick={() =>
                                         setIsCouponModalVisible(true)
-                                      } // Mở modal khi nhấn vào
+                                      }
                                     >
                                       Chọn mã giảm giá
                                     </span>
@@ -1350,21 +1343,56 @@ const Checkout = () => {
                                         fontSize: "16px",
                                         cursor: "pointer",
                                       }}
-                                      onClick={handleRemoveCoupon} // Gọi hàm để hủy mã giảm giá
+                                      onClick={handleRemoveCoupon}
                                     >
-                                      <i class="fa-solid fa-xmark"></i>
+                                      <i className="fa-solid fa-xmark"></i>
                                     </button>
                                   )}
                                 </td>
                               </tr>
+                              {/* Số tiền giảm từ điểm và mã giảm giá */}
+                              {(usedLoyaltyPoints > 0 ||
+                                discountAmount > 0) && (
+                                <tr
+                                  style={{
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  <td style={{ padding: "10px" }}>
+                                    Số tiền giảm:
+                                  </td>
+                                  <td
+                                    style={{
+                                      textAlign: "right",
+                                      padding: "10px",
+                                    }}
+                                  >
+                                    <div style={{ color: "#e48948" }}>
+                                      {usedLoyaltyPoints > 0 && (
+                                        <div>
+                                          -{formatCurrency(usedLoyaltyPoints)}{" "}
+                                          (Điểm)
+                                        </div>
+                                      )}
+                                      {discountAmount > 0 && (
+                                        <div>
+                                          -{formatCurrency(discountAmount)} VNĐ
+                                          (Mã)
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
 
                               {/* Modal hiển thị danh sách mã giảm giá */}
                               <Modal
                                 title="Chọn mã giảm giá"
                                 visible={isCouponModalVisible}
-                                onCancel={() => setIsCouponModalVisible(false)} // Đóng modal khi bấm cancel
+                                onCancel={() => setIsCouponModalVisible(false)}
                                 footer={null}
-                                width={400} // Điều chỉnh modal nhỏ hơn
+                                width={400}
                                 centered
                               >
                                 <div className="coupon-list">
@@ -1389,16 +1417,16 @@ const Checkout = () => {
                                         }}
                                         onClick={() =>
                                           setSelectedCoupon(coupon)
-                                        } // Set the selected coupon
+                                        }
                                       >
-                                        {coupon.code} -{" "}
+                                        {coupon.code} - {coupon.title} -{" "}
                                         {coupon.discount_type === "percent"
                                           ? `${coupon.discount_value}%`
                                           : `${coupon.discount_value} VND`}
                                       </div>
                                     ))
                                   ) : (
-                                    <p>Không có mã giảm giá nào.</p> // Display this if there are no coupons
+                                    <p>Không có mã giảm giá nào.</p>
                                   )}
                                 </div>
                                 <button
@@ -1411,6 +1439,7 @@ const Checkout = () => {
                               </Modal>
                             </>
                           )}
+
                           {/* Tổng tiền */}
                           <tr
                             className="summary-total"

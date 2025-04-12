@@ -343,12 +343,12 @@ const ProductDetailClient = () => {
                       <div
                         className="ratings-val"
                         style={{ width: "80%" }}
-                      >
-                        
-                      </div>
+                      ></div>
                     </div>
                     <a>
-                      <span className="text-confirm">({product.views} lượt xem)</span>
+                      <span className="text-confirm">
+                        ({product.views} lượt xem)
+                      </span>
                     </a>
                   </div>
 
@@ -479,7 +479,7 @@ const ProductDetailClient = () => {
                             fontFamily: "'Roboto', 'Arial', sans-serif",
                           }}
                         >
-                          <span>giỏ hàng</span>
+                          Thêm giỏ hàng
                         </a>
                       </div>
                     </>
