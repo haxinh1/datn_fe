@@ -41,7 +41,7 @@ const AIChat = () => {
                 style={{
                     padding: "10px",
                     position: "fixed",
-                    bottom: "60px",
+                    bottom: "120px",
                     right: "20px",
                     width: "60px",
                     height: "60px",
