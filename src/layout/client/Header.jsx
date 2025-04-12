@@ -260,7 +260,7 @@ const Header = () => {
             <div class="gtranslate_wrapper"></div>
             <Tooltip title="Tài khoản">
               <Link
-                to={userData ? `/dashboard/orders/${userData.id}` : "/login"}
+                to={userData ? `/dashboard/orders/${userData.id}` : "/logincl"}
                 className="wishlist-link"
               >
                 {userData && userData.avatar ? (
