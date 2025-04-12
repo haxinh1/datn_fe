@@ -11,9 +11,17 @@ import logo from "../../assets/images/demos/demo-8/logo.png";
 import { Link } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import AIChat from "./AIChat.jsx";
+import ChatWindow from "../../components/client/chat/ChatWindow.jsx";
+import ChatIcon from './../../components/client/chat/ChatIcon';
 
 const Header = () => {
   const [userData, setUserData] = useState(null);
+  const [chatVisible, setChatVisible] = useState(false);
+  const isLoggedIn = false;
+  console.log(userData);
+
+
+
 
   useEffect(() => {
     const storedUserId = JSON.parse(localStorage.getItem("user"))?.id; // Lấy id người dùng từ localStorage
@@ -196,6 +204,14 @@ const Header = () => {
                 </Link>
               </Tooltip>
               <AIChat />
+
+              <ChatIcon onClick={() => setChatVisible(true)} />
+              <ChatWindow
+                visible={chatVisible}
+                onClose={() => setChatVisible(false)}
+                isLoggedIn={isLoggedIn}
+                user={userData ? userData.fullname : ""}
+              />
             </div>
           </div>
         </div>
