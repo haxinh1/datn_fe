@@ -808,7 +808,7 @@ const Edit = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={8} className="col-item">
+                    {/* <Col span={8} className="col-item">
                         <Form.Item label="Loại sản phẩm">
                             <Radio.Group
                                 className="radio-group"
@@ -820,7 +820,7 @@ const Edit = () => {
                                 ]}
                             />
                         </Form.Item>
-                    </Col>
+                    </Col> */}
 
                     <Col span={8} className="col-item">
                         <Form.Item

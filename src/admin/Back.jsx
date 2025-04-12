@@ -1,4 +1,4 @@
-import { EditOutlined, EyeOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons'
+import { EditOutlined, EyeOutlined, MenuOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons'
 import { Button, Col, Modal, Row, Select, Skeleton, Table, Tooltip, Upload, Form, notification, Image } from 'antd'
 import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
@@ -22,13 +22,15 @@ const Back = () => {
     const hideRefundModal = () => setIsRefundModalVisible(false);
     const [image, setImage] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [filters, setFilters] = useState({
+        status: null,
+    });
 
     useEffect(() => {
         const fetchReturns = async () => {
             setIsLoading(true);
             try {
                 const response = await OrderService.getReturnOrder();
-                console.log(response); // Kiểm tra dữ liệu trả về từ API
                 if (response?.order_returns && Array.isArray(response.order_returns)) {
                     setReturns(response.order_returns);
                 }
@@ -41,24 +43,36 @@ const Back = () => {
         fetchReturns();
     }, []);
 
-    const dataSource = returns.map((item, index) => ({
-        key: item.order_id, // quan trọng cho Table
+    const filteredReturns = returns.filter((item) => {
+        const status = item.order.status_id;
+        return !filters.status || status === filters.status;
+    });
+
+    const dataSource = filteredReturns.map((item, index) => ({
+        key: item.order_id,
         index: index + 1,
         code: item.order.code,
         fullname: item.order.fullname,
         phone_number: item.order.phone_number,
         total_amount: item.order.total_amount,
         created_at: item.order.created_at,
-        payment: { id: item.order.payment_id, name: item.order.payment_id === 1 ? "COD" : "VNPAY" },
+        payment: {
+            id: item.order.payment_id,
+            name: item.order.payment_id === 1 ? "COD" : "VNPAY",
+        },
         status_id: item.order.status_id,
         reason: item.reason,
         employee_evidence: item.employee_evidence,
-        raw: item
+        refund_proof: item.refund_proof,
+        bank_name: item.bank_name,
+        bank_account_number: item.bank_account_number,
+        bank_qr: item.bank_qr,
+        raw: item,
     }));
 
-    const fetchRefundDetails = async (orderId) => {
+    const fetchReturnDetails = async (orderId) => {
         try {
-            const response = await OrderService.getRefund(orderId); // Gọi service getRefund với order_id
+            const response = await OrderService.getReturn(orderId); // Gọi service getRefund với order_id
             setRefundDetails(response?.refund_details?.[0]);  // Lấy chi tiết hoàn trả đầu tiên (nếu có)
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
@@ -69,7 +83,7 @@ const Back = () => {
     const showModal = (item) => {
         setIsModalVisible(true);
         setSelectedProducts(item.raw.products || []);
-        fetchRefundDetails(item.raw.order_id);  // Gọi API với order_id
+        fetchReturnDetails(item.raw.order_id);  // Gọi API với order_id
     };
 
     // danh sách trạng thái
@@ -83,6 +97,19 @@ const Back = () => {
 
     const validTransitions = {
         9: [10, 11],
+    };
+
+    const statusCounts = {
+        9: returns.filter(item => item.order.status_id === 9).length,
+        10: returns.filter(item => item.order.status_id === 10).length,
+        11: returns.filter(item => item.order.status_id === 11).length,
+        12: returns.filter(item => item.order.status_id === 12).length,
+        13: returns.filter(item => item.order.status_id === 13).length,
+        14: returns.filter(item => item.order.status_id === 14).length,
+    };
+
+    const handleFilterChange = (key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const showEdit = (item) => {
@@ -182,7 +209,7 @@ const Back = () => {
     const handleRequestRefund = async (values) => {
 
         const note = form.getFieldValue("note");
-        const employeeEvidence = form.getFieldValue("employee_evidence");
+        const refundProof = form.getFieldValue("refund_proof");
 
         // Lấy user_id từ localStorage
         const user = JSON.parse(localStorage.getItem("user"));
@@ -192,7 +219,7 @@ const Back = () => {
         const payload = {
             user_id: userId,  // Lấy user_id từ localStorage
             note: note,  // Ghi chú yêu cầu hoàn tiền
-            employee_evidence: employeeEvidence,  // Chứng minh hoàn tiền (ảnh QR)
+            refund_proof: refundProof,  // Chứng minh hoàn tiền (ảnh QR)
         };
 
         console.log("Dữ liệu gửi đi:", payload); // Kiểm tra dữ liệu gửi đi
@@ -213,10 +240,10 @@ const Back = () => {
         if (info.file.status === "done" && info.file.response) {
             const imageUrl = info.file.response.secure_url;
             setImage(imageUrl);
-            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+            form.setFieldsValue({ refund_proof: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
         } else if (info.file.status === "removed") {
             setImage(""); // Xóa ảnh khi người dùng xóa
-            form.setFieldsValue({ employee_evidence: "" }); // Cập nhật lại giá trị trong form
+            form.setFieldsValue({ refund_proof: "" }); // Cập nhật lại giá trị trong form
         }
     };
 
@@ -277,13 +304,40 @@ const Back = () => {
             )
         },
         {
+            title: "Thông tin hoàn tiền",
+            dataIndex: "bank_name",
+            key: "bank_name",
+            align: "center",
+            render: (_, record) => (
+                <div>
+                    <div>{record.bank_account_number} - {record.bank_name}</div>
+                    {record.bank_qr && (
+                        <div>
+                            <Image width={60} src={record.bank_qr} />
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            title: "Xác nhận hoàn tiền",
+            dataIndex: "refund_proof",
+            key: "refund_proof",
+            align: "center",
+            render: (_, item) => {
+                return item.refund_proof ? (
+                    <Image width={60} src={item.refund_proof} />
+                ) : null; 
+            },
+        },
+        {
             title: "Trạng thái",
             dataIndex: "status",
             align: "center",
             render: (_, record) => {
-                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "Không xác định";
-                const statusColorClass = record.status_id >= 8 ? "action-link-red" : "action-link-blue";
-
+                const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
+                const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
+        
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -313,7 +367,7 @@ const Back = () => {
                         </Tooltip>
                     )}
 
-                    {item.status_id === 12 && (
+                    {item.status_id === 10 && (
                         <Tooltip title="Hoàn tiền">
                             <Button
                                 color="danger"
@@ -354,44 +408,16 @@ const Back = () => {
         },
         {
             title: "Giá bán (VNĐ)",
-            dataIndex: "sell_price",
+            dataIndex: "price",
             align: "center",
+            render: (price) => (price ? formatPrice(price) : ""),
         },
         {
             title: "Thành tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
-        },
-    ];
-
-    const returnColumns = [
-        {
-            title: 'Thông tin',
-            dataIndex: 'label',
-            key: 'label',
-            width: 200,
-        },
-        {
-            title: 'Chi tiết',
-            dataIndex: 'value',
-            key: 'value',
-            width: 200,
-        },
-    ];
-
-    const data = [
-        {
-            key: 'note',
-            label: 'Ghi chú',
-            value: refundDetails?.note || "",
-        },
-        {
-            key: 'employee_evidence',
-            label: 'Xác nhận',
-            value: refundDetails?.employee_evidence ?
-                <Image width={100} src={refundDetails.employee_evidence} alt="Xác nhận" /> :
-                "",
-        },
+            render: (_, record) => formatPrice(record.quantity * record.price),
+        }
     ];
 
     return (
@@ -400,6 +426,53 @@ const Back = () => {
                 <RollbackOutlined style={{ marginRight: "8px" }} />
                 Đơn hàng hoàn trả
             </h1>
+
+            <div className='group1'>
+                <Tooltip title="Danh sách đơn hàng">
+                    <Button
+                        type={!filters.status ? "primary" : "default"}
+                        onClick={() => handleFilterChange("status", null)}
+                        icon={<MenuOutlined />}
+                    />
+                </Tooltip>
+
+                <Button
+                    type={filters.status === 9 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 9)}
+                >
+                    Trả hàng ({statusCounts[9]})
+                </Button>
+                <Button
+                    type={filters.status === 10 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 10)}
+                >
+                    Châp nhận trả hàng ({statusCounts[10]})
+                </Button>
+                <Button
+                    type={filters.status === 11 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 11)}
+                >
+                    Từ chối trả hàng ({statusCounts[11]})
+                </Button>
+                <Button
+                    type={filters.status === 12 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 12)}
+                >
+                    Đã hoàn tiền ({statusCounts[12]})
+                </Button>
+                <Button
+                    type={filters.status === 13 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 13)}
+                >
+                    Đang trả hàng về shop ({statusCounts[13]})
+                </Button>
+                <Button
+                    type={filters.status === 14 ? "primary" : "default"}
+                    onClick={() => handleFilterChange("status", 14)}
+                >
+                    Shop đã nhận hàng ({statusCounts[14]})
+                </Button>
+            </div>
 
             <Skeleton active loading={isLoading}>
                 <Table
@@ -415,29 +488,21 @@ const Back = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width={1000}
+                width={600}
             >
                 <div className="group1">
-                    <Table
-                        columns={returnColumns}
-                        dataSource={data}
-                        pagination={false}
-                        rowKey="key"
-                    />
-
                     <Table
                         columns={detailColumns}
                         dataSource={selectedProducts.map((product, index) => ({
                             ...product,
                             key: index,
                             index: index + 1,
-                            total: formatPrice(product.quantity * product.sell_price),
-                            sell_price: formatPrice(product.sell_price),
+                            price: product.price,
                         }))}
                         pagination={false}
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + item.quantity * item.sell_price,
+                                (sum, item) => sum + item.quantity * item.price,
                                 0
                             );
                             return (
@@ -515,7 +580,7 @@ const Back = () => {
                         <Col span={12}>
                             <Form.Item
                                 label="Minh chứng"
-                                name="employee_evidence"
+                                name="refund_proof"
                                 rules={[{ required: true, message: "Vui lòng tải lên ảnh minh chứng" }]}
                             >
                                 <Upload

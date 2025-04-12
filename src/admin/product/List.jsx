@@ -428,7 +428,7 @@ const List = () => {
                                             title: "Giá KM (VNĐ)",
                                             dataIndex: "sale_price",
                                             key: "sale_price",
-                                            render: (sale_price) => formatPrice(sale_price),
+                                            render: (sale_price) => (sale_price ? formatPrice(sale_price) : ""),
                                             align: "center",
                                             width: 130,
                                         },

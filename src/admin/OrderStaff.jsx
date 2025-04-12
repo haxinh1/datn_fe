@@ -37,13 +37,18 @@ const OrderStaff = () => {
         status: null,
         paymentMethod: null,
     });
+    const [searchInput, setSearchInput] = useState("");
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     // danh sách đơn hàng
     const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
-        queryKey: ["orders"],
+        queryKey: ["orders", searchKeyword],
         queryFn: async () => {
+            if (searchKeyword.trim()) {
+                return await OrderService.searchOrders(searchKeyword); // gọi service search
+            }
             const response = await OrderService.getAllOrder();
-            return response.orders || { data: [] };
+            return response.orders || [];
         },
     });
 
@@ -85,7 +90,6 @@ const OrderStaff = () => {
     }));
 
     const validTransitions = {
-        1: [2], // Chờ thanh toán -> Đã thanh toán
         2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
         3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
         4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
@@ -95,7 +99,6 @@ const OrderStaff = () => {
         10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
         12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
         13: [14],
-        14: [15],
     };
 
     const showEdit = (order) => {
@@ -184,21 +187,20 @@ const OrderStaff = () => {
 
     // Tính số lượng đơn hàng cho mỗi trạng thái
     const statusCounts = {
-        1: ordersData?.filter(order => order.status.id === 1).length || 0,  // Chờ thanh toán
-        2: ordersData?.filter(order => order.status.id === 2).length || 0,  // Đã thanh toán
-        3: ordersData?.filter(order => order.status.id === 3).length || 0,
-        4: ordersData?.filter(order => order.status.id === 4).length || 0,
-        5: ordersData?.filter(order => order.status.id === 5).length || 0,
-        6: ordersData?.filter(order => order.status.id === 6).length || 0,
-        7: ordersData?.filter(order => order.status.id === 7).length || 0,   // Đang xử lý
-        8: ordersData?.filter(order => order.status.id === 8).length || 0,
-        9: ordersData?.filter(order => order.status.id === 9).length || 0,
-        10: ordersData?.filter(order => order.status.id === 10).length || 0,
-        11: ordersData?.filter(order => order.status.id === 11).length || 0,
-        12: ordersData?.filter(order => order.status.id === 12).length || 0,
-        13: ordersData?.filter(order => order.status.id === 13).length || 0,
-        14: ordersData?.filter(order => order.status.id === 14).length || 0,
-        15: ordersData?.filter(order => order.status.id === 15).length || 0,
+        1: ordersData?.filter(order => order.status?.id === 1).length || 0,
+        2: ordersData?.filter(order => order.status?.id === 2).length || 0,
+        3: ordersData?.filter(order => order.status?.id === 3).length || 0,
+        4: ordersData?.filter(order => order.status?.id === 4).length || 0,
+        5: ordersData?.filter(order => order.status?.id === 5).length || 0,
+        6: ordersData?.filter(order => order.status?.id === 6).length || 0,
+        7: ordersData?.filter(order => order.status?.id === 7).length || 0,
+        8: ordersData?.filter(order => order.status?.id === 8).length || 0,
+        9: ordersData?.filter(order => order.status?.id === 9).length || 0,
+        10: ordersData?.filter(order => order.status?.id === 10).length || 0,
+        11: ordersData?.filter(order => order.status?.id === 11).length || 0,
+        12: ordersData?.filter(order => order.status?.id === 12).length || 0,
+        13: ordersData?.filter(order => order.status?.id === 13).length || 0,
+        14: ordersData?.filter(order => order.status?.id === 14).length || 0,
     };
 
     const filteredOrders = (ordersData || []).filter((order) => {
@@ -432,7 +434,7 @@ const OrderStaff = () => {
             dataIndex: "status",
             align: "center",
             render: (status) => (
-                <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+                <div className={[8, 9, 11].includes(status?.id) ? "action-link-red" : "action-link-blue"}>
                     {status?.name}
                 </div>
             ),
@@ -518,7 +520,8 @@ const OrderStaff = () => {
                     display: "flex",
                     gap: "5px",
                     marginBottom: "20px",
-                }}>
+                }}
+            >
                 <Button
                     type={filters.status === 1 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 1)}
@@ -589,33 +592,29 @@ const OrderStaff = () => {
                     type={filters.status === 12 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 12)}
                 >
-                    Xử lý hoàn tiền ({statusCounts[12]})
+                    Đã hoàn tiền ({statusCounts[12]})
                 </Button>
                 <Button
                     type={filters.status === 13 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 13)}
                 >
-                    Đã hoàn tiền ({statusCounts[13]})
+                    Đang trả hàng về shop ({statusCounts[13]})
                 </Button>
                 <Button
                     type={filters.status === 14 ? "primary" : "default"}
                     onClick={() => handleFilterChange("status", 14)}
                 >
-                    Đang trả hàng về shop ({statusCounts[14]})
-                </Button>
-                <Button
-                    type={filters.status === 15 ? "primary" : "default"}
-                    onClick={() => handleFilterChange("status", 15)}
-                >
-                    Shop đã nhận hàng ({statusCounts[15]})
+                    Shop đã nhận hàng ({statusCounts[14]})
                 </Button>
             </div>
 
             <div className="group1">
-                <Button
-                    onClick={resetFilters}
-                    icon={<MenuOutlined />}
-                />
+                <Tooltip title="Danh sách đơn hàng">
+                    <Button
+                        onClick={resetFilters}
+                        icon={<MenuOutlined />}
+                    />
+                </Tooltip>
 
                 <ConfigProvider locale={viVN}>
                     <RangePicker
@@ -632,6 +631,17 @@ const OrderStaff = () => {
                     placeholder="Tìm kiếm đơn hàng..."
                     allowClear
                     enterButton={<SearchOutlined />}
+                    value={searchInput}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setSearchInput(value);
+
+                        // ✅ Nếu người dùng clear input, reset keyword để hiển thị lại danh sách gốc
+                        if (!value) {
+                            setSearchKeyword("");
+                        }
+                    }}
+                    onSearch={() => setSearchKeyword(searchInput)} // ✅ Khi nhấn Enter / Search
                 />
 
                 <div className="group2">

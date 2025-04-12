@@ -73,6 +73,20 @@ const Info = () => {
         }
     };
 
+    const isGoogleAccount = () => {
+        try {
+            const storedUser = localStorage.getItem("client");
+            if (!storedUser) return false;
+
+            const parsedUser = JSON.parse(storedUser);
+            return !!parsedUser.google_id;
+        } catch (err) {
+            console.error("Lỗi khi parse user từ localStorage:", err);
+            return false;
+        }
+    };
+
+
     const onHandleChange = (info) => {
         let fileList = [...info.fileList];
 
@@ -111,7 +125,6 @@ const Info = () => {
         );
         return fileList;
     };
-
 
     const showModal = () => {
         form.setFieldsValue({
@@ -185,10 +198,10 @@ const Info = () => {
         {
             key: "action",
             value: (
-                <Button 
+                <Button
                     type="primary"
-                    style={{backgroundColor: '#eea287', color:'white'}} 
-                    icon={<EditOutlined />} 
+                    style={{ backgroundColor: '#eea287', color: 'white' }}
+                    icon={<EditOutlined />}
                     onClick={showModal}
                 >
                     Cập nhật
@@ -222,7 +235,7 @@ const Info = () => {
 
     return (
         <>
-            <h1 className="mb-5" style={{color:'#eea287'}}>
+            <h1 className="mb-5" style={{ color: '#eea287' }}>
                 <UserOutlined style={{ marginRight: "8px" }} />
                 Thông tin của bạn
             </h1>
@@ -312,7 +325,7 @@ const Info = () => {
                                 rules={[{ required: true, message: "Vui lòng nhập Email" }]}
                                 name="email"
                             >
-                                <Input className="input-item" />
+                                <Input className="input-item" disabled={isGoogleAccount()}/>
                             </Form.Item>
                         </Col>
 
@@ -344,7 +357,7 @@ const Info = () => {
                     </Row>
 
                     <div className="add">
-                        <Button type="primary" style={{backgroundColor: '#eea287', color:'white'}} htmlType="submit">
+                        <Button type="primary" style={{ backgroundColor: '#eea287', color: 'white' }} htmlType="submit">
                             Cập nhật
                         </Button>
                     </div>

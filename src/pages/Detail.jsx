@@ -240,7 +240,15 @@ const Detail = () => {
         {
             key: "payment",
             label: "Phương thức thanh toán",
-            value: order.payment?.name === "COD" ? "Thanh toán khi nhận hàng" : "Thanh toán trực tuyến"
+            value:
+                order.payment?.name === "COD"
+                    ? "Thanh toán khi nhận hàng"
+                    : order.payment?.name === "VNPAY"
+                        ? "Thanh toán qua VNPay"
+                        : order.payment?.name === "MOMO"
+                            ? "Thanh toán qua Momo"
+                            : order.payment?.name
+
         },
         {
             key: "status",

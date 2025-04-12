@@ -6,6 +6,21 @@ const getAllOrder = async () => {
   return response.data;
 };
 
+// tìm kiếm đơn hàng
+const searchOrders = async (keyword = "") => {
+  try {
+    const response = await instance.get('/admin/orders/search', {
+      params: { keyword },
+    });
+
+    // ✅ API trả về mảng đơn hàng trực tiếp
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Lỗi khi gọi API tìm kiếm đơn hàng:", error);
+    return []; // fallback tránh crash
+  }
+};
+
 // danh sách hoá đơn
 const getAllBill = async () => {
   const response = await instance.get("/completed");
@@ -82,18 +97,6 @@ const getOrderStatus = async (id) => {
   return response.data;
 };
 
-// cập nhật trạng thái đơn hàng
-// const updateOrderStatus = async (id, payload) => {
-//   const clientToken = localStorage.getItem('client_token');
-//   const response = await instance.put(`/orders/${id}/update-status`, payload, {
-//     headers: {
-//       Authorization: `Bearer ${clientToken}`,
-//     },
-//   });
-
-//   return response.data;
-// };
-
 const updateOrderStatus = async (id, payload) => {
   // Lấy client_token từ localStorage
   const clientToken = localStorage.getItem("client_token");
@@ -116,7 +119,7 @@ const updateOrders = async (payload) => {
 
 // yêu cầu trả hàng
 const returnOrder = async (id, payload) => {
-  const respone = await instance.post(`orders/${id}/return`, payload);
+  const respone = await instance.post(`order-returns/${id}/return`, payload);
   return respone.data;
 };
 
@@ -128,10 +131,7 @@ const getReturnOrder = async () => {
 
 // cập nhật trạng thái đơn hoàn trả
 const updateOrderReturn = async (id, payload) => {
-  const response = await instance.post(
-    `/order-returns/update-status/order/${id}`,
-    payload
-  );
+  const response = await instance.post(`/order-returns/${id}/status/update`, payload );
   return response.data;
 };
 
@@ -141,8 +141,9 @@ const getOrderReturnByIdUser = async (userId) => {
   return response.data;
 };
 
-const getRefund = async (id) => {
-  const response = await instance.get(`/refunds/${id}`);
+// chi tiết đơn hoàn trả theo id
+const getReturn = async (id) => {
+  const response = await instance.get(`/order-returns/${id}`);
   return response.data;
 };
 
@@ -154,7 +155,7 @@ const requestBack = async (id, payload) => {
 
 // xác nhận hoàn tiền
 const confirmBack = async (id, payload) => {
-  const response = await instance.post(`/refunds/confirm/${id}`, payload);
+  const response = await instance.post(`/order-returns/${id}/refund/confirm`, payload);
   return response.data;
 };
 
@@ -187,6 +188,7 @@ const retryPayment = async (orderId, paymentMethod, totalMomo) => {
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
+  searchOrders,
   getDetailOrder,
   placeOrder,
   getAllOrder,
@@ -200,7 +202,7 @@ export const OrderService = {
   getReturnOrder,
   updateOrderReturn,
   getOrderReturnByIdUser,
-  getRefund,
+  getReturn,
   requestBack,
   confirmBack,
   retryPayment,

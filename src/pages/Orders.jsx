@@ -3,18 +3,19 @@ import {
   BookOutlined,
   CheckOutlined,
   EyeOutlined,
+  MenuOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {
   Button,
-  Col,
-  ConfigProvider,
   DatePicker,
   Image,
+  Input,
   Modal,
-  Radio,
-  Select,
   Skeleton,
   Table,
+  Radio,
+  Tabs,
   Tooltip,
   notification,
 } from "antd";
@@ -22,11 +23,11 @@ import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { OrderService } from "../services/order";
-import { paymentServices } from "../services/payments";
 import { useQuery } from "@tanstack/react-query";
-import viVN from "antd/es/locale/vi_VN";
 import echo from "../echo";
+import { paymentServices } from "../services/payments";
 
+const { TabPane } = Tabs;
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,8 @@ const Orders = () => {
     total_amount: "",
   });
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
@@ -94,6 +97,22 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
+  const handleSearch = async (keyword) => {
+    setSearchKeyword(keyword); // Cập nhật từ khóa tìm kiếm vào state
+    try {
+      setIsLoading(true);
+      if (keyword.trim()) {
+        const response = await OrderService.searchOrders(keyword); // Gọi API tìm kiếm đơn hàng
+        setOrders(response); // Lưu kết quả vào state orders
+      } else {
+        fetchOrders(); // Nếu không có từ khóa tìm kiếm, quay lại danh sách toàn bộ
+      }
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const channel = echo.channel("order-status-channel");
 
@@ -121,15 +140,30 @@ const Orders = () => {
     };
   }, []);
 
+  const statusTabs = [
+    { id: 2, label: "Đã thanh toán" },
+    { id: 3, label: "Đang xử lý" },
+    { id: 4, label: "Đang giao hàng" },
+    { id: 5, label: "Đã giao hàng" },
+    { id: 6, label: "Giao hàng thất bại" },
+    { id: 7, label: "Hoàn thành" },
+    { id: 8, label: "Hủy đơn" },
+    { id: 9, label: "Trả hàng" },
+  ];
+
+  const countOrdersByStatus = (statusId) => {
+    if (statusId === 9) {
+      // Trả hàng: đếm tất cả đơn có status ID >= 9
+      return orders.filter((order) => order.status?.id >= 9).length;
+    }
+    return orders.filter((order) => order.status?.id === statusId).length;
+  };
+
   const [filters, setFilters] = useState({
     dateRange: null,
     status: null,
     payment: null,
   });
-
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
 
   const filteredOrders = orders.filter((order) => {
     const { dateRange, status, payment } = filters;
@@ -140,14 +174,29 @@ const Orders = () => {
         orderDate.isSameOrBefore(dateRange[1], "day"));
     const isStatusValid = !status || order.status?.id === status;
     const isPaymentValid = !payment || order.payment?.id === payment;
-    return isDateValid && isStatusValid && isPaymentValid;
+    const isTabMatch =
+      !activeTab ||
+      (activeTab === 9
+        ? order.status?.id >= 9 // Trả hàng: tất cả status >= 9
+        : order.status?.id === activeTab);
+    const isSearchMatch = order.code
+      .toLowerCase()
+      .includes(searchKeyword.toLowerCase()); // Kiểm tra tìm kiếm mã đơn hàng
+
+    return (
+      isDateValid &&
+      isStatusValid &&
+      isPaymentValid &&
+      isTabMatch &&
+      isSearchMatch
+    );
   });
 
-  // Lấy danh sách phương thức thanh toán (chỉ Momo và VNPay)
   const { data: payments } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
       const response = await paymentServices.getPayment();
+
       return response.filter(
         (method) =>
           method.name.toLowerCase() === "momo" ||
@@ -164,7 +213,6 @@ const Orders = () => {
       return response.data;
     },
   });
-  const status = statusData ? [...statusData].sort((a, b) => a.id - b.id) : [];
   const getStatusName = (id) => {
     const found = statusData?.find((s) => s.id === id);
     return found ? found.name : "Đang cập nhật...";
@@ -356,7 +404,6 @@ const Orders = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
               gap: "10px",
             }}
           >
@@ -427,7 +474,9 @@ const Orders = () => {
           payment?.name === "COD"
             ? "Thanh toán khi nhận hàng"
             : payment?.name === "VNPAY"
-            ? "Thanh toán trực tuyến"
+            ? "Thanh toán qua VNPay"
+            : payment?.name === "MOMO"
+            ? "Thanh toán qua Momo"
             : payment?.name;
         return <span>{paymentName}</span>;
       },
@@ -438,7 +487,11 @@ const Orders = () => {
       align: "center",
       render: (status) => (
         <div
-          className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}
+          className={
+            [8, 9, 11].includes(status?.id)
+              ? "action-link-red"
+              : "action-link-blue"
+          }
         >
           {status?.name}
         </div>
@@ -499,6 +552,42 @@ const Orders = () => {
         <BookOutlined style={{ marginRight: "8px" }} />
         Đơn hàng của bạn
       </h1>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "10px",
+        }}
+      >
+        <Tooltip title="Toàn bộ đơn hàng">
+          <Button onClick={() => setActiveTab(null)} icon={<MenuOutlined />} />
+        </Tooltip>
+
+        <Input.Search
+          style={{ width: "400px" }}
+          placeholder="Tìm kiếm mã đơn hàng..."
+          allowClear
+          enterButton={<SearchOutlined />}
+          value={searchKeyword} // Bind state searchKeyword với giá trị input
+          onSearch={(value) => handleSearch(value)} // Khi tìm kiếm, gọi handleSearch
+          onChange={(e) => setSearchKeyword(e.target.value)} // Cập nhật state khi người dùng nhập
+        />
+      </div>
+
+      <Tabs
+        onChange={(key) => setActiveTab(parseInt(key))}
+        activeKey={activeTab?.toString() || ""}
+        type="scrollable"
+      >
+        {statusTabs.map((tab) => (
+          <TabPane
+            tab={`${tab.label} (${countOrdersByStatus(tab.id)})`}
+            key={tab.id.toString()}
+          />
+        ))}
+      </Tabs>
 
       <Skeleton active loading={isLoading}>
         <Table
@@ -586,11 +675,7 @@ const Orders = () => {
         <div className="add">
           {(orderStatus === 5 || orderStatus === 7) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
-              <Button
-                color="danger"
-                variant="solid"
-                style={{ marginRight: "10px" }}
-              >
+              <Button color="danger" variant="solid">
                 Trả hàng
               </Button>
             </Link>

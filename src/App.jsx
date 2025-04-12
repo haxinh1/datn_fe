@@ -104,7 +104,7 @@ function App() {
         <Route path="/resetad/:token" element={<ResetAd />} />
 
         {/* Các trang cần đăng nhập */}
-        {/* <Route element={<PrivateRoute />}> */}
+        <Route element={<PrivateRoute />}>
           <Route path="/admin" element={<LayoutAdmin />}>
             <Route path="dashboardad" element={<DashboardAd />} />
             <Route path="list-pr" element={<List />} />
@@ -131,7 +131,7 @@ function App() {
             <Route path="change/:id" element={<Change />} />
             <Route path="comment" element={<Comment />} />
           </Route>
-        {/* </Route> */}
+        </Route>
       </Routes>
     </>
   );

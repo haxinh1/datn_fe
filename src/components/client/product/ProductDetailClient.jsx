@@ -350,7 +350,7 @@ const ProductDetailClient = () => {
                       href="#product-review-link"
                       id="review-link"
                     >
-                      ( 2 Đánh giá )
+                      <span className="text-confirm">({product.views} lượt xem)</span>
                     </a>
                   </div>
 
@@ -481,7 +481,7 @@ const ProductDetailClient = () => {
                             fontFamily: "'Roboto', 'Arial', sans-serif",
                           }}
                         >
-                          Thêm giỏ hàng
+                          <span>giỏ hàng</span>
                         </a>
                       </div>
                     </>
