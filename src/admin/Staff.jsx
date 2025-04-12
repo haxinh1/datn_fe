@@ -15,7 +15,13 @@ const Staff = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const hideModal = () => setIsModalVisible(false);
     const [orderDetails, setOrderDetails] = useState([]);
-    const [orderInfo, setOrderInfo] = useState({ shipping_fee: "", discount_points: "", total_amount: "" });
+    const [orderInfo, setOrderInfo] = useState({
+        shipping_fee: "",
+        discount_points: "",
+        total_amount: "",
+        coupon_discount_value: "",
+        coupon_discount_type: "",
+    });
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -70,6 +76,8 @@ const Staff = () => {
                 total_amount: detailData.order.total_amount,
                 discount_points: detailData.order.discount_points,
                 shipping_fee: detailData.order.shipping_fee,
+                coupon_discount_value: detailData.order.coupon_discount_value,
+                coupon_discount_type: detailData.order.coupon_discount_type,
             });
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
@@ -297,14 +305,31 @@ const Staff = () => {
                             (sum, item) => sum + item.quantity * item.sell_price,
                             0
                         );
+
+                        const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+                        const discountValue = isPercentDiscount
+                            ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                            : 0;
+
                         return (
                             <>
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Tổng tiền:
+                                        Tổng tiền hàng:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
                                         <strong>{formatPrice(totalAmount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phiếu giảm giá:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {isPercentDiscount
+                                            ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                                            : formatPrice(orderInfo.coupon_discount_value)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
 

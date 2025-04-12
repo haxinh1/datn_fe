@@ -25,7 +25,16 @@ const OrderStaff = () => {
     const [form] = Form.useForm();
     const [image, setImage] = useState("");
     const [orderDetails, setOrderDetails] = useState([]);
-    const [orderInfo, setOrderInfo] = useState({ email: "", address: "", fullname: "", shipping_fee: "", discount_points: "", total_amount: "" });
+    const [orderInfo, setOrderInfo] = useState({
+        email: "",
+        address: "",
+        fullname: "",
+        shipping_fee: "",
+        discount_points: "",
+        total_amount: "",
+        coupon_discount_value: "",
+        coupon_discount_type: "",
+    });
     const { RangePicker } = DatePicker;
     const [validStatuses, setValidStatuses] = useState([]);
     const [batchUpdateModalVisible, setBatchUpdateModalVisible] = useState(false);
@@ -41,15 +50,22 @@ const OrderStaff = () => {
     const [searchKeyword, setSearchKeyword] = useState("");
 
     // danh sách đơn hàng
-    const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
-        queryKey: ["orders", searchKeyword],
+    const { data: ordersData = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useQuery({
+        queryKey: ["orders"],
         queryFn: async () => {
-            if (searchKeyword.trim()) {
-                return await OrderService.searchOrders(searchKeyword); // gọi service search
-            }
             const response = await OrderService.getAllOrder();
-            return response.orders || [];
+            return Array.isArray(response.orders) ? response.orders : [];
         },
+    });
+
+    const { data: searchResults = [], isLoading: isLoadingSearch } = useQuery({
+        queryKey: ["searchOrders", searchKeyword],
+        queryFn: async () => {
+            if (!searchKeyword) return [];
+            const response = await OrderService.searchOrders(searchKeyword);
+            return Array.isArray(response) ? response : [];
+        },
+        enabled: searchKeyword.length > 0,  // Chỉ gọi API khi có từ khóa tìm kiếm
     });
 
     // danh sách phương thức thanh toán
@@ -90,15 +106,10 @@ const OrderStaff = () => {
     }));
 
     const validTransitions = {
-        2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
-        3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
-        4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+        2: [3, 8],
+        3: [4, 8],
+        4: [5, 6],
         6: [4, 8],
-        // 5: [7], // Đã giao hàng -> Hoàn thành
-        9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
-        10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
-        12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
-        13: [14],
     };
 
     const showEdit = (order) => {
@@ -203,7 +214,13 @@ const OrderStaff = () => {
         14: ordersData?.filter(order => order.status?.id === 14).length || 0,
     };
 
-    const filteredOrders = (ordersData || []).filter((order) => {
+    const mergedOrders = (searchKeyword ? searchResults : ordersData).map(order => ({
+        ...order,
+        payment: payments?.find(p => p.id === order.payment_id),
+        status: status?.find(s => s.id === order.status_id),
+    }));
+
+    const filteredOrders = (mergedOrders || []).filter((order) => {
         const { dateRange, status, paymentMethod } = filters;
 
         const isWithinDateRange =
@@ -253,7 +270,9 @@ const OrderStaff = () => {
             fullname: order.fullname,
             discount_points: order.discount_points,
             shipping_fee: order.shipping_fee,
-            total_amount: order.total_amount
+            total_amount: order.total_amount,
+            coupon_discount_value: order.coupon_discount_value,
+            coupon_discount_type: order.coupon_discount_type,
         });
 
         const orderDetails = await OrderService.getOrderById(order.id);
@@ -453,13 +472,16 @@ const OrderStaff = () => {
                             onClick={() => showModal(item)}
                         />
                     </Tooltip>
+
                     <Tooltip title="Cập nhật">
-                        <Button
-                            color="primary"
-                            variant="solid"
-                            icon={<EditOutlined />}
-                            onClick={() => showEdit(item)}
-                        />
+                        {([2, 3, 4, 6].includes(item.status?.id)) && (
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<EditOutlined />}
+                                onClick={() => showEdit(item)}
+                            />
+                        )}
                     </Tooltip>
                 </div>
             ),
@@ -635,13 +657,11 @@ const OrderStaff = () => {
                     onChange={(e) => {
                         const value = e.target.value;
                         setSearchInput(value);
-
-                        // ✅ Nếu người dùng clear input, reset keyword để hiển thị lại danh sách gốc
                         if (!value) {
                             setSearchKeyword("");
                         }
                     }}
-                    onSearch={() => setSearchKeyword(searchInput)} // ✅ Khi nhấn Enter / Search
+                    onSearch={() => setSearchKeyword(searchInput)}
                 />
 
                 <div className="group2">
@@ -657,7 +677,7 @@ const OrderStaff = () => {
                 </div>
             </div>
 
-            <Skeleton active loading={isLoading}>
+            <Skeleton loading={isLoadingOrders || isLoadingSearch} active>
                 <Table
                     columns={columns}
                     dataSource={dataSource}
@@ -691,16 +711,34 @@ const OrderStaff = () => {
                             (sum, item) => sum + item.quantity * item.sell_price,
                             0
                         );
+
+                        const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+                        const discountValue = isPercentDiscount
+                            ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                            : 0;
+
                         return (
                             <>
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Tổng tiền:
+                                        Tổng tiền hàng:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
                                         {formatPrice(totalAmount)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={4} align="right">
+                                        Phiếu giảm giá:
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        {isPercentDiscount
+                                            ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                                            : formatPrice(orderInfo.coupon_discount_value)}
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         Phí vận chuyển:
@@ -709,6 +747,7 @@ const OrderStaff = () => {
                                         {formatPrice(orderInfo.shipping_fee)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         Giảm giá điểm tiêu dùng:
@@ -717,6 +756,7 @@ const OrderStaff = () => {
                                         {formatPrice(orderInfo.discount_points)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
+
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         <strong>Tổng giá trị đơn hàng:</strong>

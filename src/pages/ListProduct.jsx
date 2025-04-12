@@ -5,10 +5,12 @@ import { BrandsServices } from "../services/brands";
 import { categoryServices } from "./../services/categories";
 import bg from "../assets/images/backgrounds/bg-1.jpg";
 import { Pagination } from "antd";
+import { AttributesServices } from "../services/attributes";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [attribute, setAttribute] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState(products);
@@ -20,6 +22,7 @@ const ListProduct = () => {
   const [isFiltered, setIsFiltered] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(9);
+  const [selectedAttributeValues, setSelectedAttributeValues] = useState([]);
 
   useEffect(() => {
     const getProducts = async () => {
@@ -68,6 +71,14 @@ const ListProduct = () => {
       setBrands(data.data);
     };
     getBrands();
+  }, []);
+
+  useEffect(() => {
+    const getAttribute = async () => {
+      const data = await AttributesServices.fetchAttributes();
+      setAttribute(data.data);
+    };
+    getAttribute();
   }, []);
 
   const handleBrandChange = (brandId) => {
@@ -168,14 +179,24 @@ const ListProduct = () => {
         product.categories.some((cat) => selectedCategories.includes(cat.id));
 
       // Lấy giá hiển thị thực tế của sản phẩm
-      const productPrice = getDisplayedPrice(product);
+      const { minPrice, maxPrice } = getVariantPriceRange(product);
 
       const matchesPrice =
         selectedPrices.length === 0 ||
         selectedPrices.some(
-          (range) => productPrice >= range.min && productPrice <= range.max
+          (range) =>
+            (minPrice >= range.min && minPrice <= range.max) ||
+            (maxPrice >= range.min && maxPrice <= range.max)
         );
-      return matchesBrand && matchesCategory && matchesPrice;
+
+      // Sửa lại logic lọc theo giá trị thuộc tính
+      const matchesAttributeValues =
+        selectedAttributeValues.length === 0 ||
+        product.atribute_value_product?.some((attr) =>
+          selectedAttributeValues.includes(attr.attribute_value.id)
+        );
+
+      return matchesBrand && matchesCategory && matchesPrice && matchesAttributeValues;
     });
 
     setFilteredProducts(filtered);
@@ -187,6 +208,7 @@ const ListProduct = () => {
     setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
     setSelectedCategories([]); // Bỏ chọn tất cả danh mục
     setSelectedPrices([]); // Bỏ chọn tất cả mức giá
+    setSelectedAttributeValues([]); // Bỏ chọn tất cả thuộc tính
     setIsFiltered(false); // Đánh dấu là không lọc nữa
     setKeyword("");
   };
@@ -429,56 +451,49 @@ const ListProduct = () => {
                     </div>
                   </div>
 
-                  {/* List size */}
-                  <div className="widget widget-collapsible">
-                    <h3 className="widget-title">
-                      <span>Kích cỡ</span>
-                    </h3>
+                  {attribute.map((attribute) => (
+                    <div className="widget widget-collapsible" key={attribute.id}>
+                      <h3 className="widget-title">
+                        <span>{attribute.name}</span>
+                      </h3>
 
-                    <div className=" show" id="widget-2">
-                      <div className="widget-body">
-                        <div className="filter-items">
-                          <div className="filter-item">
-                            <div className="custom-control custom-checkbox">
-                              <input
-                                className="custom-control-input"
-                                id="size-1"
-                                type="checkbox"
-                              />
-                              <label
-                                className="custom-control-label"
-                                htmlFor="size-1"
-                              >
-                                XS
-                              </label>
-                            </div>
+                      <div className="show" id={`widget-${attribute.id}`}>
+                        <div className="widget-body">
+                          <div className="filter-items">
+                            {attribute.attribute_values.map((value) => (
+                              <div className="filter-item" key={value.id}>
+                                <div className="custom-control custom-checkbox">
+                                  <input
+                                    className="custom-control-input"
+                                    id={`attr-${attribute.id}-val-${value.id}`}
+                                    type="checkbox"
+                                    value={value.id}
+                                    onChange={(e) => {
+                                      const valueId = parseInt(e.target.value); // Ép kiểu sang number
+                                      setSelectedAttributeValues((prev) =>
+                                        e.target.checked
+                                          ? [...prev, valueId]
+                                          : prev.filter((id) => id !== valueId)
+                                      );
+                                    }}
+
+                                    checked={selectedAttributeValues.includes(value.id)}
+                                  />
+
+                                  <label
+                                    className="custom-control-label"
+                                    htmlFor={`attr-${attribute.id}-val-${value.id}`}
+                                  >
+                                    {value.value}
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* List màu */}
-                  <div className="widget widget-collapsible">
-                    <h3 className="widget-title">
-                      <span>Màu sắc</span>
-                    </h3>
-
-                    <div className=" show" id="widget-3">
-                      <div className="widget-body">
-                        <div className="filter-colors">
-                          <a
-                            href="#"
-                            style={{
-                              background: "#b87145",
-                            }}
-                          >
-                            <span className="sr-only">Color Name</span>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
 
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">

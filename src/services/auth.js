@@ -38,6 +38,11 @@ const updateUser = async (id, payload) => {
   return response.data;
 };
 
+const getPointByUser = async (id) => {
+  const response = await instance.get(`/user/points/${id}`);
+  return response.data;
+};
+
 // nhật ký hoạt động của nhân viên
 const getModifiedById = async (id) => {
   const response = await instance.get(`/orders/modified-by/${id}`);
@@ -272,6 +277,7 @@ export const AuthServices = {
   searchUsers,
   updateUser,
   getAUser,
+  getPointByUser,
   register,
   verify,
   getModifiedById,

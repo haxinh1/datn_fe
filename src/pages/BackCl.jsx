@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, Table, Tooltip, Image, Skeleton } from 'antd';
+import { Button, Modal, Table, Tooltip, Image, Skeleton, Input } from 'antd';
 import { OrderService } from '../services/order';
 import { Link, useParams } from 'react-router-dom';
 import { EyeOutlined, RollbackOutlined } from '@ant-design/icons';
@@ -13,6 +13,7 @@ const BackCl = () => {
     const hideModal = () => setIsModalVisible(false);
     const [isLoading, setIsLoading] = useState(true);
     const [refundDetails, setRefundDetails] = useState(null);
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -30,6 +31,31 @@ const BackCl = () => {
 
         fetchData();
     }, []);
+
+    const handleSearch = async (keyword) => {
+        setIsLoading(true);
+        try {
+            if (keyword.trim()) {
+                const response = await OrderService.searchOrderReturn(keyword);
+                setReturns(response); // hoặc response.order_returns nếu API trả vậy
+            } else {
+                const response = await OrderService.getOrderReturnByIdUser(id);
+                setReturns(response.order_returns);
+            }
+        } catch (error) {
+            console.error("Lỗi tìm kiếm đơn hàng:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };    
+
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            handleSearch(searchKeyword);
+        }, 300); // 500ms debounce
+    
+        return () => clearTimeout(delayDebounce);
+    }, [searchKeyword]);    
 
     const dataSource = returns.map((item, index) => ({
         key: item.order_id, // quan trọng cho Table
@@ -135,7 +161,7 @@ const BackCl = () => {
             render: (_, record) => {
                 const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
                 const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
-        
+
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -193,7 +219,7 @@ const BackCl = () => {
             align: "center",
         },
         {
-            title: "Giá bán (VNĐ)",
+            title: "Giá hoàn (VNĐ)",
             dataIndex: "price",
             align: "center",
             render: (price) => (price ? formatPrice(price) : ""),
@@ -212,6 +238,16 @@ const BackCl = () => {
                 <RollbackOutlined style={{ marginRight: "8px" }} />
                 Đơn hàng hoàn trả
             </h1>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+                <Input
+                    style={{ width: '400px' }}
+                    placeholder="Tìm kiếm mã đơn hàng..."
+                    allowClear
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                />
+            </div>
 
             <Skeleton active loading={isLoading}>
                 <Table

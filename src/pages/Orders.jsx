@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, BookOutlined, CheckOutlined, EyeOutlined, MenuOutlined, SearchOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, EyeOutlined, MenuOutlined, PrinterOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Tabs, Tooltip, notification } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -6,8 +6,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { OrderService } from "../services/order";
 import { useQuery } from "@tanstack/react-query";
 import echo from "../echo";
-
+import logo from "../assets/images/logo.png";
 const { TabPane } = Tabs;
+
 const Orders = () => {
   const [orders, setOrders] = useState([]); // State to store the orders
   const [isLoading, setIsLoading] = useState(true);
@@ -22,9 +23,12 @@ const Orders = () => {
     email: "",
     address: "",
     fullname: "",
+    payment_id: "",
     shipping_fee: "",
     discount_points: "",
     total_amount: "",
+    coupon_discount_value: "",
+    coupon_discount_type: "",
   });
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(null);
@@ -47,9 +51,13 @@ const Orders = () => {
     setOrderInfo({
       email: order.email,
       address: order.address,
+      fullname: order.fullname,
+      payment_id: order.payment_id,
       discount_points: order.discount_points,
       shipping_fee: order.shipping_fee,
       total_amount: order.total_amount,
+      coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -317,18 +325,10 @@ const Orders = () => {
 
   const detailColumns = [
     {
-      title: "STT",
-      dataIndex: "index",
-      align: "center",
-      render: (_, __, index) => index + 1,
-    },
-    {
       title: "Sản phẩm",
       dataIndex: "product",
       align: "center",
       render: (_, record) => {
-        const thumbnail =
-          record.variants?.[0]?.variant_thumbnail || record.thumbnail; // Kiểm tra nếu có variant, nếu không thì lấy thumbnail của sản phẩm
         const productName = record.name || "";
         const variantAttributes =
           record.variants
@@ -341,18 +341,9 @@ const Orders = () => {
             .join(", ") || productName;
 
         return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <Image src={thumbnail} width={60} />
-            <Link to={`/product-detail/${record.product_id}`}>
-              <span>{variantAttributes}</span>
-            </Link>
-          </div>
+          <Link to={`/product-detail/${record.product_id}`}>
+            <span>{variantAttributes}</span>
+          </Link>
         );
       },
     },
@@ -441,11 +432,11 @@ const Orders = () => {
         const isDelivered = status?.id === 5; // Đã giao hàng
         return (
           <div className="action-container">
-            <Tooltip title="Chi tiết đơn hàng">
+            <Tooltip title="Hóa đơn">
               <Button
                 color="purple"
                 variant="solid"
-                icon={<EyeOutlined />}
+                icon={<PrinterOutlined />}
                 onClick={() => showModal(item)}
               />
             </Tooltip>
@@ -492,14 +483,13 @@ const Orders = () => {
           />
         </Tooltip>
 
-        <Input.Search
+        <Input
           style={{ width: '400px' }}
           placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
-          enterButton={<SearchOutlined />}
-          value={searchKeyword} // Bind state searchKeyword với giá trị input
-          onSearch={(value) => handleSearch(value)} // Khi tìm kiếm, gọi handleSearch
-          onChange={(e) => setSearchKeyword(e.target.value)} // Cập nhật state khi người dùng nhập
+          value={searchKeyword}
+          onSearch={(value) => handleSearch(value)} 
+          onChange={(e) => setSearchKeyword(e.target.value)}
         />
       </div>
 
@@ -529,70 +519,110 @@ const Orders = () => {
       </Skeleton>
 
       <Modal
-        title="Chi tiết đơn hàng"
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={800}
+        width={500}
       >
-        <span>Email: <span className="text-quest">{orderInfo.email}</span></span>{" "} <br />
-        <span>Địa chỉ nhận hàng:{" "}<span className="text-quest">{orderInfo.address}</span></span>
+        <div id="invoiceModalContent">
+          <div className="form-name">
+            <img className="logo-bill" src={logo} />
+          </div>
+          <span className="text-title">
+            Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
+          </span>{" "}
+          <br />
+          <span className="text-title">
+            Email: <span className="text-name">{orderInfo.email}</span>
+          </span>{" "}
+          <br />
+          <span className="text-title">
+            Địa chỉ: <span className="text-name">{orderInfo.address}</span>
+          </span>
+          <Table
+            style={{ marginTop: "20px" }}
+            columns={detailColumns}
+            dataSource={orderDetails.map((item) => ({
+              ...item,
+              product_name: item.product?.name,
+            }))}
+            pagination={false}
+            summary={() => {
+              const totalAmount = orderDetails.reduce(
+                (sum, item) => sum + item.quantity * item.sell_price,
+                0
+              );
 
-        <Table
-          columns={detailColumns}
-          dataSource={orderDetails.map((item, index) => ({
-            ...item,
-            key: index,
-            index: index + 1,
-            product_name: item.product?.name,
-          }))}
-          pagination={false}
-          summary={() => {
-            const totalAmount = orderDetails.reduce(
-              (sum, item) => sum + item.quantity * item.sell_price,
-              0
-            );
-            return (
-              <>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Tổng tiền:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(totalAmount)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
+              const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+              const discountValue = isPercentDiscount
+                ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                : 0;
 
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Phí vận chuyển:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.shipping_fee)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
+              return (
+                <>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Tổng tiền hàng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(totalAmount)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
 
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Giảm giá điểm tiêu dùng:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.discount_points)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phiếu giảm giá:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {isPercentDiscount
+                        ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                        : formatPrice(orderInfo.coupon_discount_value)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
 
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    <strong>Tổng giá trị đơn hàng:</strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    <strong>{formatPrice(orderInfo.total_amount)}</strong>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              </>
-            );
-          }}
-        />
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Giảm giá điểm tiêu dùng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.discount_points)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Tổng thanh toán:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>
+                        {orderInfo.payment_id === 2
+                          ? formatPrice(orderInfo.total_amount)
+                          : formatPrice(0)}
+                      </strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </>
+              );
+            }}
+          />
+          <div className="form-thank">
+            <span className="text-thank">
+              Cảm ơn quý khách đã tin tưởng Molla Shop!
+            </span>{" "}
+            <br />
+            <span className="text-name">Hẹn gặp lại</span>
+          </div>
+        </div>
+
         <div className="add">
           {(orderStatus === 5 || orderStatus === 7) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>

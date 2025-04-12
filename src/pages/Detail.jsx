@@ -73,7 +73,7 @@ const Detail = () => {
             onOk: async () => {
                 try {
                     const payload = {
-                        order_status_id: 7,  // Status 'Hoàn thành'
+                        order_status_id: 7,
                         note: "",
                         employee_evidence: "",
                     };
@@ -115,7 +115,7 @@ const Detail = () => {
     };
 
     // hãm xác nhận hủy đơn
-    const handleCancelOrder = (orderId) => {
+    const handleCancelOrder = (id) => {
         Modal.confirm({
             title: "Xác nhận hủy đơn",
             content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
@@ -124,15 +124,15 @@ const Detail = () => {
             onOk: async () => {
                 try {
                     const payload = {
-                        order_status_id: 8,  // Status 'Hủy đơn'
-                        note: "",  // Nếu có ghi chú, bạn có thể thêm ở đây
-                        employee_evidence: "",  // Cung cấp chứng cứ nếu cần thiết
+                        order_status_id: 8,
+                        note: "",
+                        employee_evidence: "",
                     };
 
                     console.log("Dữ liệu gửi đi:", payload);
 
                     // Gọi API để cập nhật trạng thái đơn hàng
-                    const response = await OrderService.updateOrderStatus(orderId, payload);
+                    const response = await OrderService.updateOrderStatus(id, payload);
                     console.log("Phản hồi từ API:", response);
 
                     // Kiểm tra phản hồi chính xác từ API

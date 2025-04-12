@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
 import { useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { EditOutlined, UploadOutlined, UserOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, UploadOutlined, UserOutlined } from '@ant-design/icons';
 
 const Info = () => {
     const { id } = useParams();
@@ -12,6 +12,9 @@ const Info = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
     const [image, setImage] = useState("");
+    const [isModal, setIsModal] = useState(false);
+    const hidePoint = () => setIsModal(false);
+    const [pointHistory, setPointHistory] = useState([]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -86,7 +89,6 @@ const Info = () => {
         }
     };
 
-
     const onHandleChange = (info) => {
         let fileList = [...info.fileList];
 
@@ -126,6 +128,34 @@ const Info = () => {
         return fileList;
     };
 
+    useEffect(() => {
+        const fetchPoints = async () => {
+            try {
+                const data = await AuthServices.getPointByUser(id);
+                setPointHistory(data); // mảng lịch sử điểm
+            } catch (err) {
+                console.error("Lỗi khi lấy lịch sử điểm:", err);
+                notification.error({
+                    message: "Lỗi",
+                    description: "Không thể tải lịch sử điểm của người dùng.",
+                });
+            }
+        };
+
+        if (id) fetchPoints();
+    }, [id]);
+
+    const getPointDataSource = (history) =>
+        history.map((item, index) => ({
+            key: item.id,
+            index: index + 1,
+            order_code: item.order?.code,
+            points: item.points,
+            type: item.type,
+            reason: item.reason,
+            date: dayjs(item.created_at).format('DD/MM/YYYY HH:mm'),
+        }));
+
     const showModal = () => {
         form.setFieldsValue({
             fullname: user.fullname,
@@ -139,6 +169,11 @@ const Info = () => {
 
     const handleCancel = () => {
         setIsModalVisible(false);
+    };
+
+    const showPoint = () => {
+        setIsModal(true);
+
     };
 
     const formatPrice = (price) => {
@@ -229,9 +264,55 @@ const Info = () => {
         {
             key: "loyalty_points",
             label: "Điểm tiêu dùng",
-            value: formatPrice(user.loyalty_points)
+            value:
+                <div className="group1">
+                    <div className="action-link-blue">{formatPrice(user.loyalty_points)}</div>
+
+                    <Tooltip title="Chi tiết">
+                        <Button
+                            type="text"
+                            icon={<EyeOutlined />}
+                            onClick={showPoint}
+                        />
+                    </Tooltip>
+                </div>
         },
     ] : [];
+
+    const getPointColumns = [
+        {
+            title: 'STT',
+            dataIndex: 'index',
+            align: "center",
+        },
+        {
+            title: 'Mã đơn hàng',
+            dataIndex: 'order_code',
+            align: "center",
+        },
+        {
+            title: 'Điểm',
+            dataIndex: 'points',
+            align: 'center',
+            render: (value) => (
+                <span style={{ color: value > 0 ? 'green' : 'red' }}>
+                    {value > 0 ? `+${formatPrice(value)}` : formatPrice(value)}
+                </span>
+            ),
+        },
+        {
+            title: 'Ghi chú',
+            dataIndex: 'reason',
+            align: "center",
+        },
+        {
+            title: 'Thời gian',
+            dataIndex: 'date',
+            align: "center",
+            sorter: (a, b) => dayjs(a.date, 'DD/MM/YYYY HH:mm').unix() - dayjs(b.date, 'DD/MM/YYYY HH:mm').unix(),
+        }
+
+    ];
 
     return (
         <>
@@ -325,7 +406,7 @@ const Info = () => {
                                 rules={[{ required: true, message: "Vui lòng nhập Email" }]}
                                 name="email"
                             >
-                                <Input className="input-item" disabled={isGoogleAccount()}/>
+                                <Input className="input-item" disabled={isGoogleAccount()} />
                             </Form.Item>
                         </Col>
 
@@ -362,6 +443,20 @@ const Info = () => {
                         </Button>
                     </div>
                 </Form>
+            </Modal>
+
+            <Modal
+                title="Điểm tiêu dùng"
+                visible={isModal}
+                onCancel={hidePoint}
+                footer={null}
+                width={800}
+            >
+                <Table
+                    dataSource={getPointDataSource(pointHistory)}
+                    columns={getPointColumns}
+                    pagination={{ pageSize: 5 }}
+                />
             </Modal>
         </>
     );

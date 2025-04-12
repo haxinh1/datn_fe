@@ -1,5 +1,5 @@
-import { EditOutlined, EyeOutlined, MenuOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons'
-import { Button, Col, Modal, Row, Select, Skeleton, Table, Tooltip, Upload, Form, notification, Image } from 'antd'
+import { CheckOutlined, EditOutlined, EyeOutlined, MenuOutlined, PlusOutlined, RollbackOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons'
+import { Button, Col, Modal, Row, Select, Skeleton, Table, Tooltip, Upload, Form, notification, Image, Input, Radio, message } from 'antd'
 import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
 import { OrderService } from '../services/order'
@@ -14,34 +14,60 @@ const Back = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModal, setIsModal] = useState(false);
     const hideEdit = () => setIsModal(false);
+    const [isModalStock, setIsModalStock] = useState(false);
+    const [approveStock, setApproveStock] = useState(null);
+    const [selectedStockOrderId, setSelectedStockOrderId] = useState(null);
     const [form] = Form.useForm();
     const [currentStatusId, setCurrentStatusId] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
     const [refundDetails, setRefundDetails] = useState(null);
     const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
     const hideRefundModal = () => setIsRefundModalVisible(false);
+    const [isUpdateModal, setIsUpdateModal] = useState(false);
+    const hideUpdateModal = () => setIsUpdateModal(false);
     const [image, setImage] = useState("");
+    const [update, setUpdate] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [searchKeyword, setSearchKeyword] = useState("");
     const [filters, setFilters] = useState({
         status: null,
     });
 
-    useEffect(() => {
-        const fetchReturns = async () => {
-            setIsLoading(true);
-            try {
-                const response = await OrderService.getReturnOrder();
-                if (response?.order_returns && Array.isArray(response.order_returns)) {
-                    setReturns(response.order_returns);
-                }
-            } catch (error) {
-                console.error("Lỗi khi lấy đơn hàng hoàn trả:", error);
-            } finally {
-                setIsLoading(false);
+    const fetchReturns = async () => {
+        setIsLoading(true);
+        try {
+            const response = await OrderService.getReturnOrder();
+            if (response?.order_returns && Array.isArray(response.order_returns)) {
+                setReturns(response.order_returns);
             }
-        };
+        } catch (error) {
+            console.error("Lỗi khi lấy đơn hàng hoàn trả:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchReturns();
     }, []);
+
+    const handleSearch = async (keyword) => {
+        setSearchKeyword(keyword); // Cập nhật từ khóa vào state
+
+        setIsLoading(true);
+        try {
+            if (keyword.trim()) {
+                const response = await OrderService.searchOrderReturn(keyword);
+                setReturns(response); // Có thể là response.order_returns nếu API trả theo format
+            } else {
+                fetchReturns(); // Nếu không có từ khóa, load lại toàn bộ
+            }
+        } catch (error) {
+            console.error("Lỗi tìm kiếm đơn hàng:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const filteredReturns = returns.filter((item) => {
         const status = item.order.status_id;
@@ -86,6 +112,18 @@ const Back = () => {
         fetchReturnDetails(item.raw.order_id);  // Gọi API với order_id
     };
 
+    const showUpdateModal = (item) => {
+        setIsUpdateModal(true);
+        setSelectedItem(item); // Lưu item vào state
+        setCurrentStatusId(item.status_id);
+        setSelectedOrderId(item.raw.order_id); // Đảm bảo gán đúng ID đơn hàng
+        form.setFieldsValue({
+            status_id: undefined,
+            note: "",
+            employee_evidence: ""
+        });
+    };
+
     // danh sách trạng thái
     const { data: statusData } = useQuery({
         queryKey: ["status"],
@@ -97,6 +135,8 @@ const Back = () => {
 
     const validTransitions = {
         9: [10, 11],
+        12: [13],
+        13: [14],
     };
 
     const statusCounts = {
@@ -161,7 +201,7 @@ const Back = () => {
         },
     });
 
-    // ✅ Hàm cập nhật trạng thái đơn hàng
+    // ✅ Hàm xác nhận trả hàng
     const handleUpdateOrder = async (values) => {
         if (!selectedItem) {
             notification.error({ message: "Không tìm thấy đơn hàng để cập nhật!" });
@@ -205,7 +245,7 @@ const Back = () => {
         },
     });
 
-    // ✅ Hàm cập nhật trạng thái đơn hàng
+    // ✅ Hàm xác nhận hoàn tiền
     const handleRequestRefund = async (values) => {
 
         const note = form.getFieldValue("note");
@@ -245,6 +285,121 @@ const Back = () => {
             setImage(""); // Xóa ảnh khi người dùng xóa
             form.setFieldsValue({ refund_proof: "" }); // Cập nhật lại giá trị trong form
         }
+    };
+
+    const { mutate: updateOrder } = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await OrderService.updateOrderStatus(id, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            notification.success({
+                message: "Cập nhật trạng thái đơn hàng thành công!",
+            });
+        },
+        onError: (error) => {
+            console.error("Lỗi cập nhật:", error);
+            notification.error({
+                message: "Lỗi cập nhật",
+            });
+        },
+    });
+
+    // ✅ Hàm cập nhật trạng thái đơn hàng
+    const handleUpdate = async (values) => {
+        if (!selectedOrderId) {
+            notification.error({ message: "Không tìm thấy đơn hàng để cập nhật!" });
+            return;
+        }
+
+        // Lấy id người dùng từ localStorage
+        const user = JSON.parse(localStorage.getItem("user"));
+        const modifiedBy = user?.id;
+
+        const payload = {
+            order_status_id: values.status_id,
+            note: values.note || "",
+            employee_evidence: values.employee_evidence || update || "",
+            user_id: modifiedBy,
+        };
+
+        console.log("Dữ liệu gửi đi:", payload); // Debug
+        updateOrder(
+            { id: selectedOrderId, data: payload }, // Sử dụng selectedOrderId
+            {
+                onSuccess: () => {
+                    hideUpdateModal(); // Đóng modal sau khi cập nhật
+                    form.resetFields(); // Reset form về trạng thái ban đầu
+                    setSelectedOrderId(null); // Xóa ID đã chọn
+                },
+            }
+        );
+    };
+
+    const onHandleUpdate = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setUpdate(imageUrl);
+            form.setFieldsValue({ employee_evidence: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+        } else if (info.file.status === "removed") {
+            setUpdate(""); // Xóa ảnh khi người dùng xóa
+            form.setFieldsValue({ employee_evidence: "" }); // Cập nhật lại giá trị trong form
+        }
+    };
+
+    // Sửa hàm handleOk để lấy giá trị từ form
+    const handleOk = async () => {
+        if (!selectedStockOrderId) {
+            notification.error({
+                message: "Không tìm thấy đơn hàng để xác nhận!",
+            });
+            return;
+        }
+
+        try {
+            // Validate và lấy giá trị từ form
+            const values = await form.validateFields();
+            setIsLoading(true);
+            const payload = { "approve-stock": values.approveStock };
+            console.log("Dữ liệu xác nhận số lượng:", {
+                orderId: selectedStockOrderId,
+                payload: payload,
+                approveStock: values.approveStock,
+            });
+            await OrderService.confirmStock(selectedStockOrderId, payload);
+            notification.success({
+                message: "Xác nhận số lượng thành công!",
+            });
+
+            // Làm mới danh sách returns từ API
+            await fetchReturns();
+
+            setIsModalStock(false);
+        } catch (error) {
+            if (error.errorFields) {
+                // Nếu validate thất bại, không làm gì thêm, Form sẽ tự hiển thị lỗi
+                return;
+            }
+            notification.error({
+                message: "Có lỗi xảy ra khi xác nhận số lượng!",
+            });
+            console.error("Error confirming stock:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Sửa showModalStock và hideModalStock để reset form
+    const showModalStock = (item) => {
+        setIsModalStock(true);
+        setSelectedStockOrderId(item.raw.order_id);
+        form.resetFields(); // Reset form khi mở modal
+    };
+
+    const hideModalStock = () => {
+        setIsModalStock(false);
+        setSelectedStockOrderId(null);
+        form.resetFields(); // Reset form khi đóng modal
     };
 
     // Tách số thành định dạng tiền tệ
@@ -327,7 +482,7 @@ const Back = () => {
             render: (_, item) => {
                 return item.refund_proof ? (
                     <Image width={60} src={item.refund_proof} />
-                ) : null; 
+                ) : null;
             },
         },
         {
@@ -337,7 +492,7 @@ const Back = () => {
             render: (_, record) => {
                 const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
                 const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
-        
+
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -361,7 +516,7 @@ const Back = () => {
                             <Button
                                 color="primary"
                                 variant="solid"
-                                icon={<EditOutlined />}
+                                icon={<CheckOutlined />}
                                 onClick={() => showEdit(item)}
                             />
                         </Tooltip>
@@ -377,6 +532,28 @@ const Back = () => {
                                     setSelectedOrderId(item.key);
                                     setIsRefundModalVisible(true);
                                 }}
+                            />
+                        </Tooltip>
+                    )}
+
+                    {item.status_id === 12 && (
+                        <Tooltip title="Cập nhật">
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<EditOutlined />}
+                                onClick={() => showUpdateModal(item)}
+                            />
+                        </Tooltip>
+                    )}
+
+                    {item.status_id === 13 && (
+                        <Tooltip title="Cộng số lượng">
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                icon={<PlusOutlined />}
+                                onClick={() => showModalStock(item)}
                             />
                         </Tooltip>
                     )}
@@ -407,7 +584,7 @@ const Back = () => {
             align: "center",
         },
         {
-            title: "Giá bán (VNĐ)",
+            title: "Giá hoàn (VNĐ)",
             dataIndex: "price",
             align: "center",
             render: (price) => (price ? formatPrice(price) : ""),
@@ -473,6 +650,16 @@ const Back = () => {
                     Shop đã nhận hàng ({statusCounts[14]})
                 </Button>
             </div>
+
+            <Input.Search
+                className="search-input"
+                placeholder="Tìm kiếm mã đơn hàng..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onSearch={handleSearch}
+            />
 
             <Skeleton active loading={isLoading}>
                 <Table
@@ -603,6 +790,106 @@ const Back = () => {
                     <div className="add">
                         <Button color="primary" variant="solid" htmlType="submit">
                             Gửi
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Cập nhật trạng thái đơn hàng"
+                visible={isUpdateModal}
+                onCancel={hideUpdateModal}
+                footer={null}
+            >
+                <Form form={form} layout="vertical" onFinish={handleUpdate}>
+                    <Row gutter={24}>
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Trạng thái đơn hàng"
+                                name="status_id"
+                                rules={[{ required: true, message: "Vui lòng cập nhật trạng thái" }]}
+                            >
+                                <Select
+                                    className="input-item"
+                                    placeholder="Chọn trạng thái"
+                                    showSearch
+                                >
+                                    {statusData
+                                        ?.filter((status) => validTransitions[currentStatusId]?.includes(status.id))
+                                        .map((status) => (
+                                            <Select.Option key={status.id} value={status.id}>
+                                                {status.name}
+                                            </Select.Option>
+                                        ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item label="Ghi chú" name="note">
+                                <TextArea className="input-item" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12} className="col-item">
+                            <Form.Item
+                                label="Ảnh xác nhận"
+                                name="employee_evidence"
+                                getValueFromEvent={(e) => e?.file?.response?.secure_url || ""}
+                            >
+                                <Upload
+                                    listType="picture-card"
+                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                    data={{ upload_preset: "quangOsuy" }}
+                                    onChange={onHandleUpdate}
+                                >
+                                    {!update && (
+                                        <button className="upload-button" type="button">
+                                            <UploadOutlined />
+                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                        </button>
+                                    )}
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <div className="add">
+                        <Button type="primary" htmlType="submit">
+                            Cập nhật
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Xác nhận cộng số lượng"
+                open={isModalStock}
+                onCancel={hideModalStock}
+                footer={null} // Ẩn footer mặc định (bao gồm nút okText và cancelText)
+            >
+                <Form
+                    form={form}
+                    onFinish={handleOk} // Gọi handleOk khi submit form
+                    layout="vertical"
+                >
+                    <Form.Item
+                        name="approveStock"
+                        label="Bạn có muốn cộng số lượng không?"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Vui lòng chọn một tùy chọn!",
+                            },
+                        ]}
+                    >
+                        <Radio.Group>
+                            <Radio value={true}>Có</Radio>
+                            <Radio value={false}>Không</Radio>
+                        </Radio.Group>
+                    </Form.Item>
+
+                    <div className="add">
+                        <Button type="primary" htmlType="submit" loading={isLoading}>
+                            Xác nhận
                         </Button>
                     </div>
                 </Form>

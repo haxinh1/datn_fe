@@ -21,6 +21,21 @@ const searchOrders = async (keyword = "") => {
   }
 };
 
+// tìm kiếm đơn hoàn trả
+const searchOrderReturn = async (keyword = "") => {
+  try {
+    const response = await instance.get('/admin/orders-return/search', {
+      params: { keyword },
+    });
+
+    // ✅ API trả về mảng đơn hàng trực tiếp
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Lỗi khi gọi API tìm kiếm đơn hàng:", error);
+    return []; // fallback tránh crash
+  }
+};
+
 // danh sách hoá đơn
 const getAllBill = async () => {
   const response = await instance.get("/completed");
@@ -129,6 +144,11 @@ const getReturnOrder = async () => {
   return response.data;
 };
 
+const confirmStock = async (id, payload) => {
+  const response = await instance.post(`/order-returns/approve-return/${id}`, payload);
+  return response.data;
+}
+
 // cập nhật trạng thái đơn hoàn trả
 const updateOrderReturn = async (id, payload) => {
   const response = await instance.post(`/order-returns/${id}/status/update`, payload );
@@ -182,6 +202,7 @@ const retryPayment = async (orderId) => {
 export const OrderService = {
   getOrderById,
   searchOrders,
+  searchOrderReturn,
   getDetailOrder,
   placeOrder,
   getAllOrder,
@@ -193,6 +214,7 @@ export const OrderService = {
   getOrderByIdUser,
   returnOrder,
   getReturnOrder,
+  confirmStock,
   updateOrderReturn,
   getOrderReturnByIdUser,
   getReturn,
