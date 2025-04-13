@@ -23,6 +23,7 @@ const User = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [productData, setProductData] = useState([])
     const [pointHistory, setPointHistory] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
     const [orderInfo, setOrderInfo] = useState({
         email: "",
         address: "",
@@ -297,7 +298,7 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
+            render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -362,7 +363,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Tên sản phẩm",
@@ -443,7 +443,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -504,7 +503,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Sản phẩm",
@@ -577,6 +575,7 @@ const User = () => {
             title: 'Thời gian',
             dataIndex: 'date',
             align: "center",
+            render: (date) => (date ? dayjs(date).format("DD/MM/YYYY - HH:mm") : ""),
             sorter: (a, b) => dayjs(a.date, 'DD/MM/YYYY HH:mm').unix() - dayjs(b.date, 'DD/MM/YYYY HH:mm').unix(),
         }
 
@@ -595,6 +594,7 @@ const User = () => {
                     dataSource={dataSource}
                     pagination={false}
                     rowKey="key"
+                    style={{ marginBottom: '30px' }}
                 />
 
                 <div className='card-info'>
@@ -606,12 +606,33 @@ const User = () => {
                         <Table
                             columns={detailColumns}
                             style={{ width: '100%' }}
-                            pagination={{ pageSize: 5 }}
+                            pagination={{ pageSize: 5, current: currentPage }}
                             dataSource={orders}
+                            onChange={(pagination) => setCurrentPage(pagination.current)}
                             bordered
                         />
                     </Skeleton>
+                </div>
+            </div>
 
+            <div className="group1">
+                <div className="card-info">
+                    <Skeleton active loading={isLoading}>
+                        <h4 className='profile-name'>
+                            <ProductOutlined style={{ marginRight: "8px" }} />
+                            Sản phẩm đã mua
+                        </h4>
+                        <Table
+                            columns={productColumns}
+                            dataSource={productData}
+                            style={{ width: '100%' }}
+                            pagination={{ pageSize: 5 }}
+                            bordered
+                        />
+                    </Skeleton>
+                </div>
+                
+                <div className="card-info">
                     <Skeleton active loading={isLoading}>
                         <h4 className='profile-name' >
                             <BookOutlined style={{ marginRight: "8px" }} />
@@ -637,22 +658,6 @@ const User = () => {
                         <Table
                             dataSource={getPointDataSource(pointHistory)}
                             columns={getPointColumns}
-                            pagination={{ pageSize: 5 }}
-                            bordered
-                        />
-                    </Skeleton>
-                </div>
-
-                <div className='card-info'>
-                    <Skeleton active loading={isLoading}>
-                        <h4 className='profile-name'>
-                            <ProductOutlined style={{ marginRight: "8px" }} />
-                            Sản phẩm đã mua
-                        </h4>
-                        <Table
-                            columns={productColumns}
-                            dataSource={productData}
-                            style={{ width: '100%' }}
                             pagination={{ pageSize: 5 }}
                             bordered
                         />
@@ -746,7 +751,7 @@ const User = () => {
                 visible={isModal}
                 onCancel={hideReturn}
                 footer={null}
-                width={800}
+                width={700}
             >
                 <div className="group1">
                     <Table

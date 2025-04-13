@@ -15,6 +15,7 @@ const BackCl = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [refundDetails, setRefundDetails] = useState(null);
     const [searchKeyword, setSearchKeyword] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -144,7 +145,7 @@ const BackCl = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
+            render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -276,7 +277,8 @@ const BackCl = () => {
                 <Table
                     columns={columns}
                     dataSource={dataSource.length > 0 ? dataSource : []}
-                    pagination={{ pageSize: 5 }}
+                    pagination={{ pageSize: 5, current: currentPage }}
+                    onChange={(pagination) => setCurrentPage(pagination.current)}
                 />
             </Skeleton>
 

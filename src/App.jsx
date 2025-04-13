@@ -127,7 +127,7 @@ function App() {
             <Route path="brand" element={<Brand />} />
             <Route path="customer" element={<Customer />} />
             <Route path="user/:id" element={<User />} />
-            <Route path="test/:id" element={<Test />} />
+            <Route path="test" element={<Test />} />
             <Route path="orderstaff" element={<OrderStaff />} />
             <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />

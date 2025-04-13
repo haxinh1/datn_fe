@@ -766,7 +766,7 @@ const Order = () => {
 
         <Input.Search
           style={{ width: '400px' }}
-          placeholder="Tìm kiếm đơn hàng..."
+          placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
           enterButton={<SearchOutlined />}
           value={searchInput}

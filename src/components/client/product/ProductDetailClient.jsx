@@ -408,7 +408,7 @@ const ProductDetailClient = () => {
 
                       {product.atribute_value_product?.length > 0 && (
                         <div className="details-filter-row details-row-size">
-                          <label htmlFor="size">Kích thước:</label>
+                          <label htmlFor="size">Size: </label>
                           <div className="select-custom">
                             <select
                               name="size"
@@ -417,7 +417,7 @@ const ProductDetailClient = () => {
                               value={selectedSize}
                               onChange={(e) => handleSizeSelect(e.target.value)}
                             >
-                              <option value="">Chọn kích thước</option>
+                              <option value="">Chọn size</option>
                               {product.atribute_value_product
                                 .filter(
                                   (attr) =>
@@ -434,9 +434,9 @@ const ProductDetailClient = () => {
                             </select>
                           </div>
 
-                          <a href="#" className="size-guide">
+                          {/* <a href="#" className="size-guide">
                             <i className="icon-th-list"></i>Hướng dẫn kích thước
-                          </a>
+                          </a> */}
                         </div>
                       )}
 
@@ -479,7 +479,7 @@ const ProductDetailClient = () => {
                             fontFamily: "'Roboto', 'Arial', sans-serif",
                           }}
                         >
-                          Thêm giỏ hàng
+                          Giỏ hàng
                         </a>
                       </div>
                     </>

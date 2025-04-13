@@ -147,7 +147,6 @@ const Staff = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Mã đơn hàng",

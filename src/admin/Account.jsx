@@ -16,6 +16,7 @@ const Account = () => {
     const [loggedInUserId, setLoggedInUserId] = useState(null);
     const [loggedInUserRole, setLoggedInUserRole] = useState([]);
     const handleEditCancel = () => setIsEditModalVisible(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { data: users, isLoading, refetch } = useQuery({
         queryKey: ["users"],
@@ -88,8 +89,8 @@ const Account = () => {
         {
             title: "STT",
             dataIndex: "index",
-            render: (_, __, index) => index + 1,
             align: "center",
+            render: (_, __, index) => (currentPage - 1) * 10 + index + 1,
         },
         {
             title: "Người dùng",
@@ -221,7 +222,8 @@ const Account = () => {
                 <Table
                     columns={columns}
                     dataSource={filteredUsers || users}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, current: currentPage }}
+                    onChange={(pagination) => setCurrentPage(pagination.current)}
                     bordered
                 />
             </Skeleton>

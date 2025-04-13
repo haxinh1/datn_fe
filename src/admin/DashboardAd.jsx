@@ -1,34 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { Card, Table, Spin, Row, Col, Avatar, DatePicker } from "antd";
-import {
-  UserOutlined,
-  DatabaseOutlined,
-  CalendarOutlined,
-} from "@ant-design/icons";
+import { Card, Table, Row, Col, Avatar, DatePicker, Skeleton, Image } from "antd";
+import { UserOutlined, DatabaseOutlined, CalendarOutlined } from "@ant-design/icons";
 import { statisticServices } from "../services/statisticServices";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 import moment from "moment";
 
 // Đăng ký các thành phần của ChartJS
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const { MonthPicker, YearPicker } = DatePicker;
 
@@ -184,9 +163,6 @@ const Dashboard = () => {
     }
   };
 
-  // Hiển thị loading khi đang tải dữ liệu
-  if (loading) return <Spin fullscreen />;
-
   // Hàm định dạng ngày
   const formatDate = (str) => new Date(str).toLocaleDateString("en-GB");
 
@@ -267,7 +243,6 @@ const Dashboard = () => {
         `}
       </style>
 
-      {/* Tiêu đề dashboard */}
       <h1 className="mb-5">
         <DatabaseOutlined style={{ marginRight: "8px" }} />
         Tổng hợp thống kê
@@ -290,21 +265,21 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu theo ngày</h3>
+                    <h3>Doanh thu ngày</h3>
                     <DatePicker
                       value={selectedDate}
                       onChange={handleDateChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined />}
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
                       placeholder=""
                       bordered={false}
                     />
                   </div>
-                  <p>
+                  <span className="w-warning">
                     {filteredRevenueDay > 0
                       ? `${formatPrice(filteredRevenueDay)} VNĐ`
                       : "Chưa có dữ liệu"}
-                  </p>
+                  </span>
                 </Card>
               </Col>
               {/* Doanh thu theo tháng */}
@@ -318,22 +293,22 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu theo tháng</h3>
+                    <h3>Doanh thu tháng</h3>
                     <MonthPicker
                       value={selectedMonth}
                       onChange={handleMonthChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined />}
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
                       placeholder=""
                       bordered={false}
                       format="MM/YYYY"
                     />
                   </div>
-                  <p>
+                  <span className="w-warning">
                     {filteredRevenueMonth > 0
                       ? `${formatPrice(filteredRevenueMonth)} VNĐ`
                       : "Chưa có dữ liệu"}
-                  </p>
+                  </span>
                 </Card>
               </Col>
               {/* Doanh thu theo năm */}
@@ -347,22 +322,22 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu theo năm</h3>
+                    <h3>Doanh thu năm</h3>
                     <YearPicker
                       value={selectedYear}
                       onChange={handleYearChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined />}
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
                       placeholder=""
                       bordered={false}
                       format="YYYY"
                     />
                   </div>
-                  <p>
+                  <span className="w-warning">
                     {filteredRevenueYear > 0
                       ? `${formatPrice(filteredRevenueYear)} VNĐ`
                       : "Chưa có dữ liệu"}
-                  </p>
+                  </span>
                 </Card>
               </Col>
             </Row>
@@ -376,50 +351,40 @@ const Dashboard = () => {
         <Col span={8}>
           <Card style={{ marginBottom: "20px" }}>
             <h1 className="mb-5 text-blue-600">Khách hàng</h1>
-            <Table
-              size="small"
-              pagination={false}
-              bordered
-              dataSource={topUsers.map((user, index) => ({
-                key: index,
-                fullname: user.fullname,
-                total_quantity: user.total_quantity,
-                avatar: user.avatar,
-              }))}
-              columns={[
-                {
-                  title: "Khách hàng",
-                  key: "fullname",
-                  align: "center",
-                  render: (record) => (
-                    <div className="combined-column">
-                      {record.avatar ? (
-                        <img
-                          src={record.avatar}
-                          alt="user"
-                          style={{
-                            width: "50px",
-                            height: "50px",
-                            objectFit: "cover",
-                            borderRadius: "50%",
-                          }}
-                        />
-                      ) : (
-                        <Avatar icon={<UserOutlined />} size={50} />
-                      )}
-                      <span>{record.fullname}</span>
-                    </div>
-                  ),
-                },
-                {
-                  title: "Số lượng đã mua",
-                  dataIndex: "total_quantity",
-                  key: "total_quantity",
-                  align: "center",
-                  sorter: (a, b) => a.total_quantity - b.total_quantity,
-                },
-              ]}
-            />
+
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={topUsers.map((user, index) => ({
+                  key: index,
+                  fullname: user.fullname,
+                  total_quantity: user.total_quantity,
+                  avatar: user.avatar,
+                }))}
+                columns={[
+                  {
+                    title: "Khách hàng",
+                    key: "fullname",
+                    align: "center",
+                    render: (record) => (
+                      <div className="combined-column">
+                        <Avatar src={record.avatar} size="large" />
+                        <span>{record.fullname}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: "Số lượng đã mua",
+                    dataIndex: "total_quantity",
+                    key: "total_quantity",
+                    align: "center",
+                    sorter: (a, b) => a.total_quantity - b.total_quantity,
+                  },
+                ]}
+              />
+            </Skeleton>
           </Card>
         </Col>
 
@@ -429,72 +394,74 @@ const Dashboard = () => {
             <h1 className="mb-5 text-blue-600">
               Top 10 sản phẩm bán chạy nhất
             </h1>
-            <Table
-              size="small"
-              pagination={false}
-              bordered
-              dataSource={topProducts.map((item, index) => ({
-                key: index,
-                thumbnail: item.thumbnail,
-                name: item.name,
-                quantity: item.quantity,
-              }))}
-              columns={[
-                {
-                  title: "Sản phẩm",
-                  key: "name",
-                  align: "center",
-                  render: (record) => (
-                    <div className="combined-column">
-                      <img
-                        src={
-                          record.thumbnail || "https://via.placeholder.com/50"
-                        }
-                        alt="product"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                        }}
-                      />
-                      <span>{record.name}</span>
-                    </div>
-                  ),
-                },
-                {
-                  title: "Số lượng",
-                  dataIndex: "quantity",
-                  key: "quantity",
-                  align: "center",
-                  sorter: (a, b) => a.quantity - b.quantity,
-                },
-              ]}
-            />
+
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={topProducts.map((item, index) => ({
+                  key: index,
+                  thumbnail: item.thumbnail,
+                  name: item.name,
+                  quantity: item.quantity,
+                }))}
+                columns={[
+                  {
+                    title: "Sản phẩm",
+                    key: "name",
+                    align: "center",
+                    render: (record) => (
+                      <div className="combined-column">
+                        <Image src={record.thumbnail} width={60} />
+                        <span>{record.name}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: "Số lượng",
+                    dataIndex: "quantity",
+                    key: "quantity",
+                    align: "center",
+                    sorter: (a, b) => a.quantity - b.quantity,
+                  },
+                ]}
+              />
+            </Skeleton>
           </Card>
 
           {/* Bảng lượt xem */}
           <Card style={{ marginBottom: "20px" }}>
             <h1 className="mb-5 text-blue-600">Top 10 lượt xem nhiều nhất</h1>
-            <Table
-              size="small"
-              dataSource={topView}
-              rowKey="name"
-              pagination={false}
-              bordered
-              columns={[
-                {
-                  title: "Sản phẩm",
-                  dataIndex: "name",
-                  align: "center",
-                },
-                {
-                  title: "Lượt xem",
-                  dataIndex: "views",
-                  align: "center",
-                  sorter: (a, b) => a.views - b.views,
-                },
-              ]}
-            />
+
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                dataSource={topView}
+                rowKey="name"
+                pagination={false}
+                bordered
+                columns={[
+                  {
+                    title: "Sản phẩm",
+                    dataIndex: "name",
+                    align: "center",
+                    render: (_, record) => (
+                      <div className="combined-column">
+                        <Image src={record.thumbnail} width={60} />
+                        <span>{record.name}</span>
+                    </div>
+                    ),
+                  },                  
+                  {
+                    title: "Lượt xem",
+                    dataIndex: "views",
+                    align: "center",
+                    sorter: (a, b) => a.views - b.views,
+                  },
+                ]}
+              />
+            </Skeleton>
           </Card>
         </Col>
 
@@ -502,27 +469,30 @@ const Dashboard = () => {
         <Col span={8}>
           <Card style={{ marginBottom: "20px" }}>
             <h1 className="mb-5 text-blue-600">Đơn hàng</h1>
-            <Table
-              size="small"
-              pagination={false}
-              bordered
-              dataSource={orderStatistics}
-              columns={[
-                {
-                  title: "Trạng thái",
-                  dataIndex: "status_name",
-                  key: "status_name",
-                  align: "center",
-                },
-                {
-                  title: "Số lượng đơn",
-                  dataIndex: "total_orders",
-                  key: "total_orders",
-                  align: "center",
-                  sorter: (a, b) => a.total_orders - b.total_orders,
-                },
-              ]}
-            />
+
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={orderStatistics}
+                columns={[
+                  {
+                    title: "Trạng thái",
+                    dataIndex: "status_name",
+                    key: "status_name",
+                    align: "center",
+                  },
+                  {
+                    title: "Số lượng đơn",
+                    dataIndex: "total_orders",
+                    key: "total_orders",
+                    align: "center",
+                    sorter: (a, b) => a.total_orders - b.total_orders,
+                  },
+                ]}
+              />
+            </Skeleton>
           </Card>
         </Col>
       </Row>

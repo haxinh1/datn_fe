@@ -374,11 +374,9 @@ const Back = () => {
             // Validate và lấy giá trị từ form
             const values = await form.validateFields();
             setIsLoading(true);
-            const payload = { "approve-stock": values.approveStock };
+            const payload = { "approve_stock": values.approveStock };
             console.log("Dữ liệu xác nhận số lượng:", {
-                orderId: selectedStockOrderId,
                 payload: payload,
-                approveStock: values.approveStock,
             });
             await OrderService.confirmStock(selectedStockOrderId, payload);
             notification.success({

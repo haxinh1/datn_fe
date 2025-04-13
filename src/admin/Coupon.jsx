@@ -1,5 +1,5 @@
-import { BookOutlined, EditOutlined, EyeOutlined, PlusOutlined, ProjectOutlined } from '@ant-design/icons';
-import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Input, DatePicker, Switch, Descriptions } from 'antd';
+import { EditOutlined, EyeOutlined, PlusOutlined, ProjectOutlined } from '@ant-design/icons';
+import { Button, Table, Tooltip, Modal, Form, Select, notification, Skeleton, Row, Col, Input, DatePicker, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import TextArea from 'antd/es/input/TextArea';
@@ -17,11 +17,12 @@ const Coupon = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
     const couponType = Form.useWatch('coupon_type', form);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const showDetailModal = async (id) => {
         const response = await CouponServices.getCounponById(id);
         console.log(response);
-        
+
         if (response.success && response.data) {
             setSelectedCoupon([response.data]);
         }
@@ -43,8 +44,8 @@ const Coupon = () => {
                 start_date: dayjs(coupon.start_date),
                 end_date: dayjs(coupon.end_date),
                 is_active: coupon.is_active,
-                coupon_type: coupon.coupon_type, 
-                rank: coupon.rank || undefined, 
+                coupon_type: coupon.coupon_type,
+                rank: coupon.rank || undefined,
                 user_ids: coupon.users ? coupon.users.map(user => user.id) : undefined
             });
         } else {
@@ -64,12 +65,6 @@ const Coupon = () => {
 
     const detailColumn = [
         {
-            title: "STT",
-            dataIndex: "index",
-            render: (_, __, index) => index + 1,
-            align: "center",
-        },
-        {
             title: "Mã",
             dataIndex: "code",
             key: "code",
@@ -80,12 +75,21 @@ const Coupon = () => {
             dataIndex: "discount_type",
             key: "discount_type",
             align: "center",
+            render: (type) => type === "percent" ? "Giảm %" : "Giảm tiền",
         },
         {
-            title: "Loại Ap Dung",
+            title: "Áp dụng",
             dataIndex: "coupon_type",
             key: "coupon_type",
             align: "center",
+            render: (type) => {
+                switch (type) {
+                    case "public": return "Công khai";
+                    case "private": return "Riêng tư";
+                    case "rank": return "Theo hạng";
+                    default: return type;
+                }
+            }
         },
         {
             title: "Giá trị giảm",
@@ -97,11 +101,13 @@ const Coupon = () => {
             title: "Rank",
             dataIndex: "rank",
             key: "rank",
+            align: "center",
         },
         {
             title: "Người dùng",
             dataIndex: "users",
             key: "users",
+            align: "center",
             render: (users, record) => {
                 if (record.coupon_type === "private" && Array.isArray(users)) {
                     return users.map(user => user.email).join(", ");
@@ -112,14 +118,12 @@ const Coupon = () => {
 
     ]
 
-
-
     const columns = [
         {
             title: "STT",
             dataIndex: "index",
-            render: (_, __, index) => index + 1,
             align: "center",
+            render: (_, __, index) => (currentPage - 1) * 10 + index + 1,
         },
         {
             title: "Mã",
@@ -138,6 +142,7 @@ const Coupon = () => {
             dataIndex: "discount_type",
             key: "discount_type",
             align: "center",
+            render: (type) => type === "percent" ? "Giảm %" : "Giảm tiền",
         },
         {
             title: "Số lượng",
@@ -151,22 +156,18 @@ const Coupon = () => {
             key: "discount_value",
             align: "center",
             render: (value, record) => (
-                <span>{value} {record.discount_type === 'percent' ? '%' : 'đ'}</span>
+                <span>{formatPrice(value)} {record.discount_type === 'percent' ? '%' : 'đ'}</span>
             )
         },
         {
             title: "Ngày áp dụng",
-            dataIndex: "start_date",
-            key: "start_date",
+            key: "applied_date",
             align: "center",
-            render: (date) => formatDate(date),
-        },
-        {
-            title: "Ngày kết thúc",
-            dataIndex: "end_date",
-            key: "end_date",
-            align: "center",
-            render: (date) => formatDate(date),
+            render: (_, record) => {
+                const start = record.start_date ? dayjs(record.start_date).format("DD/MM") : "";
+                const end = record.end_date ? dayjs(record.end_date).format("DD/MM/YYYY") : "";
+                return `${start} - ${end}`;
+            },
         },
         {
             title: "Trạng thái",
@@ -268,6 +269,13 @@ const Coupon = () => {
         fetchUsers();
     }, []);
 
+    const formatPrice = (price) => {
+        const formatter = new Intl.NumberFormat("de-DE", {
+            style: "decimal",
+            maximumFractionDigits: 0,
+        });
+        return formatter.format(price);
+    };
 
     return (
         <div>
@@ -290,7 +298,8 @@ const Coupon = () => {
                     dataSource={coupon}
                     columns={columns}
                     rowKey="id"
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, current: currentPage }}
+                    onChange={(pagination) => setCurrentPage(pagination.current)}
                 />
             </Skeleton>
 
@@ -336,7 +345,7 @@ const Coupon = () => {
                                 name="code"
                                 rules={[{ required: true, message: "Vui lòng chọn Code" }]}
                             >
-                                <Input className='input-item' disabled={!!editingCoupon}  />
+                                <Input className='input-item' disabled={!!editingCoupon} />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -479,6 +488,7 @@ const Coupon = () => {
                             </Form.Item>
                         </Col>
                     </Row>
+
                     <Form.Item label="Trạng thái" name="is_active" valuePropName="checked">
                         <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
                     </Form.Item>

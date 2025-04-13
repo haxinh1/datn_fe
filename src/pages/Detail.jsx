@@ -369,10 +369,10 @@ const Detail = () => {
 
                                 <hr />
                                 <div style={{ marginLeft: '60px' }}>
-                                    <span style={{fontSize: '18px'}}>Để được hỗ trợ đổi trả, hãy liên hệ với Molla</span> <br />
-                                    <span style={{fontSize: '16px'}}><strong>Zalo:</strong> 0987654321</span> <br />
-                                    <span style={{fontSize: '16px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
-                                    <span style={{fontSize: '16px'}}><strong>Hotline:</strong> 09100204</span>
+                                    <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mác nào, hãy liên hệ với Molla</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Zalo:</strong> 0987654321</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
+                                    <span style={{fontSize: '14px'}}><strong>Hotline:</strong> 09100204</span>
                                 </div>
                             </div>
                         </div>

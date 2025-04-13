@@ -164,12 +164,14 @@ const Signup = () => {
     },
     onSuccess: (_, userData) => {
       localStorage.setItem("user_email", userData.email); // 🔥 Lưu email vào localStorage
+      localStorage.setItem("verify_start_time", Date.now()); // ⏳ Lưu thời điểm bắt đầu đếm ngược
       notification.success({
         message: "Đăng ký thành công!",
         description: "Hãy kiểm tra Email để kích hoạt tài khoản.",
       });
       navigate("/confirm");
     },
+    
     onError: (error) => {
       notification.error({
         message: "Đăng ký thất bại",
