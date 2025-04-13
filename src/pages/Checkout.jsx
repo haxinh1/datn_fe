@@ -411,36 +411,67 @@ const Checkout = () => {
         return;
       }
 
-      if (!selectedAddress && !userData.address) {
-        message.error("Chưa có địa chỉ đặt hàng!");
-        return;
-      }
-      const selectedAddressData = addresses.find(
-        (address) => address.id === selectedAddress
-      );
-
-      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
-      if (!selectedAddressData && !userData.address) {
-        message.error("Địa chỉ không hợp lệ!");
-        return;
-      }
-
-      // Nếu không tìm thấy địa chỉ đã chọn, thông báo lỗi
+      // Kiểm tra địa chỉ cho người dùng đăng nhập hoặc khách vãng lai
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
+
+      let fullAddress = "";
+
+      if (userId) {
+        // Người dùng đã đăng nhập
+        if (!selectedAddress) {
+          message.error("Chưa có địa chỉ đặt hàng!");
+          return;
+        }
+        const selectedAddressData = addresses.find(
+          (address) => address.id === selectedAddress
+        );
+        if (!selectedAddressData) {
+          message.error("Địa chỉ không hợp lệ!");
+          return;
+        }
+        fullAddress = `${selectedAddressData.detail_address}, ${selectedAddressData.address}`;
+      } else {
+        // Khách vãng lai
+        if (
+          !selectedProvince ||
+          !selectedDistrict ||
+          !selectedWard ||
+          !userData.address
+        ) {
+          message.error("Vui lòng điền đầy đủ thông tin địa chỉ!");
+          return;
+        }
+
+        // Tìm tên tỉnh/thành phố, quận/huyện, phường/xã từ các mảng
+        const province = provinces.find(
+          (p) => p.ProvinceID === selectedProvince
+        );
+        const district = districts.find(
+          (d) => d.DistrictID === selectedDistrict
+        );
+        const ward = wards.find((w) => w.WardCode === selectedWard);
+
+        // Kiểm tra xem có tìm thấy dữ liệu không
+        if (!province || !district || !ward) {
+          message.error("Thông tin địa chỉ không hợp lệ!");
+          return;
+        }
+
+        // Xây dựng chuỗi địa chỉ đầy đủ
+        fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
+      }
 
       const orderData = {
         user_id: userId || null,
         fullname: userData.fullname,
         email: userData.email,
         phone_number: userData.phone_number,
-        address: selectedAddressData
-          ? `${selectedAddressData.detail_address}, ${selectedAddressData.address}`
-          : userData.address,
+        address: fullAddress, // Sử dụng chuỗi địa chỉ đầy đủ
         used_points: usedLoyaltyPoints || 0,
         shipping_fee: shippingFee,
-        coupon_code: selectedCoupon ? selectedCoupon.code : null, // Gửi mã coupon
-        discount_amount: discountAmount, // Gửi số tiền giảm giá
+        coupon_code: selectedCoupon ? selectedCoupon.code : null,
+        discount_amount: discountAmount,
         total_amount: finalTotal,
         payment_method:
           selectedPayment === 2
@@ -459,9 +490,9 @@ const Checkout = () => {
         })),
       };
 
-      const orderResponse = await OrderService.placeOrder(orderData);
-      console.log(orderData);
+      console.log("orderData:", orderData);
 
+      const orderResponse = await OrderService.placeOrder(orderData);
       console.log("orderResponse:", orderResponse);
 
       // Nếu có URL thanh toán từ VNPay, chuyển hướng người dùng
@@ -472,7 +503,7 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        nav(`/dashboard/orders/${userId}`);
+        nav(`/dashboard/orders/${userId || "guest"}`);
         setCartItems([]);
         localStorage.removeItem("cartAttributes");
       } else {
@@ -700,6 +731,17 @@ const Checkout = () => {
   const finalTotal =
     subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
 
+  const handleRemoveCoupon = () => {
+    // Đặt lại mã giảm giá và số tiền giảm giá về giá trị mặc định
+    setSelectedCoupon(null);
+    setDiscountAmount(0); // Đặt lại số tiền giảm giá về 0
+
+    // Hiển thị thông báo thành công
+    message.success("Mã giảm giá đã được hủy!");
+
+    // Cập nhật lại tổng tiền sau khi hủy mã giảm giá
+    setIsCouponModalVisible(false); // Đóng modal nếu mở
+  };
   return (
     <div>
       <main className="main">
@@ -1201,10 +1243,7 @@ const Checkout = () => {
                           {!userId ? null : (
                             <>
                               <tr
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                }}
+                                style={{ fontSize: "12px", fontWeight: "bold" }}
                               >
                                 <td style={{ padding: "10px" }}>
                                   Điểm tiêu dùng (
@@ -1258,10 +1297,7 @@ const Checkout = () => {
                                 </td>
                               </tr>
                               <tr
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "bold",
-                                }}
+                                style={{ fontSize: "12px", fontWeight: "bold" }}
                               >
                                 <td style={{ padding: "10px" }}>
                                   Mã giảm giá:
@@ -1272,27 +1308,91 @@ const Checkout = () => {
                                     padding: "10px",
                                   }}
                                 >
-                                  <span
-                                    style={{
-                                      cursor: "pointer",
-                                      color: "#e48948",
-                                    }}
-                                    onClick={() =>
-                                      setIsCouponModalVisible(true)
-                                    } // Mở modal khi nhấn vào
-                                  >
-                                    Chọn mã giảm giá
-                                  </span>
+                                  {selectedCoupon ? (
+                                    <span
+                                      style={{
+                                        cursor: "pointer",
+                                        color: "#e48948",
+                                      }}
+                                      onClick={() =>
+                                        setIsCouponModalVisible(true)
+                                      }
+                                    >
+                                      {selectedCoupon.code}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      style={{
+                                        cursor: "pointer",
+                                        color: "#e48948",
+                                      }}
+                                      onClick={() =>
+                                        setIsCouponModalVisible(true)
+                                      }
+                                    >
+                                      Chọn mã giảm giá
+                                    </span>
+                                  )}
+                                  {selectedCoupon && (
+                                    <button
+                                      style={{
+                                        marginLeft: "10px",
+                                        backgroundColor: "transparent",
+                                        color: "gray",
+                                        border: "none",
+                                        fontSize: "16px",
+                                        cursor: "pointer",
+                                      }}
+                                      onClick={handleRemoveCoupon}
+                                    >
+                                      <i className="fa-solid fa-xmark"></i>
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
+                              {/* Số tiền giảm từ điểm và mã giảm giá */}
+                              {(usedLoyaltyPoints > 0 ||
+                                discountAmount > 0) && (
+                                <tr
+                                  style={{
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  <td style={{ padding: "10px" }}>
+                                    Số tiền giảm:
+                                  </td>
+                                  <td
+                                    style={{
+                                      textAlign: "right",
+                                      padding: "10px",
+                                    }}
+                                  >
+                                    <div style={{ color: "#e48948" }}>
+                                      {usedLoyaltyPoints > 0 && (
+                                        <div>
+                                          -{formatCurrency(usedLoyaltyPoints)}{" "}
+                                          (Điểm)
+                                        </div>
+                                      )}
+                                      {discountAmount > 0 && (
+                                        <div>
+                                          -{formatCurrency(discountAmount)} VNĐ
+                                          (Mã)
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
 
                               {/* Modal hiển thị danh sách mã giảm giá */}
                               <Modal
                                 title="Chọn mã giảm giá"
                                 visible={isCouponModalVisible}
-                                onCancel={() => setIsCouponModalVisible(false)} // Đóng modal khi bấm cancel
+                                onCancel={() => setIsCouponModalVisible(false)}
                                 footer={null}
-                                width={300} // Điều chỉnh modal nhỏ hơn
+                                width={400}
                                 centered
                               >
                                 <div className="coupon-list">
@@ -1317,16 +1417,16 @@ const Checkout = () => {
                                         }}
                                         onClick={() =>
                                           setSelectedCoupon(coupon)
-                                        } // Set the selected coupon
+                                        }
                                       >
-                                        {coupon.title} -{" "}
+                                        {coupon.code} - {coupon.title} -{" "}
                                         {coupon.discount_type === "percent"
                                           ? `${coupon.discount_value}%`
                                           : `${coupon.discount_value} VND`}
                                       </div>
                                     ))
                                   ) : (
-                                    <p>Không có mã giảm giá nào.</p> // Display this if there are no coupons
+                                    <p>Không có mã giảm giá nào.</p>
                                   )}
                                 </div>
                                 <button
@@ -1339,6 +1439,7 @@ const Checkout = () => {
                               </Modal>
                             </>
                           )}
+
                           {/* Tổng tiền */}
                           <tr
                             className="summary-total"
@@ -1390,38 +1491,6 @@ const Checkout = () => {
                                   "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
                                 );
                               }
-
-                              const orderData = {
-                                user_id: null,
-                                fullname: userData.fullname,
-                                email: userData.email,
-                                phone_number: userData.phone_number,
-                                address: `${userData.address}, ${
-                                  wards.find((w) => w.WardCode === selectedWard)
-                                    ?.WardName || ""
-                                }, ${
-                                  districts.find(
-                                    (d) => d.DistrictID === selectedDistrict
-                                  )?.DistrictName || ""
-                                }, ${
-                                  provinces.find(
-                                    (p) => p.ProvinceID === selectedProvince
-                                  )?.ProvinceName || ""
-                                }`
-                                  .replace(/^, | ,| , $/g, "")
-                                  .trim(),
-                                total_amount: finalTotal,
-                                payment_method: "vnpay",
-                                products: cartItems.map((item) => ({
-                                  product_id: item.product_id,
-                                  product_variant_id: item.product_variant_id,
-                                  quantity: item.quantity,
-                                  price:
-                                    item.product_variant?.sale_price ||
-                                    item.product?.sale_price ||
-                                    0,
-                                })),
-                              };
 
                               setIsPaymentModalOpen(true);
                             } catch (error) {

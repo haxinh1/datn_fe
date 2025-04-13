@@ -16,7 +16,6 @@ const ProductDetailClient = () => {
   const [modal2Open, setModal2Open] = useState(false);
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSizeId, setSelectedSizeId] = useState("");
-  const [attributes, setAttributes] = useState([]);
   const colorMap = {
     đen: "#333333",
     trắng: "#ffffff",
@@ -25,19 +24,22 @@ const ProductDetailClient = () => {
     vàng: "#eab656",
   };
 
+  // Chọn màu sắc
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
-    setSelectedSize(""); // reset size when color is changed
-    setSelectedVariant(null); // reset variant
+    setSelectedSize("");
+    setSelectedVariant(null);
   };
 
+  // Chọn kích thước
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
-    findVariant(selectedColor, sizeId); // update variant based on color and size
+    findVariant(selectedColor, sizeId);
   };
 
+  // Định dạng giá tiền
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -46,8 +48,9 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
+  // Tìm biến thể dựa trên màu và kích thước
   const findVariant = (colorId, sizeId) => {
-    const variant = product.variants.find((v) => {
+    const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
         (attr) => attr.attribute_value_id
       );
@@ -60,6 +63,7 @@ const ProductDetailClient = () => {
     setSelectedVariant(variant || null);
   };
 
+  // Thay đổi số lượng
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
     if (value > 0) {
@@ -67,8 +71,9 @@ const ProductDetailClient = () => {
     }
   };
 
+  // Thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async () => {
-    if (product.variants.length > 0 && !selectedVariant) {
+    if (product.variants?.length > 0 && !selectedVariant) {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
@@ -95,11 +100,9 @@ const ProductDetailClient = () => {
     );
 
     if (existingProductIndex !== -1) {
-      // If product exists, update quantity
       existingAttributes[existingProductIndex].quantity +=
         newAttributes.quantity;
     } else {
-      // If product doesn't exist, add to cart
       existingAttributes.push(newAttributes);
     }
 
@@ -107,7 +110,7 @@ const ProductDetailClient = () => {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const itemToAdd = {
-      user_id: user?.id || null, // 0 nếu chưa đăng nhập
+      user_id: user?.id || null,
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -119,24 +122,44 @@ const ProductDetailClient = () => {
 
     try {
       if (user?.id) {
-        // If user is logged in, send request to add item to cart in database
         await cartServices.addCartItem(product.id, itemToAdd);
       } else {
-        // If user is not logged in, send request to store cart in session
-        await cartServices.addCartItem(product.id, itemToAdd);
+        let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+        const existingCartItemIndex = cartItems.findIndex(
+          (item) =>
+            item.product_id === product.id &&
+            item.product_variant_id === itemToAdd.product_variant_id
+        );
+
+        if (existingCartItemIndex !== -1) {
+          cartItems[existingCartItemIndex].quantity += quantity;
+        } else {
+          cartItems.push({
+            product_id: product.id,
+            product_variant_id: selectedVariant ? selectedVariant.id : null,
+            quantity: quantity,
+          });
+        }
+        localStorage.setItem("cart_items", JSON.stringify(cartItems));
       }
 
-      // Display success message
       message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+      window.dispatchEvent(new Event("cart-updated"));
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
     }
   };
 
+  // Lấy thông tin sản phẩm
   const fetchProduct = async () => {
-    const { data } = await productsServices.fetchProductById(id);
-    setProduct(data);
+    try {
+      const { data } = await productsServices.fetchProductById(id);
+      setProduct(data);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin sản phẩm:", error);
+      message.error("Không thể tải sản phẩm. Vui lòng thử lại!");
+    }
   };
 
   useEffect(() => {
@@ -148,8 +171,62 @@ const ProductDetailClient = () => {
       setMainImage(product.thumbnail);
     }
   }, [product.thumbnail]);
+
   const stockAvailable =
     (selectedVariant ? selectedVariant.stock : product.stock) > 0;
+
+  // Xử lý sự kiện bắt đầu kéo
+  const handleDragStart = (e) => {
+    if (!stockAvailable || (product.variants?.length > 0 && !selectedVariant)) {
+      e.preventDefault();
+      message.error(
+        product.variants?.length > 0 && !selectedVariant
+          ? "Vui lòng chọn biến thể trước khi kéo."
+          : "Sản phẩm hết hàng."
+      );
+      return;
+    }
+
+    const dragData = {
+      product_id: product.id,
+      product_variant_id: selectedVariant ? selectedVariant.id : null,
+      quantity: quantity,
+      price: selectedVariant
+        ? selectedVariant.price
+        : product.sale_price || product.sell_price,
+      attributes: [
+        { attribute_id: 1, attribute_value_id: selectedColorId },
+        { attribute_id: 2, attribute_value_id: selectedSizeId },
+      ],
+    };
+
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "move";
+
+    // Create a smaller drag image
+    const dragImage = new Image();
+    dragImage.src = mainImage;
+
+    // Use a canvas to scale down the image
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set the desired scale (40% of original size for ~60% reduction)
+    const scale = 0.4;
+
+    // Wait for the image to load before drawing
+    dragImage.onload = () => {
+      // Set canvas size to scaled dimensions
+      canvas.width = dragImage.width * scale;
+      canvas.height = dragImage.height * scale;
+
+      // Draw scaled image on canvas
+      ctx.drawImage(dragImage, 0, 0, canvas.width, canvas.height);
+
+      // Set the canvas as the drag image
+      e.dataTransfer.setDragImage(canvas, canvas.width / 2, canvas.height / 2);
+    };
+  };
 
   return (
     <>
@@ -181,6 +258,8 @@ const ProductDetailClient = () => {
                   <figure
                     className="product-main-image"
                     style={{ position: "relative" }}
+                    draggable={stockAvailable}
+                    onDragStart={handleDragStart}
                   >
                     <img
                       width={574}
@@ -188,7 +267,7 @@ const ProductDetailClient = () => {
                       id="product-zoom"
                       src={mainImage}
                       data-zoom-image={mainImage}
-                      alt="product image"
+                      alt="hình ảnh sản phẩm"
                     />
                     {product.is_active === 0 && (
                       <div
@@ -247,7 +326,7 @@ const ProductDetailClient = () => {
                         >
                           <img
                             src={item.image}
-                            alt={`product side ${index + 1}`}
+                            alt={`hình ảnh sản phẩm ${index + 1}`}
                           />
                         </a>
                       ))}
@@ -264,12 +343,12 @@ const ProductDetailClient = () => {
                       <div
                         className="ratings-val"
                         style={{ width: "80%" }}
-                      >
-                        
-                      </div>
+                      ></div>
                     </div>
                     <a>
-                      <span className="text-confirm">({product.views} lượt xem)</span>
+                      <span className="text-confirm">
+                        ({product.views} lượt xem)
+                      </span>
                     </a>
                   </div>
 
@@ -329,7 +408,7 @@ const ProductDetailClient = () => {
 
                       {product.atribute_value_product?.length > 0 && (
                         <div className="details-filter-row details-row-size">
-                          <label htmlFor="size">Size:</label>
+                          <label htmlFor="size">Kích thước:</label>
                           <div className="select-custom">
                             <select
                               name="size"
@@ -338,7 +417,7 @@ const ProductDetailClient = () => {
                               value={selectedSize}
                               onChange={(e) => handleSizeSelect(e.target.value)}
                             >
-                              <option value="">Chọn size</option>
+                              <option value="">Chọn kích thước</option>
                               {product.atribute_value_product
                                 .filter(
                                   (attr) =>
@@ -356,7 +435,7 @@ const ProductDetailClient = () => {
                           </div>
 
                           <a href="#" className="size-guide">
-                            <i className="icon-th-list"></i>size guide
+                            <i className="icon-th-list"></i>Hướng dẫn kích thước
                           </a>
                         </div>
                       )}
@@ -397,9 +476,10 @@ const ProductDetailClient = () => {
                           }`}
                           style={{
                             pointerEvents: !stockAvailable ? "none" : "auto",
+                            fontFamily: "'Roboto', 'Arial', sans-serif",
                           }}
                         >
-                          <span>giỏ hàng</span>
+                          Thêm giỏ hàng
                         </a>
                       </div>
                     </>
@@ -417,7 +497,7 @@ const ProductDetailClient = () => {
                     </div>
 
                     <div className="social-icons social-icons-sm">
-                      <span className="social-label">Share:</span>
+                      <span className="social-label">Chia sẻ:</span>
                       <a
                         href="#"
                         className="social-icon"
