@@ -32,4 +32,24 @@
     font-weight: bold;
     color: #eea287;
 }
+.color-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.2s ease;
+}
+
+.color-circle.selected {
+    border: 5px solid #1890ff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.color-circle.trắng { background-color: #ffffff; border: 1px solid #d9d9d9; } /* Màu trắng cần border để nhìn rõ */
+.color-circle.đen { background-color: #000000; }
+.color-circle.xanh { background-color: #0000ff; }
+.color-circle.đỏ { background-color: #ff0000; }
 

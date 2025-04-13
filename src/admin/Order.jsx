@@ -866,19 +866,19 @@ const Order = () => {
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Phí vận chuyển:
+                    Giảm giá điểm tiêu dùng:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.shipping_fee)}
+                    {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Giảm giá điểm tiêu dùng:
+                    Phí vận chuyển:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.discount_points)}
+                    {formatPrice(orderInfo.shipping_fee)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 

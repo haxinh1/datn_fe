@@ -456,39 +456,57 @@ const ListProduct = () => {
                       <h3 className="widget-title">
                         <span>{attribute.name}</span>
                       </h3>
-
                       <div className="show" id={`widget-${attribute.id}`}>
                         <div className="widget-body">
                           <div className="filter-items">
-                            {attribute.attribute_values.map((value) => (
-                              <div className="filter-item" key={value.id}>
-                                <div className="custom-control custom-checkbox">
-                                  <input
-                                    className="custom-control-input"
-                                    id={`attr-${attribute.id}-val-${value.id}`}
-                                    type="checkbox"
-                                    value={value.id}
-                                    onChange={(e) => {
-                                      const valueId = parseInt(e.target.value); // Ép kiểu sang number
+                            {attribute.id === 1 ? ( // Nếu là "Màu sắc" (id: 1), hiển thị ô tròn
+                              <div style={{ display: "flex", flexWrap: "wrap" }}>
+                                {attribute.attribute_values.map((value) => (
+                                  <div
+                                    key={value.id}
+                                    className={`color-circle ${value.value.toLowerCase()} ${selectedAttributeValues.includes(value.id) ? "selected" : ""
+                                      }`}
+                                    onClick={() => {
                                       setSelectedAttributeValues((prev) =>
-                                        e.target.checked
-                                          ? [...prev, valueId]
-                                          : prev.filter((id) => id !== valueId)
+                                        prev.includes(value.id)
+                                          ? prev.filter((id) => id !== value.id)
+                                          : [...prev, value.id]
                                       );
                                     }}
-
-                                    checked={selectedAttributeValues.includes(value.id)}
+                                    title={value.value}
                                   />
-
-                                  <label
-                                    className="custom-control-label"
-                                    htmlFor={`attr-${attribute.id}-val-${value.id}`}
-                                  >
-                                    {value.value}
-                                  </label>
-                                </div>
+                                ))}
                               </div>
-                            ))}
+                            ) : (
+                              // Các attribute khác vẫn dùng checkbox
+                              attribute.attribute_values.map((value) => (
+                                <div className="filter-item" key={value.id}>
+                                  <div className="custom-control custom-checkbox">
+                                    <input
+                                      className="custom-control-input"
+                                      id={`attr-${attribute.id}-val-${value.id}`}
+                                      type="checkbox"
+                                      value={value.id}
+                                      onChange={(e) => {
+                                        const valueId = parseInt(e.target.value);
+                                        setSelectedAttributeValues((prev) =>
+                                          e.target.checked
+                                            ? [...prev, valueId]
+                                            : prev.filter((id) => id !== valueId)
+                                        );
+                                      }}
+                                      checked={selectedAttributeValues.includes(value.id)}
+                                    />
+                                    <label
+                                      className="custom-control-label"
+                                      htmlFor={`attr-${attribute.id}-val-${value.id}`}
+                                    >
+                                      {value.value}
+                                    </label>
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>

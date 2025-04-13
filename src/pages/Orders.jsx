@@ -560,7 +560,7 @@ const Orders = () => {
 
               return (
                 <>
-                  <Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: '1'}}>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Tổng tiền hàng:
                     </Table.Summary.Cell>
@@ -569,7 +569,7 @@ const Orders = () => {
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
 
-                  <Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: '1.2'}}>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Phiếu giảm giá:
                     </Table.Summary.Cell>
@@ -580,16 +580,7 @@ const Orders = () => {
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
 
-                  <Table.Summary.Row>
-                    <Table.Summary.Cell colSpan={3} align="right">
-                      Phí vận chuyển:
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="center">
-                      {formatPrice(orderInfo.shipping_fee)}
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-
-                  <Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: '1'}}>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Giảm giá điểm tiêu dùng:
                     </Table.Summary.Cell>
@@ -598,9 +589,27 @@ const Orders = () => {
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
 
-                  <Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: '1'}}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1'}}>
                     <Table.Summary.Cell colSpan={3} align="right">
                       <strong>Tổng thanh toán:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1'}}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Số tiền cần trả:</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       <strong>

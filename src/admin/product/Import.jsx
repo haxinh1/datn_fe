@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox, Upload } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
-import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import "../../css/add.css";
 import "../../css/list.css";
@@ -232,15 +232,6 @@ const Import = () => {
         }
     };
 
-    const props = {
-        action: 'https://api.cloudinary.com/v1_1/dzpr0epks/image/upload',
-        onChange({ file, fileList }) {
-            if (file.status !== 'uploading') {
-                console.log(file, fileList);
-            }
-        },
-    };
-
     return (
         <div>
             <h1 className="mb-5">
@@ -266,10 +257,6 @@ const Import = () => {
                         </AutoComplete.Option>
                     ))}
                 </AutoComplete>
-
-                <Upload {...props}>
-                    <Button className='btn-import' icon={<ImportOutlined />}>Nhập Excel</Button>
-                </Upload>
 
                 <Link to="/admin/creat">
                     <Button

@@ -69,6 +69,12 @@ const exportExcel = async (orderIds = []) => {
     return response.data;
 }
 
+// xuất excel
+const importExcel = async (formData) => {
+    const response = await instance.post('/import-stock', formData);
+    return response.data;
+}
+
 // Xuất các hàm để dùng trong các component
 export const productsServices = {
     fetchProducts,
@@ -80,5 +86,6 @@ export const productsServices = {
     importProduct,
     history,
     confirm,
-    exportExcel
+    exportExcel,
+    importExcel,
 };

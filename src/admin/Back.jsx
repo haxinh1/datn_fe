@@ -89,34 +89,48 @@ const Back = () => {
         status_id: item.order.status_id,
         reason: item.reason,
         employee_evidence: item.employee_evidence,
+        total_refund_amount: item.total_refund_amount,
         refund_proof: item.refund_proof,
         bank_name: item.bank_name,
         bank_account_number: item.bank_account_number,
         bank_qr: item.bank_qr,
-        raw: item,
+        order_id: item.order_id, // Lưu order_id để dùng trong các hàm khác
+        products: item.products || [], // Lưu trực tiếp products vào dataSource
     }));
 
     const fetchReturnDetails = async (orderId) => {
         try {
-            const response = await OrderService.getReturn(orderId); // Gọi service getRefund với order_id
-            setRefundDetails(response?.refund_details?.[0]);  // Lấy chi tiết hoàn trả đầu tiên (nếu có)
+            const response = await OrderService.getReturn(orderId);
+            const refundData = response?.order_return;
+            setRefundDetails(refundData);
+            return refundData;
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
+            return null;
         }
     };
 
     // Khi người dùng nhấn vào chi tiết, gọi fetchRefund để lấy dữ liệu hoàn trả
-    const showModal = (item) => {
+    const showModal = async (item) => {
         setIsModalVisible(true);
-        setSelectedProducts(item.raw.products || []);
-        fetchReturnDetails(item.raw.order_id);  // Gọi API với order_id
+        try {
+            const refundData = await fetchReturnDetails(item.order_id);
+            setSelectedProducts(refundData?.products || []);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+            notification.error({
+                message: "Lỗi hiển thị chi tiết",
+                description: "Không thể tải chi tiết đơn hàng.",
+            });
+            setSelectedProducts([]);
+        }
     };
 
     const showUpdateModal = (item) => {
         setIsUpdateModal(true);
         setSelectedItem(item); // Lưu item vào state
         setCurrentStatusId(item.status_id);
-        setSelectedOrderId(item.raw.order_id); // Đảm bảo gán đúng ID đơn hàng
+        setSelectedOrderId(item.order_id); // Đảm bảo gán đúng ID đơn hàng
         form.setFieldsValue({
             status_id: undefined,
             note: "",
@@ -220,7 +234,7 @@ const Back = () => {
 
         console.log("Dữ liệu gửi đi:", payload); // Debug
         updateOrderStatus(
-            { id: selectedItem.raw.order_id, data: payload }, // Sử dụng selectedItem.raw.order_id
+            { id: selectedItem.order_id, data: payload },
         );
     };
 
@@ -392,7 +406,7 @@ const Back = () => {
     // Sửa showModalStock và hideModalStock để reset form
     const showModalStock = (item) => {
         setIsModalStock(true);
-        setSelectedStockOrderId(item.raw.order_id);
+        setSelectedStockOrderId(item.order_id);
         form.resetFields(); // Reset form khi mở modal
     };
 
@@ -473,6 +487,13 @@ const Back = () => {
                     )}
                 </div>
             ),
+        },
+        {
+            title: "Số tiền (VNĐ)",
+            dataIndex: "total_refund_amount",
+            key: "total_refund_amount",
+            align: "center",
+            render: (total_refund_amount) => (total_refund_amount ? formatPrice(total_refund_amount) : ""),
         },
         {
             title: "Xác nhận hoàn tiền",
@@ -681,15 +702,18 @@ const Back = () => {
                     <Table
                         columns={detailColumns}
                         dataSource={selectedProducts.map((product, index) => ({
-                            ...product,
                             key: index,
                             index: index + 1,
-                            price: product.price,
+                            name: product.name,
+                            attributes: product.attributes, // Dùng để hiển thị thuộc tính trong cột "Tên sản phẩm"
+                            quantity: product.quantity || 0,
+                            price: product.price || 0,
+                            total: (product.quantity || 0) * (product.price || 0), // Tính thành tiền
                         }))}
                         pagination={false}
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + item.quantity * item.price,
+                                (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
                                 0
                             );
                             return (
