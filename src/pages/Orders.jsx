@@ -129,10 +129,10 @@ const Orders = () => {
         prevOrders.map((order) =>
           order.id === e.order_id
             ? {
-                ...order,
-                status: { id: e.status_id, name: getStatusName(e.status_id) },
-                updated_at: e.updated_at,
-              }
+              ...order,
+              status: { id: e.status_id, name: getStatusName(e.status_id) },
+              updated_at: e.updated_at,
+            }
             : order
         )
       );
@@ -474,10 +474,10 @@ const Orders = () => {
           payment?.name === "COD"
             ? "Thanh toán khi nhận hàng"
             : payment?.name === "VNPAY"
-            ? "Thanh toán qua VNPay"
-            : payment?.name === "MOMO"
-            ? "Thanh toán qua Momo"
-            : payment?.name;
+              ? "Thanh toán qua VNPay"
+              : payment?.name === "MOMO"
+                ? "Thanh toán qua Momo"
+                : payment?.name;
         return <span>{paymentName}</span>;
       },
     },
@@ -561,11 +561,10 @@ const Orders = () => {
         <Tooltip title="Toàn bộ đơn hàng">
           <Button onClick={() => setActiveTab(null)} icon={<MenuOutlined />} />
         </Tooltip>
-        <Input.Search
+        <Input
           style={{ width: "400px" }}
           placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
-          enterButton={<SearchOutlined />}
           value={searchKeyword}
           onSearch={(value) => handleSearch(value)}
           onChange={(e) => setSearchKeyword(e.target.value)}
@@ -650,9 +649,8 @@ const Orders = () => {
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       {isPercentDiscount
-                        ? `${formatPrice(discountValue)} (${
-                            orderInfo.coupon_discount_value
-                          }%)`
+                        ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value
+                        }%)`
                         : formatPrice(discountValue)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
@@ -763,8 +761,8 @@ const Orders = () => {
               {method.name.toLowerCase() === "vnpay"
                 ? "Thanh toán qua VNPay"
                 : method.name.toLowerCase() === "momo"
-                ? "Thanh toán qua Momo"
-                : method.name}
+                  ? "Thanh toán qua Momo"
+                  : method.name}
             </Radio>
           ))}
         </Radio.Group>
