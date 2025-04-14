@@ -20,7 +20,7 @@ const ProductDetailClient = () => {
     đen: "#333333",
     trắng: "#ffffff",
     đỏ: "#ff0000",
-    "xanh dương": "#3a588b",
+    "xanh dương": "#3a58b",
     vàng: "#eab656",
   };
 
@@ -77,10 +77,10 @@ const ProductDetailClient = () => {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
-    let existingAttributes =
-      JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
-    const newAttributes = {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const itemToAdd = {
+      user_id: user?.id || null,
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -93,37 +93,48 @@ const ProductDetailClient = () => {
       ],
     };
 
-    const existingProductIndex = existingAttributes.findIndex(
-      (item) =>
-        item.product_id === product.id &&
-        item.product_variant_id === newAttributes.product_variant_id
-    );
-
-    if (existingProductIndex !== -1) {
-      existingAttributes[existingProductIndex].quantity +=
-        newAttributes.quantity;
-    } else {
-      existingAttributes.push(newAttributes);
-    }
-
-    localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
-
-    const user = JSON.parse(localStorage.getItem("user"));
-    const itemToAdd = {
-      user_id: user?.id || null,
-      product_id: product.id,
-      product_variant_id: selectedVariant ? selectedVariant.id : null,
-      quantity: quantity,
-      price: selectedVariant
-        ? selectedVariant.price
-        : product.sale_price || product.sell_price,
-      attributes: newAttributes.attributes,
-    };
-
     try {
       if (user?.id) {
+        // Người dùng đã đăng nhập: Gọi API để thêm vào giỏ hàng
         await cartServices.addCartItem(product.id, itemToAdd);
+        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+        window.dispatchEvent(new Event("cart-updated"));
       } else {
+        // Người dùng chưa đăng nhập: Lưu vào localStorage
+        let existingAttributes =
+          JSON.parse(localStorage.getItem("cartAttributes")) || [];
+
+        const newAttributes = {
+          product_id: product.id,
+          product_variant_id: selectedVariant ? selectedVariant.id : null,
+          quantity: quantity,
+          price: selectedVariant
+            ? selectedVariant.price
+            : product.sale_price || product.sell_price,
+          attributes: [
+            { attribute_id: 1, attribute_value_id: selectedColorId },
+            { attribute_id: 2, attribute_value_id: selectedSizeId },
+          ],
+        };
+
+        const existingProductIndex = existingAttributes.findIndex(
+          (item) =>
+            item.product_id === product.id &&
+            item.product_variant_id === newAttributes.product_variant_id
+        );
+
+        if (existingProductIndex !== -1) {
+          existingAttributes[existingProductIndex].quantity +=
+            newAttributes.quantity;
+        } else {
+          existingAttributes.push(newAttributes);
+        }
+
+        localStorage.setItem(
+          "cartAttributes",
+          JSON.stringify(existingAttributes)
+        );
+
         let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
         const existingCartItemIndex = cartItems.findIndex(
           (item) =>
@@ -141,10 +152,10 @@ const ProductDetailClient = () => {
           });
         }
         localStorage.setItem("cart_items", JSON.stringify(cartItems));
-      }
 
-      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
-      window.dispatchEvent(new Event("cart-updated"));
+        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+        window.dispatchEvent(new Event("cart-updated"));
+      }
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
@@ -471,9 +482,8 @@ const ProductDetailClient = () => {
                             handleAddToCart();
                           }}
                           href="#"
-                          className={`btn-product btn-cart ${
-                            !stockAvailable ? "disabled text-muted" : ""
-                          }`}
+                          className={`btn-product btn-cart ${!stockAvailable ? "disabled text-muted" : ""
+                            }`}
                           style={{
                             pointerEvents: !stockAvailable ? "none" : "auto",
                             fontFamily: "'Roboto', 'Arial', sans-serif",

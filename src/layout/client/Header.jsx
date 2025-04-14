@@ -18,9 +18,7 @@ const Header = () => {
       if (userId) {
         const cartData = await cartServices.fetchCart();
         const uniqueProducts = cartData.reduce((acc, item) => {
-          const key = `${item.product_id}-${
-            item.product_variant_id || "default"
-          }`;
+          const key = `${item.product_id}-${item.product_variant_id || "default"}`;
           if (!acc[key]) {
             acc[key] = true;
           }
@@ -30,9 +28,7 @@ const Header = () => {
       } else {
         const cartData = JSON.parse(localStorage.getItem("cart_items")) || [];
         const uniqueProducts = cartData.reduce((acc, item) => {
-          const key = `${item.product_id}-${
-            item.product_variant_id || "default"
-          }`;
+          const key = `${item.product_id}-${item.product_variant_id || "default"}`;
           if (!acc[key]) {
             acc[key] = true;
           }
@@ -46,19 +42,24 @@ const Header = () => {
     }
   };
 
+  // Hàm lấy thông tin người dùng
+  const fetchUserInfo = async (userId) => {
+    try {
+      const userInfo = await AuthServices.getAUser(userId);
+      setUserData(userInfo);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      setUserData(null);
+    }
+  };
+
   useEffect(() => {
     const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
 
     if (storedUserId) {
-      const fetchUserInfo = async () => {
-        try {
-          const userInfo = await AuthServices.getAUser(storedUserId);
-          setUserData(userInfo);
-        } catch (error) {
-          console.error("Lỗi khi lấy thông tin người dùng:", error);
-        }
-      };
-      fetchUserInfo();
+      fetchUserInfo(storedUserId);
+    } else {
+      setUserData(null);
     }
 
     updateCartCount();
@@ -69,16 +70,41 @@ const Header = () => {
       updateCartCount();
     };
 
+    const handleUserLogout = () => {
+      setUserData(null);
+      updateCartCount();
+    };
+
+    const handleUserLogin = () => {
+      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+      if (storedUserId) {
+        fetchUserInfo(storedUserId);
+      }
+      updateCartCount();
+    };
+
     window.addEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("user-logout", handleUserLogout);
+    window.addEventListener("user-login", handleUserLogin);
     const handleStorageChange = (e) => {
       if (e.key === "cart_items" || e.key === "user") {
         updateCartCount();
+        if (e.key === "user") {
+          const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+          if (storedUserId) {
+            fetchUserInfo(storedUserId);
+          } else {
+            setUserData(null);
+          }
+        }
       }
     };
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("user-logout", handleUserLogout);
+      window.removeEventListener("user-login", handleUserLogin);
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
@@ -257,7 +283,7 @@ const Header = () => {
                 </Link>
               </Tooltip>
             </div>
-            <div class="gtranslate_wrapper"></div>
+            <div className="gtranslate_wrapper"></div>
             <Tooltip title="Tài khoản">
               <Link
                 to={userData ? `/dashboard/orders/${userData.id}` : "/logincl"}

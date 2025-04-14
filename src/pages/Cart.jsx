@@ -29,11 +29,38 @@ const Cart = () => {
         const userId = user ? user.id : null;
 
         if (userId) {
+          // Người dùng đã đăng nhập: Lấy dữ liệu giỏ hàng từ API
           const cartData = await cartServices.fetchCart();
-          setCartItems(cartData);
+
+          // Gọi thêm API để lấy chi tiết sản phẩm và biến thể
+          const detailedCart = await Promise.all(
+            cartData.map(async (item) => {
+              const productDetails = await productsServices.fetchProductById(item.product_id);
+              let variantDetails = null;
+
+              if (item.product_variant_id) {
+                variantDetails = productDetails.data.variants.find(
+                  (v) => v.id === item.product_variant_id
+                );
+              }
+
+              const price = variantDetails
+                ? variantDetails.sale_price || variantDetails.sell_price
+                : productDetails.data.sale_price || productDetails.data.sell_price;
+
+              return {
+                ...item,
+                product: productDetails.data,
+                product_variant: variantDetails,
+                price,
+              };
+            })
+          );
+
+          setCartItems(detailedCart);
         } else {
-          let localCartData =
-            JSON.parse(localStorage.getItem("cart_items")) || [];
+          // Người dùng chưa đăng nhập: Lấy từ localStorage
+          let localCartData = JSON.parse(localStorage.getItem("cart_items")) || [];
 
           const detailedCart = await Promise.all(
             localCartData.map(async (item) => {
@@ -50,8 +77,7 @@ const Cart = () => {
 
               const price = variantDetails
                 ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price ||
-                  productDetails.data.sell_price;
+                : productDetails.data.sale_price || productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -90,25 +116,44 @@ const Cart = () => {
   }, []);
 
   const getAttributeValue = (product) => {
-    const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
-    const productAttributes = attributes.find(
-      (attr) =>
-        attr.product_id === product.product_id &&
-        attr.product_variant_id === product.product_variant_id
-    );
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user ? user.id : null;
 
-    if (!productAttributes || !productAttributes.attributes) {
+    if (userId) {
+      // Người dùng đã đăng nhập: Lấy từ product_variant
+      if (product.product_variant && product.product_variant.attribute_value_product_variants) {
+        return product.product_variant.attribute_value_product_variants
+          .map((attr) => {
+            const attribute = attributeValues.find(
+              (av) => String(av.id) === String(attr.attribute_value_id)
+            );
+            return attribute ? attribute.value : "Không xác định";
+          })
+          .join(", ");
+      }
       return "Không xác định";
-    }
+    } else {
+      // Người dùng chưa đăng nhập: Lấy từ cartAttributes
+      const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
+      const productAttributes = attributes.find(
+        (attr) =>
+          attr.product_id === product.product_id &&
+          attr.product_variant_id === product.product_variant_id
+      );
 
-    return productAttributes.attributes
-      .map((attr) => {
-        const attribute = attributeValues.find(
-          (av) => String(av.id) === String(attr.attribute_value_id)
-        );
-        return attribute ? attribute.value : "Không xác định";
-      })
-      .join(", ");
+      if (!productAttributes || !productAttributes.attributes) {
+        return "Không xác định";
+      }
+
+      return productAttributes.attributes
+        .map((attr) => {
+          const attribute = attributeValues.find(
+            (av) => String(av.id) === String(attr.attribute_value_id)
+          );
+          return attribute ? attribute.value : "Không xác định";
+        })
+        .join(", ");
+    }
   };
 
   const formatCurrency = (value) => {
@@ -120,7 +165,7 @@ const Cart = () => {
 
   const subtotal = cartItems.reduce((total, item) => {
     if (item.product.is_active === 0) {
-      return total; // Không tính sản phẩm ngừng bán
+      return total;
     }
 
     const price = item.product_variant
@@ -138,7 +183,6 @@ const Cart = () => {
     const updatedCartItems = [...cartItems];
     const item = updatedCartItems[index];
 
-    // Kiểm tra số lượng tồn kho
     const availableStock = item.product_variant
       ? item.product_variant.stock
       : item.product.stock;
@@ -178,7 +222,6 @@ const Cart = () => {
         message.success("Cập nhật số lượng thành công");
       }
 
-      // Phát sự kiện để thông báo giỏ hàng thay đổi
       window.dispatchEvent(new Event("cart-updated"));
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
@@ -198,10 +241,8 @@ const Cart = () => {
           const userId = user ? user.id : null;
 
           if (userId) {
-            // Người dùng đã đăng nhập: gọi API để xóa
             await cartServices.removeCartItem(productId, productVariantId);
           } else {
-            // Người dùng chưa đăng nhập: xóa khỏi localStorage
             let localCart =
               JSON.parse(localStorage.getItem("cart_items")) || [];
             localCart = localCart.filter(
@@ -213,7 +254,6 @@ const Cart = () => {
             localStorage.setItem("cart_items", JSON.stringify(localCart));
           }
 
-          // Cập nhật danh sách hiển thị
           setCartItems((prevItems) =>
             prevItems.filter((item) =>
               productVariantId
@@ -222,7 +262,6 @@ const Cart = () => {
             )
           );
 
-          // Xóa thuộc tính liên quan từ cartAttributes
           let cartAttributes =
             JSON.parse(localStorage.getItem("cartAttributes")) || [];
           cartAttributes = cartAttributes.filter(
@@ -236,8 +275,6 @@ const Cart = () => {
           );
 
           message.success("Sản phẩm đã được xóa thành công!");
-
-          // Phát sự kiện để thông báo giỏ hàng thay đổi
           window.dispatchEvent(new Event("cart-updated"));
         } catch (error) {
           console.error("Lỗi khi xóa sản phẩm:", error);
@@ -251,7 +288,6 @@ const Cart = () => {
     try {
       let updatedCartItems = [...cartItems];
 
-      // Lọc các sản phẩm ngừng bán
       const productsInactive = updatedCartItems.filter(
         (item) => item.product.is_active === 0
       );
@@ -265,7 +301,6 @@ const Cart = () => {
         const userId = user ? user.id : null;
 
         if (userId) {
-          // Đã đăng nhập: xóa sản phẩm ngừng bán qua API
           for (const product of productsInactive) {
             await cartServices.removeCartItem(
               product.product_id,
@@ -273,7 +308,6 @@ const Cart = () => {
             );
           }
         } else {
-          // Chưa đăng nhập: xóa sản phẩm ngừng bán trong localStorage
           let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
           localCart = localCart.filter(
             (item) =>
@@ -285,7 +319,6 @@ const Cart = () => {
           );
           localStorage.setItem("cart_items", JSON.stringify(localCart));
 
-          // Xóa thuộc tính liên quan từ cartAttributes
           let cartAttributes =
             JSON.parse(localStorage.getItem("cartAttributes")) || [];
           cartAttributes = cartAttributes.filter(
@@ -302,13 +335,11 @@ const Cart = () => {
           );
         }
 
-        // Cập nhật danh sách hiển thị
         setCartItems(updatedCartItems);
         message.warning(
           `${productsInactive.length} sản phẩm ngừng bán đã bị xóa!`
         );
 
-        // Phát sự kiện để thông báo giỏ hàng thay đổi
         window.dispatchEvent(new Event("cart-updated"));
       }
 
@@ -336,18 +367,14 @@ const Cart = () => {
           const userId = user ? user.id : null;
 
           if (userId) {
-            // Người dùng đã đăng nhập: gọi API để xóa toàn bộ
             await cartServices.clearCart();
           } else {
-            // Người dùng chưa đăng nhập: xóa localStorage
             localStorage.setItem("cart_items", JSON.stringify([]));
             localStorage.setItem("cartAttributes", JSON.stringify([]));
           }
 
           setCartItems([]);
           message.success("Xóa toàn bộ sản phẩm thành công");
-
-          // Phát sự kiện để thông báo giỏ hàng thay đổi
           window.dispatchEvent(new Event("cart-updated"));
         } catch (error) {
           console.error("Lỗi khi xóa giỏ hàng:", error);
