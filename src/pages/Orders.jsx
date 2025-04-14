@@ -201,7 +201,7 @@ const Orders = () => {
                   : order
               )
             );
-            navigate(`/review/${orderId}`);
+            // navigate(`/review/${orderId}`);
           } else {
             notification.error({
               message: "Cập nhật thất bại",
@@ -417,7 +417,7 @@ const Orders = () => {
               />
             </Tooltip>
 
-            {isDelivered && (
+            {isDelivered ? (
               <Tooltip title="Đã nhận hàng">
                 <Button
                   color="primary"
@@ -426,6 +426,13 @@ const Orders = () => {
                   onClick={() => handleMarkAsReceived(item.id)}
                 />
               </Tooltip>
+            ) : (
+              <Button
+                color="primary"
+                variant="solid"
+                onClick={()=> navigate(`/review/${item.id}`)}>
+                  Đánh giá
+              </Button>
             )}
 
             {isCheckout && (
@@ -561,7 +568,7 @@ const Orders = () => {
                     {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
-                
+
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
                     <strong>Tổng giá trị đơn hàng:</strong>
