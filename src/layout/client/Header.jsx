@@ -83,9 +83,19 @@ const Header = () => {
       updateCartCount();
     };
 
+    // Xử lý sự kiện user-updated
+    const handleUserUpdated = () => {
+      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+      if (storedUserId) {
+        fetchUserInfo(storedUserId);
+      }
+    };
+
     window.addEventListener("cart-updated", handleCartUpdate);
     window.addEventListener("user-logout", handleUserLogout);
     window.addEventListener("user-login", handleUserLogin);
+    window.addEventListener("user-updated", handleUserUpdated); // Thêm sự kiện này
+
     const handleStorageChange = (e) => {
       if (e.key === "cart_items" || e.key === "user") {
         updateCartCount();
@@ -105,6 +115,7 @@ const Header = () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
       window.removeEventListener("user-logout", handleUserLogout);
       window.removeEventListener("user-login", handleUserLogin);
+      window.removeEventListener("user-updated", handleUserUpdated); // Dọn dẹp sự kiện
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
