@@ -3,22 +3,15 @@ import { Button, Rate, Upload, Checkbox, Card, Modal, Row, Col, Form, Input, mes
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { CommentServices } from "../services/comment";
+import formatVND from './../utils/formatPrice';
 
-const ProductReview = ({ visible, onClose }) => {
+const ProductReview = ({ visible, onClose, product }) => {
     const [fileList, setFileList] = useState([]);
     const [form] = Form.useForm();
-    const product = {
-        id: 1,
-        name: "iPhone siêu chống sốc",
-        image: "https://res.cloudinary.com/dzpr0epks/image/upload/v1740494098/rgnqzyjdcyfgk30ebmil.jpg",
-        rating: 4.8,
-        numReviews: 15,
-    };
 
     const mutation = useMutation({
-        mutationFn: async (reviewData) => {
-            return axios.post("/api/reviews", reviewData);
-        },
+        mutationFn: CommentServices.createComment,
         onSuccess: () => {
             message.success("Gửi đánh giá thành công!");
             form.resetFields();
@@ -57,17 +50,17 @@ const ProductReview = ({ visible, onClose }) => {
     };
 
     const onFinish = async (values) => {
-        if (values.review.length < 50) {
-            message.warning("Đánh giá phải có ít nhất 50 ký tự!");
+        if (values.review.length < 5) {
+            message.warning("Đánh giá phải có ít nhất 5 ký tự!");
             return;
         }
 
         mutation.mutate({
             rating: values.rating,
-            review: values.review,
+            comments: values.review,
             anonymous: values.anonymous,
             images: fileList.map(f => f.url),
-            productId: 1,
+            products_id: product.product_id,
         });
     };
 
@@ -77,12 +70,40 @@ const ProductReview = ({ visible, onClose }) => {
                 <Card className="mb-4">
                     <Row align="middle">
                         <Col span={6}>
-                            <img src={product.image} alt="product" style={{ width: "100%", borderRadius: 8 }} />
+                            <img
+                                src={product.variants.length > 0 ? product.variants[0].variant_thumbnail : product.thumbnail}
+                                alt="product"
+                                style={{ width: "100%", borderRadius: 8 }}
+                            />
                         </Col>
                         <Col span={18}>
                             <p className="font-semibold">{product.name}</p>
                             <Rate value={product.rating} disabled style={{ fontSize: "14px" }} />
-                            <span style={{ color: "gray", fontSize: "14px", marginLeft: 8 }}>({product.numReviews} đánh giá)</span>
+                            <span style={{ color: "gray", fontSize: "14px", marginLeft: 8 }}>
+                                ({product.numReviews} đánh giá)
+                            </span>
+                            {product.variants.length > 0 && (
+                                <div>
+                                    <p style={{ fontSize: "14px", marginTop: 8 }}>
+                                        <strong>Biến thể:</strong>{" "}
+                                        {product.variants.map((variant, index) => (
+                                            <span key={variant.variant_id}>
+                                                {variant.attributes.map((attr) => attr.attribute_name).join(", ")}
+                                                {index < product.variants.length - 1 ? "; " : ""}
+                                            </span>
+                                        ))}
+                                    </p>
+                                    <p style={{ fontSize: "14px" }}>
+                                        <strong>Giá: </strong>
+                                        {formatVND(product.variants[0].sell_price)} VNĐ
+                                    </p>
+                                </div>
+                            )}
+                            {product.variants.length === 0 && (
+                                <p style={{ fontSize: "14px", marginTop: 8 }}>
+                                    <strong>Giá:</strong> {product.sell_price} VNĐ
+                                </p>
+                            )}
                         </Col>
                     </Row>
                 </Card>
@@ -112,7 +133,7 @@ const ProductReview = ({ visible, onClose }) => {
 
                     <Form.Item
                         name="review"
-                        label="Viết đánh giá từ 50 ký tự"
+                        label="Viết đánh giá"
                         rules={[{ required: true, message: "Vui lòng nhập đánh giá!" }]}
                     >
                         <Input.TextArea rows={4} placeholder="Hãy chia sẻ nhận xét của bạn!" />
@@ -133,14 +154,15 @@ const ProductReview = ({ visible, onClose }) => {
     );
 };
 
-const ReviewButton = () => {
+const ReviewButton = ({ product }) => {
     const [modalVisible, setModalVisible] = useState(false);
 
+
     return (
-        <div className="flex justify-center mt-4">
+        <>
             <Button type="primary" onClick={() => setModalVisible(true)}>Đánh giá sản phẩm</Button>
-            <ProductReview visible={modalVisible} onClose={() => setModalVisible(false)} />
-        </div>
+            <ProductReview product={product} visible={modalVisible} onClose={() => setModalVisible(false)} />
+        </>
     );
 };
 
