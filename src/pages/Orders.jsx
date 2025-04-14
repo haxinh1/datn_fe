@@ -4,6 +4,7 @@ import {
   CheckOutlined,
   EyeOutlined,
   MenuOutlined,
+  PrinterOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import {
@@ -23,16 +24,18 @@ import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { OrderService } from "../services/order";
+import { paymentServices } from "../services/payments";
 import { useQuery } from "@tanstack/react-query";
 import echo from "../echo";
-import { paymentServices } from "../services/payments";
+import logo from "../assets/images/logo.png";
 
 const { TabPane } = Tabs;
+const { RangePicker } = DatePicker;
+
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
-  const { RangePicker } = DatePicker;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -43,15 +46,17 @@ const Orders = () => {
     email: "",
     address: "",
     fullname: "",
+    payment_id: "",
     shipping_fee: "",
     discount_points: "",
     total_amount: "",
+    coupon_discount_value: "",
+    coupon_discount_type: "",
   });
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
 
-  // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -63,15 +68,17 @@ const Orders = () => {
   const showModal = async (order) => {
     setIsModalVisible(true);
     setSelectedOrderId(order.id);
-
     setOrderInfo({
       email: order.email,
       address: order.address,
+      fullname: order.fullname,
+      payment_id: order.payment_id,
       discount_points: order.discount_points,
       shipping_fee: order.shipping_fee,
       total_amount: order.total_amount,
+      coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
-
     const orderDetails = await OrderService.getOrderById(order.id);
     setOrderDetails(orderDetails);
   };
@@ -85,56 +92,51 @@ const Orders = () => {
         setOrders(response.orders);
         setIsLoading(false);
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách đơn hàng:", error);
+        console.error("Error fetching orders:", error);
         notification.error({
-          message: "Lỗi",
-          description: "Không thể tải danh sách đơn hàng.",
+          message: "Error",
+          description: "Unable to load orders.",
         });
         setIsLoading(false);
       }
     };
-
     fetchOrders();
-  }, []);
+  }, [id]);
 
   const handleSearch = async (keyword) => {
-    setSearchKeyword(keyword); // Cập nhật từ khóa tìm kiếm vào state
+    setSearchKeyword(keyword);
     try {
       setIsLoading(true);
       if (keyword.trim()) {
-        const response = await OrderService.searchOrders(keyword); // Gọi API tìm kiếm đơn hàng
-        setOrders(response); // Lưu kết quả vào state orders
+        const response = await OrderService.searchOrders(keyword);
+        setOrders(response);
       } else {
-        fetchOrders(); // Nếu không có từ khóa tìm kiếm, quay lại danh sách toàn bộ
+        const response = await OrderService.getOrderByIdUser(id);
+        setOrders(response.orders);
       }
       setIsLoading(false);
     } catch (error) {
+      console.error("Error searching orders:", error);
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
     const channel = echo.channel("order-status-channel");
-
     channel.listen(".order-status-updated", (e) => {
-      console.log("📦 Đơn hàng được cập nhật realtime:", e);
-
+      console.log("📦 Order updated in real-time:", e);
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order.id === e.order_id
             ? {
                 ...order,
-                status: {
-                  id: e.status_id,
-                  name: getStatusName(e.status_id),
-                },
+                status: { id: e.status_id, name: getStatusName(e.status_id) },
                 updated_at: e.updated_at,
               }
             : order
         )
       );
     });
-
     return () => {
       echo.leave("order-status-channel");
     };
@@ -153,7 +155,6 @@ const Orders = () => {
 
   const countOrdersByStatus = (statusId) => {
     if (statusId === 9) {
-      // Trả hàng: đếm tất cả đơn có status ID >= 9
       return orders.filter((order) => order.status?.id >= 9).length;
     }
     return orders.filter((order) => order.status?.id === statusId).length;
@@ -177,12 +178,11 @@ const Orders = () => {
     const isTabMatch =
       !activeTab ||
       (activeTab === 9
-        ? order.status?.id >= 9 // Trả hàng: tất cả status >= 9
+        ? order.status?.id >= 9
         : order.status?.id === activeTab);
     const isSearchMatch = order.code
       .toLowerCase()
-      .includes(searchKeyword.toLowerCase()); // Kiểm tra tìm kiếm mã đơn hàng
-
+      .includes(searchKeyword.toLowerCase());
     return (
       isDateValid &&
       isStatusValid &&
@@ -196,7 +196,6 @@ const Orders = () => {
     queryKey: ["payments"],
     queryFn: async () => {
       const response = await paymentServices.getPayment();
-
       return response.filter(
         (method) =>
           method.name.toLowerCase() === "momo" ||
@@ -205,7 +204,6 @@ const Orders = () => {
     },
   });
 
-  // Danh sách trạng thái
   const { data: statusData } = useQuery({
     queryKey: ["status"],
     queryFn: async () => {
@@ -213,98 +211,79 @@ const Orders = () => {
       return response.data;
     },
   });
+
   const getStatusName = (id) => {
     const found = statusData?.find((s) => s.id === id);
     return found ? found.name : "Đang cập nhật...";
   };
 
-  // Hàm xử lý khi nhấn xác nhận phương thức thanh toán
-  const handleConfirmPayment = async () => {
-    if (!selectedPayment) {
-      notification.error({
-        message: "Lỗi",
-        description: "Vui lòng chọn phương thức thanh toán!",
-      });
-      return;
-    }
-
+  const handleRetryPayment = async (orderId, paymentMethodName = null) => {
     try {
-      const selectedMethod = payments.find(
-        (method) => method.id === selectedPayment
-      );
-      const paymentMethodName = selectedMethod
-        ? selectedMethod.name.toLowerCase()
-        : null;
-
-      if (!paymentMethodName) {
-        notification.error({
-          message: "Lỗi",
-          description: "Phương thức thanh toán không hợp lệ!",
-        });
-        return;
-      }
-
-      const selectedOrder = orders.find(
-        (order) => order.id === selectedOrderId
-      );
+      const selectedOrder = orders.find((order) => order.id === orderId);
       if (!selectedOrder) {
         notification.error({
-          message: "Lỗi",
-          description: "Không tìm thấy đơn hàng!",
+          message: "Error",
+          description: "Order not found!",
         });
         return;
       }
-
-      // Kiểm tra trạng thái đơn hàng
       if (selectedOrder.status.id !== 1) {
         notification.error({
-          message: "Lỗi",
-          description:
-            "Đơn hàng không thể thanh toán lại do trạng thái hiện tại.",
+          message: "Error",
+          description: "Order cannot be paid again due to its current status.",
         });
         return;
       }
-
-      // Lấy total_amount từ đơn hàng để truyền cho Momo
       const totalMomo =
         paymentMethodName === "momo" ? selectedOrder.total_amount : undefined;
-
-      console.log("Payload thanh toán lại:", {
-        orderId: selectedOrderId,
-        paymentMethod: paymentMethodName,
-        totalMomo,
-      });
-
       const response = await OrderService.retryPayment(
-        selectedOrderId,
+        orderId,
         paymentMethodName,
         totalMomo
       );
-
-      console.log("Phản hồi thanh toán lại:", response);
-
       if (response.payment_url) {
         window.location.href = response.payment_url;
       } else {
         notification.error({
-          message: "Lỗi",
-          description: `Không nhận được URL thanh toán từ ${paymentMethodName.toUpperCase()}.`,
+          message: "Error",
+          description: "No payment URL received.",
         });
       }
     } catch (error) {
-      console.error("Lỗi khi thanh toán lại:", error.response?.data || error);
+      console.error("Error retrying payment:", error);
       notification.error({
-        message: "Lỗi",
-        description:
-          error.response?.data?.message || "Không thể thanh toán lại đơn hàng.",
+        message: "Error",
+        description: "Unable to retry payment.",
       });
-    } finally {
-      setIsPaymentModalVisible(false);
-      setSelectedPayment(null);
     }
   };
 
-  // Hàm xác nhận đã nhận hàng
+  const handleConfirmPayment = async () => {
+    if (!selectedPayment) {
+      notification.error({
+        message: "Error",
+        description: "Please select a payment method!",
+      });
+      return;
+    }
+    const selectedMethod = payments.find(
+      (method) => method.id === selectedPayment
+    );
+    const paymentMethodName = selectedMethod
+      ? selectedMethod.name.toLowerCase()
+      : null;
+    if (!paymentMethodName) {
+      notification.error({
+        message: "Error",
+        description: "Invalid payment method!",
+      });
+      return;
+    }
+    await handleRetryPayment(selectedOrderId, paymentMethodName);
+    setIsPaymentModalVisible(false);
+    setSelectedPayment(null);
+  };
+
   const handleMarkAsReceived = (orderId) => {
     Modal.confirm({
       title: "Xác nhận đã nhận hàng",
@@ -319,7 +298,6 @@ const Orders = () => {
             note: "",
             employee_evidence: "",
           };
-
           const response = await OrderService.updateOrderStatus(
             orderId,
             payload
@@ -332,7 +310,6 @@ const Orders = () => {
               message: "Cảm ơn bạn đã tin tưởng Molla Shop",
               description: "Hãy đánh giá sản phẩm của bạn tại đây!",
             });
-
             setOrders((prevOrders) =>
               prevOrders.map((order) =>
                 order.id === orderId
@@ -343,22 +320,21 @@ const Orders = () => {
             navigate(`/review/${orderId}`);
           } else {
             notification.error({
-              message: "Cập nhật thất bại",
-              description: "Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.",
+              message: "Update Failed",
+              description: "An error occurred while updating order status.",
             });
           }
         } catch (error) {
-          console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
+          console.error("Error updating order status:", error);
           notification.error({
-            message: "Lỗi",
-            description: "Không thể cập nhật trạng thái đơn hàng.",
+            message: "Error",
+            description: "Unable to update order status.",
           });
         }
       },
     });
   };
 
-  // Hàm xác nhận hủy đơn
   const handleCancelOrder = (orderId) => {
     Modal.confirm({
       title: "Xác nhận hủy đơn",
@@ -372,7 +348,6 @@ const Orders = () => {
             note: "",
             employee_evidence: "",
           };
-
           const response = await OrderService.updateOrderStatus(
             orderId,
             payload
@@ -385,7 +360,6 @@ const Orders = () => {
               message: "Đơn hàng đã được hủy",
               description: "Đơn hàng của bạn đã được hủy thành công.",
             });
-
             setOrders((prevOrders) =>
               prevOrders.map((order) =>
                 order.id === orderId
@@ -395,15 +369,15 @@ const Orders = () => {
             );
           } else {
             notification.error({
-              message: "Cập nhật thất bại",
-              description: "Có lỗi xảy ra khi hủy đơn hàng.",
+              message: "Update Failed",
+              description: "An error occurred while canceling the order.",
             });
           }
         } catch (error) {
-          console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
+          console.error("Error canceling order:", error);
           notification.error({
-            message: "Lỗi",
-            description: "Không thể hủy đơn hàng.",
+            message: "Error",
+            description: "Unable to cancel the order.",
           });
         }
       },
@@ -414,12 +388,6 @@ const Orders = () => {
   const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
 
   const detailColumns = [
-    {
-      title: "STT",
-      dataIndex: "index",
-      align: "center",
-      render: (_, __, index) => index + 1,
-    },
     {
       title: "Sản phẩm",
       dataIndex: "product",
@@ -437,15 +405,8 @@ const Orders = () => {
               return `${productName} - ${attributes}`;
             })
             .join(", ") || productName;
-
         return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <Image src={thumbnail} width={60} />
             <Link to={`/product-detail/${record.product_id}`}>
               <span>{variantAttributes}</span>
@@ -546,15 +507,14 @@ const Orders = () => {
         const isDelivered = status?.id === 5;
         return (
           <div className="action-container">
-            <Tooltip title="Chi tiết đơn hàng">
+            <Tooltip title="Hóa đơn">
               <Button
                 color="purple"
                 variant="solid"
-                icon={<EyeOutlined />}
+                icon={<PrinterOutlined />}
                 onClick={() => showModal(item)}
               />
             </Tooltip>
-
             {isDelivered && (
               <Tooltip title="Đã nhận hàng">
                 <Button
@@ -565,7 +525,6 @@ const Orders = () => {
                 />
               </Tooltip>
             )}
-
             {isCheckout && (
               <Tooltip title="Tiếp tục thanh toán">
                 <Button
@@ -591,7 +550,6 @@ const Orders = () => {
         <BookOutlined style={{ marginRight: "8px" }} />
         Đơn hàng của bạn
       </h1>
-
       <div
         style={{
           display: "flex",
@@ -603,18 +561,16 @@ const Orders = () => {
         <Tooltip title="Toàn bộ đơn hàng">
           <Button onClick={() => setActiveTab(null)} icon={<MenuOutlined />} />
         </Tooltip>
-
         <Input.Search
           style={{ width: "400px" }}
           placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
           enterButton={<SearchOutlined />}
-          value={searchKeyword} // Bind state searchKeyword với giá trị input
-          onSearch={(value) => handleSearch(value)} // Khi tìm kiếm, gọi handleSearch
-          onChange={(e) => setSearchKeyword(e.target.value)} // Cập nhật state khi người dùng nhập
+          value={searchKeyword}
+          onSearch={(value) => handleSearch(value)}
+          onChange={(e) => setSearchKeyword(e.target.value)}
         />
       </div>
-
       <Tabs
         onChange={(key) => setActiveTab(parseInt(key))}
         activeKey={activeTab?.toString() || ""}
@@ -627,7 +583,6 @@ const Orders = () => {
           />
         ))}
       </Tabs>
-
       <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
@@ -640,77 +595,115 @@ const Orders = () => {
           }}
         />
       </Skeleton>
-
       <Modal
-        title="Chi tiết đơn hàng"
         visible={isModalVisible}
         onCancel={hideModal}
         footer={null}
-        width={800}
+        width={500}
       >
-        <span>
-          Email: <span className="text-quest">{orderInfo.email}</span>
-        </span>{" "}
-        <br />
-        <span>
-          Địa chỉ nhận hàng:{" "}
-          <span className="text-quest">{orderInfo.address}</span>
-        </span>
-        <Table
-          columns={detailColumns}
-          dataSource={orderDetails.map((item, index) => ({
-            ...item,
-            key: index,
-            index: index + 1,
-            product_name: item.product?.name,
-          }))}
-          pagination={false}
-          summary={() => {
-            const totalAmount = orderDetails.reduce(
-              (sum, item) => sum + item.quantity * item.sell_price,
-              0
-            );
-            return (
-              <>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Tổng tiền:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(totalAmount)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Phí vận chuyển:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.shipping_fee)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    Giảm giá điểm tiêu dùng:
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.discount_points)}
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={4} align="right">
-                    <strong>Tổng giá trị đơn hàng:</strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    <strong>{formatPrice(orderInfo.total_amount)}</strong>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              </>
-            );
-          }}
-        />
+        <div id="invoiceModalContent">
+          <div className="form-name">
+            <img className="logo-bill" src={logo} alt="Molla Shop" />
+          </div>
+          <span className="text-title">
+            Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
+          </span>
+          <br />
+          <span className="text-title">
+            Email: <span className="text-name">{orderInfo.email}</span>
+          </span>
+          <br />
+          <span className="text-title">
+            Địa chỉ: <span className="text-name">{orderInfo.address}</span>
+          </span>
+          <Table
+            style={{ marginTop: "20px" }}
+            columns={detailColumns}
+            dataSource={orderDetails.map((item) => ({
+              ...item,
+              product_name: item.product?.name,
+            }))}
+            pagination={false}
+            summary={() => {
+              const totalAmount = orderDetails.reduce(
+                (sum, item) => sum + item.quantity * item.sell_price,
+                0
+              );
+              const isPercentDiscount =
+                orderInfo.coupon_discount_type === "percent";
+              const discountValue = isPercentDiscount
+                ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                : orderInfo.coupon_discount_value || 0;
+              return (
+                <>
+                  <Table.Summary.Row style={{ lineHeight: "1" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Tổng tiền hàng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(totalAmount)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: "1.2" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phiếu giảm giá:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {isPercentDiscount
+                        ? `${formatPrice(discountValue)} (${
+                            orderInfo.coupon_discount_value
+                          }%)`
+                        : formatPrice(discountValue)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: "1" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: "1" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Giảm giá điểm tiêu dùng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.discount_points)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: "1" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Tổng thanh toán:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: "1" }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Số tiền cần trả:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>
+                        {orderInfo.payment_id === 2
+                          ? formatPrice(orderInfo.total_amount)
+                          : formatPrice(0)}
+                      </strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </>
+              );
+            }}
+          />
+          <div className="form-thank">
+            <span className="text-thank">
+              Cảm ơn quý khách đã tin tưởng Molla Shop!
+            </span>
+            <br />
+            <span className="text-name">Hẹn gặp lại</span>
+          </div>
+        </div>
         <div className="add">
           {(orderStatus === 5 || orderStatus === 7) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
@@ -719,7 +712,6 @@ const Orders = () => {
               </Button>
             </Link>
           )}
-
           {(orderStatus === 1 || orderStatus === 2 || orderStatus === 3) && (
             <Button
               color="danger"
@@ -731,7 +723,6 @@ const Orders = () => {
           )}
         </div>
       </Modal>
-
       <Modal
         title="Chọn phương thức thanh toán"
         visible={isPaymentModalVisible}
