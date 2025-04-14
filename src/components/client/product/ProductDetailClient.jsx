@@ -171,7 +171,7 @@ const ProductDetailClient = () => {
   };
   const fetchProductRecommend = async () => {
     const reponse = await productsServices.fetchProductRecommendById(id);
-    
+
     setRecommendedProducts(reponse.recommended_products);
   };
   const { Title } = Typography;
@@ -215,10 +215,9 @@ const ProductDetailClient = () => {
             <div className="row">
               <div className="col-md-6">
                 <div className="product-gallery">
-                  <figure className="product-main-image">
+                  <figure className="product-main-image" >
                     <img
-                      width={574}
-                      height={574}
+                      style={{ border: "1px solid #ddd", "border-radius": "10px" }}
                       id="product-zoom"
                       src={mainImage}
                       data-zoom-image={mainImage}
@@ -495,12 +494,14 @@ const ProductDetailClient = () => {
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <Title level={2} className="text-center" style={{ textAlign: "center", marginBottom: "20px" }}>
-              Top 2 Sản phẩm tương tự mua nhiều
+              Sản Phẩm Hay được mua cùng
             </Title>
             <Row gutter={[16, 16]} justify="center">
               {recommendedProducts.map((product) => (
                 <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
                   <Card
+                  onClick={() => navigate(`/product-detail/${product.id}`)}
+
                     hoverable
                     cover={<img alt={product.name} src={product.thumbnail} />}
                   >
