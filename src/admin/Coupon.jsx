@@ -40,8 +40,6 @@ const Coupon = () => {
 
   const showDetailModal = async (id) => {
     const response = await CouponServices.getCounponById(id);
-    console.log(response);
-
     if (response.success && response.data) {
       setSelectedCoupon([response.data]);
     }
@@ -51,8 +49,6 @@ const Coupon = () => {
   const handleShowModal = async (coupon) => {
     setEditingCoupon(coupon);
     if (coupon) {
-      console.log(coupon);
-
       form.setFieldsValue({
         title: coupon.title,
         code: coupon.code,
@@ -99,7 +95,7 @@ const Coupon = () => {
       render: (type) => (type === "percent" ? "Giảm %" : "Giảm tiền"),
     },
     {
-      title: "Áp dụng",
+      title: "Loại Áp Dụng",
       dataIndex: "coupon_type",
       key: "coupon_type",
       align: "center",
@@ -208,7 +204,6 @@ const Coupon = () => {
         if (record.is_expired) {
           return <span className="action-link-red">Dừng áp dụng</span>;
         }
-
         return (
           <span className={isActive ? "action-link-blue" : "action-link-red"}>
             {isActive ? "Đang áp dụng" : "Dừng áp dụng"}
@@ -266,35 +261,88 @@ const Coupon = () => {
     }
 
     let response;
-
-    if (editingCoupon) {
-      response = await CouponServices.updateCoupon(editingCoupon.id, payload);
-    } else {
-      response = await CouponServices.createCoupon(payload);
-    }
-
-    if (response) {
-      fetchCoupons();
-      notification.success({
-        message: editingCoupon
-          ? "Cập nhật mã giảm giá thành công!"
-          : "Tạo mã giảm giá thành công!",
+    try {
+      if (editingCoupon) {
+        response = await CouponServices.updateCoupon(editingCoupon.id, payload);
+      } else {
+        response = await CouponServices.createCoupon(payload);
+      }
+      if (response) {
+        fetchCoupons();
+        notification.success({
+          message: editingCoupon
+            ? "Cập nhật mã giảm giá thành công!"
+            : "Tạo mã giảm giá thành công!",
+        });
+      }
+      setIsModalVisible(false);
+      form.resetFields();
+    } catch (error) {
+      console.error("Error saving coupon:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể lưu mã giảm giá.",
       });
     }
-
-    setIsModalVisible(false);
-    form.resetFields();
   };
 
   const fetchCoupons = async () => {
-    const { data } = await CouponServices.fetchCoupons();
-    setCoupon(data);
-    setIsLoading(false);
+    try {
+      const { data } = await CouponServices.fetchCoupons();
+      setCoupon(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching coupons:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể tải danh sách mã giảm giá.",
+      });
+      setIsLoading(false);
+    }
   };
 
   const fetchUsers = async () => {
-    const { data } = await AuthServices.fetchAuth();
-    setUsers(data);
+    try {
+      const { data } = await AuthServices.fetchAuth();
+      setUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  // New function to check and update expired coupons
+  const checkAndUpdateExpiredCoupons = async () => {
+    const now = dayjs();
+    const couponsToUpdate = coupon.filter(
+      (c) =>
+        c.is_active &&
+        c.end_date &&
+        dayjs(c.end_date).isBefore(now, "day") &&
+        !c.is_expired
+    );
+
+    if (couponsToUpdate.length === 0) return;
+
+    try {
+      for (const c of couponsToUpdate) {
+        const payload = {
+          ...c,
+          is_active: false,
+        };
+        await CouponServices.updateCoupon(c.id, payload);
+      }
+      fetchCoupons(); // Refresh the coupon list
+      notification.info({
+        message: "Cập nhật trạng thái",
+        description: `${couponsToUpdate.length} mã giảm giá đã được chuyển sang trạng thái dừng áp dụng do hết hạn.`,
+      });
+    } catch (error) {
+      console.error("Error updating expired coupons:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể cập nhật trạng thái mã giảm giá hết hạn.",
+      });
+    }
   };
 
   useEffect(() => {
@@ -302,13 +350,19 @@ const Coupon = () => {
     fetchUsers();
   }, []);
 
-  const formatPrice = (price) => {
-    const formatter = new Intl.NumberFormat("de-DE", {
-      style: "decimal",
-      maximumFractionDigits: 0,
-    });
-    return formatter.format(price);
-  };
+  // Periodic check for expired coupons
+  useEffect(() => {
+    // Initial check when component mounts
+    checkAndUpdateExpiredCoupons();
+
+    // Set interval to check every minute (60000ms)
+    const interval = setInterval(() => {
+      checkAndUpdateExpiredCoupons();
+    }, 60000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, [coupon]);
 
   return (
     <div>
@@ -457,7 +511,6 @@ const Coupon = () => {
               </Select>
             </Form.Item>
           )}
-
           {couponType === "private" && (
             <Form.Item
               label="Chọn người dùng"
@@ -473,7 +526,6 @@ const Coupon = () => {
               </Select>
             </Form.Item>
           )}
-
           <Row gutter={24}>
             <Col span={12} className="col-item">
               <Form.Item
@@ -495,7 +547,6 @@ const Coupon = () => {
                 />
               </Form.Item>
             </Col>
-
             <Col span={12} className="col-item">
               <Form.Item
                 label="Ngày kết thúc"
@@ -510,7 +561,6 @@ const Coupon = () => {
                     validator(_, value) {
                       const startDate = getFieldValue("start_date");
                       if (!value || !startDate) return Promise.resolve();
-
                       if (value.isBefore(startDate, "day")) {
                         return Promise.reject(
                           "Ngày kết thúc không thể trước ngày bắt đầu!"
@@ -542,7 +592,6 @@ const Coupon = () => {
           >
             <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
           </Form.Item>
-
           <div className="add">
             <Button type="primary" htmlType="submit">
               {editingCoupon ? "Cập nhật" : "Thêm"}

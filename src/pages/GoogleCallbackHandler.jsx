@@ -1,3 +1,4 @@
+import { message } from "antd";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -18,6 +19,7 @@ const GoogleCallbackHandler = () => {
 
         // ✅ Chuyển về dashboard sau khi lưu xong
         navigate("/dashboard", { replace: true });
+        message.success("Đăng nhập thành công!");
       } catch (err) {
         console.error("Lỗi khi xử lý user từ query:", err);
         navigate("/logincl");

@@ -61,9 +61,14 @@ const Dashboard = () => {
       console.log(response.message);
 
       // Xóa dữ liệu client_token và user khỏi localStorage
-      localStorage.removeItem("client_token"); // Xóa client_token
-      localStorage.removeItem("client"); // Xóa thông tin user
-      localStorage.removeItem("user"); // Xóa thông tin user
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items"); // Xóa giỏ hàng cục bộ nếu cần
+
+      // Phát ra sự kiện đăng xuất
+      window.dispatchEvent(new Event("user-logout"));
+
       navigate("/");
     } catch (error) {
       console.error("Logout failed", error);
@@ -98,7 +103,7 @@ const Dashboard = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>  
+                <Link to='/'><span>Trang Chủ</span></Link>
               </li>
               <li className="breadcrumb-item">
                 <span>Tài Khoản</span>
