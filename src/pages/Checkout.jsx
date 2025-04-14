@@ -683,21 +683,36 @@ const Checkout = () => {
   useEffect(() => {
     const fetchCouponsData = async () => {
       try {
-        // Lấy phiếu giảm giá chung
-        const couponsData = await CouponServices.fetchCoupons();
-        setCoupons(couponsData.data);
-        console.log("Dữ liệu phiếu giảm giá chung:", couponsData.data);
-
-        // Lấy phiếu giảm giá theo ID người dùng (nếu có)
         const storedUser = JSON.parse(localStorage.getItem("user"));
+
+        let userCouponsData = [];
+        let availableCouponsData = [];
+
+        // Lấy coupon riêng của user nếu đăng nhập
         if (storedUser?.id) {
-          const userCouponsData = await CouponServices.getCounponById(
-            storedUser.id
-          );
+          userCouponsData = await CouponServices.getCounponById(storedUser.id);
           setUserCoupons(userCouponsData);
+          console.log("User Coupons:", userCouponsData);
         }
+
+        // Lấy danh sách coupon đang hoạt động (có thể thêm điều kiện lọc)
+        const searchParams = {
+          is_active: 1, // chỉ lấy mã đang hoạt động
+          page: 1,
+        };
+        availableCouponsData = await CouponServices.searchCoupons(searchParams);
+
+        if (availableCouponsData?.data) {
+          setCoupons(availableCouponsData.data); // Gộp hoặc chỉ dùng coupon public
+        } else {
+          console.warn("Không có dữ liệu coupons từ searchCoupons.");
+          setCoupons([]);
+        }
+
+        console.log("User Coupons:", userCouponsData);
+        console.log("Available Coupons:", availableCouponsData.data);
       } catch (error) {
-        console.error("Lỗi khi lấy phiếu giảm giá:", error);
+        console.error("❌ Lỗi khi lấy danh sách mã giảm giá:", error);
       }
     };
 

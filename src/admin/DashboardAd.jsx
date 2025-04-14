@@ -41,13 +41,22 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchRevenueStatistics = async () => {
       const data = await statisticServices.fetchRevenueStatistics();
+      console.log("Dữ liệu thô từ API:", data);
+
       const labels = data.statistics.map((item) => item.date);
-      const cancelledOrders = data.statistics.map(
-        (item) => Math.floor(Number(item.cancelled_orders)) || 0
-      );
-      const returnedOrders = data.statistics.map(
-        (item) => Math.floor(Number(item.returned_orders)) || 0
-      );
+      const cancelledOrders = data.statistics.map((item) => {
+        const value = Number(item.cancelled_orders);
+        return isNaN(value) ? 0 : Math.floor(value);
+      });
+      const returnedOrders = data.statistics.map((item) => {
+        const value = Number(item.returned_orders);
+        return isNaN(value) ? 0 : Math.floor(value);
+      });
+
+      console.log("Labels:", labels);
+      console.log("Cancelled Orders:", cancelledOrders);
+      console.log("Returned Orders:", returnedOrders);
+
       setExpensesData({
         labels,
         datasets: [
@@ -181,8 +190,17 @@ const Dashboard = () => {
       y: {
         beginAtZero: true,
         ticks: {
-          stepSize: 1,
           callback: (value) => Math.floor(value),
+          stepSize: 1, // Khoảng cách giữa các giá trị trên trục Y
+        },
+        suggestedMax: 5, // Đặt giá trị tối đa gợi ý
+        max: (context) => {
+          const chart = context.chart;
+          const datasets = chart.data.datasets;
+          const maxDataValue = Math.max(
+            ...datasets.flatMap((dataset) => dataset.data)
+          );
+          return Math.max(Math.ceil(maxDataValue) + 1, 5); // Đảm bảo trục Y ít nhất đến 5
         },
       },
       x: {
