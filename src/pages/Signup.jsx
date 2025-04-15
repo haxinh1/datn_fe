@@ -1,22 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  Select,
-  DatePicker,
-  notification,
-  Row,
-  Col,
-  Card,
-  Upload,
-} from "antd";
+import { Form, Input, Select, DatePicker, notification, Row, Col, Card, Upload } from "antd";
 import { AuthServices } from "../services/auth";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import dayjs from "dayjs";
 import "../css/signup.css";
 import { UploadOutlined } from "@ant-design/icons";
+import moment from "moment/moment";
 
 const Signup = () => {
   const [form] = Form.useForm();
@@ -24,7 +13,6 @@ const Signup = () => {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [image, setImage] = useState("");
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
@@ -295,6 +283,7 @@ const Signup = () => {
                       className="input-item"
                       format="DD/MM/YYYY"
                       placeholder="DD/MM/YYYY"
+                      disabledDate={(current) => current && current > moment().endOf("day")}
                     />
                   </Form.Item>
                 </Col>

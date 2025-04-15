@@ -122,6 +122,19 @@ const Staff = () => {
             value: dayjs(userData.birthday).format("DD/MM/YYYY")
         },
         {
+            key: 'role',
+            label: 'Chức năng',
+            value: (
+                <div className="action-link-blue">
+                    {userData.role === 'admin'
+                        ? 'Quản lý'
+                        : userData.role === 'manager'
+                        ? 'Nhân viên'
+                        : 'Khách hàng'}
+                </div>
+            ),
+        },        
+        {
             key: 'created_at',
             label: 'Ngày tham gia',
             value: <div className="action-link-blue">{dayjs(userData.created_at).format("DD/MM/YYYY")}</div>

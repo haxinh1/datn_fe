@@ -1,25 +1,5 @@
-import {
-  ArrowRightOutlined,
-  BookOutlined,
-  CheckOutlined,
-  EyeOutlined,
-  MenuOutlined,
-  PrinterOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  DatePicker,
-  Image,
-  Input,
-  Modal,
-  Skeleton,
-  Table,
-  Radio,
-  Tabs,
-  Tooltip,
-  notification,
-} from "antd";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, MenuOutlined, PrinterOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Radio, Tabs, Tooltip, notification } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -37,7 +17,9 @@ const Orders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const hideModal = () => setIsModalVisible(false);
   const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
+  const handleCancel = () => setIsPaymentModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
@@ -82,8 +64,6 @@ const Orders = () => {
     const orderDetails = await OrderService.getOrderById(order.id);
     setOrderDetails(orderDetails);
   };
-
-  const hideModal = () => setIsModalVisible(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -317,7 +297,7 @@ const Orders = () => {
                   : order
               )
             );
-            navigate(`/review/${orderId}`);
+            // navigate(`/review/${orderId}`);
           } else {
             notification.error({
               message: "Update Failed",
@@ -407,7 +387,6 @@ const Orders = () => {
             .join(", ") || productName;
         return (
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Image src={thumbnail} width={60} />
             <Link to={`/product-detail/${record.product_id}`}>
               <span>{variantAttributes}</span>
             </Link>
@@ -721,32 +700,12 @@ const Orders = () => {
           )}
         </div>
       </Modal>
+
       <Modal
         title="Chọn phương thức thanh toán"
         visible={isPaymentModalVisible}
-        onCancel={() => {
-          setIsPaymentModalVisible(false);
-          setSelectedPayment(null);
-        }}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setIsPaymentModalVisible(false);
-              setSelectedPayment(null);
-            }}
-          >
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleConfirmPayment}
-            style={{ backgroundColor: "#eea287", borderColor: "#eea287" }}
-          >
-            Xác nhận
-          </Button>,
-        ]}
+        onCancel={handleCancel}
+        footer={null}
       >
         <Radio.Group
           onChange={(e) => setSelectedPayment(e.target.value)}
@@ -766,6 +725,17 @@ const Orders = () => {
             </Radio>
           ))}
         </Radio.Group>
+
+        <div className="add">
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleConfirmPayment}
+            style={{ backgroundColor: "#eea287", borderColor: "#eea287" }}
+          >
+            Xác nhận
+          </Button>
+        </div>
       </Modal>
     </div>
   );

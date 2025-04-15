@@ -31,14 +31,23 @@ const Account = () => {
         mutationFn: async (updatedData) => {
             return await AuthServices.updateUser(selectedRecord.id, updatedData);
         },
-        onSuccess: () => {
+        onSuccess: (_, updatedData) => {
             notification.success({
                 message: "Cập nhật thành công",
             });
             handleEditCancel();
-            console.log(userData)
-            refetch(); // Refresh danh sách người dùng sau khi cập nhật
-        }
+            refetch();
+        
+            // Cập nhật lại filteredUsers nếu đang dùng lọc
+            setFilteredUsers((prev) => {
+                if (!prev) return null; // nếu không lọc, giữ nguyên
+                return prev.map((user) =>
+                    user.id === selectedRecord.id
+                        ? { ...user, ...updatedData }
+                        : user
+                );
+            });
+        }        
     });
 
     const handleUpdateUser = async () => {
@@ -146,7 +155,7 @@ const Account = () => {
                 <span className={
                     role === "admin" ? "action-link-green" : role === "manager" ? "action-link-blue" : "action-link-purple"
                 }>
-                    {role === "admin" ? "Quản trị viên" : role === "manager" ? "Nhân viên" : "Khách hàng"}
+                    {role === "admin" ? "Quản lý" : role === "manager" ? "Nhân viên" : "Khách hàng"}
                 </span>
             ),
         },
@@ -214,7 +223,7 @@ const Account = () => {
                 >
                     <Select.Option value="customer">Khách hàng</Select.Option>
                     <Select.Option value="manager">Nhân viên</Select.Option>
-                    <Select.Option value="admin">Quản trị viên</Select.Option>
+                    <Select.Option value="admin">Quản lý</Select.Option>
                 </Select>
             </div>
 

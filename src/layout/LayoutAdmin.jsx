@@ -1,35 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import {
-  Layout,
-  Menu,
-  theme,
-  Modal,
-  Avatar,
-  Button,
-  Tooltip,
-  Dropdown,
-} from "antd";
-import {
-  HomeOutlined,
-  BookOutlined,
-  MessageOutlined,
-  LogoutOutlined,
-  ProductOutlined,
-  ImportOutlined,
-  PrinterOutlined,
-  GroupOutlined,
-  TableOutlined,
-  ProjectOutlined,
-  EditOutlined,
-  SettingOutlined,
-  LockOutlined,
-  BellOutlined,
-  TeamOutlined,
-  CommentOutlined,
-  RollbackOutlined,
-  DatabaseOutlined,
-} from "@ant-design/icons";
+import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined, RollbackOutlined, DatabaseOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -39,9 +11,7 @@ const { Content, Header, Footer, Sider } = Layout;
 const LayoutAdmin = () => {
   const nav = useNavigate();
   const [user, setUser] = useState(null);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   const fetchUserInfo = async (userId) => {
     try {
@@ -80,35 +50,32 @@ const LayoutAdmin = () => {
       content: "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
       okText: "Đăng xuất",
       cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          const tokenBefore = localStorage.getItem("adminToken");
-          console.log("Token before logout:", tokenBefore);
-          localStorage.removeItem("admin_token");
-
-          await AuthServices.logoutad(
-            "/admin/logout",
-            {},
-            {
-              headers: {
-                Authorization: `Bearer ${tokenBefore}`,
-              },
-            }
-          );
-
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("user");
-          console.log(
-            "Token after logout:",
-            localStorage.getItem("adminToken")
-          );
-        } catch (error) {
-          console.error("Lỗi khi logout:", error);
-        } finally {
-          nav("/loginad");
-        }
-      },
+      onOk: forceLogout,
     });
+  };
+
+  const forceLogout = async () => {
+    try {
+      const tokenBefore = localStorage.getItem("adminToken");
+      localStorage.removeItem("admin_token");
+
+      await AuthServices.logoutad(
+        "/admin/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokenBefore}`,
+          },
+        }
+      );
+
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("user");
+    } catch (error) {
+      console.error("Lỗi khi logout:", error);
+    } finally {
+      nav("/loginad");
+    }
   };
 
   const isManager = user?.role === "manager";
@@ -304,12 +271,14 @@ const LayoutAdmin = () => {
             <Tooltip title="Thông báo">
               <BellOutlined style={{ fontSize: "24px", cursor: "pointer" }} />
             </Tooltip>
+
             <Dropdown overlay={menu} trigger={["hover"]}>
               <Button
                 type="primary"
                 icon={<SettingOutlined />}
               />
             </Dropdown>
+
             <Tooltip title="Đăng xuất">
               <Button
                 type="primary"

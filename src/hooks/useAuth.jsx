@@ -10,7 +10,6 @@ const useAuth = () => {
   useEffect(() => {
     const checkAuth = () => {
       const storedUser = sessionStorage.getItem("user");
-      console.log("Dữ liệu từ sessionStorage:", storedUser); // Debug
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       } else {
