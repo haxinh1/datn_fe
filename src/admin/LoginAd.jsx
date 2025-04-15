@@ -23,7 +23,7 @@ const LoginAd = () => {
       if (response && response.access_token) {
         localStorage.setItem("admin_token", response.access_token);
         localStorage.setItem("user", JSON.stringify(response.admin));
-
+        sessionStorage.setItem("user", JSON.stringify(response.admin));
         message.success("Đăng nhập thành công!");
         navigate("/admin/list-pr");
       } else {
@@ -38,23 +38,23 @@ const LoginAd = () => {
   const validatePhoneOrEmail = (_, value) => {
     const phoneRegex = /^[0-9]{10,11}$/;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  
+
     if (!value) {
       return Promise.reject("Vui lòng nhập số điện thoại hoặc Email");
     }
-  
+
     if (!phoneRegex.test(value) && !emailRegex.test(value)) {
       return Promise.reject("Nhập sai định dạng. Vui lòng nhập số điện thoại hoặc Email hợp lệ");
     }
-  
+
     return Promise.resolve();
   };
 
   return (
     <div className="loginad-container">
       <Card title="Đăng Nhập Quản Lý" className="login-card">
-        <Form 
-          onFinish={handleLogin} 
+        <Form
+          onFinish={handleLogin}
           layout="vertical"
         >
           <Form.Item
@@ -79,15 +79,15 @@ const LoginAd = () => {
               { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu" className="input-item"/>
+            <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu" className="input-item" />
           </Form.Item>
 
           <Link to='/forgetad'>
             <span className="admin-quest">Quên mật khẩu</span>
           </Link>
-          
-          <Button 
-            type="primary" htmlType="submit" 
+
+          <Button
+            type="primary" htmlType="submit"
             block loading={loading} className="btn-item"
           >
             Đăng nhập
