@@ -265,7 +265,7 @@ const Info = () => {
             key: "loyalty_points",
             label: "Điểm tiêu dùng",
             value:
-                <div className="group1">
+                <div className="points">
                     <div className="action-link-blue">{formatPrice(user.loyalty_points)}</div>
 
                     <Tooltip title="Chi tiết">

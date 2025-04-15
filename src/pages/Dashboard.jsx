@@ -2,16 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../services/auth";
 import { Modal } from "antd";
-import {
-  BookOutlined,
-  EnvironmentOutlined,
-  HomeOutlined,
-  LockOutlined,
-  LogoutOutlined,
-  MessageOutlined,
-  RollbackOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { BookOutlined, EnvironmentOutlined, LockOutlined, LogoutOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
 import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Dashboard = () => {
@@ -21,7 +12,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const storedClient = JSON.parse(localStorage.getItem("client"));
-    setClient(storedClient); // Lấy thông tin người dùng từ localStorage
+    setClient(storedClient);
   }, []);
 
   useEffect(() => {
@@ -54,6 +45,23 @@ const Dashboard = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const checkClientStatus = async () => {
+      if (client?.id) {
+        try {
+          const userInfo = await AuthServices.getAUser(client.id);
+          if (userInfo.status === "inactive" || userInfo.status === "banned") {
+            handleLogout(); // Tự động đăng xuất luôn
+          }
+        } catch (error) {
+          console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
+        }
+      }
+    };
+
+    checkClientStatus();
+  }, [client]);
+
   const handleLogout = async () => {
     setLoading(true);
     try {
@@ -61,9 +69,9 @@ const Dashboard = () => {
       console.log(response.message);
 
       // Xóa dữ liệu client_token và user khỏi localStorage
-      localStorage.removeItem("client_token"); // Xóa client_token
-      localStorage.removeItem("client"); // Xóa thông tin user
-      localStorage.removeItem("user"); // Xóa thông tin user
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
       navigate("/");
     } catch (error) {
       console.error("Logout failed", error);
@@ -98,7 +106,7 @@ const Dashboard = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>  
+                <Link to='/'><span>Trang Chủ</span></Link>
               </li>
               <li className="breadcrumb-item">
                 <span>Tài Khoản</span>
@@ -110,7 +118,6 @@ const Dashboard = () => {
         <div className="page-content">
           <div className="container">
             <div className="row">
-              {/*thanh điều khiển */}
               <aside className="col-md-4 col-lg-3">
                 <ul
                   className="nav nav-dashboard flex-column mb-3 mb-md-0"
@@ -126,6 +133,7 @@ const Dashboard = () => {
                       </span>
                     </Link>
                   </li>
+
                   <li className="nav-item">
                     <Link to={`/dashboard/backcl/${client?.id}`}>
                       <span className="nav-link">
@@ -136,6 +144,7 @@ const Dashboard = () => {
                       </span>
                     </Link>
                   </li>
+
                   <li className="nav-item">
                     <Link to={`/dashboard/info/${client?.id}`}>
                       <span className="nav-link">
@@ -146,6 +155,7 @@ const Dashboard = () => {
                       </span>
                     </Link>
                   </li>
+
                   <li className="nav-item">
                     <Link to={`/dashboard/address/${client?.id}`}>
                       <span className="nav-link">
@@ -156,16 +166,7 @@ const Dashboard = () => {
                       </span>
                     </Link>
                   </li>
-                  <li className="nav-item">
-                    <Link to="/">
-                      <span className="nav-link">
-                        <MessageOutlined
-                          style={{ marginRight: "8px", cursor: "pointer" }}
-                        />
-                        Tin Nhắn
-                      </span>
-                    </Link>
-                  </li>
+
                   <li className="nav-item">
                     <Link to={`/dashboard/changepass/${client?.id}`}>
                       <span className="nav-link">
@@ -176,6 +177,7 @@ const Dashboard = () => {
                       </span>
                     </Link>
                   </li>
+
                   <li className="nav-item">
                     <button
                       onClick={showConfirm}
@@ -191,10 +193,10 @@ const Dashboard = () => {
                 </ul>
               </aside>
 
-              {/* Nội dung động của các trang con */}
               <div className="col-md-8 col-lg-9">
                 <Outlet />
               </div>
+
             </div>
           </div>
         </div>

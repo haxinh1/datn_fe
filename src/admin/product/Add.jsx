@@ -515,7 +515,7 @@ const Add = () => {
                                 return Promise.reject(new Error("Giá khuyến mại phải nhỏ hơn giá bán"));
                             },
                         }),
-                    ]}                 
+                    ]}
                 >
                     <InputNumber
                         className="input-form"
@@ -536,12 +536,34 @@ const Add = () => {
             dataIndex: "sale_price_start_at",
             key: "sale_price_start_at",
             align: "center",
-            render: (text, record) => (
-                <DatePicker
-                    format="DD/MM/YYYY"
-                    value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
-                    onChange={(date) => handleDateChange(date, "start", record)}
-                />
+            render: (text, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sale_price_start_at"]}
+                    dependencies={[["variants", index, "sale_price"]]}
+                    rules={[
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                const salePrice = getFieldValue(["variants", index, "sale_price"]);
+                                if (!salePrice || value) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(
+                                    new Error("Vui lòng chọn ngày mở khuyến mại!")
+                                );
+                            },
+                        }),
+                    ]}
+                >
+                    <DatePicker
+                        className="input-form"
+                        format="DD/MM/YYYY"
+                        value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                        onChange={(date) => handleDateChange(date, "start", record)}
+                        disabledDate={(current) => {
+                            return current && current < dayjs().startOf('day'); // Không cho chọn ngày trước hôm nay
+                        }}
+                    />
+                </Form.Item>
             ),
         },
         {
@@ -549,16 +571,49 @@ const Add = () => {
             dataIndex: "sale_price_end_at",
             key: "sale_price_end_at",
             align: "center",
-            render: (text, record) => (
-                <DatePicker
-                    format="DD/MM/YYYY"
-                    value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
-                    onChange={(date) => handleDateChange(date, "end", record)}
-                />
+            render: (text, record, index) => (
+                <Form.Item
+                    name={["variants", index, "sale_price_end_at"]}
+                    rules={[
+                        ({ getFieldValue }) => ({
+                            validator(_, value) {
+                                const startDateVal = getFieldValue(["variants", index, "sale_price_start_at"]);
+
+                                // Nếu chưa chọn ngày mở => không validate gì cả
+                                if (!startDateVal) return Promise.resolve();
+
+                                // Nếu chưa chọn ngày đóng => lỗi required
+                                if (!value) return Promise.reject(new Error("Vui lòng chọn ngày đóng khuyến mại"));
+
+                                // Ngày trùng nhau
+                                if (value.isSame(startDateVal, 'day')) {
+                                    return Promise.reject(new Error('Ngày đóng không được trùng ngày mở'));
+                                }
+
+                                // Ngày đóng trước ngày mở
+                                if (value.isBefore(startDateVal, 'day')) {
+                                    return Promise.reject(new Error('Ngày đóng phải sau ngày mở'));
+                                }
+
+                                return Promise.resolve();
+                            },
+                        }),
+                    ]}
+                >
+                    <DatePicker
+                        className="input-form"
+                        format="DD/MM/YYYY"
+                        value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                        onChange={(date) => handleDateChange(date, "end", record)}
+                        disabledDate={(current) => {
+                            return current && current < dayjs().startOf('day'); // Không cho chọn ngày trước hôm nay
+                        }}
+                    />
+                </Form.Item>
             ),
         },
         {
-            title: "Thao tác",
+            title: "",
             key: "action",
             align: "center",
             render: (_, record) => (
@@ -822,12 +877,29 @@ const Add = () => {
                                 <Form.Item
                                     label="Ngày mở khuyến mại"
                                     name="sale_price_start_at"
+                                    dependencies={["sale_price"]}
+                                    rules={[
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                const salePrice = getFieldValue("sale_price");
+                                                if (!salePrice || value) {
+                                                    return Promise.resolve();
+                                                }
+                                                return Promise.reject(
+                                                    new Error("Vui lòng chọn ngày mở khuyến mại!")
+                                                );
+                                            },
+                                        }),
+                                    ]}
                                 >
                                     <DatePicker
                                         value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
                                         onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
                                         className="input-item"
                                         format="DD/MM/YYYY"  // Định dạng ngày hiển thị
+                                        disabledDate={(current) => {
+                                            return current && current < dayjs().startOf('day'); // Không cho chọn ngày trước hôm nay
+                                        }}
                                     />
                                 </Form.Item>
                             </Col>
@@ -860,12 +932,40 @@ const Add = () => {
                                 <Form.Item
                                     label="Ngày đóng khuyến mại"
                                     name="sale_price_end_at"
+                                    rules={[
+                                        ({ getFieldValue }) => ({
+                                            validator(_, value) {
+                                                const startDate = getFieldValue('sale_price_start_at');
+
+                                                // Nếu chưa chọn ngày mở => không validate gì cả
+                                                if (!startDate) return Promise.resolve();
+
+                                                // Nếu chưa chọn ngày đóng => lỗi required
+                                                if (!value) return Promise.reject(new Error("Vui lòng chọn ngày đóng khuyến mại"));
+
+                                                // Ngày trùng nhau
+                                                if (value.isSame(startDate, 'day')) {
+                                                    return Promise.reject(new Error('Ngày đóng không được trùng ngày mở'));
+                                                }
+
+                                                // Ngày đóng trước ngày mở
+                                                if (value.isBefore(startDate, 'day')) {
+                                                    return Promise.reject(new Error('Ngày đóng phải sau ngày mở'));
+                                                }
+
+                                                return Promise.resolve();
+                                            },
+                                        }),
+                                    ]}
                                 >
                                     <DatePicker
                                         value={selectedDate ? dayjs(selectedDate) : null}  // Đảm bảo sử dụng dayjs để chuyển chuỗi thành đối tượng dayjs
                                         onChange={handleDateChange}  // Truyền hàm handleDateChange vào đây
                                         className="input-item"
                                         format="DD/MM/YYYY"  // Định dạng ngày hiển thị
+                                        disabledDate={(current) => {
+                                            return current && current < dayjs().startOf('day'); // Không cho chọn ngày trước hôm nay
+                                        }}
                                     />
                                 </Form.Item>
                             </Col>
@@ -959,7 +1059,7 @@ const Add = () => {
                             <InsertRowLeftOutlined style={{ marginRight: "8px" }} />
                             Danh sách sản phẩm cùng loại
                         </h1>
-                        <Table columns={columns} dataSource={tableData} rowKey="id" pagination={false}/>
+                        <Table columns={columns} dataSource={tableData} rowKey="id" pagination={false} />
                     </>
                 )}
 

@@ -10,7 +10,6 @@ const useAuth = () => {
   useEffect(() => {
     const checkAuth = () => {
       const storedUser = localStorage.getItem("user");
-      console.log("Dữ liệu từ localStorage:", storedUser); // Debug xem có lấy được không
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       } else {
