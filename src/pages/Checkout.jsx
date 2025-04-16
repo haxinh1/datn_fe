@@ -494,7 +494,9 @@ const Checkout = () => {
         message.success("🎉 Đơn hàng đã đặt thành công!");
         nav(`/dashboard/orders/${userId || "guest"}`);
         setCartItems([]);
-        localStorage.removeItem("cartAttributes");
+        localStorage.removeItem("cart_items"); // Clear local cart for guest
+        localStorage.removeItem("cartAttributes"); // Clear cart attributes
+        window.dispatchEvent(new Event("cart-updated")); // Trigger cart update event
       } else {
         message.error(orderResponse?.message || "Lỗi không xác định");
       }
