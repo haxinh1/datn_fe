@@ -371,7 +371,10 @@ const Back = () => {
         try {
             const values = await form.validateFields();
             setIsLoading(true);
-            const payload = { approve_stock: values.approveStock };
+            const payload = { 
+                approve_stock: values.approveStock,
+                user_id: JSON.parse(localStorage.getItem("user")).id,
+            };
             await OrderService.confirmStock(selectedStockOrderId, payload);
             notification.success({
                 message: 'Xác nhận số lượng thành công!',

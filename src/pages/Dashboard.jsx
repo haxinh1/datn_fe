@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
-import { AuthServices } from "./../services/auth";
-import { Modal } from "antd";
-import { BookOutlined, EnvironmentOutlined, LockOutlined, LogoutOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
+import { Link, Outlet } from "react-router-dom";
+import { BookOutlined, EnvironmentOutlined, LockOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
 import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [client, setClient] = useState(null);
 
   useEffect(() => {
@@ -44,56 +40,6 @@ const Dashboard = () => {
       }
     }
   }, []);
-
-  useEffect(() => {
-    const checkClientStatus = async () => {
-      if (client?.id) {
-        try {
-          const userInfo = await AuthServices.getAUser(client.id);
-          if (userInfo.status === "inactive" || userInfo.status === "banned") {
-            handleLogout(); // Tự động đăng xuất luôn
-          }
-        } catch (error) {
-          console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
-        }
-      }
-    };
-
-    checkClientStatus();
-  }, [client]);
-
-  const handleLogout = async () => {
-    setLoading(true);
-    try {
-      const response = await AuthServices.logoutclient();
-      console.log(response.message);
-
-      // Xóa dữ liệu client_token và user khỏi localStorage
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client");
-      localStorage.removeItem("user");
-      localStorage.removeItem("cart_items"); // Xóa giỏ hàng cục bộ nếu cần
-
-      // Phát ra sự kiện đăng xuất
-      window.dispatchEvent(new Event("user-logout"));
-
-      navigate("/");
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showConfirm = () => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn đăng xuất?",
-      content: "Bạn sẽ phải đăng nhập lại để tiếp tục.",
-      okText: "Đăng xuất",
-      cancelText: "Hủy",
-      onOk: handleLogout,
-    });
-  };
 
   return (
     <div>
@@ -181,19 +127,6 @@ const Dashboard = () => {
                         Đổi mật khẩu
                       </span>
                     </Link>
-                  </li>
-
-                  <li className="nav-item">
-                    <button
-                      onClick={showConfirm}
-                      disabled={loading}
-                      className="nav-link"
-                    >
-                      <LogoutOutlined
-                        style={{ marginRight: "8px", cursor: "pointer" }}
-                      />
-                      {loading ? "Đang đăng Xuất..." : "Đăng Xuất"}
-                    </button>
                   </li>
                 </ul>
               </aside>

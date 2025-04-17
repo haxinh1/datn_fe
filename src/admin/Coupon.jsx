@@ -80,6 +80,15 @@ const Coupon = () => {
     setIsModalVisible(false);
   };
 
+  // Tách số thành định dạng tiền tệ
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
   const detailColumn = [
     {
       title: "Mã",
@@ -117,6 +126,11 @@ const Coupon = () => {
       dataIndex: "discount_value",
       key: "discount_value",
       align: "center",
+      render: (value, record) => (
+        <span>
+          {formatPrice(value)} {record.discount_type === "percent" ? "%" : "đ"}
+        </span>
+      ),
     },
     {
       title: "Rank",

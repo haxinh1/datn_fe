@@ -8,9 +8,7 @@ import { paymentServices } from "../services/payments";
 import { useQuery } from "@tanstack/react-query";
 import echo from "../echo";
 import logo from "../assets/images/logo.png";
-
 const { TabPane } = Tabs;
-const { RangePicker } = DatePicker;
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -35,7 +33,6 @@ const Orders = () => {
     coupon_discount_value: "",
     coupon_discount_type: "",
   });
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
 

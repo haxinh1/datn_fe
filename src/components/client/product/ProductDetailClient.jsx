@@ -358,7 +358,7 @@ const ProductDetailClient = () => {
                     </div>
                     <a>
                       <span className="text-confirm">
-                        ({product.views} lượt xem)
+                        ({product.total_sales} lượt bán)
                       </span>
                     </a>
                   </div>

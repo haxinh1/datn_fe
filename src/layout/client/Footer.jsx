@@ -1,6 +1,6 @@
 import React from 'react'
 import { Image } from "antd";
-import logofooter from '../../assets/images/demos/demo-8/logofooter.png';
+import logofooter from '../../assets/images/demo-8/logofooter.png';
 import payments from '../../assets/images/payments.png';
 
 

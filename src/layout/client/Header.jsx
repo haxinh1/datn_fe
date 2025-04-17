@@ -1,13 +1,42 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Tooltip, message } from "antd";
-import { Link } from "react-router-dom";
+import { Avatar, Dropdown, Menu, Modal, Tooltip, message } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
-import logo from "../../assets/images/demos/demo-8/logo.png";
+import logo from "../../assets/images/demo-8/logo.png";
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import Pusher from "pusher-js";
+
+let pusherInstance = null;
+
+const initializePusher = (token) => {
+  if (!pusherInstance) {
+    pusherInstance = new Pusher('6b2509032695e872d989', {
+      cluster: 'ap1',
+      encrypted: true,
+      authEndpoint: '/api/broadcasting/auth',
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+      },
+    });
+    console.log('Pusher initialized');
+  }
+  return pusherInstance;
+};
+
+const updatePusherAuth = (token) => {
+  if (pusherInstance) {
+    pusherInstance.config.auth.headers.Authorization = `Bearer ${token || ''}`;
+  }
+};
 
 const Header = () => {
   const [userData, setUserData] = useState(null);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Cập nhật số lượng sản phẩm trong giỏ hàng
   const updateCartCount = async () => {
@@ -54,10 +83,12 @@ const Header = () => {
   };
 
   useEffect(() => {
-    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedToken = localStorage.getItem("client_token");
 
-    if (storedUserId) {
-      fetchUserInfo(storedUserId);
+    if (storedUser && storedToken) {
+      fetchUserInfo(storedUser.id);
+      initializePusher(storedToken);
     } else {
       setUserData(null);
     }
@@ -76,33 +107,36 @@ const Header = () => {
     };
 
     const handleUserLogin = () => {
-      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-      if (storedUserId) {
-        fetchUserInfo(storedUserId);
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const storedToken = localStorage.getItem("client_token");
+      if (storedUser && storedToken) {
+        fetchUserInfo(storedUser.id);
+        updatePusherAuth(storedToken);
       }
       updateCartCount();
     };
 
-    // Xử lý sự kiện user-updated
     const handleUserUpdated = () => {
-      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-      if (storedUserId) {
-        fetchUserInfo(storedUserId);
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser) {
+        fetchUserInfo(storedUser.id);
       }
     };
 
     window.addEventListener("cart-updated", handleCartUpdate);
     window.addEventListener("user-logout", handleUserLogout);
     window.addEventListener("user-login", handleUserLogin);
-    window.addEventListener("user-updated", handleUserUpdated); // Thêm sự kiện này
+    window.addEventListener("user-updated", handleUserUpdated);
 
     const handleStorageChange = (e) => {
-      if (e.key === "cart_items" || e.key === "user") {
+      if (e.key === "cart_items" || e.key === "user" || e.key === "client_token") {
         updateCartCount();
-        if (e.key === "user") {
-          const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-          if (storedUserId) {
-            fetchUserInfo(storedUserId);
+        if (e.key === "user" || e.key === "client_token") {
+          const storedUser = JSON.parse(localStorage.getItem("user"));
+          const storedToken = localStorage.getItem("client_token");
+          if (storedUser && storedToken) {
+            fetchUserInfo(storedUser.id);
+            updatePusherAuth(storedToken);
           } else {
             setUserData(null);
           }
@@ -115,10 +149,101 @@ const Header = () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
       window.removeEventListener("user-logout", handleUserLogout);
       window.removeEventListener("user-login", handleUserLogin);
-      window.removeEventListener("user-updated", handleUserUpdated); // Dọn dẹp sự kiện
+      window.removeEventListener("user-updated", handleUserUpdated);
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
+
+  // Kiểm tra trạng thái tài khoản qua API (fallback)
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser?.id) {
+        try {
+          console.log('Checking user status via API');
+          const userInfo = await AuthServices.getAUser(storedUser.id);
+          if (userInfo.status === "inactive" || userInfo.status === "banned") {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
+        }
+      }
+    };
+
+    checkUserStatus();
+    const interval = setInterval(checkUserStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Lắng nghe sự kiện Pusher
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser?.id) {
+      const pusher = initializePusher(localStorage.getItem("client_token"));
+      console.log('Subscribing to channel:', `user.${storedUser.id}`);
+      const channel = pusher.subscribe(`user.${storedUser.id}`);
+
+      channel.bind('user-status-updated', (data) => {
+        console.log('Received Pusher event:', data);
+        if (data.status === 'inactive' || data.status === 'banned') {
+          Modal.warning({
+            title: 'Tài khoản bị khóa',
+            content: 'Tài khoản của bạn đã bị khóa. Bạn sẽ được đăng xuất.',
+            onOk: handleLogout,
+            okText: 'Đăng xuất',
+            okButtonProps: { autoFocus: true },
+            maskClosable: false,
+          });
+        }
+      });
+
+      return () => {
+        console.log('Unsubscribing from channel:', `user.${storedUser.id}`);
+        channel.unbind_all();
+        channel.unsubscribe();
+      };
+    }
+  }, [userData]);
+
+  // Hàm xử lý đăng xuất
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      console.log('Starting logout');
+      const response = await AuthServices.logoutclient();
+      console.log('Logout response:', response.message);
+
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hiển thị modal xác nhận đăng xuất
+  const showConfirm = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn đăng xuất?",
+      content: "Bạn sẽ phải đăng nhập lại để tiếp tục.",
+      okText: "Đăng xuất",
+      cancelText: "Hủy",
+      onOk: handleLogout,
+    });
+  };
 
   // Xử lý sự kiện kéo qua vùng thả
   const handleDragOver = (e) => {
@@ -295,18 +420,46 @@ const Header = () => {
               </Tooltip>
             </div>
             <div className="gtranslate_wrapper"></div>
-            <Tooltip title="Tài khoản">
-              <Link
-                to={userData ? `/dashboard/orders/${userData.id}` : "/logincl"}
-                className="wishlist-link"
+
+            {userData ? (
+              <Dropdown
+                overlay={
+                  <Menu>
+                    <Menu.Item key="account">
+                      <Link to={`/dashboard/orders/${userData.id}`}>
+                        <span>
+                          <UserOutlined style={{ marginRight: "8px" }} />
+                          Tài khoản
+                        </span>
+                      </Link>
+                    </Menu.Item>
+                    <Menu.Item key="logout">
+                      <span onClick={showConfirm}>
+                        <LogoutOutlined style={{ marginRight: "8px" }} />
+                        Đăng xuất
+                      </span>
+                    </Menu.Item>
+                  </Menu>
+                }
+                placement="bottomRight"
+                trigger={["click"]}
               >
-                {userData && userData.avatar ? (
-                  <Avatar size={36} src={userData.avatar} />
-                ) : (
+                <span style={{ cursor: "pointer" }}>
+                  {userData.avatar ? (
+                    <Avatar size={36} src={userData.avatar} className="wishlist-link" />
+                  ) : (
+                    <i className="icon-user"></i>
+                  )}
+                </span>
+              </Dropdown>
+            ) : (
+              <Tooltip title="Tài khoản">
+                <Link to="/logincl" className="wishlist-link">
                   <i className="icon-user"></i>
-                )}
-              </Link>
-            </Tooltip>
+                </Link>
+              </Tooltip>
+            )}
+
           </div>
         </div>
       </div>

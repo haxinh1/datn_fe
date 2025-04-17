@@ -280,6 +280,7 @@ const Import = () => {
                         variant="solid"
                         icon={<DeleteOutlined />}
                         onClick={handleRemoveSelected}
+                        disabled={selectedRowKeys.length === 0}
                     >
                         Xóa
                     </Button>
@@ -464,7 +465,7 @@ const Import = () => {
                 />
                 <div className="add">
                     <Button type="primary" onClick={handleSubmit} className="btn-item">
-                        Hoàn thành nhập hàng
+                        Hoàn thành
                     </Button>
                 </div>
             </Form>

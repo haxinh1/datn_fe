@@ -355,7 +355,7 @@ const Detail = () => {
 
                                                     <Table.Summary.Row>
                                                         <Table.Summary.Cell colSpan={4} align="right">
-                                                            <strong>Tổng giá trị đơn hàng:</strong>
+                                                            <strong>Tổng thanh toán:</strong>
                                                         </Table.Summary.Cell>
                                                         <Table.Summary.Cell align="center">
                                                             <strong>{formatPrice(order?.total_amount || 0)}</strong>
@@ -369,7 +369,7 @@ const Detail = () => {
 
                                 <hr />
                                 <div style={{ marginLeft: '60px' }}>
-                                    <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mác nào, hãy liên hệ với Molla</span> <br />
+                                    <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mắc nào, hãy liên hệ với Molla</span> <br />
                                     <span style={{fontSize: '14px'}}><strong>Zalo:</strong> 0987654321</span> <br />
                                     <span style={{fontSize: '14px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
                                     <span style={{fontSize: '14px'}}><strong>Hotline:</strong> 09100204</span>
