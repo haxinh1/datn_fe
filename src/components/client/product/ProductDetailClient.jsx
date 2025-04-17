@@ -280,13 +280,15 @@ const ProductDetailClient = () => {
                     )}
                   </h1>
 
+
+
                   <div className="ratings-container">
                     <div className="ratings">
                       <div
                         className="ratings-val"
                         style={{ width: "80%" }}
                       ></div>
-                    </div>
+                    </div>3
                     <a
                       className="ratings-text"
                       href="#product-review-link"
@@ -294,6 +296,15 @@ const ProductDetailClient = () => {
                     >
                       ( 2 Reviews )
                     </a>
+                  </div>
+
+                  <div className="details-filter-row details-row-size">
+                    <label>Lượt Xem:</label>
+                    <div className="product-nav product-nav-dots">
+                      <div>
+                        {product.views}
+                      </div>
+                    </div>
                   </div>
                   {selectedVariant ? (
                     <div className="product-price">
@@ -500,7 +511,7 @@ const ProductDetailClient = () => {
               {recommendedProducts.map((product) => (
                 <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
                   <Card
-                  onClick={() => navigate(`/product-detail/${product.id}`)}
+                    onClick={() => navigate(`/product-detail/${product.id}`)}
 
                     hoverable
                     cover={<img alt={product.name} src={product.thumbnail} />}
