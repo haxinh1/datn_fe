@@ -26,7 +26,7 @@ const ProductDetailClient = () => {
   const [modal2Open, setModal2Open] = useState(false);
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSizeId, setSelectedSizeId] = useState("");
-  const [attributes, setAttributes] = useState([]);
+  const [avgRate, setAvgRate] = useState(null);
   const [dataViewed, setDataViewed] = useState(null);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
 
@@ -165,9 +165,10 @@ const ProductDetailClient = () => {
   };
 
   const fetchProduct = async () => {
-    const { data, dataViewed } = await productsServices.fetchProductById(id);
+    const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
     setProduct(data);
     setDataViewed(dataViewed);
+    setAvgRate(avgRate);
   };
   const fetchProductRecommend = async () => {
     const reponse = await productsServices.fetchProductRecommendById(id);
@@ -281,23 +282,24 @@ const ProductDetailClient = () => {
                   </h1>
 
 
-
-                  <div className="ratings-container">
-                    <div className="ratings">
-                      <div
-                        className="ratings-val"
-                        style={{ width: "80%" }}
-                      ></div>
-                    </div>3
-                    <a
-                      className="ratings-text"
-                      href="#product-review-link"
-                      id="review-link"
-                    >
-                      ( 2 Reviews )
-                    </a>
-                  </div>
-
+                  {avgRate && (
+                    <div className="ratings-container">
+                      <div className="ratings">
+                        <div
+                          className="ratings-val"
+                          style={{ width: `${avgRate.avg * 20}%` }}
+                        ></div>
+                      </div>
+                      <a
+                        className="ratings-text"
+                        href="#product-review-link"
+                        id="review-link"
+                      >
+                        ({avgRate.total})
+                      </a>
+                    </div>
+                  )}
+                  
                   <div className="details-filter-row details-row-size">
                     <label>Lượt Xem:</label>
                     <div className="product-nav product-nav-dots">
@@ -498,7 +500,7 @@ const ProductDetailClient = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       <div className="product-details-tab product-details-extended">
         <ProductTabs productId={product.id} product={product} />
