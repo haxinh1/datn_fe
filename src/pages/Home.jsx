@@ -49,15 +49,11 @@ import productThumb2 from "../assets/images/demo-8/products/product-1-2-thumb.jp
 import productThumb3 from "../assets/images/demo-8/products/product-1-3-thumb.jpg";
 
 import ProductList from "../components/client/product/ProductList";
-import ChatBox from "../components/client/chat/ChatBox";
-import ChatIcon from "../components/client/chat/ChatIcon";
-import ChatWindow from "../components/client/chat/ChatWindow";
+
 import { Link } from "react-router-dom";
 
 const Home = () => {
-  const [chatVisible, setChatVisible] = useState(false);
-  const isLoggedIn = false; // Replace with your auth logic
-  const user = { name: 'Le Hien' }; // Replace with your user data
+ 
   return (
     <>
       <Swiper
@@ -748,70 +744,6 @@ const Home = () => {
           <p className="title-desc">Wanna share your style with us?</p>
         </div>
       </div>
-
-      <div className="group1" >
-        <div className="instagram-feed">
-          <img src={ig1} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>466</a>
-              <a href="#"><i className="icon-comments"></i>65</a>
-            </div>
-        </div>
-
-        <div className="instagram-feed">
-          <img src={ig2} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>39</a>
-              <a href="#"><i className="icon-comments"></i>78</a>
-            </div>
-        </div>
-
-        <div className="instagram-feed">
-          <img src={ig5} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>691</a>
-              <a href="#"><i className="icon-comments"></i>87</a>
-            </div>
-        </div>
-
-        <div className="instagram-feed">
-          <img src={ig4} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>508</a>
-              <a href="#"><i className="icon-comments"></i>124</a>
-            </div>
-        </div>
-
-        <div className="instagram-feed">
-          <img src={ig3} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>433</a>
-              <a href="#"><i className="icon-comments"></i>27</a>
-            </div>
-        </div>
-
-        <div className="instagram-feed">
-          <img src={ig6} alt="img"/>
-
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>122</a>
-              <a href="#"><i className="icon-comments"></i>55</a>
-            </div>
-        </div>
-      </div>
-
-      <ChatIcon onClick={() => setChatVisible(true)} />
-      <ChatWindow
-        visible={chatVisible}
-        onClose={() => setChatVisible(false)}
-        isLoggedIn={isLoggedIn}
-        user={user}
-      />
     </>
   );
 };

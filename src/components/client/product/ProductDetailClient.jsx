@@ -1,8 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
-import { message, Modal } from "antd";
-import { cartServices } from "../../../services/cart";
+import { Card, Col, message, Modal, Row, Typography } from "antd";
+import { cartServices } from "./../../../services/cart";
+
+import { Swiper, SwiperSlide } from "swiper/react";
+
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+
+import { Autoplay, Pagination, Navigation } from "swiper/modules";
+import formatVND from './../../../utils/formatPrice';
+import ProductTabs from "./ProductTabs";
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
@@ -16,15 +26,35 @@ const ProductDetailClient = () => {
   const [modal2Open, setModal2Open] = useState(false);
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [selectedSizeId, setSelectedSizeId] = useState("");
+  const [avgRate, setAvgRate] = useState(null);
+  const [dataViewed, setDataViewed] = useState(null);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+
   const colorMap = {
     đen: "#333333",
     trắng: "#ffffff",
     đỏ: "#ff0000",
-    "xanh dương": "#3a58b",
+    "xanh dương": "#3a588b",
     vàng: "#eab656",
   };
 
-  // Chọn màu sắc
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) {
+      return { minPrice: null, maxPrice: null };
+    }
+
+    const prices = product.variants.map((variant) =>
+      variant.sale_price ? parseFloat(variant.sale_price) : parseFloat(variant.sell_price)
+    );
+
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  }, [product]);
+
+
+
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
@@ -32,14 +62,13 @@ const ProductDetailClient = () => {
     setSelectedVariant(null);
   };
 
-  // Chọn kích thước
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Định dạng giá tiền
+
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -48,9 +77,8 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  // Tìm biến thể dựa trên màu và kích thước
   const findVariant = (colorId, sizeId) => {
-    const variant = product.variants?.find((v) => {
+    const variant = product.variants.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
         (attr) => attr.attribute_value_id
       );
@@ -61,9 +89,10 @@ const ProductDetailClient = () => {
     });
     setQuantity(1);
     setSelectedVariant(variant || null);
+    console.log("variant", variant);
+
   };
 
-  // Thay đổi số lượng
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
     if (value > 0) {
@@ -71,16 +100,15 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async () => {
-    if (product.variants?.length > 0 && !selectedVariant) {
+    if (product.variants.length > 0 && !selectedVariant) {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
+    let existingAttributes =
+      JSON.parse(localStorage.getItem("cartAttributes")) || [];
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const itemToAdd = {
-      user_id: user?.id || null,
+    const newAttributes = {
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -93,88 +121,66 @@ const ProductDetailClient = () => {
       ],
     };
 
+    const existingProductIndex = existingAttributes.findIndex(
+      (item) =>
+        item.product_id === product.id &&
+        item.product_variant_id === newAttributes.product_variant_id
+    );
+
+    if (existingProductIndex !== -1) {
+      // If product exists, update quantity
+      existingAttributes[existingProductIndex].quantity +=
+        newAttributes.quantity;
+    } else {
+      // If product doesn't exist, add to cart
+      existingAttributes.push(newAttributes);
+    }
+
+    localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const itemToAdd = {
+      user_id: user?.id || null, 
+      product_id: product.id,
+      product_variant_id: selectedVariant ? selectedVariant.id : null,
+      quantity: quantity,
+      price: selectedVariant
+        ? selectedVariant.price
+        : product.sale_price || product.sell_price,
+      attributes: newAttributes.attributes,
+    };
+
     try {
       if (user?.id) {
-        // Người dùng đã đăng nhập: Gọi API để thêm vào giỏ hàng
         await cartServices.addCartItem(product.id, itemToAdd);
-        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
-        window.dispatchEvent(new Event("cart-updated"));
       } else {
-        // Người dùng chưa đăng nhập: Lưu vào localStorage
-        let existingAttributes =
-          JSON.parse(localStorage.getItem("cartAttributes")) || [];
-
-        const newAttributes = {
-          product_id: product.id,
-          product_variant_id: selectedVariant ? selectedVariant.id : null,
-          quantity: quantity,
-          price: selectedVariant
-            ? selectedVariant.price
-            : product.sale_price || product.sell_price,
-          attributes: [
-            { attribute_id: 1, attribute_value_id: selectedColorId },
-            { attribute_id: 2, attribute_value_id: selectedSizeId },
-          ],
-        };
-
-        const existingProductIndex = existingAttributes.findIndex(
-          (item) =>
-            item.product_id === product.id &&
-            item.product_variant_id === newAttributes.product_variant_id
-        );
-
-        if (existingProductIndex !== -1) {
-          existingAttributes[existingProductIndex].quantity +=
-            newAttributes.quantity;
-        } else {
-          existingAttributes.push(newAttributes);
-        }
-
-        localStorage.setItem(
-          "cartAttributes",
-          JSON.stringify(existingAttributes)
-        );
-
-        let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-        const existingCartItemIndex = cartItems.findIndex(
-          (item) =>
-            item.product_id === product.id &&
-            item.product_variant_id === itemToAdd.product_variant_id
-        );
-
-        if (existingCartItemIndex !== -1) {
-          cartItems[existingCartItemIndex].quantity += quantity;
-        } else {
-          cartItems.push({
-            product_id: product.id,
-            product_variant_id: selectedVariant ? selectedVariant.id : null,
-            quantity: quantity,
-          });
-        }
-        localStorage.setItem("cart_items", JSON.stringify(cartItems));
-
-        message.success("Sản phẩm đã được thêm vào giỏ hàng!");
-        window.dispatchEvent(new Event("cart-updated"));
+        await cartServices.addCartItem(product.id, itemToAdd);
       }
+
+      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
       message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
     }
   };
 
-  // Lấy thông tin sản phẩm
   const fetchProduct = async () => {
-    try {
-      const { data } = await productsServices.fetchProductById(id);
-      setProduct(data);
-    } catch (error) {
-      console.error("Lỗi khi lấy thông tin sản phẩm:", error);
-      message.error("Không thể tải sản phẩm. Vui lòng thử lại!");
-    }
+    const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
+    setProduct(data);
+    setDataViewed(dataViewed);
+    setAvgRate(avgRate);
   };
+  const fetchProductRecommend = async () => {
+    const reponse = await productsServices.fetchProductRecommendById(id);
+
+    setRecommendedProducts(reponse.recommended_products);
+  };
+  const { Title } = Typography;
+
 
   useEffect(() => {
     fetchProduct();
+    fetchProductRecommend();
   }, [id]);
 
   useEffect(() => {
@@ -182,62 +188,6 @@ const ProductDetailClient = () => {
       setMainImage(product.thumbnail);
     }
   }, [product.thumbnail]);
-
-  const stockAvailable =
-    (selectedVariant ? selectedVariant.stock : product.stock) > 0;
-
-  // Xử lý sự kiện bắt đầu kéo
-  const handleDragStart = (e) => {
-    if (!stockAvailable || (product.variants?.length > 0 && !selectedVariant)) {
-      e.preventDefault();
-      message.error(
-        product.variants?.length > 0 && !selectedVariant
-          ? "Vui lòng chọn biến thể trước khi kéo."
-          : "Sản phẩm hết hàng."
-      );
-      return;
-    }
-
-    const dragData = {
-      product_id: product.id,
-      product_variant_id: selectedVariant ? selectedVariant.id : null,
-      quantity: quantity,
-      price: selectedVariant
-        ? selectedVariant.price
-        : product.sale_price || product.sell_price,
-      attributes: [
-        { attribute_id: 1, attribute_value_id: selectedColorId },
-        { attribute_id: 2, attribute_value_id: selectedSizeId },
-      ],
-    };
-
-    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
-    e.dataTransfer.effectAllowed = "move";
-
-    // Create a smaller drag image
-    const dragImage = new Image();
-    dragImage.src = mainImage;
-
-    // Use a canvas to scale down the image
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    // Set the desired scale (40% of original size for ~60% reduction)
-    const scale = 0.4;
-
-    // Wait for the image to load before drawing
-    dragImage.onload = () => {
-      // Set canvas size to scaled dimensions
-      canvas.width = dragImage.width * scale;
-      canvas.height = dragImage.height * scale;
-
-      // Draw scaled image on canvas
-      ctx.drawImage(dragImage, 0, 0, canvas.width, canvas.height);
-
-      // Set the canvas as the drag image
-      e.dataTransfer.setDragImage(canvas, canvas.width / 2, canvas.height / 2);
-    };
-  };
 
   return (
     <>
@@ -266,42 +216,14 @@ const ProductDetailClient = () => {
             <div className="row">
               <div className="col-md-6">
                 <div className="product-gallery">
-                  <figure
-                    className="product-main-image"
-                    style={{ position: "relative" }}
-                    draggable={stockAvailable}
-                    onDragStart={handleDragStart}
-                  >
+                  <figure className="product-main-image" >
                     <img
-                      width={574}
-                      height={574}
+                      style={{ border: "1px solid #ddd", "border-radius": "10px" }}
                       id="product-zoom"
                       src={mainImage}
                       data-zoom-image={mainImage}
-                      alt="hình ảnh sản phẩm"
+                      alt="product image"
                     />
-                    {product.is_active === 0 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "50%",
-                          left: "50%",
-                          transform: "translate(-50%, -50%)",
-                          background: "rgba(176, 176, 176, 0.85)",
-                          color: "#fff",
-                          padding: "10px 24px",
-                          fontWeight: "bold",
-                          fontSize: "16px",
-                          borderRadius: "8px",
-                          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-                          zIndex: 5,
-                          textAlign: "center",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        🚫 Sản phẩm đã ngừng kinh doanh
-                      </div>
-                    )}
                     <a
                       onClick={(e) => {
                         e.preventDefault();
@@ -323,7 +245,7 @@ const ProductDetailClient = () => {
                     }}
                   >
                     {product.galleries &&
-                      product.galleries.slice(0, 4).map((item, index) => (
+                      product.galleries.map((item, index) => (
                         <a
                           key={index}
                           className="product-gallery-item"
@@ -337,7 +259,7 @@ const ProductDetailClient = () => {
                         >
                           <img
                             src={item.image}
-                            alt={`hình ảnh sản phẩm ${index + 1}`}
+                            alt={`product side ${index + 1}`}
                           />
                         </a>
                       ))}
@@ -347,153 +269,184 @@ const ProductDetailClient = () => {
 
               <div className="col-md-6">
                 <div className="product-details">
-                  <h1 className="product-title">{product.name}</h1>
-
-                  <div className="ratings-container">
-                    <div className="ratings">
-                      <div
-                        className="ratings-val"
-                        style={{ width: "80%" }}
-                      ></div>
-                    </div>
-                    <a>
-                      <span className="text-confirm">
-                        ({product.total_sales} lượt bán)
+                  <h1 className="product-title">
+                    {product.name}
+                    {product.is_active === 0 && (
+                      <span
+                        className="text-danger"
+                        style={{ marginLeft: "10px" }}
+                      >
+                        (Sản phẩm đã ngừng kinh doanh)
                       </span>
-                    </a>
-                  </div>
+                    )}
+                  </h1>
 
-                  <div className="product-price">
-                    {formatPrice(product.sell_price)} VNĐ
-                  </div>
 
-                  {product.is_active === 1 && (
-                    <>
-                      {selectedVariant ? (
-                        <div className="details-filter-row details-row-size">
-                          <label>Tồn kho:</label>
-                          <div className="product-nav product-nav-dots">
-                            <div>{selectedVariant.stock}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="details-filter-row details-row-size">
-                          <label>Tồn kho:</label>
-                          <div className="product-nav product-nav-dots">
-                            <div>{product.stock}</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {product.atribute_value_product?.length > 0 && (
-                        <div className="details-filter-row details-row-size">
-                          <label htmlFor="Color">Màu:</label>
-                          <div className="product-nav product-nav-dots">
-                            {product.atribute_value_product
-                              .filter(
-                                (attr) =>
-                                  attr.attribute_value.attribute_id === 1
-                              )
-                              .map((item) => {
-                                const colorName = item.attribute_value.value;
-                                const colorCode = colorMap[colorName];
-                                return (
-                                  <a
-                                    key={item.attribute_value_id}
-                                    href="#"
-                                    style={{ background: colorCode }}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      handleColorSelect(
-                                        item.attribute_value_id
-                                      );
-                                    }}
-                                  >
-                                    <span className="sr-only">{colorName}</span>
-                                  </a>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
-
-                      {product.atribute_value_product?.length > 0 && (
-                        <div className="details-filter-row details-row-size">
-                          <label htmlFor="size">Size: </label>
-                          <div className="select-custom">
-                            <select
-                              name="size"
-                              id="size"
-                              className="form-control"
-                              value={selectedSize}
-                              onChange={(e) => handleSizeSelect(e.target.value)}
-                            >
-                              <option value="">Chọn size</option>
-                              {product.atribute_value_product
-                                .filter(
-                                  (attr) =>
-                                    attr.attribute_value.attribute_id === 2
-                                )
-                                .map((item) => (
-                                  <option
-                                    key={item.attribute_value_id}
-                                    value={item.attribute_value_id}
-                                  >
-                                    {item.attribute_value.value}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-
-                          {/* <a href="#" className="size-guide">
-                            <i className="icon-th-list"></i>Hướng dẫn kích thước
-                          </a> */}
-                        </div>
-                      )}
-
-                      <div className="details-filter-row details-row-size">
-                        <label htmlFor="qty">Số lượng:</label>
-                        <div className="product-details-quantity">
-                          <input
-                            type="number"
-                            id="qty"
-                            className="form-control"
-                            value={quantity}
-                            min="1"
-                            max={
-                              selectedVariant?.stock
-                                ? selectedVariant?.stock
-                                : product.stock
-                            }
-                            step="1"
-                            required
-                            onChange={handleQuantityChange}
-                          />
-                        </div>
+                  {avgRate && (
+                    <div className="ratings-container">
+                      <div className="ratings">
+                        <div
+                          className="ratings-val"
+                          style={{ width: `${avgRate.avg * 20}%` }}
+                        ></div>
                       </div>
-
-                      <div className="product-details-action">
-                        <a
-                          onClick={(e) => {
-                            if (!stockAvailable) {
-                              e.preventDefault();
-                              return;
-                            }
-                            handleAddToCart();
-                          }}
-                          href="#"
-                          className={`btn-product btn-cart ${!stockAvailable ? "disabled text-muted" : ""
-                            }`}
-                          style={{
-                            pointerEvents: !stockAvailable ? "none" : "auto",
-                            fontFamily: "'Roboto', 'Arial', sans-serif",
-                          }}
-                        >
-                          Giỏ hàng
-                        </a>
-                      </div>
-                    </>
+                      <a
+                        className="ratings-text"
+                        href="#product-review-link"
+                        id="review-link"
+                      >
+                        ({avgRate.total}) Đánh giá
+                      </a>
+                    </div>
                   )}
+                  
+                  <div className="details-filter-row details-row-size">
+                    <label>Lượt Xem:</label>
+                    <div className="product-nav product-nav-dots">
+                      <div>
+                        {product.views}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedVariant ? (
+                    <div className="product-price">
+
+                      {formatPrice(selectedVariant.sell_price)} VNĐ
+
+                    </div>
+                  ) : (
+                    <div className="product-price">
+                      {minPrice === maxPrice ? (
+                        `${formatPrice(minPrice)} VNĐ`
+                      ) : (
+                        `${formatPrice(minPrice)} - ${formatPrice(maxPrice)} VNĐ`
+                      )}
+                    </div>
+                  )}
+                  {selectedVariant ? (
+                    <div className="details-filter-row details-row-size">
+                      <label>Tồn kho:</label>
+                      <div className="product-nav product-nav-dots">
+                        <div>
+                          {selectedVariant
+                            ? selectedVariant.stock
+                            : product.stock}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="details-filter-row details-row-size">
+                      <label>Tồn kho:</label>
+
+                      <div className="product-nav product-nav-dots">
+                        <div>{product.stock}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {product.atribute_value_product?.length > 0 && (
+                    <div className="details-filter-row details-row-size">
+                      <label htmlFor="Color">Màu:</label>
+                      <div className="product-nav product-nav-dots">
+                        {product.atribute_value_product
+                          .filter(
+                            (attr) => attr.attribute_value.attribute_id === 1
+                          )
+                          .map((item) => {
+                            const colorName = item.attribute_value.value;
+                            const colorCode = colorMap[colorName];
+                            return (
+                              <a
+                                key={item}
+                                href="#"
+                                style={{ background: colorCode }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleColorSelect(item.attribute_value_id);
+                                }}
+                              >
+                                <span className="sr-only">{colorName}</span>
+                              </a>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {product.atribute_value_product?.length > 0 && (
+                    <div className="details-filter-row details-row-size">
+                      <label htmlFor="size">Size:</label>
+                      <div className="select-custom">
+                        <select
+                          name="size"
+                          id="size"
+                          className="form-control"
+                          value={selectedSize}
+                          onChange={(e) => handleSizeSelect(e.target.value)}
+                        >
+                          <option value="">Chọn size</option>
+                          {product.atribute_value_product
+                            .filter(
+                              (attr) => attr.attribute_value.attribute_id === 2
+                            )
+                            .map((item) => {
+                              return (
+                                <option
+                                  key={item.attribute_value_id}
+                                  value={item.attribute_value_id}
+                                >
+                                  {item.attribute_value.value}
+                                </option>
+                              );
+                            })}
+                        </select>
+                      </div>
+
+                      <a href="#" className="size-guide">
+                        <i className="icon-th-list"></i>size guide
+                      </a>
+                    </div>
+                  )}
+                  <div className="details-filter-row details-row-size">
+                    <label htmlFor="qty">Số lượng:</label>
+                    <div className="product-details-quantity">
+                      <input
+                        type="number"
+                        id="qty"
+                        className="form-control"
+                        value={quantity}
+                        min="1"
+                        max={
+                          selectedVariant?.stock
+                            ? selectedVariant?.stock
+                            : product.stock
+                        }
+                        step="1"
+                        required
+                        onChange={handleQuantityChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="product-details-action">
+                    <button
+                      onClick={(e) => {
+                        if (product.is_active === 0) {
+                          e.preventDefault();
+                          message.error(
+                            "Sản phẩm này đã ngừng kinh doanh và không thể thêm vào giỏ hàng."
+                          );
+                        } else {
+                          handleAddToCart();
+                        }
+                      }}
+                      className={` btn btn-product btn-cart ${product.is_active === 0 ? "disabled" : ""
+                        }`}
+                      disabled={product.is_active === 0}
+                    >
+                      Thêm giỏ hàng
+                    </button>
+                  </div>
 
                   <div className="product-details-footer">
                     <div className="product-cat">
@@ -507,7 +460,7 @@ const ProductDetailClient = () => {
                     </div>
 
                     <div className="social-icons social-icons-sm">
-                      <span className="social-label">Chia sẻ:</span>
+                      <span className="social-label">Share:</span>
                       <a
                         href="#"
                         className="social-icon"
@@ -547,18 +500,103 @@ const ProductDetailClient = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
-      <Modal
-        centered
-        open={modal2Open}
-        onOk={() => setModal2Open(false)}
-        onCancel={() => setModal2Open(false)}
-        maskClosable={true}
-        footer={null}
-      >
-        <img src={mainImage} alt="" style={{ padding: "20px" }} />
-      </Modal>
+      <div className="product-details-tab product-details-extended">
+        <ProductTabs productId={product.id} product={product} />
+        {recommendedProducts.length > 0 && (
+          <div className="container" style={{ marginTop: "50px" }}>
+            <Title level={2} className="text-center" style={{ textAlign: "center", marginBottom: "20px" }}>
+              Sản Phẩm Hay được mua cùng
+            </Title>
+            <Row gutter={[16, 16]} justify="center">
+              {recommendedProducts.map((product) => (
+                <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
+                  <Card
+                    onClick={() => navigate(`/product-detail/${product.id}`)}
+
+                    hoverable
+                    cover={<img alt={product.name} src={product.thumbnail} />}
+                  >
+                    <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+        )}
+
+        {dataViewed && dataViewed.length > 0 && (
+          <div className="container" style={{ marginTop: "50px" }}>
+            <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
+            <div >
+              <Swiper
+                spaceBetween={30}
+                slidesPerView={3}
+                slidesPerGroup={1}
+                autoplay={{
+                  delay: 2500,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation]}
+                className="mySwiper"
+              >
+                {dataViewed.map((product, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="product product-7" style={{ width: "300px" }}>
+                      <figure className="product-media">
+                        <span className="product-label label-new">New</span>
+                        <a href="product.html">
+                          <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
+                        </a>
+
+                        <div className="product-action-vertical">
+                          <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
+                          <a href="popup/quickView.html" className="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
+                          <a href="#" className="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a>
+                        </div>
+
+                        <div className="product-action">
+                          <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
+                        </div>
+                      </figure>
+
+                      <div className="product-body">
+
+                        <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
+                        <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
+
+                        <div className="ratings-container">
+                          <div className="ratings">
+                            <div className="ratings-val" style={{ width: "80%" }}></div>
+                          </div>
+                          <span className="ratings-text">( 2 Đánh giá )</span>
+                        </div>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+
+            </div>
+          </div>
+        )}
+
+
+        <Modal
+          centered
+          open={modal2Open}
+          onOk={() => setModal2Open(false)}
+          onCancel={() => setModal2Open(false)}
+          maskClosable={true}
+          footer={null}
+        >
+          <img src={mainImage} alt="" style={{ padding: "20px" }} />
+        </Modal>
+      </div>
     </>
   );
 };

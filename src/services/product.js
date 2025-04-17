@@ -69,6 +69,14 @@ const exportExcel = async (orderIds = []) => {
     return response.data;
 }
 
+const fetchProductRecommendById = async (id) => {
+    try {
+        const { data } = await instance.get(`/product-recommend/${id}`);
+        return data;
+    } catch (error) {
+        console.log(error)
+    }
+}
 // xuất excel
 const importExcel = async (formData) => {
     const response = await instance.post('/import-stock', formData);
@@ -87,5 +95,6 @@ export const productsServices = {
     history,
     confirm,
     exportExcel,
+    fetchProductRecommendById,
     importExcel,
 };

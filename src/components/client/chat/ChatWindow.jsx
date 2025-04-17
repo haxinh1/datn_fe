@@ -31,15 +31,15 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
 
     // Lắng nghe sự kiện message.sent trên kênh private
     console.log('Joining channel:', `chat.${chatSession.id}`);
-    echo.private('chat.' + 5)
+    echo.private(`chat.${chatSession.id}`)
       .subscribed(() => {
-        console.log('Successfully subscribed to chat channel:', `chat.${chatSessionId}`);
+        console.log('Successfully subscribed to chat channel:', `chat.${chatSession.id}`);
       })
       .listen('MessageSent', (event) => {
         console.log('New message received:', event.message)
 
-        // setMessages((prevMessages) => [...prevMessages, data]);
-        // scrollToBottom(); // Cuộn xuống tin nhắn mới nhất
+        setMessages((prevMessages) => [...prevMessages, data]);
+        scrollToBottom(); // Cuộn xuống tin nhắn mới nhất
       });
 
     // Cleanup khi component unmount hoặc chatSession thay đổi

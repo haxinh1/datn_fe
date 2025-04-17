@@ -6,6 +6,11 @@ import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demo-8/logo.png";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
+import AIChat from "./AIChat.jsx";
+import ChatWindow from "../../components/client/chat/ChatWindow.jsx";
+import ChatIcon from './../../components/client/chat/ChatIcon';
+
+
 
 let pusherInstance = null;
 
@@ -31,9 +36,10 @@ const updatePusherAuth = (token) => {
     pusherInstance.config.auth.headers.Authorization = `Bearer ${token || ''}`;
   }
 };
-
 const Header = () => {
   const [userData, setUserData] = useState(null);
+  const [chatVisible, setChatVisible] = useState(false);
+  const isLoggedIn = false;
   const [cartItemCount, setCartItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -418,6 +424,15 @@ const Header = () => {
                   )}
                 </Link>
               </Tooltip>
+              <AIChat />
+
+              <ChatIcon onClick={() => setChatVisible(true)} />
+              <ChatWindow
+                visible={chatVisible}
+                onClose={() => setChatVisible(false)}
+                isLoggedIn={isLoggedIn}
+                user={userData ? userData.fullname : ""}
+              />
             </div>
             <div className="gtranslate_wrapper"></div>
 

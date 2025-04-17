@@ -480,7 +480,15 @@ const Orders = () => {
       render: (_, item) => {
         const { status } = item;
         const isCheckout = status?.id === 1;
-        const isDelivered = status?.id === 5;
+        const isDelivered = status?.id === 5; // Đã giao hàng
+        const isCompleted = status?.id === 7; // Hoàn thành
+
+        const orderItems = item.order_items;
+
+        const allReviewed = orderItems?.length > 0 ? orderItems.every(item => item.has_reviewed === 1) : true;
+
+        const canReview = !allReviewed;
+
         return (
           <div className="action-container">
             <Tooltip title="Hóa đơn">
@@ -491,7 +499,8 @@ const Orders = () => {
                 onClick={() => showModal(item)}
               />
             </Tooltip>
-            {isDelivered && (
+
+            {isDelivered ? (
               <Tooltip title="Đã nhận hàng">
                 <Button
                   color="primary"
@@ -500,6 +509,15 @@ const Orders = () => {
                   onClick={() => handleMarkAsReceived(item.id)}
                 />
               </Tooltip>
+            ) : (
+              <Button
+                color="primary"
+                variant="solid"
+                disabled={!(isCompleted && canReview)} 
+                onClick={() => navigate(`/review/${item.id}`)}
+              >
+                Đánh giá
+              </Button>
             )}
             {isCheckout && (
               <Tooltip title="Tiếp tục thanh toán">
@@ -517,8 +535,8 @@ const Orders = () => {
           </div>
         );
       },
-    },
-  ];
+    }
+  ]
 
   return (
     <div>
