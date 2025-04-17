@@ -54,7 +54,6 @@ const ProductDetailClient = () => {
   }, [product]);
 
 
-
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
@@ -89,7 +88,6 @@ const ProductDetailClient = () => {
     });
     setQuantity(1);
     setSelectedVariant(variant || null);
-    console.log("variant", variant);
 
   };
 
@@ -140,7 +138,7 @@ const ProductDetailClient = () => {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const itemToAdd = {
-      user_id: user?.id || null, 
+      user_id: user?.id || null,
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -299,7 +297,7 @@ const ProductDetailClient = () => {
                       </a>
                     </div>
                   )}
-                  
+
                   <div className="details-filter-row details-row-size">
                     <label>Lượt Xem:</label>
                     <div className="product-nav product-nav-dots">
@@ -308,18 +306,25 @@ const ProductDetailClient = () => {
                       </div>
                     </div>
                   </div>
-                  {selectedVariant ? (
+                  {selectedVariant && (
                     <div className="product-price">
 
                       {formatPrice(selectedVariant.sell_price)} VNĐ
 
                     </div>
-                  ) : (
+                  )}
+                  {product.variants && product.variants.length === 0 && (
+                    <div className="product-price">
+                      {formatPrice(product.sell_price)} VNĐ
+                    </div>
+                  )}
+                  {product.variants && !selectedVariant && product.variants.length > 0 && (
+
                     <div className="product-price">
                       {minPrice === maxPrice ? (
                         `${formatPrice(minPrice)} VNĐ`
                       ) : (
-                        `${formatPrice(minPrice)} - ${formatPrice(maxPrice)} VNĐ`
+                        `${formatPrice(minPrice)} ~ ${formatPrice(maxPrice)} VNĐ`
                       )}
                     </div>
                   )}
@@ -347,7 +352,7 @@ const ProductDetailClient = () => {
                   {product.atribute_value_product?.length > 0 && (
                     <div className="details-filter-row details-row-size">
                       <label htmlFor="Color">Màu:</label>
-                      <div className="product-nav product-nav-dots">
+                      <div className="product-nav product-nav-dots" >
                         {product.atribute_value_product
                           .filter(
                             (attr) => attr.attribute_value.attribute_id === 1
@@ -359,7 +364,7 @@ const ProductDetailClient = () => {
                               <a
                                 key={item}
                                 href="#"
-                                style={{ background: colorCode }}
+                                style={{ background: colorCode, border: "1px solid #ddd", "border-radius": "10px" }}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   handleColorSelect(item.attribute_value_id);
