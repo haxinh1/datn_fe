@@ -15,6 +15,7 @@ const echo = new Echo({
       Authorization: 'Bearer ' + localStorage.getItem('client_token'), 
     },
   },
+  withCredentials: true
 });
 
 export default echo;
