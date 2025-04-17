@@ -24,7 +24,7 @@ const createComment = async (payload) => {
         })
         return data
     } catch (error) {
-        console.log(error)
+       throw new Error(error);
     }
 }
 const updateComment = async (id, payload) => {

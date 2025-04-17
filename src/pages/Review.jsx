@@ -47,7 +47,7 @@ const Review = () => {
             dataIndex: "review",
             align: "center",
             render: (_, record) => (
-                <ReviewButton product={record} />
+                <ReviewButton product={record} orderId={id} />
             ),
         }
     ];
@@ -55,7 +55,6 @@ const Review = () => {
         const fetchOrder = async () => {
             try {
                 const data = await OrderService.getOrderById(id);
-                console.log("chi", data);
 
                 setOrderReviews(data);
 
