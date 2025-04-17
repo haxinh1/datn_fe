@@ -1,205 +1,426 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Tooltip } from "antd";
-import "../../assets/css/bootstrap.min.css";
-import "../../assets/css/plugins/owl-carousel/owl.carousel.css";
-import "../../assets/css/plugins/magnific-popup/magnific-popup.css";
-import "../../assets/css/plugins/jquery.countdown.css";
-import "../../assets/css/style.css";
-import "../../assets/css/skins/skin-demo-8.css";
-import "../../assets/css/demos/demo-8.css";
-import logo from "../../assets/images/demos/demo-8/logo.png";
-import { Link } from "react-router-dom";
+import { Avatar, Dropdown, Menu, Modal, Tooltip, message } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
+import { cartServices } from "./../../services/cart";
+import logo from "../../assets/images/demo-8/logo.png";
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import Pusher from "pusher-js";
 import AIChat from "./AIChat.jsx";
 import ChatWindow from "../../components/client/chat/ChatWindow.jsx";
 import ChatIcon from './../../components/client/chat/ChatIcon';
 
+
+
+let pusherInstance = null;
+
+const initializePusher = (token) => {
+  if (!pusherInstance) {
+    pusherInstance = new Pusher('6b2509032695e872d989', {
+      cluster: 'ap1',
+      encrypted: true,
+      authEndpoint: '/api/broadcasting/auth',
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+      },
+    });
+    console.log('Pusher initialized');
+  }
+  return pusherInstance;
+};
+
+const updatePusherAuth = (token) => {
+  if (pusherInstance) {
+    pusherInstance.config.auth.headers.Authorization = `Bearer ${token || ''}`;
+  }
+};
 const Header = () => {
   const [userData, setUserData] = useState(null);
   const [chatVisible, setChatVisible] = useState(false);
   const isLoggedIn = false;
-  console.log(userData);
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
+  // Cập nhật số lượng sản phẩm trong giỏ hàng
+  const updateCartCount = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user ? user.id : null;
 
+      if (userId) {
+        const cartData = await cartServices.fetchCart();
+        const uniqueProducts = cartData.reduce((acc, item) => {
+          const key = `${item.product_id}-${item.product_variant_id || "default"}`;
+          if (!acc[key]) {
+            acc[key] = true;
+          }
+          return acc;
+        }, {});
+        setCartItemCount(Object.keys(uniqueProducts).length);
+      } else {
+        const cartData = JSON.parse(localStorage.getItem("cart_items")) || [];
+        const uniqueProducts = cartData.reduce((acc, item) => {
+          const key = `${item.product_id}-${item.product_variant_id || "default"}`;
+          if (!acc[key]) {
+            acc[key] = true;
+          }
+          return acc;
+        }, {});
+        setCartItemCount(Object.keys(uniqueProducts).length);
+      }
+    } catch (error) {
+      console.error("❌ Lỗi khi lấy số lượng giỏ hàng:", error);
+      setCartItemCount(0);
+    }
+  };
 
+  // Hàm lấy thông tin người dùng
+  const fetchUserInfo = async (userId) => {
+    try {
+      const userInfo = await AuthServices.getAUser(userId);
+      setUserData(userInfo);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      setUserData(null);
+    }
+  };
 
   useEffect(() => {
-    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id; // Lấy id người dùng từ localStorage
-    if (storedUserId) {
-      const fetchUserInfo = async () => {
-        try {
-          const userInfo = await AuthServices.getAUser(storedUserId); // Gọi API để lấy thông tin người dùng
-          setUserData(userInfo); // Lưu thông tin người dùng vào state
-        } catch (error) {
-          console.error("Lỗi khi lấy thông tin người dùng:", error);
-        }
-      };
-      fetchUserInfo();
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedToken = localStorage.getItem("client_token");
+
+    if (storedUser && storedToken) {
+      fetchUserInfo(storedUser.id);
+      initializePusher(storedToken);
+    } else {
+      setUserData(null);
     }
+
+    updateCartCount();
   }, []);
 
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      updateCartCount();
+    };
+
+    const handleUserLogout = () => {
+      setUserData(null);
+      updateCartCount();
+    };
+
+    const handleUserLogin = () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const storedToken = localStorage.getItem("client_token");
+      if (storedUser && storedToken) {
+        fetchUserInfo(storedUser.id);
+        updatePusherAuth(storedToken);
+      }
+      updateCartCount();
+    };
+
+    const handleUserUpdated = () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser) {
+        fetchUserInfo(storedUser.id);
+      }
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("user-logout", handleUserLogout);
+    window.addEventListener("user-login", handleUserLogin);
+    window.addEventListener("user-updated", handleUserUpdated);
+
+    const handleStorageChange = (e) => {
+      if (e.key === "cart_items" || e.key === "user" || e.key === "client_token") {
+        updateCartCount();
+        if (e.key === "user" || e.key === "client_token") {
+          const storedUser = JSON.parse(localStorage.getItem("user"));
+          const storedToken = localStorage.getItem("client_token");
+          if (storedUser && storedToken) {
+            fetchUserInfo(storedUser.id);
+            updatePusherAuth(storedToken);
+          } else {
+            setUserData(null);
+          }
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("user-logout", handleUserLogout);
+      window.removeEventListener("user-login", handleUserLogin);
+      window.removeEventListener("user-updated", handleUserUpdated);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // Kiểm tra trạng thái tài khoản qua API (fallback)
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser?.id) {
+        try {
+          console.log('Checking user status via API');
+          const userInfo = await AuthServices.getAUser(storedUser.id);
+          if (userInfo.status === "inactive" || userInfo.status === "banned") {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
+        }
+      }
+    };
+
+    checkUserStatus();
+    const interval = setInterval(checkUserStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Lắng nghe sự kiện Pusher
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser?.id) {
+      const pusher = initializePusher(localStorage.getItem("client_token"));
+      console.log('Subscribing to channel:', `user.${storedUser.id}`);
+      const channel = pusher.subscribe(`user.${storedUser.id}`);
+
+      channel.bind('user-status-updated', (data) => {
+        console.log('Received Pusher event:', data);
+        if (data.status === 'inactive' || data.status === 'banned') {
+          Modal.warning({
+            title: 'Tài khoản bị khóa',
+            content: 'Tài khoản của bạn đã bị khóa. Bạn sẽ được đăng xuất.',
+            onOk: handleLogout,
+            okText: 'Đăng xuất',
+            okButtonProps: { autoFocus: true },
+            maskClosable: false,
+          });
+        }
+      });
+
+      return () => {
+        console.log('Unsubscribing from channel:', `user.${storedUser.id}`);
+        channel.unbind_all();
+        channel.unsubscribe();
+      };
+    }
+  }, [userData]);
+
+  // Hàm xử lý đăng xuất
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      console.log('Starting logout');
+      const response = await AuthServices.logoutclient();
+      console.log('Logout response:', response.message);
+
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hiển thị modal xác nhận đăng xuất
+  const showConfirm = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn đăng xuất?",
+      content: "Bạn sẽ phải đăng nhập lại để tiếp tục.",
+      okText: "Đăng xuất",
+      cancelText: "Hủy",
+      onOk: handleLogout,
+    });
+  };
+
+  // Xử lý sự kiện kéo qua vùng thả
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  // Xử lý sự kiện thả sản phẩm vào giỏ hàng
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData("application/json"));
+
+      let existingAttributes =
+        JSON.parse(localStorage.getItem("cartAttributes")) || [];
+
+      const newAttributes = {
+        product_id: dragData.product_id,
+        product_variant_id: dragData.product_variant_id,
+        quantity: dragData.quantity,
+        price: dragData.price,
+        attributes: dragData.attributes,
+      };
+
+      const existingProductIndex = existingAttributes.findIndex(
+        (item) =>
+          item.product_id === dragData.product_id &&
+          item.product_variant_id === dragData.product_variant_id
+      );
+
+      if (existingProductIndex !== -1) {
+        existingAttributes[existingProductIndex].quantity += dragData.quantity;
+      } else {
+        existingAttributes.push(newAttributes);
+      }
+
+      localStorage.setItem(
+        "cartAttributes",
+        JSON.stringify(existingAttributes)
+      );
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      const itemToAdd = {
+        user_id: user?.id || null,
+        product_id: dragData.product_id,
+        product_variant_id: dragData.product_variant_id,
+        quantity: dragData.quantity,
+        price: dragData.price,
+        attributes: dragData.attributes,
+      };
+
+      if (user?.id) {
+        await cartServices.addCartItem(dragData.product_id, itemToAdd);
+      } else {
+        let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+        const existingCartItemIndex = cartItems.findIndex(
+          (item) =>
+            item.product_id === dragData.product_id &&
+            item.product_variant_id === dragData.product_variant_id
+        );
+
+        if (existingCartItemIndex !== -1) {
+          cartItems[existingCartItemIndex].quantity += dragData.quantity;
+        } else {
+          cartItems.push({
+            product_id: dragData.product_id,
+            product_variant_id: dragData.product_variant_id,
+            quantity: dragData.quantity,
+          });
+        }
+        localStorage.setItem("cart_items", JSON.stringify(cartItems));
+      }
+
+      message.success("Sản phẩm đã được thêm vào giỏ hàng!");
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (error) {
+      console.error("Lỗi khi thêm vào giỏ hàng qua kéo thả:", error);
+      message.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.");
+    }
+  };
+
   return (
-    <>
-      <header className="header">
-        <div className="header-bottom sticky-header">
-          <div className="container">
-            <div className="header-left">
-              <button className="mobile-menu-toggler">
-                <span className="sr-only">Toggle mobile menu</span>
-                <i className="icon-bars"></i>
-              </button>
+    <header className="header">
+      <div className="header-bottom sticky-header">
+        <div className="container">
+          <div className="header-left">
+            <button className="mobile-menu-toggler">
+              <span className="sr-only">Chuyển đổi menu di động</span>
+              <i className="icon-bars"></i>
+            </button>
 
-              <a href="#" className="logo">
-                <Link to="/">
-                  <img src={logo} style={{ width: "80px", height: "20px" }} />
-                </Link>
-                ,
-              </a>
-            </div>
-            <div className="header-center">
-              <nav className="main-nav">
-                <ul className="menu">
-                  <li className="megamenu-container">
-                    <Link to="/" href="" className="sf-with-ul">
-                      <span>Trang Chủ</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
-                      <span>Sản Phẩm</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
-                      <span>Danh mục</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
-                      <span>Giới thiệu</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
-                      <span>Chính Sách</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="list-prcl" href="" className="sf-with-ul">
-                      <span>Liên Hệ</span>
-                    </Link>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-
-            <div className="header-right">
-              {/* <div className="header-search">
-                <a href="#" className="search-toggle" role="button">
-                  <i className="icon-search"></i>
-                </a>
-                <form action="#" method="get">
-                  <div className="header-search-wrapper">
-                    <label htmlFor="q" className="sr-only">
-                      Search
-                    </label>
-                    <input
-                      type="search"
-                      className="form-control"
-                      name="q"
-                      id="q"
-                      placeholder="Search in..."
-                      required
-                    />
-                  </div>
-                </form>
-              </div> */}
-
-              <div className="dropdown cart-dropdown">
-                <Tooltip title="Giỏ hàng">
-                  <Link
-                    to={"/cart"}
-                    className="dropdown-toggle"
-                    role="button"
-                    data-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    data-display="static"
-                  >
-                    <i className="icon-shopping-cart"></i>
+            <a href="#" className="logo">
+              <Link to="/">
+                <img
+                  src={logo}
+                  style={{ width: "80px", height: "20px" }}
+                  alt="Logo"
+                />
+              </Link>
+            </a>
+          </div>
+          <div className="header-center">
+            <nav className="main-nav">
+              <ul className="menu">
+                <li className="megamenu-container">
+                  <Link to="/" className="sf-with-ul">
+                    <span>Trang Chủ</span>
                   </Link>
-                </Tooltip>
+                </li>
+                <li>
+                  <Link to="/list-prcl" className="sf-with-ul">
+                    <span>Sản Phẩm</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cate" className="sf-with-ul">
+                    <span>Danh mục</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/list-prcl" className="sf-with-ul">
+                    <span>Giới thiệu</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/list-prcl" className="sf-with-ul">
+                    <span>Chính Sách</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/list-prcl" className="sf-with-ul">
+                    <span>Liên Hệ</span>
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
 
-                {/* <div className="dropdown-menu dropdown-menu-right">
-                  <div className="dropdown-cart-products">
-                    <div className="product">
-                      <div className="product-cart-details">
-                        <h4 className="product-title">
-                          <a href="product.html">
-                            Beige knitted elastic runner shoes
-                          </a>
-                        </h4>
-                        <span className="cart-product-info">
-                          <span className="cart-product-qty">1</span> x $84.00
-                        </span>
-                      </div>
-                      <figure className="product-image-container">
-                        <a href="product.html" className="product-image">
-                          <Image src={product1} />
-                        </a>
-                      </figure>
-                      <a href="#" className="btn-remove" title="Remove Product">
-                        <i className="icon-close"></i>
-                      </a>
-                    </div>
-
-                    <div className="product">
-                      <div className="product-cart-details">
-                        <h4 className="product-title">
-                          <a href="product.html">
-                            Blue utility pinafore denim dress
-                          </a>
-                        </h4>
-                        <span className="cart-product-info">
-                          <span className="cart-product-qty">1</span> x $76.00
-                        </span>
-                      </div>
-                      <figure className="product-image-container">
-                        <a href="product.html" className="product-image">
-                          <Image src={product2} />
-                        </a>
-                      </figure>
-                      <a href="#" className="btn-remove" title="Remove Product">
-                        <i className="icon-close"></i>
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="dropdown-cart-total">
-                    <span>Total</span>
-                    <span className="cart-total-price">$160.00</span>
-                  </div>
-
-                  <div className="dropdown-cart-action">
-                    <Link to={"/cart"} className="btn btn-primary">
-                      Giỏ hàng
-                    </Link>
-                    <Link
-                      to={"/checkout"}
-                      className="btn btn-outline-primary-2"
+          <div className="header-right">
+            <div
+              className="dropdown cart-dropdown"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <Tooltip title="Giỏ hàng">
+                <Link
+                  to="/cart"
+                  className="dropdown-toggle"
+                  role="button"
+                  data-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  data-display="static"
+                >
+                  <i className="icon-shopping-cart"></i>
+                  {cartItemCount > 0 && (
+                    <span
+                      className="cart-item-count"
+                      style={{
+                        position: "absolute",
+                        top: "-6px",
+                        right: "-10px",
+                        backgroundColor: "#eea287",
+                        color: "black",
+                        fontSize: "13px",
+                        padding: "2px 8px",
+                        borderRadius: "50%",
+                      }}
                     >
-                      Checkout<i className="icon-long-arrow-right"></i>
-                    </Link>
-                  </div>
-                </div> */}
-              </div>
-
-              <Tooltip title="Tài khoản">
-                <Link to={`/dashboard/orders/${userData?.id}`} className="wishlist-link">
-                  {userData && userData.avatar ? (
-                    <Avatar size={36} src={userData.avatar} />
-                  ) : (
-                    <i className="icon-user"></i>
+                      {cartItemCount}
+                    </span>
                   )}
                 </Link>
               </Tooltip>
@@ -213,10 +434,51 @@ const Header = () => {
                 user={userData ? userData.fullname : ""}
               />
             </div>
+            <div className="gtranslate_wrapper"></div>
+
+            {userData ? (
+              <Dropdown
+                overlay={
+                  <Menu>
+                    <Menu.Item key="account">
+                      <Link to={`/dashboard/orders/${userData.id}`}>
+                        <span>
+                          <UserOutlined style={{ marginRight: "8px" }} />
+                          Tài khoản
+                        </span>
+                      </Link>
+                    </Menu.Item>
+                    <Menu.Item key="logout">
+                      <span onClick={showConfirm}>
+                        <LogoutOutlined style={{ marginRight: "8px" }} />
+                        Đăng xuất
+                      </span>
+                    </Menu.Item>
+                  </Menu>
+                }
+                placement="bottomRight"
+                trigger={["click"]}
+              >
+                <span style={{ cursor: "pointer" }}>
+                  {userData.avatar ? (
+                    <Avatar size={36} src={userData.avatar} className="wishlist-link" />
+                  ) : (
+                    <i className="icon-user"></i>
+                  )}
+                </span>
+              </Dropdown>
+            ) : (
+              <Tooltip title="Tài khoản">
+                <Link to="/logincl" className="wishlist-link">
+                  <i className="icon-user"></i>
+                </Link>
+              </Tooltip>
+            )}
+
           </div>
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 };
 

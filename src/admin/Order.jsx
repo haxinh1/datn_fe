@@ -1,4 +1,4 @@
-import { BookOutlined, EditOutlined, EyeOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -33,6 +33,7 @@ const Order = () => {
     discount_points: "",
     total_amount: "",
     coupon_discount_value: "",
+    coupon_discount_type: "",
   });
   const { RangePicker } = DatePicker;
   const [validStatuses, setValidStatuses] = useState([]);
@@ -45,14 +46,26 @@ const Order = () => {
     status: null,
     paymentMethod: null,
   });
+  const [searchInput, setSearchInput] = useState(""); // nhập từ ô input
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   // danh sách đơn hàng
-  const { data: ordersData, isLoading, refetch: refetchOrders } = useQuery({
+  const { data: ordersData = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
       const response = await OrderService.getAllOrder();
-      return response.orders || { data: [] };
+      return Array.isArray(response.orders) ? response.orders : [];
     },
+  });
+
+  const { data: searchResults = [], isLoading: isLoadingSearch } = useQuery({
+    queryKey: ["searchOrders", searchKeyword],
+    queryFn: async () => {
+      if (!searchKeyword) return [];
+      const response = await OrderService.searchOrders(searchKeyword);
+      return Array.isArray(response) ? response : [];
+    },
+    enabled: searchKeyword.length > 0,  // Chỉ gọi API khi có từ khóa tìm kiếm
   });
 
   // danh sách phương thức thanh toán
@@ -93,25 +106,18 @@ const Order = () => {
   }));
 
   const validTransitions = {
-    1: [2], // Chờ thanh toán -> Đã thanh toán
-    2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
-    3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
-    4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
+    2: [3, 8],
+    3: [4, 8],
+    4: [5, 6],
     6: [4, 8],
-    // 5: [7], // Đã giao hàng -> Hoàn thành
-    9: [10, 11], // Chờ xử lý trả hàng -> Chấp nhận trả hàng, Từ chối trả hàng
-    10: [12], // Chờ xử lý trả hàng -> Đang xử lý trả hàng
-    12: [13], // Đang xử lý trả hàng -> Người bán đã nhận hàng
-    13: [14],
-    14: [15],
   };
 
   const showEdit = (order) => {
-    setSelectedOrderId(order.id); // Lưu ID đơn hàng
-    const currentStatusId = order.status?.id; // Lấy trạng thái hiện tại
+    setSelectedOrderId(order.id);
+    const currentStatusId = order.status?.id;
 
     form.setFieldsValue({
-      status_id: undefined, // Không đặt giá trị mặc định cho status_id
+      status_id: undefined,
       note: "",
       employee_evidence: "",
     });
@@ -178,11 +184,43 @@ const Order = () => {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: value ?? null, // Đảm bảo khi xóa sẽ đặt lại thành null
+      [key]: value ?? null,  // Cập nhật giá trị của key (status hoặc dateRange)
     }));
   };
 
-  const filteredOrders = (ordersData || []).filter((order) => {
+  const resetFilters = () => {
+    setFilters({
+      dateRange: null,
+      status: null,
+      paymentMethod: null,
+    });
+  };
+
+  // Tính số lượng đơn hàng cho mỗi trạng thái
+  const statusCounts = {
+    1: ordersData?.filter(order => order.status?.id === 1).length || 0,
+    2: ordersData?.filter(order => order.status?.id === 2).length || 0,
+    3: ordersData?.filter(order => order.status?.id === 3).length || 0,
+    4: ordersData?.filter(order => order.status?.id === 4).length || 0,
+    5: ordersData?.filter(order => order.status?.id === 5).length || 0,
+    6: ordersData?.filter(order => order.status?.id === 6).length || 0,
+    7: ordersData?.filter(order => order.status?.id === 7).length || 0,
+    8: ordersData?.filter(order => order.status?.id === 8).length || 0,
+    9: ordersData?.filter(order => order.status?.id === 9).length || 0,
+    10: ordersData?.filter(order => order.status?.id === 10).length || 0,
+    11: ordersData?.filter(order => order.status?.id === 11).length || 0,
+    12: ordersData?.filter(order => order.status?.id === 12).length || 0,
+    13: ordersData?.filter(order => order.status?.id === 13).length || 0,
+    14: ordersData?.filter(order => order.status?.id === 14).length || 0,
+  };
+
+  const mergedOrders = (searchKeyword ? searchResults : ordersData).map(order => ({
+    ...order,
+    payment: payments?.find(p => p.id === order.payment_id),
+    status: status?.find(s => s.id === order.status_id),
+  }));
+
+  const filteredOrders = (mergedOrders || []).filter((order) => {
     const { dateRange, status, paymentMethod } = filters;
 
     const isWithinDateRange =
@@ -236,6 +274,7 @@ const Order = () => {
       shipping_fee: order.shipping_fee,
       total_amount: order.total_amount,
       coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -457,7 +496,7 @@ const Order = () => {
       dataIndex: "status",
       align: "center",
       render: (status) => (
-        <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+        <div className={[8, 9, 11].includes(status?.id) ? "action-link-red" : "action-link-blue"}>
           {status?.name}
         </div>
       ),
@@ -476,13 +515,16 @@ const Order = () => {
               onClick={() => showModal(item)}
             />
           </Tooltip>
+
           <Tooltip title="Cập nhật">
-            <Button
-              color="primary"
-              variant="solid"
-              icon={<EditOutlined />}
-              onClick={() => showEdit(item)}
-            />
+            {([2, 3, 4, 6].includes(item.status?.id)) && (
+              <Button
+                color="primary"
+                variant="solid"
+                icon={<EditOutlined />}
+                onClick={() => showEdit(item)}
+              />
+            )}
           </Tooltip>
         </div>
       ),
@@ -511,7 +553,7 @@ const Order = () => {
       render: (note) => getReturnReason(note),
     },
     {
-      title: "Ảnh/video xác nhận",
+      title: "Ảnh xác nhận",
       dataIndex: "employee_evidence",
       key: "employee_evidence",
       align: "center",
@@ -595,7 +637,109 @@ const Order = () => {
         Đơn hàng
       </h1>
 
+      <div
+        style={{
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+          display: "flex",
+          gap: "5px",
+          marginBottom: "20px",
+        }}
+      >
+        <Button
+          type={filters.status === 1 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 1)}
+        >
+          Chờ thanh toán ({statusCounts[1]})
+        </Button>
+        <Button
+          type={filters.status === 2 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 2)}
+        >
+          Đã thanh toán ({statusCounts[2]})
+        </Button>
+        <Button
+          type={filters.status === 3 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 3)}
+        >
+          Đang xử lý ({statusCounts[3]})
+        </Button>
+        <Button
+          type={filters.status === 4 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 4)}
+        >
+          Đang giao hàng ({statusCounts[4]})
+        </Button>
+        <Button
+          type={filters.status === 5 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 5)}
+        >
+          Đã giao hàng ({statusCounts[5]})
+        </Button>
+        <Button
+          type={filters.status === 6 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 6)}
+        >
+          Giao hàng thất bại ({statusCounts[6]})
+        </Button>
+        <Button
+          type={filters.status === 7 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 7)}
+        >
+          Hoàn thành ({statusCounts[7]})
+        </Button>
+        <Button
+          type={filters.status === 8 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 8)}
+        >
+          Hủy đơn ({statusCounts[8]})
+        </Button>
+        <Button
+          type={filters.status === 9 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 9)}
+        >
+          Trả hàng ({statusCounts[9]})
+        </Button>
+        <Button
+          type={filters.status === 10 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 10)}
+        >
+          Châp nhận trả hàng ({statusCounts[10]})
+        </Button>
+        <Button
+          type={filters.status === 11 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 11)}
+        >
+          Từ chối trả hàng ({statusCounts[11]})
+        </Button>
+        <Button
+          type={filters.status === 12 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 12)}
+        >
+          Đã hoàn tiền ({statusCounts[12]})
+        </Button>
+        <Button
+          type={filters.status === 13 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 13)}
+        >
+          Đang trả hàng về shop ({statusCounts[13]})
+        </Button>
+        <Button
+          type={filters.status === 14 ? "primary" : "default"}
+          onClick={() => handleFilterChange("status", 14)}
+        >
+          Shop đã nhận hàng ({statusCounts[14]})
+        </Button>
+      </div>
+
       <div className="group1">
+        <Tooltip title="Danh sách đơn hàng">
+          <Button
+            onClick={resetFilters}
+            icon={<MenuOutlined />}
+          />
+        </Tooltip>
+
         <ConfigProvider locale={viVN}>
           <RangePicker
             format="DD/MM/YYYY"
@@ -605,20 +749,6 @@ const Order = () => {
             allowClear
           />
         </ConfigProvider>
-
-        <Select
-          placeholder="Trạng thái"
-          className="select-item"
-          value={filters.status}
-          onChange={(value) => handleFilterChange("status", value)}
-          allowClear
-        >
-          {status.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name}
-            </Select.Option>
-          ))}
-        </Select>
 
         <Select
           placeholder="Phương thức thanh toán"
@@ -636,9 +766,19 @@ const Order = () => {
 
         <Input.Search
           style={{ width: '400px' }}
-          placeholder="Tìm kiếm đơn hàng..."
+          placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
           enterButton={<SearchOutlined />}
+          value={searchInput}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchInput(value);
+
+            if (!value) {
+              setSearchKeyword("");
+            }
+          }}
+          onSearch={() => setSearchKeyword(searchInput)}
         />
 
         <div className="group2">
@@ -662,7 +802,7 @@ const Order = () => {
         </div>
       </div>
 
-      <Skeleton active loading={isLoading}>
+      <Skeleton loading={isLoadingOrders || isLoadingSearch} active>
         <Table
           columns={columns}
           dataSource={dataSource}
@@ -680,7 +820,7 @@ const Order = () => {
       >
         <span>Khách hàng: <span className="text-quest">{orderInfo.fullname}</span></span> <br />
         <span>Email: <span className="text-quest">{orderInfo.email}</span></span> <br />
-        <span>Địa chỉ giao hàng: <span className="text-quest">{orderInfo.address}</span></span>
+        <span>Địa chỉ giao hàng: <span className="text-quest">{orderInfo.address}</span></span> <br />
 
         <Table
           columns={detailColumns}
@@ -696,11 +836,17 @@ const Order = () => {
               (sum, item) => sum + item.quantity * item.sell_price,
               0
             );
+
+            const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+            const discountValue = isPercentDiscount
+              ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+              : 0;
+
             return (
               <>
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Tổng tiền:
+                    Tổng tiền hàng:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
                     {formatPrice(totalAmount)}
@@ -709,10 +855,12 @@ const Order = () => {
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Phí vận chuyển:
+                    Phiếu giảm giá:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.shipping_fee)}
+                    {isPercentDiscount
+                      ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                      : formatPrice(orderInfo.coupon_discount_value)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 
@@ -725,14 +873,14 @@ const Order = () => {
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 
-                {/* <Table.Summary.Row>
+                <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Phiếu giảm giá:
+                    Phí vận chuyển:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.coupon_discount_value)}
+                    {formatPrice(orderInfo.shipping_fee)}
                   </Table.Summary.Cell>
-                </Table.Summary.Row> */}
+                </Table.Summary.Row>
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">

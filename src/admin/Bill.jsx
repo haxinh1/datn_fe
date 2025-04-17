@@ -1,10 +1,9 @@
-import { EyeOutlined, PrinterOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Modal, Select, Skeleton, Table, Tooltip } from "antd";
+import { PrinterOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Input, Modal, Skeleton, Table, Tooltip } from "antd";
 import React, { useState } from "react";
 import { OrderService } from "../services/order";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { paymentServices } from "../services/payments";
 import viVN from "antd/es/locale/vi_VN";
 import { ConfigProvider } from "antd";
 import logo from "../assets/images/logo.png";
@@ -17,6 +16,7 @@ const Bill = () => {
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [orderInfo, setOrderInfo] = useState({
     email: "",
     address: "",
@@ -24,15 +24,29 @@ const Bill = () => {
     shipping_fee: "",
     discount_points: "",
     total_amount: "",
+    coupon_discount_value: "",
+    coupon_discount_type: "",
   });
+  const [searchInput, setSearchInput] = useState(""); // nhập từ ô input
+  const [searchKeyword, setSearchKeyword] = useState("");
 
-  // danh sách hóa đơn
+  // danh sách đơn hàng
   const { data: bills, isLoading } = useQuery({
     queryKey: ["complete"],
     queryFn: async () => {
       const response = await OrderService.getAllOrder();
-      return response.orders || { data: [] };
+      return Array.isArray(response.orders) ? response.orders : [];
     },
+  });
+
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ["searchOrders", searchKeyword],
+    queryFn: async () => {
+      if (!searchKeyword) return [];
+      const response = await OrderService.searchOrders(searchKeyword);
+      return Array.isArray(response) ? response : [];
+    },
+    enabled: searchKeyword.length > 0,  // Chỉ gọi API khi có từ khóa tìm kiếm
   });
 
   const showModal = async (order) => {
@@ -47,6 +61,8 @@ const Bill = () => {
       shipping_fee: order.shipping_fee,
       discount_points: order.discount_points,
       total_amount: order.total_amount,
+      coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -101,8 +117,8 @@ const Bill = () => {
       title: "STT",
       dataIndex: "index",
       align: "center",
-      render: (_, __, index) => index + 1,
-    },
+      render: (_, __, index) => (currentPage - 1) * 10 + index + 1,
+    },    
     {
       title: "Mã hóa đơn",
       dataIndex: "code",
@@ -203,13 +219,32 @@ const Bill = () => {
             allowClear
           />
         </ConfigProvider>
+
+        <Input.Search
+          style={{ width: '400px' }}
+          placeholder="Tìm kiếm mã hóa đơn..."
+          allowClear
+          enterButton={<SearchOutlined />}
+          value={searchInput}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchInput(value);
+
+            if (!value) {
+              setSearchKeyword("");
+            }
+          }}
+          onSearch={() => setSearchKeyword(searchInput)}
+        />
       </div>
 
       <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
-          dataSource={filteredOrders}
-          pagination={{ pageSize: 10 }}
+          dataSource={searchKeyword ? searchResults : filteredOrders}
+          pagination={{ pageSize: 10, current: currentPage }}
+          rowKey="id"
+          onChange={(pagination) => setCurrentPage(pagination.current)}
         />
       </Skeleton>
 
@@ -234,6 +269,7 @@ const Bill = () => {
           <span className="text-title">
             Địa chỉ: <span className="text-name">{orderInfo.address}</span>
           </span>
+
           <Table
             style={{ marginTop: "20px" }}
             columns={detailColumns}
@@ -247,25 +283,35 @@ const Bill = () => {
                 (sum, item) => sum + item.quantity * item.sell_price,
                 0
               );
+
+              const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+              const discountValue = isPercentDiscount
+                ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                : 0;
+
               return (
                 <>
-                  <Table.Summary.Row>
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
                     <Table.Summary.Cell colSpan={3} align="right">
-                      Tổng tiền:
+                      Tổng tiền hàng:
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       {formatPrice(totalAmount)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
-                  <Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1.2' }}>
                     <Table.Summary.Cell colSpan={3} align="right">
-                      Phí vận chuyển:
+                      Phiếu giảm giá:
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
-                      {formatPrice(orderInfo.shipping_fee)}
+                      {isPercentDiscount
+                        ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                        : formatPrice(orderInfo.coupon_discount_value)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
-                  <Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
                     <Table.Summary.Cell colSpan={3} align="right">
                       Giảm giá điểm tiêu dùng:
                     </Table.Summary.Cell>
@@ -273,9 +319,19 @@ const Bill = () => {
                       {formatPrice(orderInfo.discount_points)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
-                  <Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
                     <Table.Summary.Cell colSpan={3} align="right">
-                      <strong>Tổng giá trị đơn hàng:</strong>
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Tổng thanh toán:</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell align="center">
                       <strong>{formatPrice(orderInfo.total_amount)}</strong>

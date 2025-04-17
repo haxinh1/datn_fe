@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox } from "antd";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox, Upload } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
 import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
@@ -27,18 +27,18 @@ const Import = () => {
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem("user"));
         if (userData) {
-            setLoggedInUserRole(userData.role); 
+            setLoggedInUserRole(userData.role);
         }
-    }, []); 
+    }, []);
 
     // Xử lý khi chọn sản phẩm
     const handleSelectProduct = (value, option) => {
         const selectedProduct = products.find(product => product.id === value);
-    
+
         if (selectedProduct) {
             // Kiểm tra nếu sản phẩm đã có trong danh sách nhập hàng
             const isAlreadyAdded = addedVariants.some(item => item.productId === selectedProduct.id);
-            
+
             if (isAlreadyAdded) {
                 notification.warning({
                     message: "Sản phẩm đã có trong danh sách",
@@ -46,17 +46,17 @@ const Import = () => {
                 });
                 return; // Không thêm sản phẩm bị trùng
             }
-    
-            const newVariants = selectedProduct.variants?.length 
+
+            const newVariants = selectedProduct.variants?.length
                 ? selectedProduct.variants.map(variant => ({
                     key: `V-${variant.id}`, // ✅ Unique key cho biến thể
                     id: variant.id,
                     productId: selectedProduct.id,
                     quantity: 1,
-                    price: 0, 
+                    price: 0,
                     sell_price: variant.sell_price || 0,
                     sale_price: variant.sale_price || 0,
-                    total: 0, 
+                    total: 0,
                     variantName: `${selectedProduct.name} - ${variant.attribute_value_product_variants.map(attr => attr.attribute_value.value).join(" - ")}`,
                 }))
                 : [{
@@ -64,17 +64,17 @@ const Import = () => {
                     id: selectedProduct.id,
                     productId: selectedProduct.id,
                     quantity: 1,
-                    price: 0, 
+                    price: 0,
                     sell_price: selectedProduct.sell_price || 0,
                     sale_price: selectedProduct.sale_price || 0,
                     total: 0,
                     variantName: selectedProduct.name,
                 }];
-    
+
             setAddedVariants(prevVariants => [...prevVariants, ...newVariants]); // Thêm vào bảng luôn
             setSearchQuery(""); // Reset input tìm kiếm
         }
-    };    
+    };
 
     // Xử lý khi tìm kiếm sản phẩm
     const handleSearch = (value) => {
@@ -89,15 +89,15 @@ const Import = () => {
         setAddedVariants(prevItems =>
             prevItems.map(item =>
                 item.key === key // ✅ So sánh theo key để tránh trùng ID
-                    ? { 
-                        ...item, 
-                        [field]: value, 
+                    ? {
+                        ...item,
+                        [field]: value,
                         total: (field === "price" ? value : item.price) * (field === "quantity" ? value : item.quantity)
                     }
                     : item
             )
         );
-    };    
+    };
 
     // Xóa sản phẩm khỏi danh sách
     const removeItem = (key) => {
@@ -121,7 +121,7 @@ const Import = () => {
     // Chuẩn bị dữ liệu nhập hàng
     const preparePayload = () => {
         const groupedProducts = {};
-    
+
         addedVariants.forEach(item => {
             if (!groupedProducts[item.productId]) {
                 groupedProducts[item.productId] = {
@@ -129,14 +129,14 @@ const Import = () => {
                     variants: []
                 };
             }
-    
+
             if (item.variantName.includes("-")) {
                 // Nếu là biến thể, thêm vào danh sách variants
                 groupedProducts[item.productId].variants.push({
                     id: item.id,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price,
+                    sale_price: item.sale_price || '',
                     quantity: item.quantity
                 });
             } else {
@@ -145,21 +145,21 @@ const Import = () => {
                     id: item.productId,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price,
+                    sale_price: item.sale_price || '',
                     quantity: item.quantity
                 };
             }
         });
-    
+
         const productsArray = Object.values(groupedProducts);
-    
+
         const payload = {
             // user_id: 1,
             products: productsArray
         };
-    
+
         return payload;
-    };    
+    };
 
     const handleValuesChange = (changedValues) => {
         setAddedVariants(prevVariants =>
@@ -171,10 +171,10 @@ const Import = () => {
                 return item;
             })
         );
-    
+
         // Cập nhật giá vào form để tránh lỗi khi submit
         form.setFieldsValue(changedValues);
-    };    
+    };
 
     const handleSelectAll = (e) => {
         const checked = e.target.checked;
@@ -184,7 +184,7 @@ const Import = () => {
             setSelectedRowKeys([]); // Bỏ chọn tất cả
         }
     };
-    
+
     const handleRowSelectionChange = (selectedRowKeys) => {
         setSelectedRowKeys(selectedRowKeys); // Cập nhật hàng được chọn
     };
@@ -192,15 +192,15 @@ const Import = () => {
     const handleRemoveSelected = () => {
         setAddedVariants(prevItems => prevItems.filter(item => !selectedRowKeys.includes(item.key)));
         setSelectedRowKeys([]); // Reset lại danh sách đã chọn
-    };    
+    };
 
     // Gửi dữ liệu nhập hàng
     const handleSubmit = async () => {
         try {
             await form.validateFields(); // Kiểm tra form trước khi submit
-    
+
             const payload = preparePayload(); // Lấy dữ liệu đúng format
-    
+
             if (!payload.products.length) {
                 notification.error({
                     message: "Lỗi nhập hàng",
@@ -208,21 +208,29 @@ const Import = () => {
                 });
                 return;
             }
-    
+
             console.log("Final Payload:", JSON.stringify(payload, null, 2));
-    
+
             const response = await productsServices.importProduct(payload);
-            notification.success({
-                message: "Đơn hàng đã được thêm!",
-                description: "Đợi sự xác nhận từ quản lý.",
-            });
-    
+
+            // ✅ Thông báo dựa vào role
+            if (loggedInUserRole === 'admin') {
+                notification.success({
+                    message: "Nhập hàng thành công.",
+                });
+            } else {
+                notification.success({
+                    message: "Đơn hàng đã được thêm!",
+                    description: "Đợi sự xác nhận từ quản lý.",
+                });
+            }
+
             setAddedVariants([]); // Reset danh sách sản phẩm sau khi nhập hàng thành công
             form.resetFields();
         } catch (error) {
             console.error("Lỗi khi nhập hàng:", error);
         }
-    };           
+    };
 
     return (
         <div>
@@ -261,17 +269,18 @@ const Import = () => {
                 </Link>
             </div>
 
-            <Form 
-                form={form} 
+            <Form
+                form={form}
                 layout="vertical"
                 onValuesChange={handleValuesChange}
             >
                 <div className="group2">
-                    <Button 
-                        color="danger" 
+                    <Button
+                        color="danger"
                         variant="solid"
-                        icon={<DeleteOutlined />} 
+                        icon={<DeleteOutlined />}
                         onClick={handleRemoveSelected}
+                        disabled={selectedRowKeys.length === 0}
                     >
                         Xóa
                     </Button>
@@ -341,14 +350,14 @@ const Import = () => {
                                     />
                                 </Form.Item>
                             ),
-                        },  
+                        },
                         {
                             title: "Giá bán (VNĐ)",
                             dataIndex: "sell_price",
                             align: "center",
                             render: (_, record) => {
                                 const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
-                        
+
                                 return (
                                     <Form.Item
                                         name={`sell_price_${uniqueKey}`}
@@ -371,7 +380,7 @@ const Import = () => {
                                         <InputNumber
                                             className="input-form"
                                             min={1}
-                                            disabled={loggedInUserRole === "manager"} 
+                                            disabled={loggedInUserRole === "manager"}
                                             formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
@@ -382,14 +391,14 @@ const Import = () => {
                                     </Form.Item>
                                 );
                             },
-                        },         
+                        },
                         {
                             title: "Giá KM (VNĐ)",
                             dataIndex: "sale_price",
                             align: "center",
                             render: (_, record) => {
                                 const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
-                        
+
                                 return (
                                     <Form.Item
                                         name={`sale_price_${uniqueKey}`}
@@ -397,7 +406,7 @@ const Import = () => {
                                         <InputNumber
                                             className="input-form"
                                             min={1}
-                                            disabled={loggedInUserRole === "manager"} 
+                                            disabled={loggedInUserRole === "manager"}
                                             formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                             parser={value => value?.replace(/\./g, "")}
                                             onChange={(value) => {
@@ -408,7 +417,7 @@ const Import = () => {
                                     </Form.Item>
                                 );
                             },
-                        },            
+                        },
                         {
                             title: "Số lượng",
                             dataIndex: "quantity",
@@ -456,7 +465,7 @@ const Import = () => {
                 />
                 <div className="add">
                     <Button type="primary" onClick={handleSubmit} className="btn-item">
-                        Hoàn thành nhập hàng
+                        Hoàn thành
                     </Button>
                 </div>
             </Form>

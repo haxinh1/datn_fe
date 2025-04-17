@@ -2,7 +2,7 @@ import { EditOutlined, EyeOutlined, SearchOutlined, TeamOutlined } from '@ant-de
 import { Button, Table, Tooltip, Skeleton, Modal, Form, Row, Col, Select, notification, Avatar, Input } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { AuthServices } from '../services/auth';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import "../css/add.css";
 import "../css/list.css";
 import { Link } from 'react-router-dom';
@@ -16,6 +16,7 @@ const Customer = () => {
     const handleEditCancel = () => setIsEditModalVisible(false)
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
     const [searchKeyword, setSearchKeyword] = useState("");
+    const queryClient = useQueryClient();
 
     const { data: customer, isLoading, refetch } = useQuery({
         queryKey: ["customer", searchKeyword],
@@ -39,14 +40,21 @@ const Customer = () => {
         mutationFn: async (updatedData) => {
             return await AuthServices.updateUser(selectedRecord.id, updatedData);
         },
-        onSuccess: () => {
+        onSuccess: (updatedData) => {
             notification.success({
                 message: "Cập nhật thành công",
             });
             handleEditCancel();
-            console.log(userData)
-            refetch(); // Refresh danh sách người dùng sau khi cập nhật
-        }
+        
+            // Cập nhật lại dữ liệu hiển thị mà không cần refetch
+            if (customer) {
+                const updatedList = customer.map(user =>
+                    user.id === selectedRecord.id ? { ...user, ...updatedData } : user
+                );
+                setSelectedRecord(null);
+                queryClient.setQueryData(["customer", searchKeyword], updatedList);
+            }
+        }        
     });
 
     const showEditModal = async (record) => {

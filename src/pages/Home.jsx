@@ -23,24 +23,30 @@ import brand4 from "../assets/images/brands/4.png";
 import brand5 from "../assets/images/brands/5.png";
 import brand6 from "../assets/images/brands/6.png";
 import brand7 from "../assets/images/brands/7.png";
-import banner1 from "../assets/images/demos/demo-8/banners/banner-1.jpg";
-import banner2 from "../assets/images/demos/demo-8/banners/banner-2.jpg";
-import banner3 from "../assets/images/demos/demo-8/banners/banner-3.jpg";
-import banner4 from "../assets/images/demos/demo-8/banners/banner-4.jpg";
-import banner5 from "../assets/images/demos/demo-8/banners/banner-5.jpg";
-import banner6 from "../assets/images/demos/demo-8/banners/banner-6.jpg";
+import theme1 from "../assets/images/theme/theme1.jpg";
+import theme2 from "../assets/images/theme/theme2.jpg";
+import theme3 from "../assets/images/theme/theme3.jpg";
+import ig1 from "../assets/images/theme/ig1.jpg";
+import ig2 from "../assets/images/theme/ig2.jpg";
+import ig3 from "../assets/images/theme/ig3.jpg";
+import ig4 from "../assets/images/theme/ig4.jpg";
+import ig5 from "../assets/images/theme/ig5.jpg";
+import ig6 from "../assets/images/theme/ig6.jpg";
+import banner4 from "../assets/images/demo-8/banners/banner-1.jpg";
+import banner5 from "../assets/images/demo-8/banners/banner-2.jpg";
+import banner6 from "../assets/images/demo-8/banners/banner-6.jpg";
 
-import slider1 from "../assets/images/demos/demo-8/slider/img-1.png";
-import slider2 from "../assets/images/demos/demo-8/slider/img-2.png";
+import slider1 from "../assets/images/demo-8/slider/img-1.png";
+import slider2 from "../assets/images/demo-8/slider/img-2.png";
 
-import product1 from "../assets/images/demos/demo-8/products/product-1-1.jpg";
-import product2 from "../assets/images/demos/demo-8/products/product-1-2.jpg";
-import product21 from "../assets/images/demos/demo-8/products/product-2-1.jpg";
-import product22 from "../assets/images/demos/demo-8/products/product-2-2.jpg";
+import product1 from "../assets/images/demo-8/products/product-1-1.jpg";
+import product2 from "../assets/images/demo-8/products/product-1-2.jpg";
+import product21 from "../assets/images/demo-8/products/product-2-1.jpg";
+import product22 from "../assets/images/demo-8/products/product-2-2.jpg";
 
-import productThumb1 from "../assets/images/demos/demo-8/products/product-1-thumb.jpg";
-import productThumb2 from "../assets/images/demos/demo-8/products/product-1-2-thumb.jpg";
-import productThumb3 from "../assets/images/demos/demo-8/products/product-1-3-thumb.jpg";
+import productThumb1 from "../assets/images/demo-8/products/product-1-thumb.jpg";
+import productThumb2 from "../assets/images/demo-8/products/product-1-2-thumb.jpg";
+import productThumb3 from "../assets/images/demo-8/products/product-1-3-thumb.jpg";
 
 import ProductList from "../components/client/product/ProductList";
 
@@ -70,7 +76,7 @@ const Home = () => {
             className="intro-slide"
             style={{
               backgroundImage:
-                "url('assets/images/demos/demo-8/slider/slide-1.jpg')",
+                "url('assets/images/demo-8/slider/slide-1.jpg')",
             }}
           >
             <div className="container intro-content text-left">
@@ -95,7 +101,7 @@ const Home = () => {
             className="intro-slide"
             style={{
               backgroundImage:
-                "url('assets/images/demos/demo-8/slider/slide-2.jpg')",
+                "url('assets/images/demo-8/slider/slide-2.jpg')",
             }}
           >
             <div className="container intro-content text-right">
@@ -123,7 +129,7 @@ const Home = () => {
               <div className="col-sm-6 col-lg-4">
                 <div className="banner banner-overlay">
                   <a href="#">
-                    <img src={banner1} alt="Banner" />
+                    <img src={theme1} alt="Banner" />
                   </a>
 
                   <div className="banner-content">
@@ -150,7 +156,7 @@ const Home = () => {
               <div className="col-sm-6 col-lg-4">
                 <div className="banner banner-overlay">
                   <a href="#">
-                    <img src={banner2} alt="Banner" />
+                    <img src={theme2} alt="Banner" />
                   </a>
 
                   <div className="banner-content">
@@ -177,7 +183,7 @@ const Home = () => {
               <div className="col-sm-6 col-lg-4 d-none d-lg-block">
                 <div className="banner banner-overlay">
                   <a href="#">
-                    <img src={banner3} alt="Banner" />
+                    <img src={theme3} alt="Banner" />
                   </a>
 
                   <div className="banner-content">
@@ -430,12 +436,12 @@ const Home = () => {
                   <span className="product-label label-sale">sale</span>
                   <a href="product.html">
                     <img
-                      src="assets/images/demos/demo-8/products/product-3-1.jpg"
+                      src="assets/images/demo-8/products/product-3-1.jpg"
                       alt="Product image"
                       className="product-image"
                     />
                     <img
-                      src="assets/images/demos/demo-8/products/product-3-2.jpg"
+                      src="assets/images/demo-8/products/product-3-2.jpg"
                       alt="Product image"
                       className="product-image-hover"
                     />
@@ -476,12 +482,12 @@ const Home = () => {
                 <figure className="product-media">
                   <a href="product.html">
                     <img
-                      src="assets/images/demos/demo-8/products/product-4-1.jpg"
+                      src="assets/images/demo-8/products/product-4-1.jpg"
                       alt="Product image"
                       className="product-image"
                     />
                     <img
-                      src="assets/images/demos/demo-8/products/product-4-2.jpg"
+                      src="assets/images/demo-8/products/product-4-2.jpg"
                       alt="Product image"
                       className="product-image-hover"
                     />
@@ -515,13 +521,13 @@ const Home = () => {
                   <div className="product-nav product-nav-thumbs">
                     <a href="#" className="active">
                       <img
-                        src="assets/images/demos/demo-8/products/product-4-thumb.jpg"
+                        src="assets/images/demo-8/products/product-4-thumb.jpg"
                         alt="product desc"
                       />
                     </a>
                     <a href="#">
                       <img
-                        src="assets/images/demos/demo-8/products/product-4-2-thumb.jpg"
+                        src="assets/images/demo-8/products/product-4-2-thumb.jpg"
                         alt="product desc"
                       />
                     </a>
@@ -537,7 +543,7 @@ const Home = () => {
 
       <div className="trending">
         <a href="#">
-          <img src={banner4} alt="Banner" />
+          <img src={banner4} alt="Banner" style={{ width: '100%' }} />
         </a>
         <div className="banner banner-big d-md-block">
           <div className="banner-content text-center">
@@ -562,7 +568,7 @@ const Home = () => {
           <div className="col-md-6">
             <div className="banner banner-overlay">
               <a href="#">
-                <img src={banner5} alt="Banner" />
+                <img src={banner5} alt="Banner" style={{ height: '300px' }} />
               </a>
 
               <div className="banner-content">
@@ -582,7 +588,7 @@ const Home = () => {
           <div className="col-md-6">
             <div className="banner banner-overlay">
               <a href="#">
-                <img src={banner6} alt="Banner" />
+                <img src={banner6} alt="Banner" style={{ height: '300px' }} />
               </a>
 
               <div className="banner-content">
@@ -603,10 +609,12 @@ const Home = () => {
 
       <div className="mb-5"></div>
 
+      <hr />
+
       <div className="container recent-arrivals">
         <div className="heading heading-flex align-items-center mb-3">
-          <h2 className="title title-lg">sản phẩm mới</h2>
-          <ul
+          <h2 className="title title-lg">sản phẩm mới ra mắt</h2>
+          {/* <ul
             className="nav nav-pills nav-border-anim justify-content-center"
             role="tablist"
           >
@@ -662,7 +670,7 @@ const Home = () => {
                 Shoes & Boots
               </a>
             </li>
-          </ul>
+          </ul> */}
         </div>
 
         <div className="tab-content">
@@ -687,6 +695,8 @@ const Home = () => {
       </div>
 
       <div className="mb-7"></div>
+
+      <hr />
 
       <div className="container">
         <div className="row justify-content-center">
@@ -734,7 +744,6 @@ const Home = () => {
           <p className="title-desc">Wanna share your style with us?</p>
         </div>
       </div>
-
     </>
   );
 };

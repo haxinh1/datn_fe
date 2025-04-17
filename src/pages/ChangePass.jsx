@@ -50,7 +50,7 @@ const ChangePass = () => {
     <div>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Row gutter={24}>
-          <Col span={3}></Col>
+          <Col span={4}></Col>
           <Col span={8}>
             <h1 className="mb-5" style={{color:'#eea287'}}>
               <LockOutlined style={{ marginRight: "8px" }} />

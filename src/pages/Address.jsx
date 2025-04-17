@@ -1,32 +1,48 @@
-import { CheckOutlined, DeleteOutlined, EditOutlined, EnvironmentOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Col, Form, Input, Modal, notification, Radio, Row, Select, Skeleton, Switch, Table, Tooltip } from "antd";
+import {
+  CheckOutlined,
+  DeleteOutlined,
+  EnvironmentOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  Modal,
+  notification,
+  Radio,
+  Row,
+  Select,
+  Skeleton,
+  Switch,
+  Table,
+  Tooltip,
+} from "antd";
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AuthServices } from "../services/auth";
 import { useMutation } from "@tanstack/react-query";
 
 const Address = () => {
   const { id } = useParams();
-  const [addressId, setAddressId] = useState(null)
   const [addresses, setAddresses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isModalUpdate, setIsModalupdate] = useState(false);
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
   const [form] = Form.useForm();
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
         const data = await AuthServices.getAddressByIdUser(id);
         setAddresses(data);
-        setIsLoading(false);
       } catch (error) {
         console.error("Lỗi khi lấy địa chỉ:", error);
       } finally {
@@ -37,30 +53,19 @@ const Address = () => {
     fetchAddresses();
   }, [id]);
 
-  const showModal = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
-
   useEffect(() => {
-    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Thay token của bạn vào đây
-    fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          token: token,
-        },
-      }
-    )
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
+    fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/province", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data.data)) {
-          setProvinces(data.data); // Lưu vào state provinces
+          setProvinces(data.data);
         }
       })
       .catch((error) => {
@@ -68,30 +73,26 @@ const Address = () => {
       });
   }, []);
 
-  // Xử lý sự kiện khi người dùng chọn tỉnh/thành phố
   const handleProvinceChange = (value) => {
-    // Reset districts and wards when province changes
     setDistricts([]);
     setWards([]);
-
     setSelectedProvince(value);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
 
     if (!value) {
       console.error("Invalid province ID:", value);
       return;
     }
-    console.log("ProvinceID:", value);
-    // Get the ProvinceID instead of Code
-    const selectedProvince = provinces.find((p) => p.ProvinceID === value);
 
+    const selectedProvince = provinces.find((p) => p.ProvinceID === value);
     if (!selectedProvince) {
       console.error("Province not found for value:", value);
       return;
     }
 
-    const provinceId = selectedProvince.ProvinceID; // Use the correct ProvinceID
-
-    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+    const provinceId = selectedProvince.ProvinceID;
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
     fetch(
       `https://online-gateway.ghn.vn/shiip/public-api/master-data/district?province_id=${provinceId}`,
       {
@@ -107,7 +108,7 @@ const Address = () => {
         if (data.code === 400) {
           console.error("Error fetching districts:", data.message);
         } else if (Array.isArray(data.data)) {
-          setDistricts(data.data); // Update districts with the fetched data
+          setDistricts(data.data);
         } else {
           console.error("Unexpected response format:", data);
         }
@@ -117,18 +118,16 @@ const Address = () => {
       });
   };
 
-  // Xử lý sự kiện khi người dùng chọn quận/huyện
   const handleDistrictChange = (value) => {
-    setWards([]); // Reset wards when district changes
+    setWards([]);
     setSelectedDistrict(value);
-    setSelectedWard(null); // Reset selectedWard when district changes
+    setSelectedWard(null);
 
     if (!value) {
       console.error("Invalid district ID:", value);
       return;
     }
-    console.log("DistrictID:", value);
-    // Find the district from selected districts
+
     const selectedDistrictData = districts.find((d) => d.DistrictID === value);
     if (!selectedDistrictData) {
       console.error("District not found for value:", value);
@@ -136,8 +135,7 @@ const Address = () => {
     }
 
     const districtId = selectedDistrictData.DistrictID;
-
-    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea"; // Replace with your actual token
+    const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
     fetch(
       `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${districtId}`,
       {
@@ -151,7 +149,7 @@ const Address = () => {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data.data)) {
-          setWards(data.data); // Update wards with the fetched data
+          setWards(data.data);
         } else {
           console.error("Error fetching wards:", data);
         }
@@ -160,59 +158,99 @@ const Address = () => {
         console.error("Error fetching wards:", error);
       });
   };
-  const handleWardChange = (value) => {
-    setSelectedWard(value); // Cập nhật selectedWard khi chọn phường xã
 
+  const handleWardChange = (value) => {
+    setSelectedWard(value);
     if (!value) {
       console.error("Invalid ward code:", value);
       return;
     }
-
-    // Log WardCode khi thay đổi phường xã
     console.log("WardCode:", value);
   };
 
-  // thêm địa chỉ mới
-  const { mutate } = useMutation({
-    mutationFn: async (userData) => {
-      const response = await AuthServices.addAddress(userData)
-      return response;
-    },
-    onSuccess: (_, userData) => {
-      notification.success({
-        message: "Địa chỉ mới đã được thêm",
-      });
-      form.setFieldsValue();
-      setIsModalVisible(false);
-    },
-    onError: (error) => {
-      notification.error({
-        message: "Thêm thất bại",
-        description: error.message,
-      });
-    },
-  });
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    form.resetFields();
+    setSelectedProvince(null);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+    setDistricts([]);
+    setWards([]);
+  };
 
   const formatAddress = (province, district, ward) => {
     const formattedAddress = [
       ward ? wards.find((w) => w.WardCode === String(ward))?.WardName : "",
-      district ? districts.find((d) => d.DistrictID === Number(district))?.DistrictName : "",
-      province ? provinces.find((p) => p.ProvinceID === Number(province))?.ProvinceName : ""
-    ].filter(Boolean).join(", ");
+      district
+        ? districts.find((d) => d.DistrictID === Number(district))?.DistrictName
+        : "",
+      province
+        ? provinces.find((p) => p.ProvinceID === Number(province))?.ProvinceName
+        : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     return formattedAddress;
   };
 
+  const { mutate } = useMutation({
+    mutationFn: async (userData) => {
+      const response = await AuthServices.addAddress(userData);
+      return response;
+    },
+    onSuccess: (response, userData) => {
+      notification.success({
+        message: "Địa chỉ mới đã được thêm",
+      });
+      // Cập nhật danh sách địa chỉ với dữ liệu mới
+      setAddresses((prevAddresses) => [
+        ...prevAddresses,
+        {
+          id: response.id, // Giả sử API trả về id của địa chỉ mới
+          address: userData.address,
+          detail_address: userData.detail_address,
+          id_default: userData.id_default,
+          ProvinceID: userData.ProvinceID,
+          DistrictID: userData.DistrictID,
+          WardCode: userData.WardCode,
+        },
+      ]);
+      form.resetFields();
+      setIsModalVisible(false);
+      setSelectedProvince(null);
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setDistricts([]);
+      setWards([]);
+    },
+    onError: (error) => {
+      notification.error({
+        message: "Thêm thất bại",
+        description: error.message || "Có lỗi xảy ra khi thêm địa chỉ",
+      });
+    },
+  });
+
   const handleAdd = (values) => {
-    const formattedAddress = formatAddress(values.province, values.district, values.ward);
+    const formattedAddress = formatAddress(
+      values.province,
+      values.district,
+      values.ward
+    );
 
     const userData = {
       address: formattedAddress,
       detail_address: values.detail_address,
       id_default: values.id_default,
-      ProvinceID: values.province, // ProvinceID tương ứng với tỉnh thành
-      DistrictID: values.district, // DistrictID tương ứng với quận huyện
+      ProvinceID: values.province,
+      DistrictID: values.district,
       WardCode: values.ward,
+      user_id: id, // Thêm user_id để gửi lên API
     };
 
     console.log("Dữ liệu gửi đi:", userData);
@@ -227,20 +265,17 @@ const Address = () => {
       cancelText: "Không",
       onOk: async () => {
         try {
-          // Gọi service xóa địa chỉ
           await AuthServices.deleteAddress(addressId);
-
-          // Sau khi xóa, làm mới danh sách địa chỉ
-          const newAddresses = addresses.filter(address => address.id !== addressId);
-          setAddresses(newAddresses);
-
+          setAddresses((prevAddresses) =>
+            prevAddresses.filter((address) => address.id !== addressId)
+          );
           notification.success({
             message: "Xóa địa chỉ thành công",
           });
         } catch (error) {
           notification.error({
             message: "Xóa thất bại",
-            description: error.message,
+            description: error.message || "Có lỗi xảy ra khi xóa địa chỉ",
           });
         }
       },
@@ -248,15 +283,13 @@ const Address = () => {
   };
 
   const handleDefaultSwitchChange = async (addressIdToUpdate) => {
-    // ✅ Cập nhật state ngay lập tức cho phản ứng UI
     const updatedAddresses = addresses.map((address) => ({
       ...address,
       id_default: address.id === addressIdToUpdate,
     }));
-    setAddresses(updatedAddresses); // 👉 Switch sẽ cập nhật ngay
+    setAddresses(updatedAddresses);
 
     try {
-      // ✅ Sau đó mới gọi API cập nhật backend
       await Promise.all(
         updatedAddresses.map((address) =>
           AuthServices.updateAddress(address.id, {
@@ -265,7 +298,12 @@ const Address = () => {
         )
       );
     } catch (error) {
-      setAddresses(addresses);
+      console.error("Lỗi khi cập nhật địa chỉ mặc định:", error);
+      setAddresses(addresses); // Khôi phục nếu API thất bại
+      notification.error({
+        message: "Cập nhật thất bại",
+        description: error.message || "Có lỗi xảy ra khi cập nhật địa chỉ",
+      });
     }
   };
 
@@ -274,7 +312,7 @@ const Address = () => {
       title: "STT",
       dataIndex: "index",
       align: "center",
-      render: (_, __, index) => index + 1,
+      render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
     },
     {
       title: "Địa chỉ",
@@ -298,7 +336,7 @@ const Address = () => {
           checked={Boolean(record.id_default)}
           onChange={() => handleDefaultSwitchChange(record.id)}
           style={{
-            backgroundColor: record.id_default ? '#eea287' : '', // Xanh khi bật, xám khi tắt
+            backgroundColor: record.id_default ? "#eea287" : "",
           }}
         />
       ),
@@ -309,8 +347,13 @@ const Address = () => {
       align: "center",
       render: (_, record) => (
         <div className="action-container">
-          <Tooltip title='Xóa địa chỉ'>
-            <Button danger type="text" variant="solid" icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+          <Tooltip title="Xóa địa chỉ">
+            <Button
+              danger
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record.id)}
+            />
           </Tooltip>
         </div>
       ),
@@ -319,7 +362,7 @@ const Address = () => {
 
   return (
     <div>
-      <h1 className="mb-5" style={{color:'#eea287'}}>
+      <h1 className="mb-5" style={{ color: "#eea287" }}>
         <EnvironmentOutlined style={{ marginRight: "8px" }} />
         Địa chỉ của bạn
       </h1>
@@ -328,7 +371,7 @@ const Address = () => {
         type="primary"
         icon={<PlusOutlined />}
         onClick={showModal}
-        style={{backgroundColor: '#eea287', color:'white'}}
+        style={{ backgroundColor: "#eea287", color: "white" }}
       >
         Thêm mới
       </Button>
@@ -338,7 +381,8 @@ const Address = () => {
           columns={columns}
           dataSource={addresses}
           rowKey="id"
-          pagination={false}
+          pagination={{ pageSize: 5, current: currentPage }}
+          onChange={(pagination) => setCurrentPage(pagination.current)}
         />
       </Skeleton>
 
@@ -348,15 +392,12 @@ const Address = () => {
         onCancel={handleCancel}
         footer={null}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleAdd}
-        >
+        <Form form={form} layout="vertical" onFinish={handleAdd}>
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item
-                name="province" label="Tỉnh/Thành phố"
+                name="province"
+                label="Tỉnh/Thành phố"
                 rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành phố" }]}
               >
                 <Select
@@ -376,7 +417,8 @@ const Address = () => {
               </Form.Item>
 
               <Form.Item
-                name="ward" label="Phường/Xã"
+                name="ward"
+                label="Phường/Xã"
                 rules={[{ required: true, message: "Vui lòng chọn phường/xã" }]}
               >
                 <Select
@@ -386,10 +428,7 @@ const Address = () => {
                   onChange={handleWardChange}
                 >
                   {wards.map((ward) => (
-                    <Select.Option
-                      key={ward.WardCode}
-                      value={ward.WardCode}
-                    >
+                    <Select.Option key={ward.WardCode} value={ward.WardCode}>
                       {ward.WardName}
                     </Select.Option>
                   ))}
@@ -399,7 +438,8 @@ const Address = () => {
 
             <Col span={12}>
               <Form.Item
-                name="district" label="Quận/Huyện"
+                name="district"
+                label="Quận/Huyện"
                 rules={[{ required: true, message: "Vui lòng chọn quận/huyện" }]}
               >
                 <Select
@@ -410,8 +450,8 @@ const Address = () => {
                 >
                   {districts.map((district) => (
                     <Select.Option
-                      key={district.DistrictID} // Sử dụng DistrictID làm key
-                      value={district.DistrictID} // Sử dụng DistrictID làm value
+                      key={district.DistrictID}
+                      value={district.DistrictID}
                     >
                       {district.DistrictName}
                     </Select.Option>
@@ -420,7 +460,8 @@ const Address = () => {
               </Form.Item>
 
               <Form.Item
-                name="detail_address" label="Địa chỉ cụ thể"
+                name="detail_address"
+                label="Địa chỉ cụ thể"
                 rules={[{ required: true, message: "Vui lòng nhập địa chỉ cụ thể" }]}
               >
                 <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" />
@@ -429,7 +470,8 @@ const Address = () => {
           </Row>
 
           <Form.Item
-            name="id_default" label="Đặt làm địa chỉ mặc định"
+            name="id_default"
+            label="Đặt làm địa chỉ mặc định"
             rules={[{ required: true, message: "Vui lòng chọn địa chỉ mặc định" }]}
           >
             <Radio.Group>
@@ -439,7 +481,11 @@ const Address = () => {
           </Form.Item>
 
           <div className="add">
-            <Button style={{backgroundColor: '#eea287', color:'white'}} type="primary" htmlType="submit">
+            <Button
+              style={{ backgroundColor: "#eea287", color: "white" }}
+              type="primary"
+              htmlType="submit"
+            >
               Lưu
             </Button>
           </div>

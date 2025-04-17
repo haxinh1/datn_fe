@@ -8,20 +8,35 @@ const ChatIcon = ({ onClick }) => {
       type="primary"
       shape="circle"
       icon={
-        <MessageOutlined style={{ fontSize: '24px' }} />
+        <MessageOutlined 
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontSize: '24px', 
+            fontWeight: 'normal', 
+            letterSpacing: 'normal', 
+            color: 'white', 
+            margin: 0, 
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        />
       }
       size="large"
       style={{
-        padding: "10px",
-        position: "fixed",
-        bottom: "50px",
-        right: "20px",
-        width: "60px",
-        height: "60px",
-        borderRadius: "50%",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-        color: "white",
-        zIndex: 1000
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'fixed',
+        bottom: '50px',
+        right: '20px',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+        zIndex: 1000,
       }}
       onClick={onClick}
     />

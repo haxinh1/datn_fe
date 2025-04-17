@@ -61,6 +61,12 @@
     gap: 10px;
 }
 
+.points {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .group1 {
     display: flex;
     gap: 10px;
@@ -115,4 +121,5 @@
     width: 600px;
     margin: 0 auto 16px;
     display: block;
+    margin-top: 16px;
 }

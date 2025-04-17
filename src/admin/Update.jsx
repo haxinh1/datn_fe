@@ -9,16 +9,15 @@ const Update = () => {
   const { id } = useParams();
   const [form] = Form.useForm();
   const [user, setUser] = useState(null);
-  const navigate = useNavigate()
-  const [image, setImage] = useState("");
+  const navigate = useNavigate();
+  const [image, setImage] = useState(null); // Đổi từ "" thành null để nhất quán với logic
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = await AuthServices.getAUser(id); // Gọi API để lấy dữ liệu người dùng
-        setUser(userData);  // Lưu dữ liệu vào state
+        const userData = await AuthServices.getAUser(id);
+        setUser(userData);
 
-        // Chuyển đổi ảnh cũ thành file list để hiển thị
         if (userData.avatar) {
           const fileList = await convertImagesToFileList([userData.avatar]);
           setImage(fileList[0]);
@@ -48,14 +47,28 @@ const Update = () => {
       const userData = {
         ...values,
         avatar: image ? image.url : values.avatar || null,
-        gender: values.gender || null,  // Xử lý trường gender nếu không có giá trị
-        birthday: values.birthday ? dayjs(values.birthday).format('YYYY-MM-DD') : null,// Xử lý trường birthday nếu không có giá trị
+        gender: values.gender || null,
+        birthday: values.birthday ? dayjs(values.birthday).format('YYYY-MM-DD') : null,
       };
-      const response = await AuthServices.update(id, userData); // Gọi service update
+      const response = await AuthServices.update(id, userData);
+
+      // Cập nhật localStorage
+      const updatedUser = {
+        ...JSON.parse(localStorage.getItem("user")),
+        fullname: response.fullname,
+        phone_number: response.phone_number,
+        email: response.email,
+        avatar: response.avatar,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      // Phát sự kiện user-updated
+      window.dispatchEvent(new Event("user-updated"));
+
       notification.success({
         message: "Cập nhật tài khoản thành công!",
       });
-      navigate("/admin/list-pr")
+      navigate("/admin/list-pr");
       console.log("Dữ liệu đã cập nhật:", response);
     } catch (error) {
       console.error("Lỗi khi cập nhật:", error);
@@ -66,21 +79,12 @@ const Update = () => {
     }
   };
 
-  const onHandleChange = (info) => {
-    let fileList = [...info.fileList];
-
-    // Nếu ảnh mới được upload thành công, cập nhật `thumbnail`
-    if (info.file.status === "done" && info.file.response) {
-      fileList = fileList.map((file) => ({
-        uid: file.uid,
-        name: file.name,
-        status: "done",
-        url: file.response.secure_url, // Lấy URL từ response Cloudinary
-      }));
+  const onHandleChange = ({ fileList }) => {
+    fileList = fileList.slice(-1); // Chỉ giữ một ảnh
+    if (fileList.length > 0 && fileList[0].status === "done" && fileList[0].response) {
+      fileList[0].url = fileList[0].response.secure_url;
     }
-
-    // Cập nhật state
-    setImage(fileList.length > 0 ? fileList[0] : null);
+    setImage(fileList[0] || null);
   };
 
   const urlToFile = async (url, filename) => {
@@ -90,19 +94,18 @@ const Update = () => {
   };
 
   const convertImagesToFileList = async (imageUrls) => {
-    const fileList = await Promise.all(
+    return Promise.all(
       imageUrls.map(async (url, index) => {
         const file = await urlToFile(url, `image-${index}.jpg`);
         return {
           uid: `img-${index}`,
           name: file.name,
           status: "done",
-          url, // Giữ lại URL để hiển thị
-          originFileObj: file, // Chuyển đổi thành File object
+          url,
+          originFileObj: file,
         };
       })
     );
-    return fileList;
   };
 
   return (
@@ -146,7 +149,7 @@ const Update = () => {
                 listType="picture-card"
                 action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                 data={{ upload_preset: "quangOsuy" }}
-                fileList={image ? [image] : []} // ✅ Hiển thị ảnh đã tải lên
+                fileList={image ? [image] : []}
                 onChange={onHandleChange}
                 onRemove={() => setImage(null)}
               >
@@ -177,7 +180,8 @@ const Update = () => {
             <Row gutter={24}>
               <Col span={12}>
                 <Form.Item
-                  name="gender" label="Giới tính"
+                  name="gender"
+                  label="Giới tính"
                   rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
                 >
                   <Select className="input-item" placeholder="Chọn giới tính">
@@ -190,10 +194,15 @@ const Update = () => {
 
               <Col span={12}>
                 <Form.Item
-                  name="birthday" label="Ngày sinh"
+                  name="birthday"
+                  label="Ngày sinh"
                   rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
                 >
-                  <DatePicker className="input-item" format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
+                  <DatePicker
+                    className="input-item"
+                    format="DD/MM/YYYY"
+                    placeholder="DD/MM/YYYY"
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -201,7 +210,7 @@ const Update = () => {
         </Row>
 
         <div className="add">
-          <Button type="primary" htmlType="submit" className='btn-item'>
+          <Button type="primary" htmlType="submit" className="btn-item">
             Cập nhật
           </Button>
         </div>

@@ -38,6 +38,11 @@ const updateUser = async (id, payload) => {
   return response.data;
 };
 
+const getPointByUser = async (id) => {
+  const response = await instance.get(`/user/points/${id}`);
+  return response.data;
+};
+
 // nhật ký hoạt động của nhân viên
 const getModifiedById = async (id) => {
   const response = await instance.get(`/orders/modified-by/${id}`);
@@ -101,6 +106,11 @@ const verify = async (payload) => {
   const response = await instance.post("/verify-email", payload);
   return response.data;
 };
+
+const resend = async (payload) => {
+  const response = await instance.post("/resend-code", payload);
+  return response.data;
+}
 
 const login = async (phone_number, password) => {
   const response = await instance.post("/login", {
@@ -272,11 +282,13 @@ export const AuthServices = {
   searchUsers,
   updateUser,
   getAUser,
+  getPointByUser,
   register,
   verify,
   getModifiedById,
   login,
   forget,
+  resend,
   update,
   reset,
   changePassword,

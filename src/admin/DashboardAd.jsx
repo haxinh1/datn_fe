@@ -1,450 +1,525 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { statisticServices } from "../services/statisticServices"; // Giả sử dịch vụ được import từ đây
+import { Card, Table, Row, Col, Avatar, DatePicker, Skeleton, Image } from "antd";
+import { UserOutlined, DatabaseOutlined, CalendarOutlined } from "@ant-design/icons";
+import { statisticServices } from "../services/statisticServices";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
+import moment from "moment";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+// Đăng ký các thành phần của ChartJS
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// Đăng ký các thành phần của chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+const { MonthPicker, YearPicker } = DatePicker;
 
 const Dashboard = () => {
-  // Các state để lưu trữ dữ liệu khi lấy từ API
+  // Khởi tạo state cho dữ liệu biểu đồ
   const [expensesData, setExpensesData] = useState({
     datasets: [],
     labels: [],
   });
+  // State cho các danh sách dữ liệu
   const [topUsers, setTopUsers] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [orderStatistics, setOrderStatistics] = useState([]);
   const [revenueStatistics, setRevenueStatistics] = useState({});
   const [topRevenueDays, setTopRevenueDays] = useState([]);
-  const [topView, setTopView] = useState([]); // Top sản phẩm mua và xem nhiều nhất
-  const [topBuy, setTopBuy] = useState([]); // Top sản phẩm mua và xem nhiều nhất
-  const [revenueByDay, setRevenueByDay] = useState([]); // Doanh thu theo ngày
+  const [topView, setTopView] = useState([]);
+  const [topBuy, setTopBuy] = useState([]);
+  const [revenueByDay, setRevenueByDay] = useState([]);
+  // State cho bộ lọc ngày, tháng, năm (mặc định là hiện tại)
+  const [selectedDate, setSelectedDate] = useState(moment()); // Ngày hiện tại
+  const [selectedMonth, setSelectedMonth] = useState(moment()); // Tháng hiện tại
+  const [selectedYear, setSelectedYear] = useState(moment()); // Năm hiện tại
+  // State cho doanh thu theo ngày, tháng, năm
+  const [filteredRevenueDay, setFilteredRevenueDay] = useState(0);
+  const [filteredRevenueMonth, setFilteredRevenueMonth] = useState(0);
+  const [filteredRevenueYear, setFilteredRevenueYear] = useState(0);
+  // State cho trạng thái tải dữ liệu
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(""); // Tìm kiếm người dùng
 
-  // Hàm gọi API khi component mount (khi trang được tải lần đầu)
+  // Hàm lấy dữ liệu thống kê doanh thu và cập nhật biểu đồ
   useEffect(() => {
-    // Hàm gọi API cho doanh thu theo ngày
     const fetchRevenueStatistics = async () => {
-      try {
-        const data = await statisticServices.fetchRevenueStatistics();
-        console.log("Dữ liệu biểu đồ hoàn hủy:", data); // Log data for debugging
+      const data = await statisticServices.fetchRevenueStatistics();
+      console.log("Dữ liệu thô từ API:", data);
 
-        // Trích xuất các ngày từ data.statistics
-        const labels = data.statistics.map((item) => item.date);
-        // Chuyển đổi các giá trị thành số
-        const cancelledOrders = data.statistics.map(
-          (item) => Number(item.cancelled_orders) || 0
-        ); // Chuyển chuỗi thành số
-        const returnedOrders = data.statistics.map(
-          (item) => Number(item.returned_orders) || 0
-        ); // Chuyển chuỗi thành số
+      const labels = data.statistics.map((item) => item.date);
+      const cancelledOrders = data.statistics.map((item) => {
+        const value = Number(item.cancelled_orders);
+        return isNaN(value) ? 0 : Math.floor(value);
+      });
+      const returnedOrders = data.statistics.map((item) => {
+        const value = Number(item.returned_orders);
+        return isNaN(value) ? 0 : Math.floor(value);
+      });
 
-        setExpensesData({
-          labels: labels, // Chỉ lấy ngày làm labels
-          datasets: [
-            {
-              label: "Hoàn",
-              data: returnedOrders, // Dữ liệu cho Hoàn
-              borderColor: "green",
-              backgroundColor: "rgba(8, 164, 187, 0.1)",
-              fill: true,
-            },
-            {
-              label: "Hủy",
-              data: cancelledOrders, // Dữ liệu cho Hủy
-              borderColor: "blue",
-              backgroundColor: "rgba(169, 169, 169, 0.1)",
-              fill: true,
-            },
-          ],
-          options: {
-            responsive: true,
-            scales: {
-              x: {
-                type: "category", // Trục x sẽ là các giá trị kiểu danh mục (ngày tháng)
-                position: "bottom", // Đảm bảo trục x ở phía dưới
-                reverse: false, // Thứ tự sẽ đi từ trái sang phải
-              },
-              y: {
-                beginAtZero: true, // Bắt đầu từ 0 cho trục y
-                position: "right", // Đặt trục y ở bên phải
-                reverse: false, // Không đảo ngược trục y, giữ trục y đúng cách
-              },
-            },
+      console.log("Labels:", labels);
+      console.log("Cancelled Orders:", cancelledOrders);
+      console.log("Returned Orders:", returnedOrders);
+
+      setExpensesData({
+        labels,
+        datasets: [
+          {
+            label: "Hoàn",
+            data: returnedOrders,
+            borderColor: "green",
+            fill: true,
           },
-        });
-
-        setRevenueStatistics(data); // Lưu dữ liệu doanh thu
-      } catch (error) {
-        console.error("Error fetching revenue statistics:", error);
-      }
+          {
+            label: "Hủy",
+            data: cancelledOrders,
+            borderColor: "blue",
+            fill: true,
+          },
+        ],
+      });
+      setRevenueStatistics(data);
     };
 
-    // Hàm gọi API cho top người dùng mua nhiều nhất
-    const fetchTopUsers = async () => {
-      try {
-        const data = await statisticServices.fetchTopUserBought();
-        console.log("Top người dùng:", data); // Log data for debugging
-        setTopUsers(data.datas || []); // Giả sử data là danh sách người dùng
-      } catch (error) {
-        console.error("Error fetching top users:", error);
-      }
-    };
-
-    // Hàm gọi API cho top sản phẩm bán chạy
-    const fetchTopProducts = async () => {
-      try {
-        const data = await statisticServices.fetchTopProductBought();
-        console.log("Top sản phẩm:", data); // Log data for debugging
-        setTopProducts(data.datas || []); // Giả sử data là danh sách sản phẩm
-      } catch (error) {
-        console.error("Error fetching top products:", error);
-      }
-    };
-
-    // Hàm gọi API cho thống kê trạng thái đơn hàng
-    const fetchOrderStatistics = async () => {
-      try {
-        const data = await statisticServices.fetchOrderStatistics();
-        console.log("Tổng đơn:", data); // Log data for debugging
-        setOrderStatistics(data.orderStats || []); // Giả sử data là thống kê trạng thái đơn hàng
-      } catch (error) {
-        console.error("Error fetching order statistics:", error);
-      }
-    };
-
-    // Hàm gọi API cho top doanh thu theo ngày
-    const fetchTopRevenueDays = async () => {
-      try {
-        const data = await statisticServices.fetchTopRevenueDays();
-        console.log("Top doanh thu theo ngày:", data); // Log data for debugging
-        setTopRevenueDays(data.topDays || []); // Giả sử data là top doanh thu theo ngày
-      } catch (error) {
-        console.error("Error fetching top revenue days:", error);
-      }
-    };
-
-    // Hàm gọi API cho top sản phẩm mua và xem nhiều nhất
-    const fetchTopBuyView = async () => {
-      try {
-        const data = await statisticServices.fetchTopBuyView();
-        console.log("Top sản phẩm mua và xem nhiều nhất:", data); // Log data for debugging
-
-        // Lưu cả dataBuy và dataView vào state
-        setTopBuy(data.dataBuy || []); // Giả sử dataBuy chứa top sản phẩm mua
-        setTopView(data.dataView || []); // Giả sử dataView chứa top sản phẩm xem nhiều
-      } catch (error) {
-        console.error("Error fetching top buy view:", error);
-      }
-    };
-
-    // Hàm gọi API cho doanh thu theo ngày
-    const fetchRevenueByDay = async () => {
-      try {
-        const data = await statisticServices.fetchRevenue();
-        console.log("Doanh thu theo ngày:", data); // Log data for debugging
-        setRevenueByDay(data.revenue || []); // Lưu doanh thu theo ngày
-      } catch (error) {
-        console.error("Error fetching revenue by day:", error);
-      }
-    };
-
-    // Gọi tất cả các hàm fetch dữ liệu
-    const fetchData = async () => {
+    // Hàm lấy toàn bộ dữ liệu từ API
+    const fetchAll = async () => {
       await fetchRevenueStatistics();
-      await fetchTopUsers();
-      await fetchTopProducts();
-      await fetchOrderStatistics();
-      await fetchTopRevenueDays();
-      await fetchTopBuyView();
-      await fetchRevenueByDay();
+      const [topU, topP, orderS, topR, buyView, revDay] = await Promise.all([
+        statisticServices.fetchTopUserBought(),
+        statisticServices.fetchTopProductBought(),
+        statisticServices.fetchOrderStatistics(),
+        statisticServices.fetchTopRevenueDays(),
+        statisticServices.fetchTopBuyView(),
+        statisticServices.fetchRevenue(),
+      ]);
+      setTopUsers(topU.datas || []);
+      setTopProducts(topP.datas || []);
+      setOrderStatistics(orderS.orderStats || []);
+      setTopRevenueDays(topR.topDays || []);
+      setTopBuy(buyView.dataBuy || []);
+      setTopView(buyView.dataView || []);
+      setRevenueByDay(revDay.revenue || []);
+
+      // Tính toán doanh thu cho ngày, tháng, năm hiện tại
+      updateRevenueDay(revDay.revenue, moment());
+      updateRevenueMonth(revDay.revenue, moment());
+      updateRevenueYear(revDay.revenue, moment());
+
       setLoading(false);
     };
 
-    fetchData(); // Gọi hàm fetch dữ liệu
-  }, []); // Mảng phụ thuộc rỗng đảm bảo hàm chỉ chạy một lần khi component mount
+    fetchAll();
+  }, []);
 
-  const handleSearch = (event) => {
-    setSearch(event.target.value); // Cập nhật giá trị tìm kiếm người dùng
+  // Hàm tính doanh thu theo ngày
+  const updateRevenueDay = (revenueData, date) => {
+    if (!date || !revenueData) return;
+    const formattedDate = date.format("YYYY-MM-DD");
+    const dayRevenue = revenueData
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+        const formattedItemDate = itemDate.toISOString().split("T")[0];
+        return formattedItemDate === formattedDate;
+      })
+      .reduce((sum, item) => sum + Number(item.revenue), 0);
+    setFilteredRevenueDay(dayRevenue);
   };
 
-  if (loading) {
-    return <div>Loading...</div>; // Hiển thị khi dữ liệu đang được tải
-  }
+  // Hàm tính doanh thu theo tháng
+  const updateRevenueMonth = (revenueData, month) => {
+    if (!month || !revenueData) return;
+    const currentMonth = month.month() + 1;
+    const currentYearForMonth = month.year();
+    const monthRevenue = revenueData
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+        return (
+          itemDate.getMonth() + 1 === currentMonth &&
+          itemDate.getFullYear() === currentYearForMonth
+        );
+      })
+      .reduce((sum, item) => sum + Number(item.revenue), 0);
+    setFilteredRevenueMonth(monthRevenue);
+  };
+
+  // Hàm tính doanh thu theo năm
+  const updateRevenueYear = (revenueData, year) => {
+    if (!year || !revenueData) return;
+    const currentYear = year.year();
+    const yearRevenue = revenueData
+      .filter((item) => new Date(item.date).getFullYear() === currentYear)
+      .reduce((sum, item) => sum + Number(item.revenue), 0);
+    setFilteredRevenueYear(yearRevenue);
+  };
+
+  // Xử lý khi thay đổi ngày
+  const handleDateChange = (date) => {
+    if (date) {
+      setSelectedDate(date);
+      updateRevenueDay(revenueByDay, date);
+    }
+  };
+
+  // Xử lý khi thay đổi tháng
+  const handleMonthChange = (month) => {
+    if (month) {
+      setSelectedMonth(month);
+      updateRevenueMonth(revenueByDay, month);
+    }
+  };
+
+  // Xử lý khi thay đổi năm
+  const handleYearChange = (year) => {
+    if (year) {
+      setSelectedYear(year);
+      updateRevenueYear(revenueByDay, year);
+    }
+  };
+
+  // Hàm định dạng ngày
+  const formatDate = (str) => new Date(str).toLocaleDateString("en-GB");
+
+  // Hàm định dạng giá tiền
+  const formatPrice = (price) => {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
+  // Cấu hình biểu đồ
+  const chartOptions = {
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => Math.floor(value),
+          stepSize: 1, // Khoảng cách giữa các giá trị trên trục Y
+        },
+        suggestedMax: 5, // Đặt giá trị tối đa gợi ý
+        max: (context) => {
+          const chart = context.chart;
+          const datasets = chart.data.datasets;
+          const maxDataValue = Math.max(
+            ...datasets.flatMap((dataset) => dataset.data)
+          );
+          return Math.max(Math.ceil(maxDataValue) + 1, 5); // Đảm bảo trục Y ít nhất đến 5
+        },
+      },
+      x: {
+        title: {
+          display: true,
+          font: {
+            size: 14,
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) =>
+            `${context.dataset.label}: ${Math.floor(context.raw)} đơn`,
+        },
+      },
+    },
+  };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "20px",
-          marginBottom: "20px",
-        }}
-      >
-        {/* Card for Total Users and Sessions */}
-        <div
-          style={{
-            background: "#f5f5f5",
-            padding: "30px",
-            borderRadius: "8px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            height: "350px",
-          }}
-        >
-          <div
-            style={{
-              border: "1px solid #007bff",
-              marginBottom: "10px",
-              padding: "15px",
-              borderRadius: "8px",
-              fontSize: "18px",
-              background: "#ffffff",
-            }}
-          >
-            <h2 style={{ fontSize: "24px" }}>Doanh thu</h2>
-            {/* Phần cuộn với max-height */}
-            <div
-              style={{
-                maxHeight: "120px", // Giới hạn chiều cao
-                overflowY: "auto", // Tạo thanh cuộn dọc khi nội dung dài hơn
-                height: "120px", // Đảm bảo chiều cao cố định
-              }}
-            >
-              <ul>
-                {revenueByDay.length ? (
-                  revenueByDay
-                    .slice(0, 3) // Hiển thị 3 mục đầu tiên
-                    .map((data, index) => {
-                      // Chuyển đổi date thành chỉ có ngày, tháng, năm
-                      const date = new Date(data.date); // Chuyển chuỗi thành đối tượng Date
-                      const formattedDate = date.toLocaleDateString("en-GB"); // Định dạng dd/mm/yyyy
-                      return (
-                        <li key={index}>
-                          {formattedDate} + {data.revenue} VNĐ
-                        </li>
-                      );
-                    })
-                ) : (
-                  <li>No data available</li>
-                )}
-              </ul>
-            </div>
-          </div>
+    <div>
+      {/* CSS tùy chỉnh cho DatePicker và bảng */}
+      <style>
+        {`
+          .custom-date-picker .ant-picker-input input {
+            visibility: hidden !important;
+            width: 0 !important;
+          }
+          .custom-date-picker .ant-picker-suffix {
+            margin: 0 !important;
+          }
+          .custom-date-picker .ant-picker-input {
+            width: 24px !important;
+          }
+          .ant-table-thead > tr > th {
+            background-color: #f0f2f5 !important;
+            font-weight: bold;
+          }
+          .ant-table-tbody > tr > td {
+            text-align: center !important;
+          }
+          .combined-column {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .revenue-card {
+            border-left: 4px solid #1890ff !important;
+            border-top: 1px solid #000 !important;
+            border-right: 1px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+          }
+        `}
+      </style>
 
-          <div
-            style={{
-              background: "#ffffff",
-              padding: "15px",
-              borderRadius: "8px",
-              fontSize: "18px",
-            }}
-          >
-            <h2 style={{ fontSize: "24px" }}>Top doanh thu</h2>
-            <ul>
-              {topRevenueDays.length ? (
-                topRevenueDays.map((data, index) => {
-                  const date = new Date(data.date);
-                  const formattedDate = date.toLocaleDateString("en-GB"); // Định dạng dd/mm/yyyy
-                  return (
-                    <li key={index}>
-                      {formattedDate} {""}
-                      {data.total_revenue} VNĐ
-                    </li>
-                  );
-                })
-              ) : (
-                <li>No data available</li>
-              )}
-            </ul>
-          </div>
-        </div>
+      <h1 className="mb-5">
+        <DatabaseOutlined style={{ marginRight: "8px" }} />
+        Tổng hợp thống kê
+      </h1>
 
-        <div
-          style={{
-            background: "#f5f5f5",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3 style={{ fontSize: "22px" }}>
-            Top 10 sản phẩm bán ra nhiều nhất
-          </h3>
-          <ul>
-            {topProducts.map((product, index) => (
-              <li key={index}>
-                {product.name} - {product.quantity}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Phần doanh thu */}
+      <Row gutter={24} style={{ marginBottom: "20px" }}>
+        <Col span={24}>
+          <Card>
+            <h1 className="mb-5">Doanh thu</h1>
+            <Row gutter={24}>
+              {/* Doanh thu theo ngày */}
+              <Col span={8}>
+                <Card bordered={false} className="revenue-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <h3>Doanh thu ngày</h3>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={handleDateChange}
+                      className="custom-date-picker"
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      placeholder=""
+                      bordered={false}
+                    />
+                  </div>
+                  <span className="w-warning">
+                    {filteredRevenueDay > 0
+                      ? `${formatPrice(filteredRevenueDay)} VNĐ`
+                      : "Chưa có dữ liệu"}
+                  </span>
+                </Card>
+              </Col>
+              {/* Doanh thu theo tháng */}
+              <Col span={8}>
+                <Card bordered={false} className="revenue-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <h3>Doanh thu tháng</h3>
+                    <MonthPicker
+                      value={selectedMonth}
+                      onChange={handleMonthChange}
+                      className="custom-date-picker"
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      placeholder=""
+                      bordered={false}
+                      format="MM/YYYY"
+                    />
+                  </div>
+                  <span className="w-warning">
+                    {filteredRevenueMonth > 0
+                      ? `${formatPrice(filteredRevenueMonth)} VNĐ`
+                      : "Chưa có dữ liệu"}
+                  </span>
+                </Card>
+              </Col>
+              {/* Doanh thu theo năm */}
+              <Col span={8}>
+                <Card bordered={false} className="revenue-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <h3>Doanh thu năm</h3>
+                    <YearPicker
+                      value={selectedYear}
+                      onChange={handleYearChange}
+                      className="custom-date-picker"
+                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      placeholder=""
+                      bordered={false}
+                      format="YYYY"
+                    />
+                  </div>
+                  <span className="w-warning">
+                    {filteredRevenueYear > 0
+                      ? `${formatPrice(filteredRevenueYear)} VNĐ`
+                      : "Chưa có dữ liệu"}
+                  </span>
+                </Card>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
 
-        <div
-          style={{
-            background: "#f5f5f5",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3 style={{ fontSize: "22px" }}>Tổng trạng thái theo đơn</h3>
-          <ul>
-            {orderStatistics.length ? (
-              orderStatistics.map((status, index) => (
-                <li key={index}>
-                  {status.status_name}: {status.total_orders} orders
-                </li>
-              ))
-            ) : (
-              <li>No data available</li>
-            )}
-          </ul>
-        </div>
-      </div>
+      {/* Phần khách hàng, sản phẩm, đơn hàng */}
+      <Row gutter={24}>
+        {/* Bảng khách hàng */}
+        <Col span={8}>
+          <Card style={{ marginBottom: "20px" }}>
+            <h1 className="mb-5 text-blue-600">Khách hàng</h1>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
-        <div
-          style={{
-            width: "60%",
-            background: "#f5f5f5",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3 style={{ fontSize: "22px" }}>Biểu đồ hoàn hủy</h3>
-          <Line data={expensesData} />
-        </div>
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={topUsers.map((user, index) => ({
+                  key: index,
+                  fullname: user.fullname,
+                  total_quantity: user.total_quantity,
+                  avatar: user.avatar,
+                }))}
+                columns={[
+                  {
+                    title: "Khách hàng",
+                    key: "fullname",
+                    align: "center",
+                    render: (record) => (
+                      <div className="combined-column">
+                        <Avatar src={record.avatar} size="large" />
+                        <span>{record.fullname}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: "Số lượng đã mua",
+                    dataIndex: "total_quantity",
+                    key: "total_quantity",
+                    align: "center",
+                    sorter: (a, b) => a.total_quantity - b.total_quantity,
+                  },
+                ]}
+              />
+            </Skeleton>
+          </Card>
+        </Col>
 
-        <div
-          style={{
-            width: "35%",
-            background: "#f5f5f5",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3 style={{ fontSize: "22px" }}>Top 10 người dùng tiêu biểu</h3>
-          <ul>
-            {topUsers.length ? (
-              topUsers.map((data, index) => (
-                <li key={index}>
-                  {data.avatar} {data.fullname} {data.total_quantity}
-                </li>
-              ))
-            ) : (
-              <li>No data available</li>
-            )}
-          </ul>
-        </div>
-      </div>
+        {/* Bảng sản phẩm */}
+        <Col span={8}>
+          <Card style={{ marginBottom: "20px" }}>
+            <h1 className="mb-5 text-blue-600">
+              Top 10 sản phẩm bán chạy nhất
+            </h1>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
-        {/* <h3>Users</h3>
-        <input
-          type="text"
-          placeholder="Search users"
-          value={search}
-          onChange={handleSearch}
-          style={{ padding: "8px", fontSize: "14px" }}
-        /> */}
-      </div>
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={topProducts.map((item, index) => ({
+                  key: index,
+                  thumbnail: item.thumbnail,
+                  name: item.name,
+                  quantity: item.quantity,
+                }))}
+                columns={[
+                  {
+                    title: "Sản phẩm",
+                    key: "name",
+                    align: "center",
+                    render: (record) => (
+                      <div className="combined-column">
+                        <Image src={record.thumbnail} width={60} />
+                        <span>{record.name}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: "Số lượng",
+                    dataIndex: "quantity",
+                    key: "quantity",
+                    align: "center",
+                    sorter: (a, b) => a.quantity - b.quantity,
+                  },
+                ]}
+              />
+            </Skeleton>
+          </Card>
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <table style={{ width: "48%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f0f0f0" }}>
-              <th style={{ padding: "10px", textAlign: "left" }}>
-                Tên sản phẩm
-              </th>
-              <th style={{ padding: "10px", textAlign: "left" }}>Lượt mua</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topBuy.length ? (
-              topBuy.map((buyItem, index) => (
-                <tr key={index} style={{ borderBottom: "1px solid #ccc" }}>
-                  <td style={{ padding: "10px" }}>{buyItem.name}</td>
-                  <td style={{ padding: "10px" }}>{buyItem.total_sold}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="3"
-                  style={{ textAlign: "center", padding: "10px" }}
-                >
-                  No data available for purchases
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          {/* Bảng lượt xem */}
+          <Card style={{ marginBottom: "20px" }}>
+            <h1 className="mb-5 text-blue-600">Top 10 lượt xem nhiều nhất</h1>
 
-        <table style={{ width: "48%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f0f0f0" }}>
-              <th style={{ padding: "10px", textAlign: "left" }}>
-                Tên sản phẩm
-              </th>
-              <th style={{ padding: "10px", textAlign: "left" }}>Lượt xem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topView.length ? (
-              topView.map((viewItem, index) => (
-                <tr key={index} style={{ borderBottom: "1px solid #ccc" }}>
-                  <td style={{ padding: "10px" }}>{viewItem.name}</td>
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                dataSource={topView}
+                rowKey="name"
+                pagination={false}
+                bordered
+                columns={[
+                  {
+                    title: "Sản phẩm",
+                    dataIndex: "name",
+                    align: "center",
+                    render: (_, record) => (
+                      <div className="combined-column">
+                        <Image src={record.thumbnail} width={60} />
+                        <span>{record.name}</span>
+                    </div>
+                    ),
+                  },                  
+                  {
+                    title: "Lượt xem",
+                    dataIndex: "views",
+                    align: "center",
+                    sorter: (a, b) => a.views - b.views,
+                  },
+                ]}
+              />
+            </Skeleton>
+          </Card>
+        </Col>
 
-                  {/* No purchase data in topView */}
-                  <td style={{ padding: "10px" }}>{viewItem.views}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="3"
-                  style={{ textAlign: "center", padding: "10px" }}
-                >
-                  No data available for views
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+        {/* Bảng đơn hàng */}
+        <Col span={8}>
+          <Card style={{ marginBottom: "20px" }}>
+            <h1 className="mb-5 text-blue-600">Đơn hàng</h1>
+
+            <Skeleton loading={loading} active>
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                dataSource={orderStatistics}
+                columns={[
+                  {
+                    title: "Trạng thái",
+                    dataIndex: "status_name",
+                    key: "status_name",
+                    align: "center",
+                  },
+                  {
+                    title: "Số lượng đơn",
+                    dataIndex: "total_orders",
+                    key: "total_orders",
+                    align: "center",
+                    sorter: (a, b) => a.total_orders - b.total_orders,
+                  },
+                ]}
+              />
+            </Skeleton>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Biểu đồ hoàn hủy */}
+      <Card>
+        <h1 className="mb-5">Biểu đồ hoàn hủy</h1>
+        <Line data={expensesData} options={chartOptions} />
+      </Card>
     </div>
   );
 };

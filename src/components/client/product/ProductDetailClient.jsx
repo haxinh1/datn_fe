@@ -140,7 +140,7 @@ const ProductDetailClient = () => {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const itemToAdd = {
-      user_id: user?.id || null, // 0 nếu chưa đăng nhập
+      user_id: user?.id || null, 
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
@@ -295,7 +295,7 @@ const ProductDetailClient = () => {
                         href="#product-review-link"
                         id="review-link"
                       >
-                        ({avgRate.total})
+                        ({avgRate.total}) Đánh giá
                       </a>
                     </div>
                   )}

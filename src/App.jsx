@@ -23,7 +23,6 @@ import Cart from "./pages/Cart";
 import Thankyoupage from "./pages/Thankyou";
 import Order from "./admin/Order";
 import Checkout from "./pages/Checkout";
-import Payments from "./pages/Payments";
 import LoginCl from "./pages/LoginCl";
 import ListProduct from "./pages/ListProduct";
 import Inbox from "./admin/Inbox";
@@ -54,6 +53,9 @@ import BackCl from "./pages/BackCl";
 import DashboardAd from "./admin/DashboardAd";
 import GoogleCallbackHandler from "./pages/GoogleCallbackHandler";
 import OrderStaff from "./admin/OrderStaff";
+import Cate from "./pages/Cate";
+import DetailCate from "./pages/DetailCate";
+import RoleRouter from "./admin/RoleRouter";
 
 function App() {
   return (
@@ -69,8 +71,9 @@ function App() {
           <Route path="forget" element={<Forget />} />
           <Route path="reset/:token" element={<Reset />} />
           <Route path="checkout" element={<Checkout />} />
-          <Route path="payments" element={<Payments />} />
           <Route path="logincl" element={<LoginCl />} />
+          <Route path="cate" element={<Cate />} />
+          <Route path="detailcate/:id" element={<DetailCate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
           <Route path="product-review" element={<ProductReview />} />
@@ -102,9 +105,17 @@ function App() {
         <Route path="/resetad/:token" element={<ResetAd />} />
 
         {/* Các trang cần đăng nhập */}
-        {/* <Route element={<PrivateRoute />}> */}
+        <Route element={<PrivateRoute />}>
           <Route path="/admin" element={<LayoutAdmin />}>
-            <Route path="dashboardad" element={<DashboardAd />} />
+          
+            <Route element={<RoleRouter allowedRoles={["admin"]} />}>
+              <Route path="dashboardad" element={<DashboardAd />} />
+              <Route path="account" element={<Account />} />
+              <Route path="order" element={<Order />} />
+              <Route path="staff/:id" element={<Staff />} />
+            </Route>
+
+            {/* Các route không phân quyền hoặc phân quyền khác */}
             <Route path="list-pr" element={<List />} />
             <Route path="detailad/:id" element={<ProductDetail />} />
             <Route path="add-pr" element={<Add />} />
@@ -114,12 +125,9 @@ function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="history" element={<History />} />
             <Route path="brand" element={<Brand />} />
-            <Route path="account" element={<Account />} />
-            <Route path="staff/:id" element={<Staff />} />
             <Route path="customer" element={<Customer />} />
             <Route path="user/:id" element={<User />} />
             <Route path="test" element={<Test />} />
-            <Route path="order" element={<Order />} />
             <Route path="orderstaff" element={<OrderStaff />} />
             <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />
@@ -129,7 +137,7 @@ function App() {
             <Route path="change/:id" element={<Change />} />
             <Route path="comment" element={<Comment />} />
           </Route>
-        {/* </Route> */}
+        </Route>
       </Routes>
     </>
   );

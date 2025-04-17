@@ -5,6 +5,11 @@ const fetchProducts = async () => {
     return response.data; // Trả về data từ BE
 };
 
+const productByCategory = async (categoryId) => {
+    const response = await instance.get(`/product-by-category/${categoryId}`);    
+    return response.data; 
+}
+
 const fetchProductById = async (id) => {
     const response = await instance.get(`/product-detail/${id}`);
     return response.data;
@@ -72,10 +77,16 @@ const fetchProductRecommendById = async (id) => {
         console.log(error)
     }
 }
+// xuất excel
+const importExcel = async (formData) => {
+    const response = await instance.post('/import-stock', formData);
+    return response.data;
+}
 
 // Xuất các hàm để dùng trong các component
 export const productsServices = {
     fetchProducts,
+    productByCategory,
     fetchProductById,
     createProduct,
     updateProduct,
@@ -85,5 +96,5 @@ export const productsServices = {
     confirm,
     exportExcel,
     fetchProductRecommendById,
-    
+    importExcel,
 };

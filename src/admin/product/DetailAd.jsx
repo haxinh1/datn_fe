@@ -215,6 +215,7 @@ const ProductDetail = () => {
         "Không có danh mục",
     },
     { key: "views", label: "Lượt xem:", value: product.views || 0 },
+    { key: "total_sales", label: "Lượt bán:", value: product.total_sales || 0 },
     {
       key: "sell_price",
       label: "Giá bán (VNĐ):",

@@ -1,8 +1,9 @@
-import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image } from 'antd';
+import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
 import { RollbackOutlined, UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
 const Return = () => {
     const { id } = useParams();
@@ -16,6 +17,8 @@ const Return = () => {
     const [form] = Form.useForm();
     const [quantities, setQuantities] = useState({});
     const navigate = useNavigate()
+    const [banks, setBanks] = useState([]);
+    const [image, setImage] = useState("");
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -35,6 +38,18 @@ const Return = () => {
 
         fetchOrderDetails();
     }, [id]);
+
+    useEffect(() => {
+        const fetchBanks = async () => {
+            try {
+                const res = await axios.get("https://api.vietqr.io/v2/banks");
+                setBanks(res.data.data);
+            } catch (err) {
+                console.error("Lỗi khi tải danh sách ngân hàng:", err);
+            }
+        };
+        fetchBanks();
+    }, []);
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -59,7 +74,10 @@ const Return = () => {
     // Hàm xử lý chọn tất cả checkbox
     const handleSelectAllChange = (e) => {
         if (e.target.checked) {
-            setSelectedRowKeys(orderDetails.map((item) => item.product_id));
+            setSelectedRowKeys(orderDetails.map((item) => {
+                const variant = item.variants?.[0];
+                return variant ? `${item.product_id}-${variant.variant_id}` : `p-${item.product_id}`;
+            }));
         } else {
             setSelectedRowKeys([]);
         }
@@ -76,6 +94,17 @@ const Return = () => {
         }
     };
 
+    const onHandleBank = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ bank_qr: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+        } else if (info.file.status === "removed") {
+            setImage(""); // Xóa ảnh khi người dùng xóa
+            form.setFieldsValue({ bank_qr: "" }); // Cập nhật lại giá trị trong form
+        }
+    };
+
     const handleSubmit = async () => {
         if (!selectedRowKeys.length) {
             return notification.error({ message: "Vui lòng chọn ít nhất 1 sản phẩm để trả" });
@@ -86,24 +115,39 @@ const Return = () => {
         const user = JSON.parse(localStorage.getItem("user"));
         const user_id = user?.id || user?.user_id;
 
-        const products = selectedRowKeys.map((product_id) => {
-            const selectedItem = orderDetails.find(item => item.product_id === product_id);
-            return {
-                product_id: selectedItem.product_id,
-                product_variant_id: selectedItem.variants?.[0]?.variant_id || null,
-                quantity: Number(quantities[product_id]) || 1,
-            };
+        const products = selectedRowKeys.map((key) => {
+            if (key.startsWith("p-")) {
+                const product_id = parseInt(key.slice(2), 10);
+                return {
+                    product_id,
+                    product_variant_id: null,
+                    quantity: Number(quantities[key]) || 1,
+                };
+            } else if (key.includes("-")) {
+                const [product_id, variant_id] = key.split("-");
+                return {
+                    product_id: parseInt(product_id, 10),
+                    product_variant_id: parseInt(variant_id, 10),
+                    quantity: Number(quantities[key]) || 1,
+                };
+            }
         });
+
+        // Sử dụng form.getFieldValue để lấy giá trị các trường nhập liệu
+        const bank_account_number = form.getFieldValue('bank_account_number');
+        const bank_name = form.getFieldValue('bank_name');
 
         const payload = {
             user_id,
             reason: reasonToSend,
-            employee_evidence: video,
+            employee_evidence: video, // Video vẫn là string URL
+            bank_account_number: bank_account_number || null, // Lấy giá trị từ form
+            bank_name: bank_name || null, // Lấy giá trị từ form
+            bank_qr: image || null, // Đảm bảo đây là URL của ảnh QR
             products,
         };
 
-        console.log("📦 Payload gửi đi:");
-        console.log(JSON.stringify(payload, null, 2));
+        console.log("📦 Payload gửi đi:", payload); // Log để kiểm tra lại
 
         try {
             await OrderService.returnOrder(id, payload);
@@ -112,7 +156,7 @@ const Return = () => {
                 message: "Thành công",
                 description: "Gửi yêu cầu trả hàng thành công.",
             });
-            
+
             // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
@@ -139,12 +183,16 @@ const Return = () => {
                     onChange={handleSelectAllChange}
                 />
             ),
-            render: (_, record) => (
-                <Checkbox
-                    checked={selectedRowKeys.includes(record.product_id)}
-                    onChange={() => handleSelectChange(record.product_id)}
-                />
-            ),
+            render: (_, record) => {
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                return (
+                    <Checkbox
+                        checked={selectedRowKeys.includes(key)}
+                        onChange={() => handleSelectChange(key)}
+                    />
+                );
+            },
             dataIndex: "select",
             align: 'center'
         },
@@ -178,37 +226,41 @@ const Return = () => {
             title: "Số lượng",
             dataIndex: "quantity",
             align: "center",
-            render: (_, record) => (
-                selectedRowKeys.includes(record.product_id) && (
+            render: (_, record) => {
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                return selectedRowKeys.includes(key) && (
                     <Input
                         type="number"
                         min={1}
                         max={record.quantity}
-                        value={quantities[record.product_id] || ""}
+                        value={quantities[key] || ""}
                         onChange={(e) =>
                             setQuantities({
                                 ...quantities,
-                                [record.product_id]: e.target.value,
+                                [key]: e.target.value,
                             })
                         }
                     />
-                )
-            ),
+                );
+            }
         },
         {
-            title: "Giá bán (VNĐ)",
-            dataIndex: "sell_price",
+            title: "Giá hoàn (VNĐ)",
+            dataIndex: "refund_amount",
             align: "center",
-            render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+            render: (refund_amount) => (refund_amount ? formatPrice(refund_amount) : ""),
         },
         {
             title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
             render: (_, record) => {
-                const quantity = quantities[record.product_id] || 0;
-                return formatPrice(quantity * record.sell_price);
-            },
+                const variant = record.variants?.[0];
+                const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
+                const quantity = quantities[key] || 0;
+                return formatPrice(quantity * record.refund_amount);
+            }
         }
     ];
 
@@ -224,28 +276,39 @@ const Return = () => {
                     columns={detailColumns}
                     dataSource={orderDetails.map((item, index) => ({
                         ...item,
-                        key: index,
+                        key: item.variants?.[0] ? `${item.product_id}-${item.variants[0].variant_id}` : `p-${item.product_id}`,
                         index: index + 1,
                     }))}
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce((sum, item) => {
-                            if (selectedRowKeys.includes(item.product_id)) {
-                                const quantity = quantities[item.product_id] || item.quantity;
-                                return sum + (quantity * item.sell_price);
+                            const variant = item.variants?.[0];
+                            const key = variant ? `${item.product_id}-${variant.variant_id}` : `p-${item.product_id}`;
+
+                            if (selectedRowKeys.includes(key)) {
+                                const quantity = Number(quantities[key]) || 0;
+                                return sum + (quantity * item.refund_amount);
                             }
                             return sum;
                         }, 0);
 
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={5} align="right">
-                                    <strong>Tổng tiền hoàn trả (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={5} align="right">
+                                        <strong>Tổng tiền hoàn trả (VNĐ):</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(totalAmount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={5} align="right">
+                                        <i style={{fontSize: '16px'}}><strong>Giá hoàn</strong> = giá bán * [ 1 - (điểm tiêu dùng + phiếu giảm giá) / tổng tiền hàng ]</i>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />
@@ -313,7 +376,7 @@ const Return = () => {
 
                 <Row gutter={24}>
                     <Col span={4}></Col>
-                    <Col span={16}>
+                    <Col span={12}>
                         {isCustomReason && (
                             <Form.Item label="Nhập lý do trả hàng">
                                 <Input.TextArea
@@ -323,6 +386,70 @@ const Return = () => {
                                 />
                             </Form.Item>
                         )}
+                    </Col>
+                </Row>
+
+                <hr />
+                <h1 className="mb-5" style={{ color: '#eea287' }}>
+                    Thông tin hoàn tiền
+                </h1>
+                <Row gutter={24}>
+                    <Col span={12} className="col-item">
+                        <Form.Item
+                            label="Ngân hàng"
+                            name="bank_name"
+                            rules={[{ required: true, message: "Vui lòng chọn ngân hàng" }]}
+                        >
+                            <Select
+                                className="input-item"
+                                allowClear
+                                showSearch
+                                placeholder="Chọn ngân hàng"
+                                optionFilterProp="label"
+                                filterOption={(input, option) =>
+                                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                {banks.map((bank) => (
+                                    <Select.Option key={bank.code} value={bank.name} label={bank.name}>
+                                        <div className="select-option-item">
+                                            <img src={bank.logo} alt={bank.name} style={{ width: '100px' }} />
+                                            <span>{bank.name}</span>
+                                        </div>
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={6} className="col-item">
+                        <Form.Item
+                            label="Số tài khoản"
+                            name="bank_account_number"
+                            rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                        >
+                            <Input className="input-item" placeholder="Nhập số tài khoản" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={6} className="col-item">
+                        <Form.Item
+                            label="QR ngân hàng (nếu có)"
+                            name="bank_qr"
+                        >
+                            <Upload
+                                listType="picture"
+                                action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                data={{ upload_preset: "quangOsuy" }}
+                                onChange={onHandleBank}
+                            >
+                                {!image && (
+                                    <Button icon={<UploadOutlined />} className="btn-item">
+                                        Tải ảnh lên
+                                    </Button>
+                                )}
+                            </Upload>
+                        </Form.Item>
                     </Col>
                 </Row>
 

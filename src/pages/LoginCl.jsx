@@ -37,16 +37,15 @@ const Logincl = () => {
         const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
         if (localCart.length > 0) {
           const userId = response.user.id;
-          // Duyệt qua từng sản phẩm trong giỏ hàng và đẩy lên database
           for (let item of localCart) {
             await cartServices.addCartItem(item.product_id, item);
           }
-
-          // Sau khi giỏ hàng được đẩy lên DB, xóa giỏ hàng trong localStorage
           localStorage.removeItem("cart_items");
-
           message.success("Giỏ hàng của bạn đã được chuyển lên tài khoản!");
         }
+
+        // Phát ra sự kiện đăng nhập
+        window.dispatchEvent(new Event("user-login"));
 
         navigate("/");
       } else {
@@ -66,20 +65,6 @@ const Logincl = () => {
   };
 
   const handleGoogleLogin = async () => {
-    // try {
-    //   const response = await AuthServices.loginGoogle(); // Gọi API backend để đăng nhập qua Google
-    //   if (response?.token) {
-    //     localStorage.setItem("client_token", response.token);
-    //     localStorage.setItem("client", JSON.stringify(response.user));
-    //     message.success("Đăng nhập Google thành công!");
-    //   }
-    // } catch (error) {
-    //   notification.error({
-    //     message: "Đăng nhập thất bại",
-    //     description:
-    //       error.message || "Không thể đăng nhập bằng Google, vui lòng thử lại!",
-    //   });
-    // }
     window.location.href = "http://127.0.0.1:8000/api/auth/google";
   };
 

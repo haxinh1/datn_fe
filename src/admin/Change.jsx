@@ -6,7 +6,7 @@ import { AuthServices } from '../services/auth';
 
 const Change = () => {
     const { id } = useParams();
-    const [form] = Form.useForm(); 
+    const [form] = Form.useForm();
     const navigate = useNavigate()
 
     // Hàm xử lý khi submit form
@@ -59,7 +59,7 @@ const Change = () => {
                 onFinish={handleSubmit}
             >
                 <Row gutter={24}>
-                    <Col span={8}></Col>
+                    <Col span={6}></Col>
                     <Col span={8}>
                         <Form.Item
                             label="Mật khẩu hiện tại"
@@ -108,14 +108,14 @@ const Change = () => {
                         >
                             <Input.Password className="input-item" />
                         </Form.Item>
+
+                        <div className="add">
+                            <Button type="primary" htmlType="submit" className='btn-item'>
+                                Cập nhật
+                            </Button>
+                        </div>
                     </Col>
                 </Row>
-
-                <div className="add">
-                    <Button type="primary" htmlType="submit" className='btn-item'>
-                        Cập nhật
-                    </Button>
-                </div>
             </Form>
         </div>
     );

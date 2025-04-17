@@ -1,36 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import {
-  Layout,
-  Menu,
-  theme,
-  Modal,
-  Avatar,
-  Button,
-  Tooltip,
-  Dropdown,
-} from "antd";
-import {
-  HomeOutlined,
-  BookOutlined,
-  MessageOutlined,
-  LogoutOutlined,
-  ProductOutlined,
-  ImportOutlined,
-  PrinterOutlined,
-  GroupOutlined,
-  TableOutlined,
-  ProjectOutlined,
-  EditOutlined,
-  SettingOutlined,
-  LockOutlined,
-  BellOutlined,
-  TeamOutlined,
-  CommentOutlined,
-  RollbackOutlined,
-  EyeOutlined,
-  DatabaseOutlined,
-} from "@ant-design/icons";
+import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined, RollbackOutlined, DatabaseOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -40,68 +11,73 @@ const { Content, Header, Footer, Sider } = Layout;
 const LayoutAdmin = () => {
   const nav = useNavigate();
   const [user, setUser] = useState(null);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+
+  const fetchUserInfo = async (userId) => {
+    try {
+      const userInfo = await AuthServices.getAUser(userId);
+      setUser(userInfo);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+    }
+  };
 
   useEffect(() => {
-    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id; // Lấy chỉ id người dùng từ localStorage
+    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
     if (storedUserId) {
-      // Gọi service để lấy thông tin người dùng theo id
-      const fetchUserInfo = async () => {
-        try {
-          const userInfo = await AuthServices.getAUser(storedUserId); // Gọi API để lấy thông tin người dùng
-          setUser(userInfo); // Lưu thông tin người dùng vào state
-        } catch (error) {
-          console.error("Lỗi khi lấy thông tin người dùng:", error);
-        }
-      };
-      fetchUserInfo();
+      fetchUserInfo(storedUserId);
     }
   }, []);
 
+  useEffect(() => {
+    const handleUserUpdated = () => {
+      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+      if (storedUserId) {
+        fetchUserInfo(storedUserId);
+      }
+    };
+
+    window.addEventListener("user-updated", handleUserUpdated);
+
+    return () => {
+      window.removeEventListener("user-updated", handleUserUpdated);
+    };
+  }, []);
+
   const logoutad = async () => {
-    // Hiển thị Modal xác nhận trước khi logout
     Modal.confirm({
       title: "Bạn chắc chắn muốn đăng xuất?",
-      content:
-        "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
+      content: "Nếu bạn đăng xuất, bạn sẽ phải đăng nhập lại để tiếp tục sử dụng ứng dụng.",
       okText: "Đăng xuất",
       cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          const tokenBefore = localStorage.getItem("adminToken");
-          console.log("Token before logout:", tokenBefore); // Kiểm tra token trước khi logout
-          localStorage.removeItem("admin_token"); // Xóa token
-
-          // Gửi yêu cầu logout cho admin
-          await AuthServices.logoutad(
-            "/admin/logout",
-            {},
-            {
-              headers: {
-                Authorization: `Bearer ${tokenBefore}`,
-              },
-            }
-          );
-
-          // Xóa token admin và user khỏi localStorage
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("user"); // Xóa token "user"
-          console.log(
-            "Token after logout:",
-            localStorage.getItem("adminToken")
-          );
-        } catch (error) {
-          console.error("Lỗi khi logout:", error);
-        } finally {
-          nav("/loginad");
-        }
-      },
+      onOk: forceLogout,
     });
   };
 
-  // Kiểm tra vai trò của người dùng trong localStorage
+  const forceLogout = async () => {
+    try {
+      const tokenBefore = localStorage.getItem("adminToken");
+      localStorage.removeItem("admin_token");
+
+      await AuthServices.logoutad(
+        "/admin/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokenBefore}`,
+          },
+        }
+      );
+
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("user");
+    } catch (error) {
+      console.error("Lỗi khi logout:", error);
+    } finally {
+      nav("/loginad");
+    }
+  };
+
   const isManager = user?.role === "manager";
   const isAdmin = user?.role === "admin";
 
@@ -176,7 +152,6 @@ const LayoutAdmin = () => {
       ),
     },
     !isManager && {
-      // Ẩn mục 'Nhân sự' nếu là manager
       key: "account",
       icon: <TeamOutlined />,
       label: (
@@ -248,11 +223,10 @@ const LayoutAdmin = () => {
         </Link>
       ),
     },
-  ];
+  ].filter(Boolean);
 
   return (
     <Layout className="layout-admin">
-      {/* Sidebar */}
       <Sider
         className="sider-admin"
         breakpoint="lg"
@@ -261,7 +235,7 @@ const LayoutAdmin = () => {
         onCollapse={(collapsed, type) => console.log(collapsed, type)}
       >
         <div className="demo-logo-vertical">
-          <img src={logo} className="logo-admin" />
+          <img src={logo} className="logo-admin" alt="Logo" />
         </div>
         <Menu
           theme="dark"
@@ -297,17 +271,18 @@ const LayoutAdmin = () => {
             <Tooltip title="Thông báo">
               <BellOutlined style={{ fontSize: "24px", cursor: "pointer" }} />
             </Tooltip>
+
             <Dropdown overlay={menu} trigger={["hover"]}>
               <Button
-                color="primary"
-                variant="solid"
+                type="primary"
                 icon={<SettingOutlined />}
               />
             </Dropdown>
+
             <Tooltip title="Đăng xuất">
               <Button
-                color="danger"
-                variant="solid"
+                type="primary"
+                danger
                 icon={<LogoutOutlined />}
                 onClick={logoutad}
               />

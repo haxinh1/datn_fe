@@ -68,7 +68,7 @@ const AIChat = () => {
                         >
                             AI
                         </Avatar>
-                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>Molla Shop</span>
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>Molla AI</span>
                     </div>
                 }
                 onClose={() => setIsAIModalVisible(false)}

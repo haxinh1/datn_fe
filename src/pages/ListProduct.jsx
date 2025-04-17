@@ -5,10 +5,12 @@ import { BrandsServices } from "../services/brands";
 import { categoryServices } from "./../services/categories";
 import bg from "../assets/images/backgrounds/bg-1.jpg";
 import { Pagination } from "antd";
+import { AttributesServices } from "../services/attributes";
 
 const ListProduct = () => {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [attribute, setAttribute] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState(products);
@@ -20,6 +22,7 @@ const ListProduct = () => {
   const [isFiltered, setIsFiltered] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(9);
+  const [selectedAttributeValues, setSelectedAttributeValues] = useState([]);
 
   useEffect(() => {
     const getProducts = async () => {
@@ -68,6 +71,14 @@ const ListProduct = () => {
       setBrands(data.data);
     };
     getBrands();
+  }, []);
+
+  useEffect(() => {
+    const getAttribute = async () => {
+      const data = await AttributesServices.fetchAttributes();
+      setAttribute(data.data);
+    };
+    getAttribute();
   }, []);
 
   const handleBrandChange = (brandId) => {
@@ -168,14 +179,24 @@ const ListProduct = () => {
         product.categories.some((cat) => selectedCategories.includes(cat.id));
 
       // Lấy giá hiển thị thực tế của sản phẩm
-      const productPrice = getDisplayedPrice(product);
+      const { minPrice, maxPrice } = getVariantPriceRange(product);
 
       const matchesPrice =
         selectedPrices.length === 0 ||
         selectedPrices.some(
-          (range) => productPrice >= range.min && productPrice <= range.max
+          (range) =>
+            (minPrice >= range.min && minPrice <= range.max) ||
+            (maxPrice >= range.min && maxPrice <= range.max)
         );
-      return matchesBrand && matchesCategory && matchesPrice;
+
+      // Sửa lại logic lọc theo giá trị thuộc tính
+      const matchesAttributeValues =
+        selectedAttributeValues.length === 0 ||
+        product.atribute_value_product?.some((attr) =>
+          selectedAttributeValues.includes(attr.attribute_value.id)
+        );
+
+      return matchesBrand && matchesCategory && matchesPrice && matchesAttributeValues;
     });
 
     setFilteredProducts(filtered);
@@ -187,6 +208,7 @@ const ListProduct = () => {
     setSelectedBrands([]); // Bỏ chọn tất cả thương hiệu
     setSelectedCategories([]); // Bỏ chọn tất cả danh mục
     setSelectedPrices([]); // Bỏ chọn tất cả mức giá
+    setSelectedAttributeValues([]); // Bỏ chọn tất cả thuộc tính
     setIsFiltered(false); // Đánh dấu là không lọc nữa
     setKeyword("");
   };
@@ -215,32 +237,34 @@ const ListProduct = () => {
     }));
   };
 
-  const getDisplayedPrice = (product) => {
-    const selectedVariant = selectedVariantData[product.id];
+  const getVariantPriceRange = (product) => {
+    const variantPrices =
+      product.variants?.map((variant) =>
+        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
+      ) || [];
 
-    // Nếu biến thể được chọn có sale_price hợp lệ, dùng sale_price
-    if (selectedVariant?.sale_price > 0) return selectedVariant.sale_price;
+    if (variantPrices.length === 0) {
+      const price =
+        product.sale_price > 0 ? product.sale_price : product.sell_price;
+      return { minPrice: price, maxPrice: price };
+    }
 
-    // Nếu biến thể được chọn có sell_price hợp lệ, dùng sell_price
-    if (selectedVariant?.sell_price > 0) return selectedVariant.sell_price;
+    const minPrice = Math.min(...variantPrices);
+    const maxPrice = Math.max(...variantPrices);
 
-    // Nếu sản phẩm chính có sale_price hợp lệ, dùng sale_price
-    if (product.sale_price > 0) return product.sale_price;
-
-    // Nếu không có sale_price, dùng sell_price của sản phẩm chính
-    return product.sell_price;
+    return { minPrice, maxPrice };
   };
 
   return (
     <div className="container mx-auto p-4 flex">
       <main className="main">
 
-        <div 
+        <div
           className="page-header text-center"
           style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="container">
-            <h1 style={{color: '#eea287'}}>MOLLA SHOP</h1>
+            <h1 style={{ color: '#eea287' }}>MOLLA SHOP</h1>
           </div>
         </div>
 
@@ -248,7 +272,7 @@ const ListProduct = () => {
           <div className="container">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to='/'><span>Trang Chủ</span></Link>     
+                <Link to='/'><span>Trang Chủ</span></Link>
               </li>
               <li className="breadcrumb-item">
                 <span>Sản Phẩm</span>
@@ -256,6 +280,7 @@ const ListProduct = () => {
             </ol>
           </div>
         </nav>
+
         <div className="page-content">
           <div className="container">
             <div className="row">
@@ -298,29 +323,36 @@ const ListProduct = () => {
                                 }}
                               />
                             </Link>
+
+                            <div className="product-action">
+                              <a className="btn-product">
+                                <Link to={`/product-detail/${product.id}`}>
+                                  <span>xem chi tiết</span>
+                                </Link>
+                              </a>
+                            </div>
                           </figure>
+
                           <div className="product-body">
                             <span className="product-title">
                               <Link to={`/product-detail/${product.id}`}>
                                 <span>{product.name}</span>
                               </Link>
                             </span>
-                            <div className="product-price">
-                              {formatPrice(getDisplayedPrice(product))} VNĐ
+
+                            <div className="product-price" style={{ marginTop: "20px" }}>
+                              <strong>
+                                {(() => {
+                                  const { minPrice, maxPrice } =
+                                    getVariantPriceRange(product);
+                                  return minPrice === maxPrice
+                                    ? `${formatPrice(minPrice)} VNĐ`
+                                    : `${formatPrice(minPrice)} - ${formatPrice(
+                                      maxPrice
+                                    )} VNĐ`;
+                                })()}
+                              </strong>
                             </div>
-                            {/* <div className="product-nav product-nav-thumbs">
-                              {product.variants?.map((variant) => (
-                                <span key={variant.id}>
-                                  <img
-                                    alt={`Biến thể của ${product.name}`}
-                                    src={variant.thumbnail}
-                                    onClick={() =>
-                                      handleThumbnailClick(product.id, variant)
-                                    }
-                                  />
-                                </span>
-                              ))}
-                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -419,56 +451,67 @@ const ListProduct = () => {
                     </div>
                   </div>
 
-                  {/* List size */}
-                  <div className="widget widget-collapsible">
-                    <h3 className="widget-title">
-                      <span>Kích cỡ</span>
-                    </h3>
-
-                    <div className=" show" id="widget-2">
-                      <div className="widget-body">
-                        <div className="filter-items">
-                          <div className="filter-item">
-                            <div className="custom-control custom-checkbox">
-                              <input
-                                className="custom-control-input"
-                                id="size-1"
-                                type="checkbox"
-                              />
-                              <label
-                                className="custom-control-label"
-                                htmlFor="size-1"
-                              >
-                                XS
-                              </label>
-                            </div>
+                  {attribute.map((attribute) => (
+                    <div className="widget widget-collapsible" key={attribute.id}>
+                      <h3 className="widget-title">
+                        <span>{attribute.name}</span>
+                      </h3>
+                      <div className="show" id={`widget-${attribute.id}`}>
+                        <div className="widget-body">
+                          <div className="filter-items">
+                            {attribute.id === 1 ? ( // Nếu là "Màu sắc" (id: 1), hiển thị ô tròn
+                              <div style={{ display: "flex", flexWrap: "wrap" }}>
+                                {attribute.attribute_values.map((value) => (
+                                  <div
+                                    key={value.id}
+                                    className={`color-circle ${value.value.toLowerCase()} ${selectedAttributeValues.includes(value.id) ? "selected" : ""
+                                      }`}
+                                    onClick={() => {
+                                      setSelectedAttributeValues((prev) =>
+                                        prev.includes(value.id)
+                                          ? prev.filter((id) => id !== value.id)
+                                          : [...prev, value.id]
+                                      );
+                                    }}
+                                    title={value.value}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              // Các attribute khác vẫn dùng checkbox
+                              attribute.attribute_values.map((value) => (
+                                <div className="filter-item" key={value.id}>
+                                  <div className="custom-control custom-checkbox">
+                                    <input
+                                      className="custom-control-input"
+                                      id={`attr-${attribute.id}-val-${value.id}`}
+                                      type="checkbox"
+                                      value={value.id}
+                                      onChange={(e) => {
+                                        const valueId = parseInt(e.target.value);
+                                        setSelectedAttributeValues((prev) =>
+                                          e.target.checked
+                                            ? [...prev, valueId]
+                                            : prev.filter((id) => id !== valueId)
+                                        );
+                                      }}
+                                      checked={selectedAttributeValues.includes(value.id)}
+                                    />
+                                    <label
+                                      className="custom-control-label"
+                                      htmlFor={`attr-${attribute.id}-val-${value.id}`}
+                                    >
+                                      {value.value}
+                                    </label>
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* List màu */}
-                  <div className="widget widget-collapsible">
-                    <h3 className="widget-title">
-                      <span>Màu sắc</span>
-                    </h3>
-
-                    <div className=" show" id="widget-3">
-                      <div className="widget-body">
-                        <div className="filter-colors">
-                          <a
-                            href="#"
-                            style={{
-                              background: "#b87145",
-                            }}
-                          >
-                            <span className="sr-only">Color Name</span>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
 
                   <div className="widget widget-collapsible">
                     <h3 className="widget-title">
@@ -501,8 +544,8 @@ const ListProduct = () => {
                                   {range.min === 0
                                     ? `Dưới ${formatPrice(range.max)} VNĐ`
                                     : range.max === Infinity
-                                    ? `Trên ${formatPrice(range.min)} VNĐ`
-                                    : `${formatPrice(
+                                      ? `Trên ${formatPrice(range.min)} VNĐ`
+                                      : `${formatPrice(
                                         range.min
                                       )} - ${formatPrice(range.max)} VNĐ`}
                                 </label>
