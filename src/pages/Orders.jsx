@@ -406,6 +406,14 @@ const Orders = () => {
         const { status } = item;
         const isCheckout = status?.id === 1;
         const isDelivered = status?.id === 5; // Đã giao hàng
+        const isCompleted = status?.id === 7; // Hoàn thành
+
+        const orderItems = item.order_items;
+
+        const allReviewed = orderItems?.length > 0 ? orderItems.every(item => item.has_reviewed === 1) : true;
+
+        const canReview = !allReviewed;
+
         return (
           <div className="action-container">
             <Tooltip title="Chi tiết đơn hàng">
@@ -430,8 +438,10 @@ const Orders = () => {
               <Button
                 color="primary"
                 variant="solid"
-                onClick={()=> navigate(`/review/${item.id}`)}>
-                  Đánh giá
+                disabled={!(isCompleted && canReview)} // Sửa điều kiện disabled
+                onClick={() => navigate(`/review/${item.id}`)}
+              >
+                Đánh giá
               </Button>
             )}
 
@@ -441,15 +451,15 @@ const Orders = () => {
                   color="primary"
                   variant="solid"
                   icon={<ArrowRightOutlined />}
-                  onClick={() => handleRetryPayment(item.id)} // Gọi hàm thanh toán lại
+                  onClick={() => handleRetryPayment(item.id)}
                 />
               </Tooltip>
             )}
           </div>
         );
       },
-    },
-  ];
+    }
+  ]
 
   return (
     <div>

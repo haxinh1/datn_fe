@@ -6,7 +6,7 @@ import axios from "axios";
 import { CommentServices } from "../services/comment";
 import formatVND from './../utils/formatPrice';
 
-const ProductReview = ({ visible, onClose, product }) => {
+const ProductReview = ({ visible, onClose, product, orderId, setIsDisable }) => {
     const [fileList, setFileList] = useState([]);
     const [form] = Form.useForm();
 
@@ -16,6 +16,7 @@ const ProductReview = ({ visible, onClose, product }) => {
             message.success("Gửi đánh giá thành công!");
             form.resetFields();
             setFileList([]);
+            setIsDisable(true);
             onClose();
         },
         onError: () => {
@@ -61,6 +62,8 @@ const ProductReview = ({ visible, onClose, product }) => {
             anonymous: values.anonymous,
             images: fileList.map(f => f.url),
             products_id: product.product_id,
+            order_id : Number(orderId)
+
         });
     };
 
@@ -154,14 +157,16 @@ const ProductReview = ({ visible, onClose, product }) => {
     );
 };
 
-const ReviewButton = ({ product }) => {
+const ReviewButton = ({ product, orderId }) => {
     const [modalVisible, setModalVisible] = useState(false);
+    const [isDisable, setIsDisable] = useState(false);
+    
 
 
     return (
         <>
-            <Button type="primary" onClick={() => setModalVisible(true)}>Đánh giá sản phẩm</Button>
-            <ProductReview product={product} visible={modalVisible} onClose={() => setModalVisible(false)} />
+            <Button type="primary" disabled={ isDisable || product.has_reviewed} onClick={() => setModalVisible(true)}>Đánh giá sản phẩm</Button>
+            <ProductReview product={product} setIsDisable={setIsDisable} orderId={orderId} visible={modalVisible} onClose={() => setModalVisible(false)} />
         </>
     );
 };
