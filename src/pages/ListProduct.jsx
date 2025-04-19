@@ -264,7 +264,7 @@ const ListProduct = () => {
           style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="container">
-            <h1 style={{ color: '#eea287' }}>MOLLA SHOP</h1>
+            <h1 style={{ color: '#eea287' }}>SẢN PHẨM</h1>
           </div>
         </div>
 

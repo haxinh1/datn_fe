@@ -41,6 +41,18 @@ const Dashboard = () => {
     }
   }, []);
 
+  const isGoogleAccount = () => {
+    try {
+      const storedUser = localStorage.getItem("client");
+      if (!storedUser) return false;
+      const parsedUser = JSON.parse(storedUser);
+      return !!parsedUser.google_id;
+    } catch (err) {
+      console.error("Lỗi khi parse user từ localStorage:", err);
+      return false;
+    }
+  };
+
   return (
     <div>
       <main className="main">
@@ -118,16 +130,18 @@ const Dashboard = () => {
                     </Link>
                   </li>
 
-                  <li className="nav-item">
-                    <Link to={`/dashboard/changepass/${client?.id}`}>
-                      <span className="nav-link">
-                        <LockOutlined
-                          style={{ marginRight: "8px", cursor: "pointer" }}
-                        />
-                        Đổi mật khẩu
-                      </span>
-                    </Link>
-                  </li>
+                  {!isGoogleAccount() && (
+                    <li className="nav-item">
+                      <Link to={`/dashboard/changepass/${client?.id}`}>
+                        <span className="nav-link">
+                          <LockOutlined
+                            style={{ marginRight: "8px", cursor: "pointer" }}
+                          />
+                          Đổi mật khẩu
+                        </span>
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </aside>
 

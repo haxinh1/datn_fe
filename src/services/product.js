@@ -10,6 +10,11 @@ const productByCategory = async (categoryId) => {
     return response.data; 
 }
 
+const ProductById = async (id) => {
+    const response = await instance.get(`/products/${id}`);
+    return response.data;
+};
+
 const fetchProductById = async (id) => {
     const response = await instance.get(`/product-detail/${id}`);
     return response.data;
@@ -87,6 +92,7 @@ const importExcel = async (formData) => {
 export const productsServices = {
     fetchProducts,
     productByCategory,
+    ProductById,
     fetchProductById,
     createProduct,
     updateProduct,

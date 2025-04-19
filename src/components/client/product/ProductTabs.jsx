@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, Rate, Avatar, Divider, Image, Spin, Form, Button, Input } from 'antd';
 import { CommentServices } from '../../../services/comment';
+import { CommentOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -75,8 +76,16 @@ const ProductTabs = ({ productId, product }) => {
                   <div className="container">
                     <div className="">
                       <div className="col-sm-6 col-lg-4">
-                        <h2>Thông tin sản phẩm</h2>
-                        {product.content}
+                        <h1 className="mb-5" style={{ color: "#eea287" }}>
+                          <InfoCircleOutlined style={{ marginRight: "8px" }} />
+                          Thông tin sản phẩm
+                        </h1>
+
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: product.content || "Không có mô tả",
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -88,7 +97,11 @@ const ProductTabs = ({ productId, product }) => {
 
         <TabPane tab="Đánh giá" key="4">
           <div className="container">
-            <h2>Đánh giá</h2>
+            <h1 className="mb-5" style={{ color: "#eea287" }}>
+              <CommentOutlined style={{ marginRight: "8px" }} />
+              Đánh giá sản phẩm
+            </h1>
+
             {loading ? (
               <div style={{ textAlign: 'center', padding: '20px' }}>
                 <Spin tip="Loading reviews..." />
@@ -105,11 +118,13 @@ const ProductTabs = ({ productId, product }) => {
                       >
                         {!review.user?.avatar && (review.user?.fullname?.charAt(0) || 'A')}
                       </Avatar>
+
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div className='group1'>
                           <span style={{ fontWeight: 'bold' }}>
                             {review.user?.fullname || 'Anonymous'}
                           </span>
+
                           <span style={{ color: '#888' }}>
                             {new Date(review.comment_date).toLocaleDateString()}
                           </span>
@@ -117,9 +132,9 @@ const ProductTabs = ({ productId, product }) => {
                         <Rate disabled value={review.rating} style={{ fontSize: '16px' }} />
                       </div>
                     </div>
-                    <p style={{ margin: '10px 0' }}>{review.comments}</p>
+                    <span style={{ margin: '10px 0', fontSize: '16px' }}>{review.comments}</span>
                     {review.images && review.images.length > 0 && (
-                      <div style={{ margin: '10px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
                         <Image.PreviewGroup>
                           {review.images.map((image, index) => (
                             <Image
@@ -169,8 +184,8 @@ const ProductTabs = ({ productId, product }) => {
                             </Form.Item>
                           </Form>
                         ) : (
-                          <a
-                            href="#"
+                          <Button
+                            type="primary" htmlType="submit"
                             onClick={(event) => {
                               event.preventDefault();
                               setReviews(
@@ -180,10 +195,9 @@ const ProductTabs = ({ productId, product }) => {
                               )
                             }
                             }
-                            style={{ color: '#1890ff' }}
                           >
                             Phản Hồi
-                          </a>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -200,7 +214,7 @@ const ProductTabs = ({ productId, product }) => {
                                 {!reply.user?.avatar && (reply.user?.fullname?.charAt(0) || 'A')}
                               </Avatar>
                               <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <div className='group1'>
                                   <span style={{ fontWeight: 'bold' }}>
                                     {reply.user?.fullname || 'Anonymous'}
                                   </span>
@@ -210,7 +224,7 @@ const ProductTabs = ({ productId, product }) => {
                                 </div>
                               </div>
                             </div>
-                            <p>{reply.comments}</p>
+                            <span style={{ margin: '10px 0', fontSize: '16px' }}>{reply.comments}</span>
                             {reply.images && reply.images.length > 0 && (
                               <div style={{ margin: '10px 0' }}>
                                 <Image.PreviewGroup>

@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Dropdown, Menu, Modal, Tooltip, message } from "antd";
+import { Avatar, Dropdown, Menu, Modal, Tooltip, message, notification } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demo-8/logo.png";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
-import AIChat from "./AIChat.jsx";
-import ChatWindow from "../../components/client/chat/ChatWindow.jsx";
-import ChatIcon from './../../components/client/chat/ChatIcon';
-
-
 
 let pusherInstance = null;
 
@@ -36,10 +31,9 @@ const updatePusherAuth = (token) => {
     pusherInstance.config.auth.headers.Authorization = `Bearer ${token || ''}`;
   }
 };
+
 const Header = () => {
   const [userData, setUserData] = useState(null);
-  const [chatVisible, setChatVisible] = useState(false);
-  const isLoggedIn = false;
   const [cartItemCount, setCartItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -169,7 +163,7 @@ const Header = () => {
           console.log('Checking user status via API');
           const userInfo = await AuthServices.getAUser(storedUser.id);
           if (userInfo.status === "inactive" || userInfo.status === "banned") {
-            handleLogout();
+            handleLogout(true);
           }
         } catch (error) {
           console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
@@ -196,7 +190,7 @@ const Header = () => {
           Modal.warning({
             title: 'Tài khoản bị khóa',
             content: 'Tài khoản của bạn đã bị khóa. Bạn sẽ được đăng xuất.',
-            onOk: handleLogout,
+            onOk: () => handleLogout(true),
             okText: 'Đăng xuất',
             okButtonProps: { autoFocus: true },
             maskClosable: false,
@@ -213,7 +207,7 @@ const Header = () => {
   }, [userData]);
 
   // Hàm xử lý đăng xuất
-  const handleLogout = async () => {
+  const handleLogout = async (isBanned = false) => {
     setLoading(true);
     try {
       console.log('Starting logout');
@@ -227,6 +221,11 @@ const Header = () => {
 
       window.dispatchEvent(new Event("user-logout"));
       navigate("/");
+      if (isBanned) {
+        notification.warning({
+          message: "Tài khoản của bạn đã bị khóa, vui lòng thử lại sau!",
+        });
+      }
     } catch (error) {
       console.error("Logout failed", error);
       localStorage.removeItem("client_token");
@@ -235,6 +234,9 @@ const Header = () => {
       localStorage.removeItem("cart_items");
       window.dispatchEvent(new Event("user-logout"));
       navigate("/");
+      if (isBanned) {
+        message.warning("Tài khoản của bạn đã bị khóa");
+      }
     } finally {
       setLoading(false);
     }
@@ -247,7 +249,7 @@ const Header = () => {
       content: "Bạn sẽ phải đăng nhập lại để tiếp tục.",
       okText: "Đăng xuất",
       cancelText: "Hủy",
-      onOk: handleLogout,
+      onOk: () => handleLogout(false),
     });
   };
 
@@ -410,13 +412,20 @@ const Header = () => {
                       className="cart-item-count"
                       style={{
                         position: "absolute",
-                        top: "-6px",
-                        right: "-10px",
-                        backgroundColor: "#eea287",
-                        color: "black",
-                        fontSize: "13px",
-                        padding: "2px 8px",
-                        borderRadius: "50%",
+                        top: "-4px", // Điều chỉnh vị trí lên trên một chút để cân đối
+                        right: "-6px", // Điều chỉnh vị trí sang trái để căn chỉnh tốt hơn
+                        backgroundColor: "black",
+                        color: "white",
+                        fontSize: "12px",
+                        fontWeight: "bold", // Tăng độ đậm cho chữ
+                        lineHeight: "18px", // Đảm bảo chữ nằm giữa hình tròn
+                        width: "18px", // Chiều rộng cố định để tạo hình tròn
+                        height: "18px", // Chiều cao bằng chiều rộng để tạo hình tròn
+                        display: "flex", // Sử dụng flex để căn giữa nội dung
+                        alignItems: "center", // Căn giữa theo chiều dọc
+                        justifyContent: "center", // Căn giữa theo chiều ngang
+                        borderRadius: "50%", // Tạo hình tròn
+                        padding: 0, // Loại bỏ padding để kích thước chính xác
                       }}
                     >
                       {cartItemCount}
@@ -424,15 +433,6 @@ const Header = () => {
                   )}
                 </Link>
               </Tooltip>
-              <AIChat />
-
-              <ChatIcon onClick={() => setChatVisible(true)} />
-              <ChatWindow
-                visible={chatVisible}
-                onClose={() => setChatVisible(false)}
-                isLoggedIn={isLoggedIn}
-                user={userData ? userData.fullname : ""}
-              />
             </div>
             <div className="gtranslate_wrapper"></div>
 

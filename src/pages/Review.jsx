@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Card, List, Rate, Input, Button, Image, Row, Col, Table } from 'antd';
 import { OrderService } from '../services/order';
 import "../css/review.css";
 import formatVND from '../utils/formatPrice';
 import ReviewButton from './ProductReview';
+import { CommentOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 
@@ -14,33 +15,37 @@ const Review = () => {
 
     const reviewColumns = [
         {
-            title: "STT",
-            dataIndex: "index",
-            align: "center",
-            render: (_, __, index) => index + 1,
-        },
-        {
             title: "Sản phẩm",
-            dataIndex: "name",
-            key: "name",
-
-        },
-        {
-            title: "Số lượng",
-            dataIndex: "quantity",
+            dataIndex: "product",
             align: "center",
+            render: (_, record) => {
+                const thumbnail =
+                    record.variants?.[0]?.variant_thumbnail || record.thumbnail;
+                const productName = record.name || "";
+                const variantAttributes =
+                    record.variants
+                        ?.map((variant) => {
+                            const attributes = variant.attributes
+                                .map((attr) => attr.attribute_name)
+                                .join(" - ");
+                            return `${productName} - ${attributes}`;
+                        })
+                        .join(", ") || productName;
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent:'center', gap: "10px" }}>
+                        <Image src={thumbnail} width={60} />
+                        <Link to={`/product-detail/${record.product_id}`}>
+                            <span>{variantAttributes}</span>
+                        </Link>
+                    </div>
+                );
+            },
         },
         {
             title: "Giá bán (VNĐ)",
             dataIndex: "sell_price",
             align: "center",
             render: (sell_price) => (sell_price ? formatVND(sell_price) : ""),
-        },
-        {
-            title: "Tổng tiền (VNĐ)",
-            dataIndex: "total",
-            align: "center",
-            render: (_, record) => formatVND(record.quantity * record.sell_price),
         },
         {
             title: "Đánh giá",
@@ -51,6 +56,7 @@ const Review = () => {
             ),
         }
     ];
+
     useEffect(() => {
         const fetchOrder = async () => {
             try {
@@ -65,21 +71,17 @@ const Review = () => {
         fetchOrder();
     }, [id]);
 
-
     return (
         <div>
-            <main className="main">
-                <div className="page-header text-center" style={{ backgroundImage: "url('assets/images/page-header-bg.jpg')" }}>
-                    <div className="container">
-                        <h1 className="page-title">Đánh Giá</h1>
-                    </div>
-                </div>
-                <Table
-                    columns={reviewColumns}
-                    dataSource={orderReviews}
-                    pagination={false}
-                />
-            </main>
+            <h1 className="mb-5" style={{ color: "#eea287" }}>
+                <CommentOutlined style={{ marginRight: "8px" }} />
+                Đánh giá sản phẩm
+            </h1>
+            <Table
+                columns={reviewColumns}
+                dataSource={orderReviews}
+                pagination={false}
+            />
         </div>
     );
 };

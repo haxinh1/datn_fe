@@ -45,7 +45,7 @@ const Customer = () => {
                 message: "Cập nhật thành công",
             });
             handleEditCancel();
-        
+
             // Cập nhật lại dữ liệu hiển thị mà không cần refetch
             if (customer) {
                 const updatedList = customer.map(user =>
@@ -54,7 +54,7 @@ const Customer = () => {
                 setSelectedRecord(null);
                 queryClient.setQueryData(["customer", searchKeyword], updatedList);
             }
-        }        
+        }
     });
 
     const showEditModal = async (record) => {
@@ -75,7 +75,19 @@ const Customer = () => {
     const handleUpdateUser = async () => {
         try {
             const values = await form.validateFields();
-            updateUserMutation.mutate(values);
+
+            if (values.status === "banned") {
+                Modal.confirm({
+                    title: "Bạn chắc chắn muốn khóa tài khoản này?",
+                    okText: "Xác nhận",
+                    cancelText: "Hủy",
+                    onOk: () => {
+                        updateUserMutation.mutate(values);
+                    },
+                });
+            } else {
+                updateUserMutation.mutate(values);
+            }
         } catch (error) {
             console.error("Lỗi khi cập nhật:", error);
         }
@@ -148,7 +160,11 @@ const Customer = () => {
             align: "center",
             render: (status) => (
                 <span className={status === "active" ? "action-link-blue" : "action-link-red"}>
-                    {status === "active" ? "Hoạt động" : "Dừng hoạt động"}
+                    {status === "active"
+                        ? "Hoạt động"
+                        : status === "banned"
+                            ? "Đã khóa"
+                            : "Dừng hoạt động"}
                 </span>
             )
         },
@@ -252,6 +268,7 @@ const Customer = () => {
                                 >
                                     <Select.Option value="active">Hoạt động</Select.Option>
                                     <Select.Option value="inactive">Dừng hoạt động</Select.Option>
+                                    <Select.Option value="banned">Khóa</Select.Option>
                                 </Select>
                             </Form.Item>
                         </Col>

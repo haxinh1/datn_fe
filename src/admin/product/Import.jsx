@@ -402,10 +402,22 @@ const Import = () => {
                                 return (
                                     <Form.Item
                                         name={`sale_price_${uniqueKey}`}
+                                        rules={[
+                                            loggedInUserRole !== "manager" && ({
+                                                validator(_, value) {
+                                                    if (value !== undefined && value !== null && value !== "") {
+                                                        if (value >= record.sell_price) {
+                                                            return Promise.reject("Giá KM phải nhỏ hơn giá bán!");
+                                                        }
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            }),
+                                        ].filter(Boolean)}
                                     >
                                         <InputNumber
                                             className="input-form"
-                                            min={1}
+                                            min={0}
                                             disabled={loggedInUserRole === "manager"}
                                             formatter={value => value?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                             parser={value => value?.replace(/\./g, "")}
