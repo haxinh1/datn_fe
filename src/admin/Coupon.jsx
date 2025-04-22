@@ -21,7 +21,7 @@ import {
   Switch,
   Descriptions,
 } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dayjs from "dayjs";
 import TextArea from "antd/es/input/TextArea";
 import { CouponServices } from "../services/coupon";
@@ -38,13 +38,24 @@ const Coupon = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const couponType = Form.useWatch("coupon_type", form);
+  const hasNotifiedExpiredRef = useRef(false); // Sử dụng useRef để tránh re-render không cần thiết
+  const hasNotifiedUsageLimitRef = useRef(false);
+  const hasNotifiedFetchErrorRef = useRef(false); // Trạng thái để theo dõi lỗi fetchCoupons
 
   const showDetailModal = async (id) => {
-    const response = await CouponServices.getCounponById(id);
-    if (response.success && response.data) {
-      setSelectedCoupon([response.data]);
+    try {
+      const response = await CouponServices.getCounponById(id);
+      if (response.success && response.data) {
+        setSelectedCoupon([response.data]);
+      }
+      setIsDetailModalVisible(true);
+    } catch (error) {
+      console.error("Error fetching coupon details:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể tải chi tiết mã giảm giá.",
+      });
     }
-    setIsDetailModalVisible(true);
   };
 
   const handleShowModal = async (coupon) => {
@@ -259,7 +270,7 @@ const Coupon = () => {
         response = await CouponServices.createCoupon(payload);
       }
       if (response) {
-        fetchCoupons();
+        await fetchCoupons();
         notification.success({
           message: editingCoupon
             ? "Cập nhật mã giảm giá thành công!"
@@ -282,12 +293,16 @@ const Coupon = () => {
       const { data } = await CouponServices.fetchCoupons();
       setCoupon(data);
       setIsLoading(false);
+      hasNotifiedFetchErrorRef.current = false; // Reset trạng thái lỗi khi fetch thành công
     } catch (error) {
       console.error("Error fetching coupons:", error);
-      notification.error({
-        message: "Lỗi",
-        description: "Không thể tải danh sách mã giảm giá.",
-      });
+      if (!hasNotifiedFetchErrorRef.current) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể tải danh sách mã giảm giá.",
+        });
+        hasNotifiedFetchErrorRef.current = true; // Đánh dấu đã thông báo lỗi
+      }
       setIsLoading(false);
     }
   };
@@ -301,7 +316,7 @@ const Coupon = () => {
     }
   };
 
-  // New function to check and update expired coupons
+  // Function to check and update expired coupons
   const checkAndUpdateExpiredCoupons = async () => {
     const now = dayjs();
     const couponsToUpdate = coupon.filter(
@@ -322,17 +337,59 @@ const Coupon = () => {
         };
         await CouponServices.updateCoupon(c.id, payload);
       }
-      fetchCoupons(); // Refresh the coupon list
-      notification.info({
-        message: "Cập nhật trạng thái",
-        description: `${couponsToUpdate.length} mã giảm giá đã được chuyển sang trạng thái dừng áp dụng do hết hạn.`,
-      });
+      await fetchCoupons(); // Refresh the coupon list
+      if (!hasNotifiedExpiredRef.current) {
+        notification.info({
+          message: "Cập nhật trạng thái",
+          description: `${couponsToUpdate.length} mã giảm giá đã được chuyển sang trạng thái dừng áp dụng do hết hạn.`,
+        });
+        hasNotifiedExpiredRef.current = true; // Đánh dấu đã thông báo
+      }
     } catch (error) {
       console.error("Error updating expired coupons:", error);
-      notification.error({
-        message: "Lỗi",
-        description: "Không thể cập nhật trạng thái mã giảm giá hết hạn.",
-      });
+      if (!hasNotifiedExpiredRef.current) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể cập nhật trạng thái mã giảm giá hết hạn.",
+        });
+        hasNotifiedExpiredRef.current = true; // Đánh dấu đã thông báo để tránh lặp lại
+      }
+    }
+  };
+
+  // Function to check and update coupons with usage_limit = 0
+  const checkAndUpdateUsageLimitCoupons = async () => {
+    const couponsToUpdate = coupon.filter(
+      (c) => c.is_active && c.usage_limit === 0
+    );
+
+    if (couponsToUpdate.length === 0) return;
+
+    try {
+      for (const c of couponsToUpdate) {
+        const payload = {
+          ...c,
+          is_active: false,
+        };
+        await CouponServices.updateCoupon(c.id, payload);
+      }
+      await fetchCoupons(); // Refresh the coupon list
+      if (!hasNotifiedUsageLimitRef.current) {
+        notification.info({
+          message: "Cập nhật trạng thái",
+          description: `${couponsToUpdate.length} mã giảm giá đã được chuyển sang trạng thái dừng áp dụng do số lượng bằng 0.`,
+        });
+        hasNotifiedUsageLimitRef.current = true; // Đánh dấu đã thông báo
+      }
+    } catch (error) {
+      console.error("Error updating usage limit coupons:", error);
+      if (!hasNotifiedUsageLimitRef.current) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể cập nhật trạng thái mã giảm giá do số lượng bằng 0.",
+        });
+        hasNotifiedUsageLimitRef.current = true; // Đánh dấu đã thông báo để tránh lặp lại
+      }
     }
   };
 
@@ -341,19 +398,24 @@ const Coupon = () => {
     fetchUsers();
   }, []);
 
-  // Periodic check for expired coupons
+  // Periodic check for expired coupons and usage limit
   useEffect(() => {
     // Initial check when component mounts
-    checkAndUpdateExpiredCoupons();
+    const performChecks = async () => {
+      await checkAndUpdateExpiredCoupons();
+      await checkAndUpdateUsageLimitCoupons();
+    };
+    performChecks();
 
     // Set interval to check every minute (60000ms)
-    const interval = setInterval(() => {
-      checkAndUpdateExpiredCoupons();
+    const interval = setInterval(async () => {
+      await checkAndUpdateExpiredCoupons();
+      await checkAndUpdateUsageLimitCoupons();
     }, 60000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
-  }, [coupon]);
+  }, []); // Không phụ thuộc vào coupon để tránh re-render không cần thiết
 
   return (
     <div>
@@ -457,7 +519,7 @@ const Coupon = () => {
                   }),
                 ]}
               >
-                <Input className="input-item" />
+                <Input className="input-item" type="number" min={0} />
               </Form.Item>
             </Col>
           </Row>
@@ -483,7 +545,7 @@ const Coupon = () => {
                   { required: true, message: "Vui lòng chọn số lần áp dụng" },
                 ]}
               >
-                <Input className="input-item" />
+                <Input className="input-item" type="number" min={0} />
               </Form.Item>
             </Col>
           </Row>

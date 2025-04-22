@@ -15,6 +15,18 @@ const Header = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
+      // Check if a COD order was just placed
+      const isCodOrderPlaced = localStorage.getItem("codOrderPlaced") === "true";
+
+      if (isCodOrderPlaced) {
+        setCartItemCount(0); // Force cart count to 0 for COD orders
+        // Optionally, clear the flag after a delay or on next cart update
+        setTimeout(() => {
+          localStorage.removeItem("codOrderPlaced");
+        }, 1000); // Remove flag after 1 second to allow UI update
+        return;
+      }
+
       if (userId) {
         const cartData = await cartServices.fetchCart();
         const uniqueProducts = cartData.reduce((acc, item) => {
@@ -83,7 +95,6 @@ const Header = () => {
       updateCartCount();
     };
 
-    // Xử lý sự kiện user-updated
     const handleUserUpdated = () => {
       const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
       if (storedUserId) {
@@ -94,7 +105,7 @@ const Header = () => {
     window.addEventListener("cart-updated", handleCartUpdate);
     window.addEventListener("user-logout", handleUserLogout);
     window.addEventListener("user-login", handleUserLogin);
-    window.addEventListener("user-updated", handleUserUpdated); // Thêm sự kiện này
+    window.addEventListener("user-updated", handleUserUpdated);
 
     const handleStorageChange = (e) => {
       if (e.key === "cart_items" || e.key === "user") {
@@ -115,7 +126,7 @@ const Header = () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
       window.removeEventListener("user-logout", handleUserLogout);
       window.removeEventListener("user-login", handleUserLogin);
-      window.removeEventListener("user-updated", handleUserUpdated); // Dọn dẹp sự kiện
+      window.removeEventListener("user-updated", handleUserUpdated);
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
