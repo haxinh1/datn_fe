@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, BookOutlined, CheckOutlined, MenuOutlined, PrinterOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, CommentOutlined, MenuOutlined, PrinterOutlined } from "@ant-design/icons";
 import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Radio, Tabs, Tooltip, notification } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -36,6 +36,7 @@ const Orders = () => {
   });
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const navigate = useNavigate();
 
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
@@ -501,7 +502,7 @@ const Orders = () => {
               />
             </Tooltip>
 
-            {isDelivered ? (
+            {isDelivered && (
               <Tooltip title="Đã nhận hàng">
                 <Button
                   color="primary"
@@ -510,16 +511,20 @@ const Orders = () => {
                   onClick={() => handleMarkAsReceived(item.id)}
                 />
               </Tooltip>
-            ) : (
-              <Button
-                color="primary"
-                variant="solid"
-                disabled={!(isCompleted && canReview)} 
-                onClick={() => navigate(`/review/${item.id}`)}
-              >
-                Đánh giá
-              </Button>
             )}
+
+            {isCompleted && (
+              <Tooltip title="Đánh giá">
+                <Button
+                  color="primary"
+                  variant="solid"
+                  disabled={!(isCompleted && canReview)} 
+                  icon={<CommentOutlined/>}
+                  onClick={() => navigate(`/dashboard/review/${item.id}`)}
+                />  
+              </Tooltip>
+            )}
+
             {isCheckout && (
               <Tooltip title="Tiếp tục thanh toán">
                 <Button

@@ -166,7 +166,7 @@ const List = () => {
             setCurrentVariant((prevVariant) => ({
                 ...prevVariant,
                 sell_price: newPrice,
-                sale_price: newSalePrice,
+                sale_price: newSalePrice || "",
                 thumbnail: newImage,
             }));
             queryClient.invalidateQueries(["products"]);
@@ -209,7 +209,7 @@ const List = () => {
 
             const payload = {
                 sell_price: newPrice,
-                sale_price: newSalePrice,
+                sale_price: newSalePrice || "",
                 thumbnail: newImage ? newImage.url : null,
                 is_active: isActive,
                 sale_price_start_at: startDate ? startDate.format("YYYY-MM-DD") : null,
@@ -232,7 +232,7 @@ const List = () => {
                 activeVariantMutation.mutate({ is_active: isActive });
             }
         } catch (error) {
-            
+
         }
     };
 
@@ -699,6 +699,16 @@ const List = () => {
                                         return current && current <= dayjs(startDate).startOf('day');
                                     }}
                                 />
+                            </Form.Item>
+
+                            <Form.Item label="Trạng thái kinh doanh">
+                                <Switch
+                                    checked={isActive === 1}
+                                    onChange={(checked) => setIsActive(checked ? 1 : 0)}
+                                />
+                                <span style={{ marginLeft: 10 }}>
+                                    {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
+                                </span>
                             </Form.Item>
                         </Col>
                     </Row>

@@ -5,45 +5,42 @@ import { productsServices } from "../../services/product";
 import moment from "moment";
 import { BrandsServices } from "../../services/brands";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Modal, Table, DatePicker, ConfigProvider, Form } from "antd";
+import { Button, Modal, Table, DatePicker, ConfigProvider, Form, Row, Col } from "antd";
 import { categoryServices } from "../../services/categories";
-import { EyeOutlined } from "@ant-design/icons";
-import viVN from "antd/lib/locale/vi_VN"; // Import locale tiếng Việt
-import "moment/locale/vi"; // Chuyển moment sang tiếng Việt
+import viVN from "antd/lib/locale/vi_VN";
+import "moment/locale/vi";
 import "../../css/detailad.css";
 
 const ProductDetail = () => {
-  const { id } = useParams(); // Lấy ID sản phẩm từ URL
-  const [product, setProduct] = useState(null); // Dữ liệu chi tiết sản phẩm
-  const [images, setImages] = useState([]); // Mảng ảnh sản phẩm
-  const [currentImage, setCurrentImage] = useState(""); // Ảnh hiện tại
-  const [loading, setLoading] = useState(true); // Trạng thái tải
-  const [error, setError] = useState(null); // Trạng thái lỗi
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [images, setImages] = useState([]);
+  const [currentImage, setCurrentImage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [stocks, setStocks] = useState([]); // Lưu stocks riêng biệt
-  const [filterDates, setFilterDates] = useState([null, null]); // State lưu khoảng ngày bắt đầu và kết thúc
+  const [stocks, setStocks] = useState([]);
+  const [filterDates, setFilterDates] = useState([null, null]);
 
-  const { RangePicker } = DatePicker; // Sử dụng RangePicker để chọn khoảng ngày
+  const { RangePicker } = DatePicker;
 
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
         setLoading(true);
-        const response = await productsServices.fetchProductById(id);
-        console.log("Dữ liệu sản phẩm API trả về:", response);
+        const response = await productsServices.ProductById(id);
 
         if (response?.data) {
           setProduct(response.data);
         }
 
         if (response?.stocks) {
-          setStocks(response.stocks); // Lưu stocks riêng
+          setStocks(response.stocks);
         }
 
-        // Kiểm tra nếu có thumbnail và galleries
         if (response?.data?.thumbnail) {
-          setCurrentImage(response.data.thumbnail); // Sử dụng thumbnail làm ảnh chính
+          setCurrentImage(response.data.thumbnail);
         }
 
         // Nếu có galleries, lấy danh sách ảnh
@@ -62,7 +59,7 @@ const ProductDetail = () => {
     };
 
     fetchProductDetails();
-  }, [id]); // Re-run khi id thay đổi
+  }, [id]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -76,6 +73,7 @@ const ProductDetail = () => {
 
     fetchCategories();
   }, []);
+
   // Fetch danh sách thương hiệu
   const { data: brands } = useQuery({
     queryKey: ["brands"],
@@ -115,8 +113,8 @@ const ProductDetail = () => {
         // Tạo tên biến thể từ thuộc tính
         const variantName = variant
           ? `${product.name} - ${variant.attribute_value_product_variants
-              .map((attr) => attr.attribute_value.value)
-              .join(" - ")}`
+            .map((attr) => attr.attribute_value.value)
+            .join(" - ")}`
           : product.name;
 
         return {
@@ -251,10 +249,8 @@ const ProductDetail = () => {
         </h1>
 
         <div className="group1">
-          {/* Hình ảnh sản phẩm */}
           <div className="col-md-4">
             <div className="text-center">
-              {/* Hiển thị ảnh thumbnail đầu tiên */}
               {currentImage ? (
                 <img
                   src={currentImage}
@@ -263,9 +259,9 @@ const ProductDetail = () => {
                   style={{
                     border: "1px solid #ddd",
                     borderRadius: "5px",
-                    width: "400px", // Đặt chiều rộng cố định
-                    height: "400px", // Đặt chiều cao cố định
-                    objectFit: "cover", // Ảnh sẽ luôn lấp đầy khung mà không bị méo
+                    width: "400px",
+                    height: "400px",
+                    objectFit: "cover",
                   }}
                 />
               ) : (
@@ -279,7 +275,7 @@ const ProductDetail = () => {
                   whiteSpace: "nowrap",
                   paddingBottom: "10px",
 
-                  msOverflowStyle: "none", // Ẩn thanh cuộn trên IE/Edge
+                  msOverflowStyle: "none",
                 }}
               >
                 {images.length > 0 ? (
@@ -313,8 +309,8 @@ const ProductDetail = () => {
             dataSource={productData}
             pagination={false}
             bordered
-            style={{ width: "100%" }} // Tăng chiều rộng, giảm font size để giảm chiều cao hàng
-            size="small" // Giảm chiều cao của hàng
+            style={{ width: "100%" }}
+            size="small"
           />
         </div>
 
@@ -327,10 +323,13 @@ const ProductDetail = () => {
           />
         </div>
 
-        {/* Các nút hành động */}
         <div className="btn-brand">
           <Link to={`/admin/edit-pr/${id}`}>
-            <Button className="btn-import" color="primary" variant="solid">
+            <Button 
+              className="btn-import" 
+              color="primary" 
+              variant="solid"
+            >
               Cập nhật sản phẩm
             </Button>
           </Link>
@@ -345,7 +344,6 @@ const ProductDetail = () => {
           </Button>
         </div>
 
-        {/* Modal hiển thị lịch sử nhập hàng */}
         <Modal
           title="Lịch sử nhập hàng"
           open={isModalOpen}
@@ -353,46 +351,40 @@ const ProductDetail = () => {
           footer={null}
           width={800}
         >
-          <Form.Item label="Ngày nhập hàng">
-            <ConfigProvider locale={viVN}>
-              <RangePicker
-                format="DD/MM/YYYY"
-                onChange={(dates, dateStrings) => {
-                  if (dates) {
-                    setFilterDates([
-                      moment(dateStrings[0], "DD/MM/YYYY").format("YYYY-MM-DD"),
-                      moment(dateStrings[1], "DD/MM/YYYY").format("YYYY-MM-DD"),
-                    ]);
-                  } else {
-                    setFilterDates([null, null]); // Nếu người dùng xóa bộ lọc, hiển thị toàn bộ dữ liệu
-                  }
-                }}
-                placeholder={["Từ ngày", "Đến ngày"]}
-              />
-            </ConfigProvider>
-          </Form.Item>
+          <Row gutter={24}>
+            <Col span={14}>
+              <Form.Item label="Ngày nhập hàng">
+                <ConfigProvider locale={viVN}>
+                  <RangePicker
+                    format="DD/MM/YYYY"
+                    onChange={(dates, dateStrings) => {
+                      if (dates) {
+                        setFilterDates([
+                          moment(dateStrings[0], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                          moment(dateStrings[1], "DD/MM/YYYY").format("YYYY-MM-DD"),
+                        ]);
+                      } else {
+                        setFilterDates([null, null]); // Nếu người dùng xóa bộ lọc, hiển thị toàn bộ dữ liệu
+                      }
+                    }}
+                    placeholder={["Từ ngày", "Đến ngày"]}
+                  />
+                </ConfigProvider>
+              </Form.Item>
+            </Col>
+
+            <Col span={10}>
+              <Form.Item label="Tổng tiền hàng">
+                <div className="action-link-blue">{formatPrice(getStockData().reduce((sum, item) => sum + item.total, 0))} VNĐ</div>
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Table
             columns={stockColumns}
             dataSource={getStockData()}
             pagination={{ pageSize: 8 }}
             bordered
-            summary={(pageData) => {
-              const totalAmount = pageData.reduce(
-                (sum, item) => sum + item.total,
-                0
-              );
-              return (
-                <Table.Summary.Row>
-                  <Table.Summary.Cell colSpan={5} align="right">
-                    <strong>Tổng giá trị (VNĐ):</strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell align="center">
-                    <strong>{formatPrice(totalAmount)}</strong>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              );
-            }}
           />
         </Modal>
       </div>

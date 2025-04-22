@@ -43,6 +43,11 @@ const getPointByUser = async (id) => {
   return response.data;
 };
 
+const bannedHistory = async (id) => {
+  const response = await instance.get(`/banned-history/${id}`);
+  return response.data;
+};
+
 // nhật ký hoạt động của nhân viên
 const getModifiedById = async (id) => {
   const response = await instance.get(`/orders/modified-by/${id}`);
@@ -286,6 +291,7 @@ export const AuthServices = {
   register,
   verify,
   getModifiedById,
+  bannedHistory,
   login,
   forget,
   resend,

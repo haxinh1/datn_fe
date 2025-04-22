@@ -18,9 +18,6 @@ const ChatIcon = ({ onClick }) => {
             letterSpacing: 'normal', 
             color: 'white', 
             margin: 0, 
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
           }}
         />
       }

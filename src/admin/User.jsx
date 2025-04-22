@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, BookOutlined, EyeOutlined, ProductOutlined } from '@ant-design/icons';
+import { BookOutlined, CloseCircleOutlined, EyeOutlined, ProductOutlined } from '@ant-design/icons';
 import { Avatar, Button, Image, Modal, Skeleton, Table, Tooltip, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -23,6 +23,7 @@ const User = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [productData, setProductData] = useState([])
     const [pointHistory, setPointHistory] = useState([]);
+    const [bannedHistory, setBannedHistory] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [orderInfo, setOrderInfo] = useState({
         email: "",
@@ -184,7 +185,35 @@ const User = () => {
             points: item.points,
             type: item.type,
             reason: item.reason,
-            date: dayjs(item.created_at).format('DD/MM/YYYY HH:mm'),
+            date: item.created_at,
+        }));
+
+    useEffect(() => {
+        const fetchPoints = async () => {
+            try {
+                const data = await AuthServices.bannedHistory(id);
+                setBannedHistory(data); // mảng lịch sử điểm
+                setIsLoading(false);
+            } catch (err) {
+                console.error("Lỗi khi lấy lịch sử điểm:", err);
+                setIsLoading(false);
+                notification.error({
+                    message: "Lỗi",
+                    description: "Không thể tải lịch sử điểm của người dùng.",
+                });
+            }
+        };
+
+        if (id) fetchPoints();
+    }, [id]);
+
+    const getBannedDataSource = (banned) =>
+        banned.map((item, index) => ({
+            key: item.id,
+            index: index + 1,
+            reason: item.reason,
+            banned_at: item.banned_at,
+            ban_expires_at: item.ban_expires_at,
         }));
 
     if (!userData) return null;
@@ -581,6 +610,31 @@ const User = () => {
 
     ];
 
+    const getBannedColumns = [
+        {
+            title: 'STT',
+            dataIndex: 'index',
+            align: "center",
+        },
+        {
+            title: 'Lý do',
+            dataIndex: 'reason',
+            align: "center",
+        },
+        {
+            title: 'Ngày bị khóa',
+            dataIndex: 'banned_at',
+            align: "center",
+            render: (banned_at) => (banned_at ? dayjs(banned_at).format("DD/MM/YYYY - HH:mm") : ""),
+        },
+        {
+            title: 'Ngày mở khóa',
+            dataIndex: 'ban_expires_at',
+            align: "center",
+            render: (ban_expires_at) => (ban_expires_at ? dayjs(ban_expires_at).format("DD/MM/YYYY - HH:mm") : ""),
+        },
+    ];
+
     return (
         <div>
             <h1 className="mb-5">
@@ -631,7 +685,7 @@ const User = () => {
                         />
                     </Skeleton>
                 </div>
-                
+
                 <div className="card-info">
                     <Skeleton active loading={isLoading}>
                         <h4 className='profile-name' >
@@ -658,6 +712,21 @@ const User = () => {
                         <Table
                             dataSource={getPointDataSource(pointHistory)}
                             columns={getPointColumns}
+                            pagination={{ pageSize: 5 }}
+                            bordered
+                        />
+                    </Skeleton>
+                </div>
+
+                <div className='card-info'>
+                    <Skeleton active loading={isLoading}>
+                        <h4 className='profile-name'>
+                            <CloseCircleOutlined style={{ marginRight: "8px" }} />
+                            Lịch sử khóa tài khoản
+                        </h4>
+                        <Table
+                            dataSource={getBannedDataSource(bannedHistory)}
+                            columns={getBannedColumns}
                             pagination={{ pageSize: 5 }}
                             bordered
                         />
