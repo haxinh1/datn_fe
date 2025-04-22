@@ -892,7 +892,7 @@ const Back = () => {
                 >
                     <Form.Item
                         name="approveStock"
-                        label="Bạn có muốn cộng số lượng không?"
+                        label="Bạn có muốn cộng lại số lượng vào kho không?"
                         rules={[
                             {
                                 required: true,

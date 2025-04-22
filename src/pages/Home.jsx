@@ -1,14 +1,9 @@
 import React, { useState } from "react";
-import { Image } from "antd";
-
 import { Swiper, SwiperSlide } from "swiper/react";
-
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
-
 import "../assets/css/bootstrap.min.css";
 import "../assets/css/plugins/owl-carousel/owl.carousel.css";
 import "../assets/css/plugins/magnific-popup/magnific-popup.css";
@@ -35,19 +30,8 @@ import ig6 from "../assets/images/theme/ig6.jpg";
 import banner4 from "../assets/images/demo-8/banners/banner-1.jpg";
 import banner5 from "../assets/images/demo-8/banners/banner-2.jpg";
 import banner6 from "../assets/images/demo-8/banners/banner-6.jpg";
-
 import slider1 from "../assets/images/demo-8/slider/img-1.png";
 import slider2 from "../assets/images/demo-8/slider/img-2.png";
-
-import product1 from "../assets/images/demo-8/products/product-1-1.jpg";
-import product2 from "../assets/images/demo-8/products/product-1-2.jpg";
-import product21 from "../assets/images/demo-8/products/product-2-1.jpg";
-import product22 from "../assets/images/demo-8/products/product-2-2.jpg";
-
-import productThumb1 from "../assets/images/demo-8/products/product-1-thumb.jpg";
-import productThumb2 from "../assets/images/demo-8/products/product-1-2-thumb.jpg";
-import productThumb3 from "../assets/images/demo-8/products/product-1-3-thumb.jpg";
-
 import ProductList from "../components/client/product/ProductList";
 import ChatBox from "../components/client/chat/ChatBox";
 import ChatIcon from "../components/client/chat/ChatIcon";
@@ -137,22 +121,18 @@ const Home = () => {
                   </a>
 
                   <div className="banner-content">
-                    <h4 className="banner-subtitle">
-                      <a href="#">Final reduction</a>
-                    </h4>
                     <h3 className="banner-title">
-                      <a href="#">
+                      <Link to={`/detailcate/7`}>
                         <strong>
-                          Sandals & <br />
-                          Flip Flops
+                          Sweater & <br />
+                          Đồ nỉ
                         </strong>{" "}
-                        <br />
-                        up to 60% off
-                      </a>
+                      </Link>
                     </h3>
-                    <a href="#" className="btn btn-outline-white banner-link">
-                      Shop Now <i className="icon-long-arrow-right"></i>
-                    </a>
+
+                    <Link to={`/detailcate/7`} className="btn btn-outline-white banner-link">
+                      xem ngay <i className="icon-long-arrow-right"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -164,22 +144,18 @@ const Home = () => {
                   </a>
 
                   <div className="banner-content">
-                    <h4 className="banner-subtitle">
-                      <a href="#">Limited time only.</a>
-                    </h4>
                     <h3 className="banner-title">
-                      <a href="#">
+                      <Link to={`/detailcate/3`}>
                         <strong>
-                          Trainers & <br />
-                          Sportwear
+                          Sơ mi & <br />
+                          Áo thun
                         </strong>{" "}
-                        <br />
-                        40 -70% off
-                      </a>
+                      </Link>
                     </h3>
-                    <a href="#" className="btn btn-outline-white banner-link">
-                      Shop Now <i className="icon-long-arrow-right"></i>
-                    </a>
+
+                    <Link to={`/detailcate/4`} className="btn btn-outline-white banner-link">
+                      xem ngay <i className="icon-long-arrow-right"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -191,82 +167,22 @@ const Home = () => {
                   </a>
 
                   <div className="banner-content">
-                    <h4 className="banner-subtitle">
-                      <a href="#">This week we love...</a>
-                    </h4>
                     <h3 className="banner-title">
-                      <a href="#">
+                      <Link to={`/detailcate/5`}>
                         <strong>
-                          Women's <br />
-                          Accessories{" "}
+                          bomber & <br />
+                          jacket{" "}
                         </strong>{" "}
-                        <br />
-                        from $6.99
-                      </a>
+                      </Link>
                     </h3>
-                    <a href="#" className="btn btn-outline-white banner-link">
-                      Shop Now <i className="icon-long-arrow-right"></i>
-                    </a>
+
+                    <Link to={`/detailcate/5`} className="btn btn-outline-white banner-link">
+                      xem ngay <i className="icon-long-arrow-right"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div
-            className="owl-carousel mt-3 mb-3 owl-simple"
-            data-toggle="owl"
-            data-owl-options='{
-                            "nav": false, 
-                            "dots": false,
-                            "margin": 30,
-                            "loop": false,
-                            "responsive": {
-                                "0": {
-                                    "items":2
-                                },
-                                "420": {
-                                    "items":3
-                                },
-                                "600": {
-                                    "items":4
-                                },
-                                "900": {
-                                    "items":5
-                                },
-                                "1024": {
-                                    "items":6
-                                }
-                            }
-                        }'
-          >
-            <a href="#" className="brand">
-              <img src={brand1} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand2} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand3} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand4} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand5} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand6} alt="Brand Name" />
-            </a>
-
-            <a href="#" className="brand">
-              <img src={brand7} alt="Brand Name" />
-            </a>
           </div>
         </div>
       </div>
@@ -318,229 +234,6 @@ const Home = () => {
             </a>
           </li>
         </ul>
-        <div className="tab-content tab-content-carousel">
-          <div
-            className="tab-pane p-0 fade show active"
-            id="products-featured-tab"
-            role="tabpanel"
-            aria-labelledby="products-featured-link"
-          >
-            <div
-              className="owl-carousel owl-simple carousel-equal-height carousel-with-shadow"
-              data-toggle="owl"
-              data-owl-options='{
-                                "nav": false, 
-                                "dots": true,
-                                "margin": 20,
-                                "loop": false,
-                                "responsive": {
-                                    "0": {
-                                        "items":2
-                                    },
-                                    "480": {
-                                        "items":2
-                                    },
-                                    "768": {
-                                        "items":3
-                                    },
-                                    "992": {
-                                        "items":4
-                                    },
-                                    "1200": {
-                                        "items":4,
-                                        "nav": true,
-                                        "dots": false
-                                    }
-                                }
-                            }'
-            >
-              <div className="product product-2">
-                <figure className="product-media">
-                  <a href="product.html">
-                    <img
-                      src={product1}
-                      alt="Product image"
-                      className="product-image"
-                    />
-                    <img
-                      src={product2}
-                      alt="Product image"
-                      className="product-image-hover"
-                    />
-                  </a>
-
-                  <div className="product-action-vertical">
-                    <a
-                      href="#"
-                      className="btn-product-icon btn-wishlist btn-expandable"
-                      title="Add to wishlist"
-                    >
-                      <span>add to wishlist</span>
-                    </a>
-                  </div>
-
-                  <div className="product-action ">
-                    <a href="#" className="btn-product btn-cart">
-                      <span>add to cart</span>
-                    </a>
-                  </div>
-                </figure>
-
-                <div className="product-body">
-                  <div className="product-cat">
-                    <a href="#">Clothing</a>
-                  </div>
-                  <h3 className="product-title">
-                    <a href="product.html">Denim jacket</a>
-                  </h3>
-                  <div className="product-price">$19.99</div>
-                  <div className="product-nav product-nav-thumbs">
-                    <a href="#" className="active">
-                      <img src={productThumb1} alt="product desc" />
-                    </a>
-                    <a href="#">
-                      <img src={productThumb2} alt="product desc" />
-                    </a>
-                    <a href="#">
-                      <img src={productThumb3} alt="product desc" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="product product-2">
-                <figure className="product-media">
-                  <a href="product.html">
-                    <img
-                      src={product21}
-                      alt="Product image"
-                      className="product-image"
-                    />
-                    <img
-                      src={product22}
-                      alt="Product image"
-                      className="product-image-hover"
-                    />
-                  </a>
-                </figure>
-
-                <div className="product-body">
-                  <div className="product-cat">
-                    <a href="#">Shoes</a>
-                  </div>
-                  <h3 className="product-title">
-                    <a href="product.html">Sandals</a>
-                  </h3>
-                  <div className="product-price">$24.99</div>
-                </div>
-              </div>
-
-              <div className="product product-2">
-                <figure className="product-media">
-                  <span className="product-label label-sale">sale</span>
-                  <a href="product.html">
-                    <img
-                      src="assets/images/demo-8/products/product-3-1.jpg"
-                      alt="Product image"
-                      className="product-image"
-                    />
-                    <img
-                      src="assets/images/demo-8/products/product-3-2.jpg"
-                      alt="Product image"
-                      className="product-image-hover"
-                    />
-                  </a>
-
-                  <div className="product-action-vertical">
-                    <a
-                      href="#"
-                      className="btn-product-icon btn-wishlist btn-expandable"
-                      title="Add to wishlist"
-                    >
-                      <span>add to wishlist</span>
-                    </a>
-                  </div>
-
-                  <div className="product-action ">
-                    <a href="#" className="btn-product btn-cart">
-                      <span>add to cart</span>
-                    </a>
-                  </div>
-                </figure>
-
-                <div className="product-body">
-                  <div className="product-cat">
-                    <a href="#">Clothing</a>
-                  </div>
-                  <h3 className="product-title">
-                    <a href="product.html">Printed sweatshirt</a>
-                  </h3>
-                  <div className="product-price">
-                    <span className="new-price">Now $7.99</span>
-                    <span className="old-price">Was $12.99</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="product product-2">
-                <figure className="product-media">
-                  <a href="product.html">
-                    <img
-                      src="assets/images/demo-8/products/product-4-1.jpg"
-                      alt="Product image"
-                      className="product-image"
-                    />
-                    <img
-                      src="assets/images/demo-8/products/product-4-2.jpg"
-                      alt="Product image"
-                      className="product-image-hover"
-                    />
-                  </a>
-
-                  <div className="product-action-vertical">
-                    <a
-                      href="#"
-                      className="btn-product-icon btn-wishlist btn-expandable"
-                      title="Add to wishlist"
-                    >
-                      <span>add to wishlist</span>
-                    </a>
-                  </div>
-
-                  <div className="product-action ">
-                    <a href="#" className="btn-product btn-cart">
-                      <span>add to cart</span>
-                    </a>
-                  </div>
-                </figure>
-
-                <div className="product-body">
-                  <div className="product-cat">
-                    <a href="#">Clothing</a>
-                  </div>
-                  <h3 className="product-title">
-                    <a href="product.html">Linen-blend paper bag trousers</a>
-                  </h3>
-                  <div className="product-price">$17.99</div>
-                  <div className="product-nav product-nav-thumbs">
-                    <a href="#" className="active">
-                      <img
-                        src="assets/images/demo-8/products/product-4-thumb.jpg"
-                        alt="product desc"
-                      />
-                    </a>
-                    <a href="#">
-                      <img
-                        src="assets/images/demo-8/products/product-4-2-thumb.jpg"
-                        alt="product desc"
-                      />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="mb-3 mb-xl-2"></div>
@@ -751,57 +444,57 @@ const Home = () => {
 
       <div className="group1" >
         <div className="instagram-feed">
-          <img src={ig1} alt="img"/>
+          <img src={ig1} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>466</a>
-              <a href="#"><i className="icon-comments"></i>65</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>466</a>
+            <a href="#"><i className="icon-comments"></i>65</a>
+          </div>
         </div>
 
         <div className="instagram-feed">
-          <img src={ig2} alt="img"/>
+          <img src={ig2} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>39</a>
-              <a href="#"><i className="icon-comments"></i>78</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>39</a>
+            <a href="#"><i className="icon-comments"></i>78</a>
+          </div>
         </div>
 
         <div className="instagram-feed">
-          <img src={ig5} alt="img"/>
+          <img src={ig5} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>691</a>
-              <a href="#"><i className="icon-comments"></i>87</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>691</a>
+            <a href="#"><i className="icon-comments"></i>87</a>
+          </div>
         </div>
 
         <div className="instagram-feed">
-          <img src={ig4} alt="img"/>
+          <img src={ig4} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>508</a>
-              <a href="#"><i className="icon-comments"></i>124</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>508</a>
+            <a href="#"><i className="icon-comments"></i>124</a>
+          </div>
         </div>
 
         <div className="instagram-feed">
-          <img src={ig3} alt="img"/>
+          <img src={ig3} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>433</a>
-              <a href="#"><i className="icon-comments"></i>27</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>433</a>
+            <a href="#"><i className="icon-comments"></i>27</a>
+          </div>
         </div>
 
         <div className="instagram-feed">
-          <img src={ig6} alt="img"/>
+          <img src={ig6} alt="img" />
 
-            <div className="instagram-feed-content">
-              <a href="#"><i className="icon-heart-o"></i>122</a>
-              <a href="#"><i className="icon-comments"></i>55</a>
-            </div>
+          <div className="instagram-feed-content">
+            <a href="#"><i className="icon-heart-o"></i>122</a>
+            <a href="#"><i className="icon-comments"></i>55</a>
+          </div>
         </div>
       </div>
 
