@@ -552,35 +552,25 @@ const ProductDetailClient = () => {
                 {dataViewed.map((product, index) => (
                   <SwiperSlide key={index}>
                     <div className="product product-7" style={{ width: "300px" }}>
-                      <figure className="product-media">
-                        <span className="product-label label-new">New</span>
+                      <Card
+                        onClick={() => navigate(`/product-detail/${product.id}`)}
+
+                        hoverable
+                        cover={<img alt={product.name} src={product.thumbnail} />}
+                      >
+                        <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
+                      </Card>
+                      {/* <figure className="product-media">
                         <a href="product.html">
                           <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
                         </a>
-
-                        <div className="product-action-vertical">
-                          <a href="#" className="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
-                          <a href="popup/quickView.html" className="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
-                          <a href="#" className="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a>
-                        </div>
-
-                        <div className="product-action">
-                          <a href="#" className="btn-product btn-cart"><span>add to cart</span></a>
-                        </div>
                       </figure>
 
                       <div className="product-body">
-
                         <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
                         <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
 
-                        <div className="ratings-container">
-                          <div className="ratings">
-                            <div className="ratings-val" style={{ width: "80%" }}></div>
-                          </div>
-                          <span className="ratings-text">( 2 Đánh giá )</span>
-                        </div>
-                      </div>
+                      </div> */}
                     </div>
                   </SwiperSlide>
                 ))}

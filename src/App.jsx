@@ -76,8 +76,6 @@ function App() {
           <Route path="detailcate/:id" element={<DetailCate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
-          <Route path="product-review" element={<ProductReview />} />
-          <Route path="product-review/:id" element={<ProductReview />} />
           <Route path="review/:id" element={<Review />} />
           <Route path="detail/:id" element={<Detail />} />
           <Route path="google-callback" element={<GoogleCallbackHandler />} />
