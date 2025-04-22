@@ -49,15 +49,11 @@ import productThumb2 from "../assets/images/demo-8/products/product-1-2-thumb.jp
 import productThumb3 from "../assets/images/demo-8/products/product-1-3-thumb.jpg";
 
 import ProductList from "../components/client/product/ProductList";
-import ChatBox from "../components/client/chat/ChatBox";
-import ChatIcon from "../components/client/chat/ChatIcon";
-import ChatWindow from "../components/client/chat/ChatWindow";
+
 import { Link } from "react-router-dom";
 
 const Home = () => {
-  const [chatVisible, setChatVisible] = useState(false);
-  const isLoggedIn = false; // Replace with your auth logic
-  const user = { name: 'Le Hien' }; // Replace with your user data
+ 
   return (
     <>
       <Swiper
@@ -805,13 +801,7 @@ const Home = () => {
         </div>
       </div>
 
-      <ChatIcon onClick={() => setChatVisible(true)} />
-      <ChatWindow
-        visible={chatVisible}
-        onClose={() => setChatVisible(false)}
-        isLoggedIn={isLoggedIn}
-        user={user}
-      />
+     
     </>
   );
 };

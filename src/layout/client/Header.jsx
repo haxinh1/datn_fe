@@ -7,6 +7,8 @@ import logo from "../../assets/images/demo-8/logo.png";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
 import AIChat from "./AIChat.jsx";
+import ChatIcon from './../../components/client/chat/ChatIcon';
+import ChatWindow from './../../components/client/chat/ChatWindow';
 
 let pusherInstance = null;
 
@@ -37,7 +39,9 @@ const Header = () => {
   const [userData, setUserData] = useState(null);
   const [cartItemCount, setCartItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const [chatVisible, setChatVisible] = useState(false);
 
   // Cập nhật số lượng sản phẩm trong giỏ hàng
   const updateCartCount = async () => {
@@ -90,6 +94,7 @@ const Header = () => {
     if (storedUser && storedToken) {
       fetchUserInfo(storedUser.id);
       initializePusher(storedToken);
+      setIsLoggedIn(true);
     } else {
       setUserData(null);
     }
@@ -477,7 +482,14 @@ const Header = () => {
             )}
 
           </div>
-          <AIChat/>
+          <AIChat />
+          <ChatIcon onClick={() => setChatVisible(true)} />
+          <ChatWindow
+            visible={chatVisible}
+            onClose={() => setChatVisible(false)}
+            isLoggedIn={!!userData}
+            user={userData ? userData.fullname : ""}
+          />
         </div>
       </div>
     </header>
