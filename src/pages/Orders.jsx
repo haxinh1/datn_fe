@@ -11,6 +11,7 @@ import logo from "../assets/images/logo.png";
 const { TabPane } = Tabs;
 
 const Orders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();

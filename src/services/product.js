@@ -6,12 +6,24 @@ const fetchProducts = async () => {
 };
 
 const productByCategory = async (categoryId) => {
-    const response = await instance.get(`/product-by-category/${categoryId}`);    
-    return response.data; 
+    const response = await instance.get(`/product-by-category/${categoryId}`);
+    return response.data;
 }
 
 const fetchProductById = async (id) => {
-    const response = await instance.get(`/product-detail/${id}`);
+    const token =
+        localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+
+    if (!token) {
+        throw new Error("Token xác thực không có trong localStorage");
+    }
+    const response = await instance.get(`/product-detail/${id}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
     return response.data;
 };
 
