@@ -11,6 +11,7 @@ import logo from "../assets/images/logo.png";
 const { TabPane } = Tabs;
 
 const Orders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
@@ -35,7 +36,6 @@ const Orders = () => {
   });
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const navigate = useNavigate();
 
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {

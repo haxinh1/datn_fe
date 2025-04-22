@@ -212,10 +212,10 @@ const ProductDetailClient = () => {
         product.is_active === 0
           ? "Sản phẩm này đã ngừng kinh doanh."
           : product.variants?.length > 0 && !selectedVariant
-          ? "Vui lòng chọn biến thể trước khi kéo."
-          : selectedVariant && selectedVariant.is_active === 0
-          ? "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
-          : "Sản phẩm hết hàng."
+            ? "Vui lòng chọn biến thể trước khi kéo."
+            : selectedVariant && selectedVariant.is_active === 0
+              ? "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
+              : "Sản phẩm hết hàng."
       );
       return;
     }
@@ -542,26 +542,25 @@ const ProductDetailClient = () => {
                                 product.is_active === 0
                                   ? "Sản phẩm này đã ngừng kinh doanh."
                                   : !stockAvailable
-                                  ? "Sản phẩm hết hàng."
-                                  : "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
+                                    ? "Sản phẩm hết hàng."
+                                    : "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
                               );
                               return;
                             }
                             handleAddToCart();
                           }}
                           href="#"
-                          className={`btn-product btn-cart ${
-                            !stockAvailable ||
+                          className={`btn-product btn-cart ${!stockAvailable ||
                             product.is_active === 0 ||
                             (selectedVariant && selectedVariant.is_active === 0)
-                              ? "disabled text-muted"
-                              : ""
-                          }`}
+                            ? "disabled text-muted"
+                            : ""
+                            }`}
                           style={{
                             pointerEvents:
                               !stockAvailable ||
-                              product.is_active === 0 ||
-                              (selectedVariant && selectedVariant.is_active === 0)
+                                product.is_active === 0 ||
+                                (selectedVariant && selectedVariant.is_active === 0)
                                 ? "none"
                                 : "auto",
                             fontFamily: "'Roboto', 'Arial', sans-serif",
@@ -636,65 +635,48 @@ const ProductDetailClient = () => {
 
         {dataViewed.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
-            <h2 className="title text-center mb-4">Đã Xem Gần Đây</h2>
-            <Swiper
-              spaceBetween={30}
-              slidesPerView={3}
-              slidesPerGroup={1}
-              autoplay={{ delay: 2500, disableOnInteraction: false }}
-              pagination={{ clickable: true }}
-              navigation={true}
-              modules={[Autoplay, Pagination, Navigation]}
-              className="mySwiper"
-            >
-              {dataViewed.map((product, index) => (
-                <SwiperSlide key={index}>
-                  <div className="product product-7" style={{ width: "300px" }}>
-                    <figure className="product-media">
-                      <span className="product-label label-new">New</span>
-                      <a href={`/product-detail/${product.id}`}>
-                        <img
-                          style={{ width: "300px", height: "300px" }}
-                          src={product.thumbnail}
-                          alt="Product image"
-                          className="product-image"
-                        />
-                      </a>
-                      <div className="product-action-vertical">
-                        <a href="#" className="btn-product-icon btn-wishlist btn-expandable">
-                          <span>Thêm vào danh sách yêu thích</span>
+            <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
+            <div >
+              <Swiper
+                spaceBetween={30}
+                slidesPerView={3}
+                slidesPerGroup={1}
+                autoplay={{
+                  delay: 2500,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation]}
+                className="mySwiper"
+              >
+                {dataViewed.map((product, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="product product-7" style={{ width: "300px" }}>
+                      <Card
+                        onClick={() => navigate(`/product-detail/${product.id}`)}
+
+                        hoverable
+                        cover={<img alt={product.name} src={product.thumbnail} />}
+                      >
+                        <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
+                      </Card>
+                      {/* <figure className="product-media">
+                        <a href="product.html">
+                          <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
                         </a>
-                        <a href="#" className="btn-product-icon btn-quickview" title="Quick view">
-                          <span>Xem nhanh</span>
-                        </a>
-                        <a href="#" className="btn-product-icon btn-compare" title="Compare">
-                          <span>So sánh</span>
-                        </a>
-                      </div>
-                      <div className="product-action">
-                        <a href="#" className="btn-product btn-cart">
-                          <span>Thêm vào giỏ hàng</span>
-                        </a>
-                      </div>
-                    </figure>
-                    <div className="product-body">
-                      <h3 className="product-title">
-                        <a href={`/product-detail/${product.id}`}>{product.name}</a>
-                      </h3>
-                      <div className="product-price">
-                        {formatVND(product.sale_price || product.sell_price)} VNĐ
-                      </div>
-                      <div className="ratings-container">
-                        <div className="ratings">
-                          <div className="ratings-val" style={{ width: "80%" }}></div>
-                        </div>
-                        <span className="ratings-text">(2 Đánh giá)</span>
-                      </div>
+                      </figure>
+
+                      <div className="product-body">
+                        <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
+                        <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
+
+                      </div> */}
                     </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           </div>
         )}
 
