@@ -6,6 +6,7 @@ import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demo-8/logo.png";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
+import AIChat from './AIChat';
 
 let pusherInstance = null;
 
@@ -474,7 +475,8 @@ const Header = () => {
                 </Link>
               </Tooltip>
             )}
-
+            
+            <AIChat/>
           </div>
         </div>
       </div>
