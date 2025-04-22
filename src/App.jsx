@@ -76,7 +76,7 @@ function App() {
           <Route path="detailcate/:id" element={<DetailCate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
-          <Route path="product-review/:id" element={<ProductReview />} />
+          <Route path="review/:id" element={<Review />} />
           <Route path="detail/:id" element={<Detail />} />
           <Route path="google-callback" element={<GoogleCallbackHandler />} />
           <Route
@@ -93,7 +93,6 @@ function App() {
             <Route path="address/:id" element={<Address />} />
             <Route path="return/:id" element={<Return />} />
             <Route path="backcl/:id" element={<BackCl />} />
-            <Route path="review/:id" element={<Review />} />
           </Route>
         </Route>
       </Routes>
