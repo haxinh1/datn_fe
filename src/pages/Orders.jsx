@@ -36,7 +36,6 @@ const Orders = () => {
   });
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const navigate = useNavigate();
 
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
