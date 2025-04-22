@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, Table, Tooltip, Image, Skeleton, Input } from 'antd';
+import { Button, Modal, Table, Tooltip, Image, Skeleton, Input, notification } from 'antd'; // Thêm notification
 import { OrderService } from '../services/order';
 import { Link, useParams } from 'react-router-dom';
 import { EyeOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import echo from '../echo'; // Thêm import echo
 
 const BackCl = () => {
     const { id } = useParams();
@@ -15,22 +16,69 @@ const BackCl = () => {
     const [refundDetails, setRefundDetails] = useState(null);
     const [searchKeyword, setSearchKeyword] = useState("");
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await OrderService.getOrderReturnByIdUser(id);
-                if (response?.order_returns && Array.isArray(response.order_returns)) {
-                    setReturns(response.order_returns);
-                }
-                setIsLoading(false);
-            } catch (error) {
-                console.error("Lỗi khi lấy dữ liệu đơn hàng hoàn trả:", error);
-                setIsLoading(false);
+    // Fetch dữ liệu ban đầu
+    const fetchData = async () => {
+        try {
+            const response = await OrderService.getOrderReturnByIdUser(id);
+            if (response?.order_returns && Array.isArray(response.order_returns)) {
+                setReturns(response.order_returns);
             }
-        };
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu đơn hàng hoàn trả:", error);
+            setIsLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchData();
-    }, []);
+
+        // Lắng nghe sự kiện OrderReturnStatusUpdated
+        const channel = echo.channel('order-return-status-channel');
+        channel.listen('.order-return-status-updated', (event) => {
+            console.log('Sự kiện OrderReturnStatusUpdated:', event);
+
+            // Cập nhật danh sách returns
+            setReturns((prevReturns) => {
+                const updatedReturns = prevReturns.map((item) => {
+                    if (item.order_id === event.order_id) {
+                        return {
+                            ...item,
+                            order: {
+                                ...item.order,
+                                status_id: event.status_id,
+                                updated_at: event.updated_at,
+                            },
+                            note: event.note || item.note,
+                        };
+                    }
+                    return item;
+                });
+                return updatedReturns;
+            });
+
+            // Hiển thị thông báo (tùy chọn)
+            notification.info({
+                message: 'Cập nhật trạng thái đơn hàng',
+                description: `Đơn hàng ${event.order_id} đã được cập nhật trạng thái.`,
+            });
+        });
+
+        // Cleanup khi component unmount
+        return () => {
+            channel.stopListening('.order-return-status-updated');
+            echo.leaveChannel('order-return-status-channel');
+        };
+    }, [id]); // Thêm id vào dependencies để fetch lại dữ liệu khi id thay đổi
+
+    // Debounce search
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            handleSearch(searchKeyword);
+        }, 300);
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchKeyword]);
 
     const handleSearch = async (keyword) => {
         setIsLoading(true);
@@ -47,18 +95,10 @@ const BackCl = () => {
         } finally {
             setIsLoading(false);
         }
-    };    
-
-    useEffect(() => {
-        const delayDebounce = setTimeout(() => {
-            handleSearch(searchKeyword);
-        }, 300); // 500ms debounce
-    
-        return () => clearTimeout(delayDebounce);
-    }, [searchKeyword]);    
+    };
 
     const dataSource = returns.map((item, index) => ({
-        key: item.order_id, // quan trọng cho Table
+        key: item.order_id,
         index: index + 1,
         code: item.order.code,
         fullname: item.order.fullname,
@@ -70,13 +110,13 @@ const BackCl = () => {
         reason: item.reason,
         employee_evidence: item.employee_evidence,
         refund_proof: item.refund_proof,
-        raw: item
+        raw: item,
     }));
 
     const fetchReturnDetails = async (orderId) => {
         try {
-            const response = await OrderService.getReturn(orderId); // Gọi service getRefund với order_id
-            setRefundDetails(response?.refund_details?.[0]);  // Lấy chi tiết hoàn trả đầu tiên (nếu có)
+            const response = await OrderService.getReturn(orderId);
+            setRefundDetails(response?.refund_details?.[0]);
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
         }
@@ -88,7 +128,6 @@ const BackCl = () => {
         fetchReturnDetails(item.raw.order_id);
     };
 
-    // danh sách trạng thái
     const { data: statusData } = useQuery({
         queryKey: ["status"],
         queryFn: async () => {
@@ -114,7 +153,6 @@ const BackCl = () => {
         }
     };
 
-    // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
@@ -161,7 +199,6 @@ const BackCl = () => {
             render: (_, record) => {
                 const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
                 const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
-
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -200,9 +237,7 @@ const BackCl = () => {
                 const attributes = record.attributes
                     ? record.attributes.map(attr => attr.attribute_name).join(" - ")
                     : "";
-
-                const thumbnail = record.thumbnail;  // Lấy ảnh sản phẩm
-
+                const thumbnail = record.thumbnail;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Image width={60} src={thumbnail} />
@@ -239,7 +274,7 @@ const BackCl = () => {
                 Đơn hàng hoàn trả
             </h1>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
                 <Input
                     style={{ width: '400px' }}
                     placeholder="Tìm kiếm mã đơn hàng..."
@@ -296,6 +331,6 @@ const BackCl = () => {
             </Modal>
         </div>
     );
-}
+};
 
 export default BackCl;
