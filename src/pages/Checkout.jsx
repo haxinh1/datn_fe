@@ -66,11 +66,8 @@ const Checkout = () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
 
       if (storedUser?.id) {
-        // Nếu đã đăng nhập => Lấy giỏ hàng từ API
         try {
           const cartData = await cartServices.fetchCart();
-
-          // Gọi thêm API để lấy chi tiết sản phẩm và biến thể
           const detailedCart = await Promise.all(
             cartData.map(async (item) => {
               const productDetails = await productsServices.fetchProductById(item.product_id);
@@ -100,10 +97,7 @@ const Checkout = () => {
           console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
         }
       } else {
-        // Nếu chưa đăng nhập => Lấy giỏ hàng từ localStorage
         const localCartData = JSON.parse(localStorage.getItem("cart_items")) || [];
-
-        // Fetch thông tin sản phẩm từ API
         const updatedCartItems = await Promise.all(
           localCartData.map(async (item) => {
             try {
@@ -511,7 +505,6 @@ const Checkout = () => {
     const userId = user ? user.id : null;
 
     if (userId) {
-      // Người dùng đã đăng nhập: Lấy từ product_variant
       if (product.product_variant && product.product_variant.attribute_value_product_variants) {
         return product.product_variant.attribute_value_product_variants
           .map((attr) => {
@@ -525,7 +518,6 @@ const Checkout = () => {
       }
       return "Không xác định";
     } else {
-      // Người dùng chưa đăng nhập: Lấy từ cartAttributes
       const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
       const productAttributes = attributes.find(
         (attr) =>
@@ -731,13 +723,19 @@ const Checkout = () => {
       discountValue = selectedCoupon.discount_value;
     }
 
-    setDiscountAmount(discountValue);
-    message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
+    // Kiểm tra nếu discountValue lớn hơn subtotal, đặt discountAmount = 0
+    if (discountValue > subtotal) {
+      setDiscountAmount(0);
+      message.warning("Mã giảm giá vượt quá giá trị đơn hàng, không áp dụng giảm giá.");
+    } else {
+      setDiscountAmount(discountValue);
+      message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
+    }
+
     setIsCouponModalVisible(false);
   };
 
-  const finalTotal =
-    subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
+  const finalTotal = subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
 
   const handleRemoveCoupon = () => {
     setSelectedCoupon(null);
