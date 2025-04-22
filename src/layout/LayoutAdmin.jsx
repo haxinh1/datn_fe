@@ -210,7 +210,7 @@ const LayoutAdmin = () => {
       icon: <CommentOutlined />,
       label: (
         <Link to="/admin/comment">
-          <span>Bình Luận</span>
+          <span>Đánh giá</span>
         </Link>
       ),
     },

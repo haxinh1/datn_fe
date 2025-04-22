@@ -447,7 +447,7 @@ const Header = () => {
                 overlay={
                   <Menu>
                     <Menu.Item key="account">
-                      <Link to={`/dashboard/orders/${userData.id}`}>
+                      <Link to={`/dashboard/info/${userData.id}`}>
                         <span>
                           <UserOutlined style={{ marginRight: "8px" }} />
                           Tài khoản
@@ -480,7 +480,8 @@ const Header = () => {
                 </Link>
               </Tooltip>
             )}
-
+            
+            <AIChat/>
           </div>
           <AIChat />
           <ChatIcon onClick={() => setChatVisible(true)} />
