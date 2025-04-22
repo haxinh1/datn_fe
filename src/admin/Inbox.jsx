@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { List, Button, Input, Card, Typography, message as antdMessage } from "antd";
 import axios from "axios";
 import { closeChatSession, getChatSessions, getMessages, sendMessage } from "../services/chatBox";
+import echo from "../echo";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -14,7 +15,23 @@ const Inbox = () => {
 
     useEffect(() => {
         fetchChatSessions();
-    }, []);
+        if (selectedSession) {
+            console.log('Joining channel:', `chat.${selectedSession.id}`);
+            echo.private(`chat.${selectedSession.id}`)
+                .subscribed(() => {
+                    console.log('Successfully subscribed to chat channel:', `chat.${selectedSession.id}`);
+                })
+                .listen('.message.sent', (event) => {
+                    setMessages(prevMessages => [...prevMessages, event.message]);
+                });
+        }
+
+        return () => {
+            if (selectedSession) {
+                echo.leave(`chat.${selectedSession.id}`);
+            }
+        };
+    }, [selectedSession]);
 
     const fetchChatSessions = async () => {
         try {
@@ -80,14 +97,37 @@ const Inbox = () => {
             {selectedSession && (
                 <Card title={`Chat với khách hàng #${selectedSession.id}`} style={{ flex: 1 }}>
                     <div style={{ height: 300, overflowY: "scroll", borderBottom: "1px solid #ddd", padding: 10 }}>
-                        {messages.map((msg) => (
-                            <div key={msg.id} style={{ marginBottom: 10 }}>
-                                <Text strong>
-                                    {msg.sender_type === "customer" ? "Khách hàng" : msg.sender_type === "guest" ? "Guest" : "Nhân viên"}:
-                                </Text>
-                                <p>{msg.message}</p>
-                            </div>
-                        ))}
+                        {messages.map((msg) => {
+                            const isCustomer = msg.sender_type === 'customer' || msg.sender_type === 'guest';
+
+                            return (
+                                <div key={msg.id} style={{ marginBottom: 10 }}>
+                                    <List.Item
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: isCustomer ? 'flex-end' : 'flex-start',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                maxWidth: '70%',
+                                                padding: '8px 12px',
+                                                borderRadius: 8,
+                                                background: isCustomer ? '#1890ff' : '#f0f0f0',
+                                                color: isCustomer ? 'white' : 'black',
+                                            }}
+                                        >
+                                            <div style={{ fontSize: 12, opacity: 0.7 }}>
+                                                {isCustomer
+                                                    ? "Khách hàng"
+                                                    : 'Nhân viên'}
+                                            </div>
+                                            <div>{msg.message}</div>
+                                        </div>
+                                    </List.Item>
+                                </div>
+                            )
+                        })}
                     </div>
                     <TextArea
                         rows={3}

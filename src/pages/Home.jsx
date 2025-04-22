@@ -33,15 +33,11 @@ import banner6 from "../assets/images/demo-8/banners/banner-6.jpg";
 import slider1 from "../assets/images/demo-8/slider/img-1.png";
 import slider2 from "../assets/images/demo-8/slider/img-2.png";
 import ProductList from "../components/client/product/ProductList";
-import ChatBox from "../components/client/chat/ChatBox";
-import ChatIcon from "../components/client/chat/ChatIcon";
-import ChatWindow from "../components/client/chat/ChatWindow";
+
 import { Link } from "react-router-dom";
 
 const Home = () => {
-  const [chatVisible, setChatVisible] = useState(false);
-  const isLoggedIn = false; // Replace with your auth logic
-  const user = { name: 'Le Hien' }; // Replace with your user data
+ 
   return (
     <>
       <Swiper
@@ -498,13 +494,7 @@ const Home = () => {
         </div>
       </div>
 
-      <ChatIcon onClick={() => setChatVisible(true)} />
-      <ChatWindow
-        visible={chatVisible}
-        onClose={() => setChatVisible(false)}
-        isLoggedIn={isLoggedIn}
-        user={user}
-      />
+     
     </>
   );
 };
