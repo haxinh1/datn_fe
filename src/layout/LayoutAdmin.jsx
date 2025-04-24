@@ -56,8 +56,8 @@ const LayoutAdmin = () => {
 
   const forceLogout = async () => {
     try {
-      const tokenBefore = localStorage.getItem("adminToken");
-      localStorage.removeItem("admin_token");
+      const tokenBefore = localStorage.getItem("token");
+      localStorage.removeItem("token");
 
       await AuthServices.logoutad(
         "/admin/logout",
@@ -69,8 +69,9 @@ const LayoutAdmin = () => {
         }
       );
 
-      localStorage.removeItem("adminToken");
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     } catch (error) {
       console.error("Lỗi khi logout:", error);
     } finally {

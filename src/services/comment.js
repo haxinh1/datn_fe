@@ -9,8 +9,7 @@ const fetchComments = async () => {
     }
 }
 const createComment = async (payload) => {
-    const token =
-        localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+    const token = localStorage.getItem("token");
 
     if (!token) {
         throw new Error("Token xác thực không có trong localStorage");

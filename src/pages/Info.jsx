@@ -108,13 +108,12 @@ const Info = () => {
 
             // Cập nhật localStorage
             const updatedClient = {
-                ...JSON.parse(localStorage.getItem("client")),
+                ...JSON.parse(localStorage.getItem("user")),
                 fullname: response.fullname,
                 phone_number: response.phone_number,
                 email: response.email,
                 avatar: response.avatar,
             };
-            localStorage.setItem("client", JSON.stringify(updatedClient));
             localStorage.setItem("user", JSON.stringify(updatedClient));
 
             // Phát sự kiện user-updated
@@ -141,7 +140,7 @@ const Info = () => {
 
     const isGoogleAccount = () => {
         try {
-            const storedUser = localStorage.getItem("client");
+            const storedUser = localStorage.getItem("user");
             if (!storedUser) return false;
             const parsedUser = JSON.parse(storedUser);
             return !!parsedUser.google_id;

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demo-8/logo.png";
-import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { LogoutOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
 import AIChat from "./AIChat.jsx";
 import ChatIcon from './../../components/client/chat/ChatIcon';
@@ -89,7 +89,7 @@ const Header = () => {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    const storedToken = localStorage.getItem("client_token");
+    const storedToken = localStorage.getItem("token");
 
     if (storedUser && storedToken) {
       fetchUserInfo(storedUser.id);
@@ -114,7 +114,7 @@ const Header = () => {
 
     const handleUserLogin = () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
-      const storedToken = localStorage.getItem("client_token");
+      const storedToken = localStorage.getItem("token");
       if (storedUser && storedToken) {
         fetchUserInfo(storedUser.id);
         updatePusherAuth(storedToken);
@@ -139,7 +139,7 @@ const Header = () => {
         updateCartCount();
         if (e.key === "user" || e.key === "client_token") {
           const storedUser = JSON.parse(localStorage.getItem("user"));
-          const storedToken = localStorage.getItem("client_token");
+          const storedToken = localStorage.getItem("token");
           if (storedUser && storedToken) {
             fetchUserInfo(storedUser.id);
             updatePusherAuth(storedToken);
@@ -186,7 +186,7 @@ const Header = () => {
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser?.id) {
-      const pusher = initializePusher(localStorage.getItem("client_token"));
+      const pusher = initializePusher(localStorage.getItem("token"));
       console.log('Subscribing to channel:', `user.${storedUser.id}`);
       const channel = pusher.subscribe(`user.${storedUser.id}`);
 
@@ -220,9 +220,9 @@ const Header = () => {
       const response = await AuthServices.logoutclient();
       console.log('Logout response:', response.message);
 
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client");
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
       localStorage.removeItem("cart_items");
 
       window.dispatchEvent(new Event("user-logout"));
@@ -234,8 +234,7 @@ const Header = () => {
       }
     } catch (error) {
       console.error("Logout failed", error);
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client");
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("cart_items");
       window.dispatchEvent(new Event("user-logout"));
@@ -454,6 +453,18 @@ const Header = () => {
                         </span>
                       </Link>
                     </Menu.Item>
+
+                    {userData.role !== "customer" && ( // Kiểm tra role từ userData
+                      <Menu.Item key="admin">
+                        <Link to='/admin/list-pr'>
+                          <span>
+                            <SettingOutlined style={{ marginRight: "8px" }} />
+                            Quản trị
+                          </span>
+                        </Link>
+                      </Menu.Item>
+                    )}
+
                     <Menu.Item key="logout">
                       <span onClick={showConfirm}>
                         <LogoutOutlined style={{ marginRight: "8px" }} />
@@ -480,8 +491,8 @@ const Header = () => {
                 </Link>
               </Tooltip>
             )}
-            
-            <AIChat/>
+
+            <AIChat />
           </div>
           <AIChat />
           <ChatIcon onClick={() => setChatVisible(true)} />

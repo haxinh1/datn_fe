@@ -16,8 +16,7 @@ const ProductById = async (id) => {
 };
 
 const fetchProductById = async (id) => {
-    const token =
-        localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+    const token = localStorage.getItem("token");
 
     if (!token) {
         throw new Error("Token xác thực không có trong localStorage");
@@ -39,6 +38,11 @@ const createProduct = async (payload) => {
 
 const updateProduct = async (id, payload) => {
     const response = await instance.put(`/products/${id}`, payload);
+    return response.data;
+};
+
+const activeProduct = async (id, payload) => {
+    const response = await instance.put(`/products/edit/active/${id}`, payload);
     return response.data;
 };
 
@@ -108,6 +112,7 @@ export const productsServices = {
     fetchProductById,
     createProduct,
     updateProduct,
+    activeProduct,
     searchProducts,
     importProduct,
     history,

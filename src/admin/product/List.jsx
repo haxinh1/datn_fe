@@ -249,6 +249,25 @@ const List = () => {
         },
     });
 
+    // Thêm hàm handleSwitchChange bên ngoài, trong phạm vi component List
+    const handleSwitchChange = async (productId, checked) => {
+        try {
+            const payload = { is_active: checked ? 1 : 0 };
+            await productsServices.activeProduct(productId, payload);
+            notification.success({
+                message: "Cập nhật trạng thái thành công",
+                description: `Sản phẩm đã được ${checked ? "mở" : "dừng"} kinh doanh.`,
+            });
+            queryClient.invalidateQueries(["products"]);
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái:", error);
+            notification.error({
+                message: "Cập nhật trạng thái thất bại",
+                description: error.message,
+            });
+        }
+    };
+
     const columns = [
         {
             title: "Ảnh",
@@ -310,10 +329,14 @@ const List = () => {
             key: 'is_active',
             dataIndex: 'is_active',
             align: 'center',
-            render: (isActive) => (
-                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
-                </span>
+            width: 150,
+            render: (isActive, product) => (
+                <div>
+                    <Switch
+                        checked={isActive === 1}
+                        onChange={(checked) => handleSwitchChange(product.id, checked)}
+                    />
+                </div>
             ),
         },
         {

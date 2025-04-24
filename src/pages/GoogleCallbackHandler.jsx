@@ -26,8 +26,7 @@ const GoogleCallbackHandler = () => {
         }
 
         // Lưu vào localStorage
-        localStorage.setItem("client_token", token);
-        localStorage.setItem("client", JSON.stringify(user));
+        localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
 
         // Phát sự kiện user-login để thông báo cho Header

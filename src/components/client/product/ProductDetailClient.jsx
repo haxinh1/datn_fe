@@ -254,7 +254,7 @@ const ProductDetailClient = () => {
   // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
-      const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
+      const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
       setProduct(data);
       setDataViewed(dataViewed || []);
       setAvgRate(avgRate);

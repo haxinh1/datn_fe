@@ -27,9 +27,9 @@ const Logincl = () => {
         values.password
       );
       if (response?.token) {
-        localStorage.setItem("client_token", response.token);
-        localStorage.setItem("client", JSON.stringify(response.user));
+        localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
+        sessionStorage.setItem("user", JSON.stringify(response.user))
 
         message.success("Đăng nhập thành công!");
 

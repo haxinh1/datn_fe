@@ -49,7 +49,7 @@ const getAllStatus = async () => {
 };
 
 const placeOrder = async (orderData) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user ? user.id : null;
 
@@ -114,7 +114,7 @@ const getOrderStatus = async (id) => {
 
 const updateOrderStatus = async (id, payload) => {
   // Lấy client_token từ localStorage
-  const clientToken = localStorage.getItem("client_token");
+  const clientToken = localStorage.getItem("token");
 
   // Gửi client_token trong headers khi gọi API
   const response = await instance.put(`/orders/${id}/update-status`, payload, {
@@ -180,7 +180,7 @@ const confirmBack = async (id, payload) => {
 };
 
 const retryPayment = async (orderId, paymentMethod, totalMomo) => {
-  const clientToken = localStorage.getItem("client_token");
+  const clientToken = localStorage.getItem("token");
   try {
     const data = {
       payment_method: paymentMethod,
