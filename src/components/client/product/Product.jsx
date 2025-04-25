@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import formatVND from "../../../utils/formatPrice";
 import { Link } from "react-router-dom";
 
 const Product = (props) => {
   const [products, setProducts] = useState([]);
   const [currentImages, setCurrentImages] = useState({});
-  const [selectedVariantData, setSelectedVariantData] = useState({});
   const { product } = props;
 
   useEffect(() => {
@@ -15,22 +13,6 @@ const Product = (props) => {
     });
     setCurrentImages(defaultImages);
   }, [products]);
-
-  const handleThumbnailClick = (productId, variant) => {
-    setCurrentImages((prevImages) => ({
-      ...prevImages,
-      [productId]: variant.thumbnail,
-    }));
-
-    setSelectedVariantData((prevVariants) => ({
-      ...prevVariants,
-      [productId]: {
-        ...variant,
-        sale_price:
-          variant.sale_price > 0 ? variant.sale_price : variant.sell_price,
-      },
-    }));
-  };
 
   const getVariantPriceRange = (product) => {
     const variantPrices =

@@ -108,13 +108,12 @@ const Info = () => {
 
             // Cập nhật localStorage
             const updatedClient = {
-                ...JSON.parse(localStorage.getItem("client")),
+                ...JSON.parse(localStorage.getItem("user")),
                 fullname: response.fullname,
                 phone_number: response.phone_number,
                 email: response.email,
                 avatar: response.avatar,
             };
-            localStorage.setItem("client", JSON.stringify(updatedClient));
             localStorage.setItem("user", JSON.stringify(updatedClient));
 
             // Phát sự kiện user-updated
@@ -141,7 +140,7 @@ const Info = () => {
 
     const isGoogleAccount = () => {
         try {
-            const storedUser = localStorage.getItem("client");
+            const storedUser = localStorage.getItem("user");
             if (!storedUser) return false;
             const parsedUser = JSON.parse(storedUser);
             return !!parsedUser.google_id;
@@ -275,37 +274,39 @@ const Info = () => {
         ]
         : [];
 
-    const data = user
-        ? [
-            {
-                key: "created_at",
-                label: "Ngày đăng ký",
-                value: <div className="action-link-blue">{dayjs(user.created_at).format("DD/MM/YYYY")}</div>,
-            },
-            {
-                key: "total_spent",
-                label: "Chi tiêu (VNĐ)",
-                value: formatPrice(user.total_spent),
-            },
-            {
-                key: "rank",
-                label: "Hạng",
-                value: user.rank,
-            },
-            {
-                key: "loyalty_points",
-                label: "Điểm tiêu dùng",
-                value: (
-                    <div className="group1">
-                        <div className="action-link-blue">{formatPrice(user.loyalty_points)}</div>
-                        <Tooltip title="Chi tiết">
-                            <Button type="text" icon={<EyeOutlined />} onClick={showPoint} />
-                        </Tooltip>
-                    </div>
-                ),
-            },
-        ]
-        : [];
+    const data = user ? [
+        {
+            key: 'created_at',
+            label: 'Ngày đăng ký',
+            value: <div className="action-link-blue">{dayjs(user.created_at).format("DD/MM/YYYY")}</div>
+        },
+        {
+            key: "total_spent",
+            label: "Chi tiêu (VNĐ)",
+            value: formatPrice(user.total_spent)
+        },
+        {
+            key: "rank",
+            label: "Hạng",
+            value: user.rank
+        },
+        {
+            key: "loyalty_points",
+            label: "Điểm tiêu dùng",
+            value:
+                <div className="points">
+                    <div className="action-link-blue">{formatPrice(user.loyalty_points)}</div>
+
+                    <Tooltip title="Chi tiết">
+                        <Button
+                            type="text"
+                            icon={<EyeOutlined />}
+                            onClick={showPoint}
+                        />
+                    </Tooltip>
+                </div>
+        },
+    ] : [];
 
     const getPointColumns = [
         {

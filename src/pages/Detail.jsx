@@ -45,24 +45,6 @@ const Detail = () => {
         fetchDetailOrder();
     }, [id]);
 
-    // Tạo lại dữ liệu bảng từ tên sản phẩm, các thuộc tính của variant, số lượng và giá bán
-    const transformedDetail = detail.flatMap((item, index) =>
-        item.variants.map((variant, variantIndex) => {
-            // Kết hợp tên sản phẩm và các giá trị thuộc tính của variant
-            const attributeNames = variant.attributes.map(attribute => attribute.attribute_name).join(" - ");
-            const fullName = `${item.name} - ${attributeNames}`; // Tạo tên đầy đủ
-
-            return {
-                key: `variant-${index}-${variantIndex}`,
-                product_id: item.product_id,
-                name: fullName,
-                quantity: variant.quantity,
-                sell_price: variant.sell_price,
-                variant_thumbnail: variant.variant_thumbnail
-            };
-        })
-    );
-
     // hàm xác nhận đã nhận hàng
     const handleMarkAsReceived = (id) => {
         Modal.confirm({
@@ -188,14 +170,28 @@ const Detail = () => {
             title: "Sản phẩm",
             dataIndex: "product",
             align: "center",
-            render: (_, record) => (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                    <Image src={record.variant_thumbnail} width={60} />
-                    <Link to={`/product-detail/${record.product_id}`}>
-                        <span>{record.name}</span>
-                    </Link>
-                </div>
-            ),
+            render: (_, record) => {
+                const productName = record.name || "";
+                const thumbnail = record.thumbnail;
+                const variantAttributes =
+                    record.variants
+                        ?.map((variant) => {
+                            const attributes = variant.attributes
+                                .map((attr) => attr.attribute_name)
+                                .join(" - ");
+                            return `${productName} - ${attributes}`;
+                        })
+                        .join(", ") || productName;
+
+                return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Image width={60} src={thumbnail} />
+                        <Link to={`/product-detail/${record.product_id}`}>
+                            <span>{variantAttributes}</span>
+                        </Link>
+                    </div>
+                );
+            },
         },
         {
             title: "Số lượng",
@@ -325,50 +321,60 @@ const Detail = () => {
                                 />
                             </Skeleton>
 
-                            <Skeleton active loading={isLoading}>
-                                <Table
-                                    columns={detailColumns}
-                                    dataSource={transformedDetail}
-                                    style={{ width: '100%' }}
-                                    pagination={false}
-                                    summary={() => {
-                                        const totalAmount = order?.order_items?.reduce(
-                                            (sum, item) => sum + item.quantity * item.sell_price,
-                                            0
-                                        );
-                                        return (
-                                            <>
-                                                <Table.Summary.Row>
-                                                    <Table.Summary.Cell colSpan={4} align="right">
-                                                        Tổng tiền:
-                                                    </Table.Summary.Cell>
-                                                    <Table.Summary.Cell align="center">
-                                                        {formatPrice(totalAmount)}
-                                                    </Table.Summary.Cell>
-                                                </Table.Summary.Row>
+                            <div className='card-info'>
+                                <Skeleton active loading={isLoading}>
+                                    <Table
+                                        columns={detailColumns}
+                                        dataSource={detail}
+                                        style={{ width: '800px' }}
+                                        pagination={false}
+                                        summary={() => {
+                                            const totalAmount = order?.order_items?.reduce(
+                                                (sum, item) => sum + item.quantity * item.sell_price,
+                                                0
+                                            );
+                                            return (
+                                                <>
+                                                    <Table.Summary.Row>
+                                                        <Table.Summary.Cell colSpan={4} align="right">
+                                                            Tổng tiền:
+                                                        </Table.Summary.Cell>
+                                                        <Table.Summary.Cell align="center">
+                                                            {formatPrice(totalAmount)}
+                                                        </Table.Summary.Cell>
+                                                    </Table.Summary.Row>
 
-                                                <Table.Summary.Row>
-                                                    <Table.Summary.Cell colSpan={4} align="right">
-                                                        Phí vận chuyển:
-                                                    </Table.Summary.Cell>
-                                                    <Table.Summary.Cell align="center">
-                                                        {formatPrice(order?.shipping_fee || 0)}
-                                                    </Table.Summary.Cell>
-                                                </Table.Summary.Row>
+                                                    <Table.Summary.Row>
+                                                        <Table.Summary.Cell colSpan={4} align="right">
+                                                            Phí vận chuyển:
+                                                        </Table.Summary.Cell>
+                                                        <Table.Summary.Cell align="center">
+                                                            {formatPrice(order?.shipping_fee || 0)}
+                                                        </Table.Summary.Cell>
+                                                    </Table.Summary.Row>
 
-                                                <Table.Summary.Row>
-                                                    <Table.Summary.Cell colSpan={4} align="right">
-                                                        <strong>Tổng giá trị đơn hàng:</strong>
-                                                    </Table.Summary.Cell>
-                                                    <Table.Summary.Cell align="center">
-                                                        <strong>{formatPrice(order?.total_amount || 0)}</strong>
-                                                    </Table.Summary.Cell>
-                                                </Table.Summary.Row>
-                                            </>
-                                        );
-                                    }}
-                                />
-                            </Skeleton>
+                                                    <Table.Summary.Row>
+                                                        <Table.Summary.Cell colSpan={4} align="right">
+                                                            <strong>Tổng thanh toán:</strong>
+                                                        </Table.Summary.Cell>
+                                                        <Table.Summary.Cell align="center">
+                                                            <strong>{formatPrice(order?.total_amount || 0)}</strong>
+                                                        </Table.Summary.Cell>
+                                                    </Table.Summary.Row>
+                                                </>
+                                            );
+                                        }}
+                                    />
+                                </Skeleton>
+
+                                <hr />
+                                <div style={{ marginLeft: '60px' }}>
+                                    <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mắc nào, hãy liên hệ với Molla</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Zalo:</strong> 0987654321</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
+                                    <span style={{fontSize: '14px'}}><strong>Hotline:</strong> 09100204</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

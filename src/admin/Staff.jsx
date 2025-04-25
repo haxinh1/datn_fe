@@ -122,6 +122,19 @@ const Staff = () => {
             value: dayjs(userData.birthday).format("DD/MM/YYYY")
         },
         {
+            key: 'role',
+            label: 'Chức năng',
+            value: (
+                <div className="action-link-blue">
+                    {userData.role === 'admin'
+                        ? 'Quản lý'
+                        : userData.role === 'manager'
+                        ? 'Nhân viên'
+                        : 'Khách hàng'}
+                </div>
+            ),
+        },        
+        {
             key: 'created_at',
             label: 'Ngày tham gia',
             value: <div className="action-link-blue">{dayjs(userData.created_at).format("DD/MM/YYYY")}</div>
@@ -147,7 +160,6 @@ const Staff = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -335,19 +347,19 @@ const Staff = () => {
 
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Phí vận chuyển:
+                                        Giảm giá điểm tiêu dùng:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        {formatPrice(orderInfo.shipping_fee)}
+                                        {formatPrice(orderInfo.discount_points)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
 
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Giảm giá điểm tiêu dùng:
+                                        Phí vận chuyển:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        {formatPrice(orderInfo.discount_points)}
+                                        {formatPrice(orderInfo.shipping_fee)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
 

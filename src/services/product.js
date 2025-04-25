@@ -6,12 +6,28 @@ const fetchProducts = async () => {
 };
 
 const productByCategory = async (categoryId) => {
-    const response = await instance.get(`/product-by-category/${categoryId}`);    
-    return response.data; 
+    const response = await instance.get(`/product-by-category/${categoryId}`);
+    return response.data;
 }
 
+const ProductById = async (id) => {
+    const response = await instance.get(`/products/${id}`);
+    return response.data;
+};
+
 const fetchProductById = async (id) => {
-    const response = await instance.get(`/product-detail/${id}`);
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Token xác thực không có trong localStorage");
+    }
+    const response = await instance.get(`/product-detail/${id}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
     return response.data;
 };
 
@@ -22,6 +38,11 @@ const createProduct = async (payload) => {
 
 const updateProduct = async (id, payload) => {
     const response = await instance.put(`/products/${id}`, payload);
+    return response.data;
+};
+
+const activeProduct = async (id, payload) => {
+    const response = await instance.put(`/products/edit/active/${id}`, payload);
     return response.data;
 };
 
@@ -69,16 +90,34 @@ const exportExcel = async (orderIds = []) => {
     return response.data;
 }
 
+const fetchProductRecommendById = async (id) => {
+    try {
+        const { data } = await instance.get(`/product-recommend/${id}`);
+        return data;
+    } catch (error) {
+        console.log(error)
+    }
+}
+// xuất excel
+const importExcel = async (formData) => {
+    const response = await instance.post('/import-stock', formData);
+    return response.data;
+}
+
 // Xuất các hàm để dùng trong các component
 export const productsServices = {
     fetchProducts,
     productByCategory,
+    ProductById,
     fetchProductById,
     createProduct,
     updateProduct,
+    activeProduct,
     searchProducts,
     importProduct,
     history,
     confirm,
-    exportExcel
+    exportExcel,
+    fetchProductRecommendById,
+    importExcel,
 };

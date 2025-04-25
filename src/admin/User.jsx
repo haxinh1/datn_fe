@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, BookOutlined, EyeOutlined, ProductOutlined } from '@ant-design/icons';
+import { BookOutlined, CloseCircleOutlined, EyeOutlined, ProductOutlined } from '@ant-design/icons';
 import { Avatar, Button, Image, Modal, Skeleton, Table, Tooltip, notification } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -23,6 +23,8 @@ const User = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [productData, setProductData] = useState([])
     const [pointHistory, setPointHistory] = useState([]);
+    const [bannedHistory, setBannedHistory] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
     const [orderInfo, setOrderInfo] = useState({
         email: "",
         address: "",
@@ -183,7 +185,35 @@ const User = () => {
             points: item.points,
             type: item.type,
             reason: item.reason,
-            date: dayjs(item.created_at).format('DD/MM/YYYY HH:mm'),
+            date: item.created_at,
+        }));
+
+    useEffect(() => {
+        const fetchPoints = async () => {
+            try {
+                const data = await AuthServices.bannedHistory(id);
+                setBannedHistory(data); // mảng lịch sử điểm
+                setIsLoading(false);
+            } catch (err) {
+                console.error("Lỗi khi lấy lịch sử điểm:", err);
+                setIsLoading(false);
+                notification.error({
+                    message: "Lỗi",
+                    description: "Không thể tải lịch sử điểm của người dùng.",
+                });
+            }
+        };
+
+        if (id) fetchPoints();
+    }, [id]);
+
+    const getBannedDataSource = (banned) =>
+        banned.map((item, index) => ({
+            key: item.id,
+            index: index + 1,
+            reason: item.reason,
+            banned_at: item.banned_at,
+            ban_expires_at: item.ban_expires_at,
         }));
 
     if (!userData) return null;
@@ -297,7 +327,7 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
+            render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -362,7 +392,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Tên sản phẩm",
@@ -443,7 +472,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -504,7 +532,6 @@ const User = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
         },
         {
             title: "Sản phẩm",
@@ -577,9 +604,35 @@ const User = () => {
             title: 'Thời gian',
             dataIndex: 'date',
             align: "center",
+            render: (date) => (date ? dayjs(date).format("DD/MM/YYYY - HH:mm") : ""),
             sorter: (a, b) => dayjs(a.date, 'DD/MM/YYYY HH:mm').unix() - dayjs(b.date, 'DD/MM/YYYY HH:mm').unix(),
         }
 
+    ];
+
+    const getBannedColumns = [
+        {
+            title: 'STT',
+            dataIndex: 'index',
+            align: "center",
+        },
+        {
+            title: 'Lý do',
+            dataIndex: 'reason',
+            align: "center",
+        },
+        {
+            title: 'Ngày bị khóa',
+            dataIndex: 'banned_at',
+            align: "center",
+            render: (banned_at) => (banned_at ? dayjs(banned_at).format("DD/MM/YYYY - HH:mm") : ""),
+        },
+        {
+            title: 'Ngày mở khóa',
+            dataIndex: 'ban_expires_at',
+            align: "center",
+            render: (ban_expires_at) => (ban_expires_at ? dayjs(ban_expires_at).format("DD/MM/YYYY - HH:mm") : ""),
+        },
     ];
 
     return (
@@ -595,6 +648,7 @@ const User = () => {
                     dataSource={dataSource}
                     pagination={false}
                     rowKey="key"
+                    style={{ marginBottom: '30px' }}
                 />
 
                 <div className='card-info'>
@@ -606,12 +660,33 @@ const User = () => {
                         <Table
                             columns={detailColumns}
                             style={{ width: '100%' }}
-                            pagination={{ pageSize: 5 }}
+                            pagination={{ pageSize: 5, current: currentPage }}
                             dataSource={orders}
+                            onChange={(pagination) => setCurrentPage(pagination.current)}
                             bordered
                         />
                     </Skeleton>
+                </div>
+            </div>
 
+            <div className="group1">
+                <div className="card-info">
+                    <Skeleton active loading={isLoading}>
+                        <h4 className='profile-name'>
+                            <ProductOutlined style={{ marginRight: "8px" }} />
+                            Sản phẩm đã mua
+                        </h4>
+                        <Table
+                            columns={productColumns}
+                            dataSource={productData}
+                            style={{ width: '100%' }}
+                            pagination={{ pageSize: 5 }}
+                            bordered
+                        />
+                    </Skeleton>
+                </div>
+
+                <div className="card-info">
                     <Skeleton active loading={isLoading}>
                         <h4 className='profile-name' >
                             <BookOutlined style={{ marginRight: "8px" }} />
@@ -646,13 +721,12 @@ const User = () => {
                 <div className='card-info'>
                     <Skeleton active loading={isLoading}>
                         <h4 className='profile-name'>
-                            <ProductOutlined style={{ marginRight: "8px" }} />
-                            Sản phẩm đã mua
+                            <CloseCircleOutlined style={{ marginRight: "8px" }} />
+                            Lịch sử khóa tài khoản
                         </h4>
                         <Table
-                            columns={productColumns}
-                            dataSource={productData}
-                            style={{ width: '100%' }}
+                            dataSource={getBannedDataSource(bannedHistory)}
+                            columns={getBannedColumns}
                             pagination={{ pageSize: 5 }}
                             bordered
                         />
@@ -711,19 +785,19 @@ const User = () => {
 
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Phí vận chuyển:
+                                        Giảm giá điểm tiêu dùng:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        {formatPrice(orderInfo.shipping_fee)}
+                                        {formatPrice(orderInfo.discount_points)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
 
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
-                                        Giảm giá điểm tiêu dùng:
+                                        Phí vận chuyển:
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        {formatPrice(orderInfo.discount_points)}
+                                        {formatPrice(orderInfo.shipping_fee)}
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
 
@@ -746,7 +820,7 @@ const User = () => {
                 visible={isModal}
                 onCancel={hideReturn}
                 footer={null}
-                width={800}
+                width={700}
             >
                 <div className="group1">
                     <Table

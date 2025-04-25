@@ -131,7 +131,7 @@ const Return = () => {
                     quantity: Number(quantities[key]) || 1,
                 };
             }
-        });           
+        });
 
         // Sử dụng form.getFieldValue để lấy giá trị các trường nhập liệu
         const bank_account_number = form.getFieldValue('bank_account_number');
@@ -192,7 +192,7 @@ const Return = () => {
                         onChange={() => handleSelectChange(key)}
                     />
                 );
-            },            
+            },
             dataIndex: "select",
             align: 'center'
         },
@@ -243,7 +243,7 @@ const Return = () => {
                         }
                     />
                 );
-            }            
+            }
         },
         {
             title: "Giá hoàn (VNĐ)",
@@ -260,7 +260,7 @@ const Return = () => {
                 const key = variant ? `${record.product_id}-${variant.variant_id}` : `p-${record.product_id}`;
                 const quantity = quantities[key] || 0;
                 return formatPrice(quantity * record.refund_amount);
-            }            
+            }
         }
     ];
 
@@ -278,29 +278,37 @@ const Return = () => {
                         ...item,
                         key: item.variants?.[0] ? `${item.product_id}-${item.variants[0].variant_id}` : `p-${item.product_id}`,
                         index: index + 1,
-                    }))}                    
+                    }))}
                     pagination={false}
                     summary={() => {
                         const totalAmount = orderDetails.reduce((sum, item) => {
                             const variant = item.variants?.[0];
                             const key = variant ? `${item.product_id}-${variant.variant_id}` : `p-${item.product_id}`;
-                            
+
                             if (selectedRowKeys.includes(key)) {
                                 const quantity = Number(quantities[key]) || 0;
                                 return sum + (quantity * item.refund_amount);
                             }
                             return sum;
-                        }, 0);                        
+                        }, 0);
 
                         return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell colSpan={5} align="right">
-                                    <strong>Tổng tiền hoàn trả (VNĐ):</strong>
-                                </Table.Summary.Cell>
-                                <Table.Summary.Cell align="center">
-                                    <strong>{formatPrice(totalAmount)}</strong>
-                                </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                            <>
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={5} align="right">
+                                        <strong>Tổng tiền hoàn trả (VNĐ):</strong>
+                                    </Table.Summary.Cell>
+                                    <Table.Summary.Cell align="center">
+                                        <strong>{formatPrice(totalAmount)}</strong>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+
+                                <Table.Summary.Row>
+                                    <Table.Summary.Cell colSpan={5} align="right">
+                                        <i style={{fontSize: '16px'}}><strong>Giá hoàn</strong> = giá bán * [ 1 - (điểm tiêu dùng + phiếu giảm giá) / tổng tiền hàng ]</i>
+                                    </Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            </>
                         );
                     }}
                 />

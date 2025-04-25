@@ -60,6 +60,7 @@ const ResetAd = () => {
                     </Form.Item>
 
                     <Form.Item
+                        className="form-log"
                         label="Mật khẩu"
                         name="password"
                         rules={[
@@ -75,6 +76,7 @@ const ResetAd = () => {
                     </Form.Item>
 
                     <Form.Item
+                        className="form-log"
                         label="Xác nhận mật khẩu"
                         name="password_confirmation"
                         rules={[

@@ -1,4 +1,4 @@
-import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton, Checkbox } from 'antd';
+import { Button, Table, Modal, DatePicker, ConfigProvider, Form, Select, InputNumber, notification, Tooltip, Skeleton, Checkbox, Upload } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { productsServices } from '../../services/product';
 import { useQuery } from '@tanstack/react-query';
@@ -644,6 +644,67 @@ const History = () => {
                 </div>
 
                 <div className="group2">
+
+                    <Upload
+                        beforeUpload={(file) => {
+                            const isExcel =
+                                file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                                file.type === 'application/vnd.ms-excel';
+                            if (!isExcel) {
+                                notification.error({
+                                    message: 'Lỗi định dạng file',
+                                    description: 'Vui lòng chọn file Excel (.xlsx hoặc .xls)!',
+                                });
+                                return Upload.LIST_IGNORE;
+                            }
+
+                            const maxSize = 10 * 1024 * 1024; // 10MB
+                            if (file.size > maxSize) {
+                                notification.error({
+                                    message: 'Lỗi kích thước file',
+                                    description: 'File không được lớn hơn 10MB!',
+                                });
+                                return Upload.LIST_IGNORE;
+                            }
+
+                            return true;
+                        }}
+                        customRequest={async ({ file, onSuccess, onError }) => {
+                            try {
+                                const formData = new FormData();
+                                formData.append('file', file);
+
+                                const response = await productsServices.importExcel(formData);
+
+                                if (response.success) {
+                                    notification.success({
+                                        message: 'Nhập Excel thành công!',
+                                        description: response.message || 'Dữ liệu đã được nhập vào hệ thống.',
+                                    });
+                                    refetchStocks();
+                                    onSuccess(response);
+                                } else {
+                                    throw new Error(response.message || 'Phản hồi từ server không thành công');
+                                }
+                            } catch (error) {
+                                console.error("Lỗi khi nhập Excel:", error);
+                                notification.error({
+                                    message: 'Nhập Excel thất bại!',
+                                    description:
+                                        error.response?.data?.message ||
+                                        error.message ||
+                                        'Có lỗi xảy ra khi nhập dữ liệu từ file Excel.',
+                                });
+                                onError(error);
+                            }
+                        }}
+                        showUploadList={false}
+                    >
+                        <Button color="primary" variant="solid" icon={<ImportOutlined />}>
+                            Nhập Excel
+                        </Button>
+                    </Upload>
+
                     <Button
                         color="primary" variant="solid"
                         icon={<ToTopOutlined />}

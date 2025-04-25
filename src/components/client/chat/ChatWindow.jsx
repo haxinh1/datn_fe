@@ -11,44 +11,50 @@ import {
 import echo from '../../../echo';
 
 const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
+
   const [form] = Form.useForm();
   const [guestForm] = Form.useForm();
   const [chatSession, setChatSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null); // Ref để cuộn xuống tin nhắn mới nhất
+  const messagesEndRef = useRef(null);
 
-  // Khởi tạo chat khi modal hiển thị
+
   useEffect(() => {
     if (visible) {
-      initializeChat();
+      const savedChatSessionId = localStorage.getItem('chat_session_id'); 
+      if (savedChatSessionId) {
+        setChatSession({ id: savedChatSessionId });
+        fetchMessages(savedChatSessionId);
+      } else {
+        initializeChat(); 
+      }
     }
   }, [visible]);
 
-  // Tích hợp real-time với Laravel Echo
+
   useEffect(() => {
     if (!chatSession) return;
 
-    // Lắng nghe sự kiện message.sent trên kênh private
     console.log('Joining channel:', `chat.${chatSession.id}`);
-    echo.private('chat.' + 5)
+    echo.private(`chat.${chatSession.id}`)
       .subscribed(() => {
-        console.log('Successfully subscribed to chat channel:', `chat.${chatSessionId}`);
+        console.log('Successfully subscribed to chat channel:', `chat.${chatSession.id}`);
       })
-      .listen('MessageSent', (event) => {
-        console.log('New message received:', event.message)
-
-        // setMessages((prevMessages) => [...prevMessages, data]);
-        // scrollToBottom(); // Cuộn xuống tin nhắn mới nhất
+      .listen('.message.sent', (event) => {
+        console.log('New message received:', JSON.stringify(event, null, 2));
+        setMessages((prevMessages) => [...prevMessages, event.message]);
+        scrollToBottom(); 
+      })
+      .error((error) => {
+        console.error('Pusher error:', error);
       });
 
-    // Cleanup khi component unmount hoặc chatSession thay đổi
     return () => {
       echo.leave(`chat.${chatSession.id}`);
     };
   }, [chatSession, isLoggedIn, user]);
 
-  // Cuộn xuống tin nhắn mới nhất
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -58,8 +64,10 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     try {
       if (isLoggedIn) {
         const response = await createChatSession({});
-        setChatSession(response.data.chat_session);
-        fetchMessages(response.data.chat_session.id);
+        const chatSessionData = response.data.chat_session;
+        setChatSession(chatSessionData);
+        localStorage.setItem('chat_session_id', chatSessionData.id);  // Lưu ID phiên chat
+        fetchMessages(chatSessionData.id);
       } else {
         const guestPhone = localStorage.getItem('guest_phone');
         if (guestPhone) {
@@ -67,6 +75,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
           const activeSession = sessions.data.chat_sessions.find((s) => !s.is_closed);
           if (activeSession) {
             setChatSession(activeSession);
+            localStorage.setItem('chat_session_id', activeSession.id);  // Lưu ID phiên chat
             fetchMessages(activeSession.id);
           }
         }
@@ -76,6 +85,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     }
     setLoading(false);
   };
+  
 
   const fetchMessages = async (chatSessionId) => {
     try {
@@ -138,16 +148,22 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     setLoading(true);
     try {
       await closeChatSession(chatSession.id);
+      
+      localStorage.removeItem('chat_session_id');
+      
       setChatSession(null);
       setMessages([]);
+      
       localStorage.removeItem('guest_phone');
       localStorage.removeItem('guest_name');
+      
       onClose();
     } catch (error) {
       message.error('Không thể đóng phiên chat');
     }
     setLoading(false);
   };
+  
 
   return (
     <Modal
@@ -204,7 +220,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
                       <div style={{ fontSize: 12, opacity: 0.7 }}>
                         {isCustomer
                           ? isLoggedIn
-                            ? user.name
+                            ? user
                             : localStorage.getItem('guest_name')
                           : 'Nhân viên'}
                       </div>

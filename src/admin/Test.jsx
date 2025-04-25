@@ -1,148 +1,38 @@
-import { BookOutlined, EditOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Checkbox, ConfigProvider, DatePicker, Form, Image, Input, notification, Select, Skeleton, Table, Tooltip } from "antd";
-import React, { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { OrderService } from "./../services/order";
-import viVN from "antd/es/locale/vi_VN";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, EyeOutlined, MenuOutlined, PrinterOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Tabs, Tooltip, notification } from "antd";
+import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import "dayjs/locale/vi";
-import { paymentServices } from "../services/payments";
-dayjs.locale("vi");
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { OrderService } from "../services/order";
+import { useQuery } from "@tanstack/react-query";
+import echo from "../echo";
+import logo from "../assets/images/logo.png";
+const { TabPane } = Tabs;
 
 const Test = () => {
+  const [orders, setOrders] = useState([]); // State to store the orders
+  const [isLoading, setIsLoading] = useState(true);
+  const { id } = useParams();
+  const { RangePicker } = DatePicker;
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [form] = Form.useForm();
   const [orderDetails, setOrderDetails] = useState([]);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 5 });
   const [orderInfo, setOrderInfo] = useState({
     email: "",
     address: "",
     fullname: "",
+    payment_id: "",
     shipping_fee: "",
     discount_points: "",
     total_amount: "",
     coupon_discount_value: "",
+    coupon_discount_type: "",
   });
-  const { RangePicker } = DatePicker;
-  const [selectedOrders, setSelectedOrders] = useState([]);
-  const [filters, setFilters] = useState({
-    dateRange: null,
-    status: null,
-    paymentMethod: null,
-  });
-
-  // danh sách đơn hàng
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
-
-  const { data: ordersData = [], isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["orders"],
-    queryFn: async () => {
-      const response = await OrderService.getAllOrder();
-      return Array.isArray(response.orders) ? response.orders : [];
-    },
-  });
-
-  const { data: searchResults = [], isLoading: isLoadingSearch } = useQuery({
-    queryKey: ["searchOrders", searchKeyword],
-    queryFn: async () => {
-      if (!searchKeyword) return [];
-      const response = await OrderService.searchOrders(searchKeyword);
-      return Array.isArray(response) ? response : [];
-    },
-    enabled: searchKeyword.length > 0,  // Chỉ gọi API khi có từ khóa tìm kiếm
-  });
-
-  // danh sách phương thức thanh toán
-  const { data: payments } = useQuery({
-    queryKey: ["payments"],
-    queryFn: paymentServices.getPayment,
-  });
-
-  // danh sách trạng thái
-  const { data: statusData } = useQuery({
-    queryKey: ["status"],
-    queryFn: async () => {
-      const response = await OrderService.getAllStatus();
-      return response.data;
-    },
-  });
-  const status = statusData ? [...statusData].sort((a, b) => a.id - b.id) : [];
-
-  // lấy ra đơn hàng theo ID
-  const { data: orderStatuses = [] } = useQuery({
-    queryKey: ["orderStatuses", selectedOrderId], // Dùng selectedOrderId thay vì id từ URL
-    queryFn: async () => {
-      if (!selectedOrderId) return [];
-      const response = await OrderService.getOrderStatus(selectedOrderId);
-      return response?.data || [];
-    },
-    enabled: !!selectedOrderId, // Chỉ gọi API khi có selectedOrderId
-  });
-
-  const validTransitions = {
-    1: [2], // Chờ thanh toán -> Đã thanh toán
-    2: [3, 8], // Đã thanh toán -> Đang xử lý hoặc Hủy đơn
-    3: [4, 8], // Đang xử lý -> Đang giao hàng hoặc Hủy đơn
-    4: [5, 6], // Đang giao hàng -> Đã giao hàng hoặc Giao hàng thất bại
-    6: [4, 8],
-  };
-
-  const showEdit = (order) => {
-    setSelectedOrderId(order.id); // Lưu ID đơn hàng
-    const currentStatusId = order.status?.id; // Lấy trạng thái hiện tại
-
-    form.setFieldsValue({
-      status_id: undefined, // Không đặt giá trị mặc định cho status_id
-      note: "",
-      employee_evidence: "",
-    });
-
-    // Lọc các trạng thái hợp lệ dựa trên trạng thái hiện tại
-    const validStatuses = validTransitions[currentStatusId] || [];
-    const filteredStatus = status.filter(item => validStatuses.includes(item.id));
-
-    setValidStatuses(filteredStatus); // Lưu lại các trạng thái hợp lệ
-
-    setIsModal(true);
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value ?? null, // Đảm bảo khi xóa sẽ đặt lại thành null
-    }));
-  };
-
-  const mergedOrders = (searchKeyword ? searchResults : ordersData).map(order => ({
-    ...order,
-    payment: payments?.find(p => p.id === order.payment_id),
-    status: status?.find(s => s.id === order.status_id),
-  }));
-
-  const filteredOrders = (mergedOrders || []).filter((order) => {
-    const { dateRange, status, paymentMethod } = filters;
-
-    const isWithinDateRange =
-      !dateRange ||
-      (dayjs(order.created_at).isSameOrAfter(dayjs(dateRange[0]), "day") &&
-        dayjs(order.created_at).isSameOrBefore(dayjs(dateRange[1]), "day"));
-
-    const matchesStatus = status === null || order.status?.id === status;
-    const matchesPayment =
-      paymentMethod === null || order.payment?.id === paymentMethod;
-
-    return isWithinDateRange && matchesStatus && matchesPayment;
-  });
-
-  const dataSource = filteredOrders.map((order, index) => ({
-    ...order,
-    key: order.id,
-    index: index + 1,
-  }));
 
   // Tách số thành định dạng tiền tệ
   const formatPrice = (price) => {
@@ -162,10 +52,12 @@ const Test = () => {
       email: order.email,
       address: order.address,
       fullname: order.fullname,
+      payment_id: order.payment_id,
       discount_points: order.discount_points,
       shipping_fee: order.shipping_fee,
       total_amount: order.total_amount,
       coupon_discount_value: order.coupon_discount_value,
+      coupon_discount_type: order.coupon_discount_type,
     });
 
     // Lọc danh sách sản phẩm của đơn hàng từ ordersData
@@ -173,52 +65,313 @@ const Test = () => {
     setOrderDetails(orderDetails);
   };
 
-  // Đóng modal
-  const hideBatchUpdateModal = () => {
-    setBatchUpdateModalVisible(false);
-  };
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await OrderService.getOrderByIdUser(id);
+        setOrders(response.orders);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách đơn hàng:", error);
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể tải danh sách đơn hàng.",
+        });
+        setIsLoading(false);
+      }
+    };
 
-  // Xử lý khi người dùng chọn tất cả đơn hàng
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedOrders(filteredOrders);  // Chọn tất cả đơn hàng sau khi lọc
-    } else {
-      setSelectedOrders([]);  // Bỏ chọn tất cả
+    fetchOrders();
+  }, []);
+
+  const handleSearch = async (keyword) => {
+    setSearchKeyword(keyword); // Cập nhật từ khóa tìm kiếm vào state
+    try {
+      setIsLoading(true);
+      if (keyword.trim()) {
+        const response = await OrderService.searchOrders(keyword); // Gọi API tìm kiếm đơn hàng
+        setOrders(response); // Lưu kết quả vào state orders
+      } else {
+        fetchOrders(); // Nếu không có từ khóa tìm kiếm, quay lại danh sách toàn bộ
+      }
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
     }
   };
 
-  // Cập nhật danh sách các đơn hàng được chọn
-  const rowSelection = {
-    selectedRowKeys: selectedOrders.map(order => order.id),
-    onChange: (selectedRowKeys) => {
-      setSelectedOrders(filteredOrders.filter(order => selectedRowKeys.includes(order.id)));
-    },
+  useEffect(() => {
+    const channel = echo.channel("order-status-channel");
+
+    channel.listen(".order-status-updated", (e) => {
+      console.log("📦 Đơn hàng được cập nhật realtime:", e);
+
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.id === e.order_id
+            ? {
+              ...order,
+              status: {
+                id: e.status_id,
+                name: getStatusName(e.status_id),
+              },
+              updated_at: e.updated_at,
+            }
+            : order
+        )
+      );
+    });
+
+    return () => {
+      echo.leave("order-status-channel");
+    };
+  }, []);
+
+  const statusTabs = [
+    { id: 2, label: "Đã thanh toán" },
+    { id: 3, label: "Đang xử lý" },
+    { id: 4, label: "Đang giao hàng" },
+    { id: 5, label: "Đã giao hàng" },
+    { id: 6, label: "Giao hàng thất bại" },
+    { id: 7, label: "Hoàn thành" },
+    { id: 8, label: "Hủy đơn" },
+    { id: 9, label: "Trả hàng" },
+  ];
+
+  const countOrdersByStatus = (statusId) => {
+    if (statusId === 9) {
+      // Trả hàng: đếm tất cả đơn có status ID >= 9
+      return orders.filter((order) => order.status?.id >= 9).length;
+    }
+    return orders.filter((order) => order.status?.id === statusId).length;
   };
 
-  const handleSelectSingle = (order) => {
-    setSelectedOrders((prevSelectedOrders) => {
-      if (prevSelectedOrders.some(item => item.id === order.id)) {
-        return prevSelectedOrders.filter(item => item.id !== order.id);
-      } else {
-        return [...prevSelectedOrders, order];
+  const [filters, setFilters] = useState({
+    dateRange: null,
+    status: null,
+    payment: null,
+  });
+
+  const filteredOrders = orders.filter((order) => {
+    const { dateRange, status, payment } = filters;
+    const orderDate = dayjs(order.created_at);
+    const isDateValid =
+      !dateRange ||
+      (orderDate.isSameOrAfter(dateRange[0], "day") &&
+        orderDate.isSameOrBefore(dateRange[1], "day"));
+    const isStatusValid = !status || order.status?.id === status;
+    const isPaymentValid = !payment || order.payment?.id === payment;
+    const isTabMatch =
+      !activeTab ||
+      (activeTab === 9
+        ? order.status?.id >= 9 // Trả hàng: tất cả status >= 9
+        : order.status?.id === activeTab);
+    const isSearchMatch = order.code.toLowerCase().includes(searchKeyword.toLowerCase()); // Kiểm tra tìm kiếm mã đơn hàng
+
+    return isDateValid && isStatusValid && isPaymentValid && isTabMatch && isSearchMatch;
+  });
+
+  // danh sách trạng thái
+  const { data: statusData } = useQuery({
+    queryKey: ["status"],
+    queryFn: async () => {
+      const response = await OrderService.getAllStatus();
+      return response.data;
+    },
+  });
+  const getStatusName = (id) => {
+    const found = statusData?.find((s) => s.id === id);
+    return found ? found.name : "Đang cập nhật...";
+  };
+
+  // hàm tiếp tục thanh toán
+  const handleRetryPayment = async (orderId) => {
+    try {
+      const response = await OrderService.retryPayment(orderId); // Gọi API backend để thử thanh toán lại
+      if (response.payment_url) {
+        window.location.href = response.payment_url; // Chuyển hướng người dùng đến trang thanh toán VNPay
       }
+    } catch (error) {
+      console.error("Lỗi khi thanh toán lại:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể thanh toán lại đơn hàng.",
+      });
+    }
+  };
+
+  // hàm xác nhận đã nhận hàng
+  const handleMarkAsReceived = (orderId) => {
+    Modal.confirm({
+      title: "Xác nhận đã nhận hàng",
+      content:
+        "Để hỗ trợ đổi trả hàng, hãy quay lại video khi bạn mở kiện hàng nhé!",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const payload = {
+            order_status_id: 7, // Status 'Hoàn thành'
+            note: "",
+            employee_evidence: "",
+          };
+
+          console.log("Dữ liệu gửi đi:", payload);
+
+          // Gọi API để cập nhật trạng thái đơn hàng
+          const response = await OrderService.updateOrderStatus(
+            orderId,
+            payload
+          );
+          console.log("Phản hồi từ API:", response);
+
+          // Kiểm tra phản hồi chính xác từ API
+          if (
+            response &&
+            response.message === "Cập nhật trạng thái đơn hàng thành công"
+          ) {
+            notification.success({
+              message: "Cảm ơn bạn đã tin tưởng Molla Shop",
+              description: "Hãy đánh giá sản phẩm của bạn tại đây!",
+            });
+
+            // Cập nhật lại danh sách đơn hàng với trạng thái mới
+            setOrders((prevOrders) =>
+              prevOrders.map((order) =>
+                order.id === orderId
+                  ? { ...order, status: { id: 7, name: "Hoàn thành" } }
+                  : order
+              )
+            );
+            navigate(`/review/${orderId}`);
+          } else {
+            notification.error({
+              message: "Cập nhật thất bại",
+              description: "Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.",
+            });
+          }
+        } catch (error) {
+          console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
+          notification.error({
+            message: "Lỗi",
+            description: "Không thể cập nhật trạng thái đơn hàng.",
+          });
+        }
+      },
     });
   };
 
-  const columns = [
+  // hãm xác nhận hủy đơn
+  const handleCancelOrder = (orderId) => {
+    Modal.confirm({
+      title: "Xác nhận hủy đơn",
+      content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const payload = {
+            order_status_id: 8, // Status 'Hủy đơn'
+            note: "", // Nếu có ghi chú, bạn có thể thêm ở đây
+            employee_evidence: "", // Cung cấp chứng cứ nếu cần thiết
+          };
+
+          console.log("Dữ liệu gửi đi:", payload);
+
+          // Gọi API để cập nhật trạng thái đơn hàng
+          const response = await OrderService.updateOrderStatus(
+            orderId,
+            payload
+          );
+          console.log("Phản hồi từ API:", response);
+
+          // Kiểm tra phản hồi chính xác từ API
+          if (
+            response &&
+            response.message === "Cập nhật trạng thái đơn hàng thành công"
+          ) {
+            notification.success({
+              message: "Đơn hàng đã được hủy",
+              description: "Đơn hàng của bạn đã được hủy thành công.",
+            });
+
+            // Cập nhật lại danh sách đơn hàng với trạng thái mới
+            setOrders((prevOrders) =>
+              prevOrders.map((order) =>
+                order.id === orderId
+                  ? { ...order, status: { id: 8, name: "Hủy đơn" } }
+                  : order
+              )
+            );
+          } else {
+            notification.error({
+              message: "Cập nhật thất bại",
+              description: "Có lỗi xảy ra khi hủy đơn hàng.",
+            });
+          }
+        } catch (error) {
+          console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
+          notification.error({
+            message: "Lỗi",
+            description: "Không thể hủy đơn hàng.",
+          });
+        }
+      },
+    });
+  };
+
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId);
+  const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
+
+  const detailColumns = [
     {
-      title: <Checkbox onChange={handleSelectAll} />,
-      render: (_, order) => (
-        <Checkbox
-          checked={selectedOrders.some(item => item.id === order.id)}
-          onChange={() => handleSelectSingle(order)}
-        />
-      ),
+      title: "Sản phẩm",
+      dataIndex: "product",
+      align: "center",
+      render: (_, record) => {
+        const productName = record.name || "";
+        const variantAttributes =
+          record.variants
+            ?.map((variant) => {
+              const attributes = variant.attributes
+                .map((attr) => attr.attribute_name)
+                .join(" - ");
+              return `${productName} - ${attributes}`;
+            })
+            .join(", ") || productName;
+
+        return (
+          <Link to={`/product-detail/${record.product_id}`}>
+            <span>{variantAttributes}</span>
+          </Link>
+        );
+      },
     },
+    {
+      title: "Số lượng",
+      dataIndex: "quantity",
+      align: "center",
+    },
+    {
+      title: "Giá bán (VNĐ)",
+      dataIndex: "sell_price",
+      align: "center",
+      render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
+    },
+    {
+      title: "Tổng tiền (VNĐ)", // ✅ Thêm cột tổng tiền
+      dataIndex: "total",
+      align: "center",
+      render: (_, record) => formatPrice(record.quantity * record.sell_price),
+    },
+  ];
+
+  const columns = [
     {
       title: "STT",
       dataIndex: "index",
       align: "center",
+      render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
       title: "Mã đơn hàng",
@@ -227,23 +380,11 @@ const Test = () => {
       align: "center",
     },
     {
-      title: "Khách hàng",
-      dataIndex: "fullname",
-      key: "fullname",
-      align: "center",
-    },
-    {
-      title: "Số điện thoại",
-      dataIndex: "phone_number",
-      key: "phone_number",
-      align: "center",
-    },
-    {
       title: "Giá trị đơn hàng (VNĐ)",
       dataIndex: "total_amount",
       key: "total_amount",
       align: "center",
-      width: 160,
+      width: 130,
       render: (total_amount) => (total_amount ? formatPrice(total_amount) : ""),
     },
     {
@@ -251,119 +392,269 @@ const Test = () => {
       dataIndex: "created_at",
       key: "created_at",
       align: "center",
-      render: (created_at) => created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
-      sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),  // Sắp xếp theo ngày
+      render: (created_at) =>
+        created_at ? dayjs(created_at).format("DD/MM/YYYY") : "",
     },
     {
       title: "Phương thức thanh toán",
       dataIndex: "payment",
       align: "center",
-      width: 160,
-      render: (payment) => (
-        <div className="action-link-blue">{payment?.name}</div>
-      ),
+      width: 130,
+      render: (payment) => {
+        const paymentName =
+          payment?.name === "COD"
+            ? "Thanh toán khi nhận hàng"
+            : payment?.name === "VNPAY"
+              ? "Thanh toán qua VNPay"
+              : payment?.name === "MOMO"
+                ? "Thanh toán qua Momo"
+                : payment?.name;
+        return <span>{paymentName}</span>;
+      }
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       align: "center",
       render: (status) => (
-        <div className={status?.id >= 8 ? "action-link-red" : "action-link-blue"}>
+        <div className={[8, 9, 11].includes(status?.id) ? "action-link-red" : "action-link-blue"}>
           {status?.name}
         </div>
       ),
     },
     {
-      title: "Thao tác",
+      title: "",
       key: "action",
       align: "center",
-      render: (_, item) => (
-        <div className="action-container">
-          <Tooltip title="Xem thêm">
-            <Button
-              color="purple"
-              variant="solid"
-              icon={<EyeOutlined />}
-              onClick={() => showModal(item)}
-            />
-          </Tooltip>
-          <Tooltip title="Cập nhật">
-            <Button
-              color="primary"
-              variant="solid"
-              icon={<EditOutlined />}
-              onClick={() => showEdit(item)}
-            />
-          </Tooltip>
-        </div>
-      ),
+      render: (_, item) => {
+        const { status } = item;
+        const isCheckout = status?.id === 1;
+        const isDelivered = status?.id === 5; // Đã giao hàng
+        return (
+          <div className="action-container">
+            <Tooltip title="Hóa đơn">
+              <Button
+                color="purple"
+                variant="solid"
+                icon={<PrinterOutlined />}
+                onClick={() => showModal(item)}
+              />
+            </Tooltip>
+
+            {isDelivered && (
+              <Tooltip title="Đã nhận hàng">
+                <Button
+                  color="primary"
+                  variant="solid"
+                  icon={<CheckOutlined />}
+                  onClick={() => handleMarkAsReceived(item.id)}
+                />
+              </Tooltip>
+            )}
+
+            {isCheckout && (
+              <Tooltip title="Tiếp tục thanh toán">
+                <Button
+                  color="primary"
+                  variant="solid"
+                  icon={<ArrowRightOutlined />}
+                  onClick={() => handleRetryPayment(item.id)} // Gọi hàm thanh toán lại
+                />
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div>
-      <h1 className="mb-5">
+      <h1 className="mb-5" style={{ color: "#eea287" }}>
         <BookOutlined style={{ marginRight: "8px" }} />
-        Đơn hàng
+        Đơn hàng của bạn
       </h1>
 
-      <div className="group1">
-        <ConfigProvider locale={viVN}>
-          <RangePicker
-            format="DD/MM/YYYY"
-            placeholder={["Từ ngày", "Đến ngày"]}
-            value={filters.dateRange}
-            onChange={(dates) => handleFilterChange("dateRange", dates)}
-            allowClear
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+        <Tooltip title="Toàn bộ đơn hàng">
+          <Button
+            onClick={() => setActiveTab(null)}
+            icon={<MenuOutlined />}
           />
-        </ConfigProvider>
+        </Tooltip>
 
-        <Select
-          placeholder="Trạng thái"
-          className="select-item"
-          value={filters.status}
-          onChange={(value) => handleFilterChange("status", value)}
-          allowClear
-        >
-          {status.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Select
-          placeholder="Phương thức thanh toán"
-          className="select-item"
-          value={filters.paymentMethod}
-          onChange={(value) => handleFilterChange("paymentMethod", value)}
-          allowClear
-        >
-          {payments?.map((method) => (
-            <Select.Option key={method.id} value={method.id}>
-              {method.name}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Input.Search
+        <Input
           style={{ width: '400px' }}
-          placeholder="Tìm kiếm đơn hàng..."
+          placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
-          enterButton={<SearchOutlined />}
-          onSearch={(value) => setSearchKeyword(value.trim())}
+          value={searchKeyword}
+          onSearch={(value) => handleSearch(value)}
+          onChange={(e) => setSearchKeyword(e.target.value)}
         />
       </div>
 
-      <Skeleton loading={isLoadingOrders || isLoadingSearch} active>
+      <Tabs
+        onChange={(key) => setActiveTab(parseInt(key))}
+        activeKey={activeTab?.toString() || ""}
+        type="scrollable"
+      >
+        {statusTabs.map((tab) => (
+          <TabPane
+            tab={`${tab.label} (${countOrdersByStatus(tab.id)})`}
+            key={tab.id.toString()}
+          />
+        ))}
+      </Tabs>
+
+      <Skeleton active loading={isLoading}>
         <Table
           columns={columns}
-          dataSource={dataSource}
-          pagination={{ pageSize: 10 }}
-          bordered
+          dataSource={filteredOrders}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
+          }}
         />
       </Skeleton>
 
+      <Modal
+        visible={isModalVisible}
+        onCancel={hideModal}
+        footer={null}
+        width={500}
+      >
+        <div id="invoiceModalContent">
+          <div className="form-name">
+            <img className="logo-bill" src={logo} />
+          </div>
+          <span className="text-title">
+            Khách hàng: <span className="text-name">{orderInfo.fullname}</span>
+          </span>{" "}
+          <br />
+          <span className="text-title">
+            Email: <span className="text-name">{orderInfo.email}</span>
+          </span>{" "}
+          <br />
+          <span className="text-title">
+            Địa chỉ: <span className="text-name">{orderInfo.address}</span>
+          </span>
+          <Table
+            style={{ marginTop: "20px" }}
+            columns={detailColumns}
+            dataSource={orderDetails.map((item) => ({
+              ...item,
+              product_name: item.product?.name,
+            }))}
+            pagination={false}
+            summary={() => {
+              const totalAmount = orderDetails.reduce(
+                (sum, item) => sum + item.quantity * item.sell_price,
+                0
+              );
+
+              const isPercentDiscount = orderInfo.coupon_discount_type === "percent";
+              const discountValue = isPercentDiscount
+                ? (totalAmount * orderInfo.coupon_discount_value) / 100 || 0
+                : 0;
+
+              return (
+                <>
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Tổng tiền hàng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(totalAmount)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1.2' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phiếu giảm giá:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {isPercentDiscount
+                        ? `${formatPrice(discountValue)} (${orderInfo.coupon_discount_value}%)`
+                        : formatPrice(orderInfo.coupon_discount_value)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Phí vận chuyển:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.shipping_fee)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      Giảm giá điểm tiêu dùng:
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      {formatPrice(orderInfo.discount_points)}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Tổng thanh toán:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>{formatPrice(orderInfo.total_amount)}</strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+
+                  <Table.Summary.Row style={{ lineHeight: '1' }}>
+                    <Table.Summary.Cell colSpan={3} align="right">
+                      <strong>Số tiền cần trả:</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">
+                      <strong>
+                        {orderInfo.payment_id === 2
+                          ? formatPrice(orderInfo.total_amount)
+                          : formatPrice(0)}
+                      </strong>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </>
+              );
+            }}
+          />
+          <div className="form-thank">
+            <span className="text-thank">
+              Cảm ơn quý khách đã tin tưởng Molla Shop!
+            </span>{" "}
+            <br />
+            <span className="text-name">Hẹn gặp lại</span>
+          </div>
+        </div>
+
+        <div className="add">
+          {(orderStatus === 5 || orderStatus === 7) && (
+            <Link to={`/dashboard/return/${selectedOrderId}`}>
+              <Button
+                color="danger"
+                variant="solid"
+              >
+                Trả hàng
+              </Button>
+            </Link>
+          )}
+
+          {(orderStatus === 1 || orderStatus === 2 || orderStatus === 3) && (
+            <Button
+              color="danger"
+              variant="solid"
+              onClick={() => handleCancelOrder(selectedOrderId)}
+            >
+              Hủy đơn
+            </Button>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

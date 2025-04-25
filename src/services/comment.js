@@ -9,11 +9,21 @@ const fetchComments = async () => {
     }
 }
 const createComment = async (payload) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Token xác thực không có trong localStorage");
+    }
     try {
-        const { data } = await instance.post('/comments', payload)
+        const { data } = await instance.post('/comments', payload, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+
+        })
         return data
     } catch (error) {
-        console.log(error)
+       throw new Error(error);
     }
 }
 const updateComment = async (id, payload) => {
@@ -34,9 +44,19 @@ const bulkAction = async ({ comment_ids, action }) => {
         throw error;
     }
 };
+const fetchCommentByProductId = async (productId) => {
+    try {
+        const { data } = await instance.get(`/comments/product/${productId}`);
+        return data;
+
+    } catch (error) {
+        console.log(error);
+    }
+}
 export const CommentServices = {
     fetchComments,
     createComment,
     updateComment,
-    bulkAction
+    bulkAction,
+    fetchCommentByProductId
 }

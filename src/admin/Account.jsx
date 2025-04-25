@@ -16,6 +16,7 @@ const Account = () => {
     const [loggedInUserId, setLoggedInUserId] = useState(null);
     const [loggedInUserRole, setLoggedInUserRole] = useState([]);
     const handleEditCancel = () => setIsEditModalVisible(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { data: users, isLoading, refetch } = useQuery({
         queryKey: ["users"],
@@ -30,14 +31,23 @@ const Account = () => {
         mutationFn: async (updatedData) => {
             return await AuthServices.updateUser(selectedRecord.id, updatedData);
         },
-        onSuccess: () => {
+        onSuccess: (_, updatedData) => {
             notification.success({
                 message: "Cập nhật thành công",
             });
             handleEditCancel();
-            console.log(userData)
-            refetch(); // Refresh danh sách người dùng sau khi cập nhật
-        }
+            refetch();
+        
+            // Cập nhật lại filteredUsers nếu đang dùng lọc
+            setFilteredUsers((prev) => {
+                if (!prev) return null; // nếu không lọc, giữ nguyên
+                return prev.map((user) =>
+                    user.id === selectedRecord.id
+                        ? { ...user, ...updatedData }
+                        : user
+                );
+            });
+        }        
     });
 
     const handleUpdateUser = async () => {
@@ -88,8 +98,8 @@ const Account = () => {
         {
             title: "STT",
             dataIndex: "index",
-            render: (_, __, index) => index + 1,
             align: "center",
+            render: (_, __, index) => (currentPage - 1) * 10 + index + 1,
         },
         {
             title: "Người dùng",
@@ -145,7 +155,7 @@ const Account = () => {
                 <span className={
                     role === "admin" ? "action-link-green" : role === "manager" ? "action-link-blue" : "action-link-purple"
                 }>
-                    {role === "admin" ? "Quản trị viên" : role === "manager" ? "Nhân viên" : "Khách hàng"}
+                    {role === "admin" ? "Quản lý" : role === "manager" ? "Nhân viên" : "Khách hàng"}
                 </span>
             ),
         },
@@ -213,7 +223,7 @@ const Account = () => {
                 >
                     <Select.Option value="customer">Khách hàng</Select.Option>
                     <Select.Option value="manager">Nhân viên</Select.Option>
-                    <Select.Option value="admin">Quản trị viên</Select.Option>
+                    <Select.Option value="admin">Quản lý</Select.Option>
                 </Select>
             </div>
 
@@ -221,7 +231,8 @@ const Account = () => {
                 <Table
                     columns={columns}
                     dataSource={filteredUsers || users}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, current: currentPage }}
+                    onChange={(pagination) => setCurrentPage(pagination.current)}
                     bordered
                 />
             </Skeleton>

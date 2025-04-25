@@ -1,9 +1,8 @@
 import { CheckOutlined, EditOutlined, EyeOutlined, MenuOutlined, PlusOutlined, RollbackOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons'
 import { Button, Col, Modal, Row, Select, Skeleton, Table, Tooltip, Upload, Form, notification, Image, Input, Radio, message } from 'antd'
-import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
 import { OrderService } from '../services/order'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import TextArea from 'antd/es/input/TextArea'
 
 const Back = () => {
@@ -15,7 +14,6 @@ const Back = () => {
     const [isModal, setIsModal] = useState(false);
     const hideEdit = () => setIsModal(false);
     const [isModalStock, setIsModalStock] = useState(false);
-    const [approveStock, setApproveStock] = useState(null);
     const [selectedStockOrderId, setSelectedStockOrderId] = useState(null);
     const [form] = Form.useForm();
     const [currentStatusId, setCurrentStatusId] = useState(null);
@@ -33,46 +31,39 @@ const Back = () => {
         status: null,
     });
 
-    const fetchReturns = async () => {
-        setIsLoading(true);
-        try {
-            const response = await OrderService.getReturnOrder();
-            if (response?.order_returns && Array.isArray(response.order_returns)) {
-                setReturns(response.order_returns);
+    const queryClient = useQueryClient();
+
+    const { data: returnsData, isLoading: isReturnsLoading } = useQuery({
+        queryKey: ['returns', searchKeyword],
+        queryFn: async () => {
+            if (searchKeyword.trim()) {
+                const response = await OrderService.searchOrderReturn(searchKeyword);
+                return response?.order_returns || response || [];
+            } else {
+                const response = await OrderService.getReturnOrder();
+                return response?.order_returns || [];
             }
-        } catch (error) {
-            console.error("Lỗi khi lấy đơn hàng hoàn trả:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        },
+    });
 
     useEffect(() => {
-        fetchReturns();
-    }, []);
-
-    const handleSearch = async (keyword) => {
-        setSearchKeyword(keyword); // Cập nhật từ khóa vào state
-
-        setIsLoading(true);
-        try {
-            if (keyword.trim()) {
-                const response = await OrderService.searchOrderReturn(keyword);
-                setReturns(response); // Có thể là response.order_returns nếu API trả theo format
-            } else {
-                fetchReturns(); // Nếu không có từ khóa, load lại toàn bộ
-            }
-        } catch (error) {
-            console.error("Lỗi tìm kiếm đơn hàng:", error);
-        } finally {
-            setIsLoading(false);
+        if (returnsData) {
+            const validReturns = returnsData.filter(item => item && item.order);
+            setReturns(validReturns || []);
         }
+        setIsLoading(isReturnsLoading);
+    }, [returnsData, isReturnsLoading]);
+
+    const handleSearch = (keyword) => {
+        setSearchKeyword(keyword);
     };
 
-    const filteredReturns = returns.filter((item) => {
-        const status = item.order.status_id;
-        return !filters.status || status === filters.status;
-    });
+    const filteredReturns = returns
+        .filter((item) => item && item.order)
+        .filter((item) => {
+            const status = item.order.status_id;
+            return !filters.status || status === filters.status;
+        });
 
     const dataSource = filteredReturns.map((item, index) => ({
         key: item.order_id,
@@ -80,43 +71,57 @@ const Back = () => {
         code: item.order.code,
         fullname: item.order.fullname,
         phone_number: item.order.phone_number,
-        total_amount: item.order.total_amount,
+        total_amount: item.order.total_amount || 0,
         created_at: item.order.created_at,
         payment: {
-            id: item.order.payment_id,
+            id: item.order.payment_id || 0,
             name: item.order.payment_id === 1 ? "COD" : "VNPAY",
         },
-        status_id: item.order.status_id,
+        status_id: item.order.status_id || 0,
         reason: item.reason,
-        employee_evidence: item.employee_evidence,
-        refund_proof: item.refund_proof,
+        employee_evidence: item.employee_evidence || "",
+        total_refund_amount: item.total_refund_amount || 0,
+        refund_proof: item.refund_proof || "",
         bank_name: item.bank_name,
         bank_account_number: item.bank_account_number,
         bank_qr: item.bank_qr,
-        raw: item,
+        order_id: item.order_id,
+        products: item.products || [],
     }));
 
     const fetchReturnDetails = async (orderId) => {
         try {
-            const response = await OrderService.getReturn(orderId); // Gọi service getRefund với order_id
-            setRefundDetails(response?.refund_details?.[0]);  // Lấy chi tiết hoàn trả đầu tiên (nếu có)
+            const response = await OrderService.getReturn(orderId);
+            const refundData = response?.order_return;
+            setRefundDetails(refundData);
+            return refundData;
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
+            return null;
         }
     };
 
     // Khi người dùng nhấn vào chi tiết, gọi fetchRefund để lấy dữ liệu hoàn trả
-    const showModal = (item) => {
+    const showModal = async (item) => {
         setIsModalVisible(true);
-        setSelectedProducts(item.raw.products || []);
-        fetchReturnDetails(item.raw.order_id);  // Gọi API với order_id
+        try {
+            const refundData = await fetchReturnDetails(item.order_id);
+            setSelectedProducts(refundData?.products || []);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+            notification.error({
+                message: "Lỗi hiển thị chi tiết",
+                description: "Không thể tải chi tiết đơn hàng.",
+            });
+            setSelectedProducts([]);
+        }
     };
 
     const showUpdateModal = (item) => {
         setIsUpdateModal(true);
         setSelectedItem(item); // Lưu item vào state
         setCurrentStatusId(item.status_id);
-        setSelectedOrderId(item.raw.order_id); // Đảm bảo gán đúng ID đơn hàng
+        setSelectedOrderId(item.order_id); // Đảm bảo gán đúng ID đơn hàng
         form.setFieldsValue({
             status_id: undefined,
             note: "",
@@ -140,12 +145,12 @@ const Back = () => {
     };
 
     const statusCounts = {
-        9: returns.filter(item => item.order.status_id === 9).length,
-        10: returns.filter(item => item.order.status_id === 10).length,
-        11: returns.filter(item => item.order.status_id === 11).length,
-        12: returns.filter(item => item.order.status_id === 12).length,
-        13: returns.filter(item => item.order.status_id === 13).length,
-        14: returns.filter(item => item.order.status_id === 14).length,
+        9: returns.filter(item => item.order?.status_id === 9).length,
+        10: returns.filter(item => item.order?.status_id === 10).length,
+        11: returns.filter(item => item.order?.status_id === 11).length,
+        12: returns.filter(item => item.order?.status_id === 12).length,
+        13: returns.filter(item => item.order?.status_id === 13).length,
+        14: returns.filter(item => item.order?.status_id === 14).length,
     };
 
     const handleFilterChange = (key, value) => {
@@ -185,18 +190,21 @@ const Back = () => {
             const response = await OrderService.updateOrderReturn(id, data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             notification.success({
-                message: "Xác nhận thành công!",
+                message: 'Xác nhận thành công!',
             });
-
+            queryClient.invalidateQueries(['returns']);
+            setSelectedItem(null);
+            setCurrentStatusId(null);
             form.resetFields();
             setIsModal(false);
+            setSelectedOrderId(null);
         },
         onError: (error) => {
-            console.error("Lỗi cập nhật:", error);
+            console.error('Lỗi cập nhật:', error);
             notification.error({
-                message: "Lỗi cập nhật",
+                message: 'Lỗi cập nhật',
             });
         },
     });
@@ -217,10 +225,8 @@ const Back = () => {
             note: values.note,
             user_id: userId,
         };
-
-        console.log("Dữ liệu gửi đi:", payload); // Debug
         updateOrderStatus(
-            { id: selectedItem.raw.order_id, data: payload }, // Sử dụng selectedItem.raw.order_id
+            { id: selectedItem.order_id, data: payload },
         );
     };
 
@@ -229,18 +235,21 @@ const Back = () => {
             const response = await OrderService.confirmBack(id, data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             notification.success({
-                message: "Xác nhận hoàn tiền thành công!",
+                message: 'Xác nhận hoàn tiền thành công!',
             });
-
+            queryClient.invalidateQueries(['returns']);
+            setSelectedItem(null);
+            setCurrentStatusId(null);
             form.resetFields();
             setIsRefundModalVisible(false);
+            setSelectedOrderId(null);
         },
         onError: (error) => {
-            console.error("Lỗi cập nhật:", error);
+            console.error('Lỗi cập nhật:', error);
             notification.error({
-                message: "Lỗi cập nhật",
+                message: 'Lỗi cập nhật',
             });
         },
     });
@@ -261,8 +270,6 @@ const Back = () => {
             note: note,  // Ghi chú yêu cầu hoàn tiền
             refund_proof: refundProof,  // Chứng minh hoàn tiền (ảnh QR)
         };
-
-        console.log("Dữ liệu gửi đi:", payload); // Kiểm tra dữ liệu gửi đi
 
         requestReturn(
             { id: selectedOrderId, data: payload },
@@ -292,15 +299,21 @@ const Back = () => {
             const response = await OrderService.updateOrderStatus(id, data);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             notification.success({
-                message: "Cập nhật trạng thái đơn hàng thành công!",
+                message: 'Cập nhật trạng thái đơn hàng thành công!',
             });
+            queryClient.invalidateQueries(['returns']);
+            setSelectedItem(null);
+            setCurrentStatusId(null);
+            form.resetFields();
+            setIsUpdateModal(false);
+            setSelectedOrderId(null);
         },
         onError: (error) => {
-            console.error("Lỗi cập nhật:", error);
+            console.error('Lỗi cập nhật:', error);
             notification.error({
-                message: "Lỗi cập nhật",
+                message: 'Lỗi cập nhật',
             });
         },
     });
@@ -323,7 +336,6 @@ const Back = () => {
             user_id: modifiedBy,
         };
 
-        console.log("Dữ liệu gửi đi:", payload); // Debug
         updateOrder(
             { id: selectedOrderId, data: payload }, // Sử dụng selectedOrderId
             {
@@ -351,39 +363,36 @@ const Back = () => {
     const handleOk = async () => {
         if (!selectedStockOrderId) {
             notification.error({
-                message: "Không tìm thấy đơn hàng để xác nhận!",
+                message: 'Không tìm thấy đơn hàng để xác nhận!',
             });
             return;
         }
 
         try {
-            // Validate và lấy giá trị từ form
             const values = await form.validateFields();
             setIsLoading(true);
-            const payload = { "approve-stock": values.approveStock };
-            console.log("Dữ liệu xác nhận số lượng:", {
-                orderId: selectedStockOrderId,
-                payload: payload,
-                approveStock: values.approveStock,
-            });
+            const payload = { 
+                approve_stock: values.approveStock,
+                user_id: JSON.parse(localStorage.getItem("user")).id,
+            };
             await OrderService.confirmStock(selectedStockOrderId, payload);
             notification.success({
-                message: "Xác nhận số lượng thành công!",
+                message: 'Xác nhận số lượng thành công!',
             });
-
-            // Làm mới danh sách returns từ API
-            await fetchReturns();
-
+            queryClient.invalidateQueries(['returns']);
+            setSelectedItem(null);
+            setCurrentStatusId(null);
+            form.resetFields();
             setIsModalStock(false);
+            setSelectedStockOrderId(null);
         } catch (error) {
             if (error.errorFields) {
-                // Nếu validate thất bại, không làm gì thêm, Form sẽ tự hiển thị lỗi
                 return;
             }
             notification.error({
-                message: "Có lỗi xảy ra khi xác nhận số lượng!",
+                message: 'Có lỗi xảy ra khi xác nhận số lượng!',
             });
-            console.error("Error confirming stock:", error);
+            console.error('Error confirming stock:', error);
         } finally {
             setIsLoading(false);
         }
@@ -392,7 +401,7 @@ const Back = () => {
     // Sửa showModalStock và hideModalStock để reset form
     const showModalStock = (item) => {
         setIsModalStock(true);
-        setSelectedStockOrderId(item.raw.order_id);
+        setSelectedStockOrderId(item.order_id);
         form.resetFields(); // Reset form khi mở modal
     };
 
@@ -475,6 +484,13 @@ const Back = () => {
             ),
         },
         {
+            title: "Số tiền (VNĐ)",
+            dataIndex: "total_refund_amount",
+            key: "total_refund_amount",
+            align: "center",
+            render: (total_refund_amount) => (total_refund_amount ? formatPrice(total_refund_amount) : ""),
+        },
+        {
             title: "Xác nhận hoàn tiền",
             dataIndex: "refund_proof",
             key: "refund_proof",
@@ -529,7 +545,7 @@ const Back = () => {
                                 variant="solid"
                                 icon={<RollbackOutlined />}
                                 onClick={() => {
-                                    setSelectedOrderId(item.key);
+                                    setSelectedOrderId(item.order_id);
                                     setIsRefundModalVisible(true);
                                 }}
                             />
@@ -664,7 +680,7 @@ const Back = () => {
             <Skeleton active loading={isLoading}>
                 <Table
                     columns={columns}
-                    dataSource={dataSource.length > 0 ? dataSource : []} // Kiểm tra dữ liệu
+                    dataSource={dataSource.length > 0 ? dataSource : []}
                     pagination={{ pageSize: 10 }}
                     bordered
                 />
@@ -681,15 +697,18 @@ const Back = () => {
                     <Table
                         columns={detailColumns}
                         dataSource={selectedProducts.map((product, index) => ({
-                            ...product,
                             key: index,
                             index: index + 1,
-                            price: product.price,
+                            name: product.name,
+                            attributes: product.attributes, // Dùng để hiển thị thuộc tính trong cột "Tên sản phẩm"
+                            quantity: product.quantity || 0,
+                            price: product.price || 0,
+                            total: (product.quantity || 0) * (product.price || 0), // Tính thành tiền
                         }))}
                         pagination={false}
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + item.quantity * item.price,
+                                (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
                                 0
                             );
                             return (
@@ -873,7 +892,7 @@ const Back = () => {
                 >
                     <Form.Item
                         name="approveStock"
-                        label="Bạn có muốn cộng số lượng không?"
+                        label="Bạn có muốn cộng lại số lượng vào kho không?"
                         rules={[
                             {
                                 required: true,

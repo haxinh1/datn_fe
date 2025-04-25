@@ -24,6 +24,7 @@ const List = () => {
     const [startDate, setStartDate] = useState(null); // Trạng thái ngày mở KM
     const [endDate, setEndDate] = useState(null); // Trạng thái ngày đóng KM
     const [searchKeyword, setSearchKeyword] = useState("");
+    const [form] = Form.useForm();
 
     // Fetch danh sách sản phẩm
     const { data: products, isLoading: isProductsLoading } = useQuery({
@@ -117,6 +118,17 @@ const List = () => {
             setNewImage(null);
         }
 
+        form.resetFields();
+
+        // Gán giá trị khởi tạo cho form
+        form.setFieldsValue({
+            sell_price: variant.sell_price ? parseFloat(variant.sell_price) : null,
+            sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
+            sale_price_start_at: variant.sale_price_start_at ? dayjs(variant.sale_price_start_at) : null,
+            sale_price_end_at: variant.sale_price_end_at ? dayjs(variant.sale_price_end_at) : null,
+            newImage: variant.thumbnail ? await convertImageToFileObject(variant.thumbnail) : null,
+        });
+
         setIsModalVisible(true);
     };
 
@@ -154,7 +166,7 @@ const List = () => {
             setCurrentVariant((prevVariant) => ({
                 ...prevVariant,
                 sell_price: newPrice,
-                sale_price: newSalePrice,
+                sale_price: newSalePrice || "",
                 thumbnail: newImage,
             }));
             queryClient.invalidateQueries(["products"]);
@@ -169,51 +181,59 @@ const List = () => {
         },
     });
 
-    const handleSaveVariant = () => {
+    const handleSaveVariant = async () => {
         if (!currentVariant) return;
 
-        // Kiểm tra giá khuyến mại phải nhỏ hơn giá bán
-        if (newSalePrice >= newPrice) {
-            notification.warning({
-                message: "Lỗi cập nhật",
-                description: "Giá khuyến mại phải nhỏ hơn giá bán.",
-            });
-            return;
-        }
+        try {
+            // Kiểm tra tính hợp lệ của form
+            await form.validateFields();
 
-        // Kiểm tra nếu sản phẩm chính đang dừng kinh doanh, không cho phép bật biến thể
-        const parentProduct = products.find((p) => p.id === currentVariant.product_id);
-        if (parentProduct && parentProduct.is_active === 0 && isActive === 1) {
-            notification.warning({
-                message: "Không thể thay đổi trạng thái",
-                description: "Sản phẩm đã dừng kinh doanh, không thể bật trạng thái biến thể.",
-            });
-            return;
-        }
-
-        const payload = {
-            sell_price: newPrice,
-            sale_price: newSalePrice,
-            thumbnail: newImage ? newImage.url : null,
-            is_active: isActive,
-            sale_price_start_at: startDate ? startDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày bắt đầu được gửi
-            sale_price_end_at: endDate ? endDate.format("YYYY-MM-DD") : null, // Đảm bảo ngày kết thúc được gửi
-        };
-
-        console.log("Sending payload to API:", payload);
-        updateVariantMutation.mutate(payload, {
-            onSuccess: () => {
-                setNewImage(null);
-                setNewPrice(null);
-                setIsModalVisible(false);
+            // Kiểm tra giá khuyến mại phải nhỏ hơn giá bán
+            if (newSalePrice && newSalePrice >= newPrice) {
+                notification.warning({
+                    message: "Lỗi cập nhật",
+                    description: "Giá khuyến mại phải nhỏ hơn giá bán.",
+                });
+                return;
             }
-        });
 
-        if (currentVariant.is_active !== isActive) {
-            activeVariantMutation.mutate({ is_active: isActive });
+            // Kiểm tra nếu sản phẩm chính đang dừng kinh doanh, không cho phép bật biến thể
+            const parentProduct = products.find((p) => p.id === currentVariant.product_id);
+            if (parentProduct && parentProduct.is_active === 0 && isActive === 1) {
+                notification.warning({
+                    message: "Không thể thay đổi trạng thái",
+                    description: "Sản phẩm đã dừng kinh doanh, không thể bật trạng thái biến thể.",
+                });
+                return;
+            }
+
+            const payload = {
+                sell_price: newPrice,
+                sale_price: newSalePrice || "",
+                thumbnail: newImage ? newImage.url : null,
+                is_active: isActive,
+                sale_price_start_at: startDate ? startDate.format("YYYY-MM-DD") : null,
+                sale_price_end_at: endDate ? endDate.format("YYYY-MM-DD") : null,
+            };
+
+            console.log("Sending payload to API:", payload);
+            updateVariantMutation.mutate(payload, {
+                onSuccess: () => {
+                    setNewImage(null);
+                    setNewPrice(null);
+                    setNewSalePrice(null);
+                    setStartDate(null);
+                    setEndDate(null);
+                    setIsModalVisible(false);
+                },
+            });
+
+            if (currentVariant.is_active !== isActive) {
+                activeVariantMutation.mutate({ is_active: isActive });
+            }
+        } catch (error) {
+
         }
-
-        setIsModalVisible(false);
     };
 
     const activeVariantMutation = useMutation({
@@ -228,6 +248,25 @@ const List = () => {
             });
         },
     });
+
+    // Thêm hàm handleSwitchChange bên ngoài, trong phạm vi component List
+    const handleSwitchChange = async (productId, checked) => {
+        try {
+            const payload = { is_active: checked ? 1 : 0 };
+            await productsServices.activeProduct(productId, payload);
+            notification.success({
+                message: "Cập nhật trạng thái thành công",
+                description: `Sản phẩm đã được ${checked ? "mở" : "dừng"} kinh doanh.`,
+            });
+            queryClient.invalidateQueries(["products"]);
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái:", error);
+            notification.error({
+                message: "Cập nhật trạng thái thất bại",
+                description: error.message,
+            });
+        }
+    };
 
     const columns = [
         {
@@ -290,10 +329,14 @@ const List = () => {
             key: 'is_active',
             dataIndex: 'is_active',
             align: 'center',
-            render: (isActive) => (
-                <span className={isActive === 1 ? 'action-link-blue' : 'action-link-red'}>
-                    {isActive === 1 ? 'Đang kinh doanh' : 'Dừng kinh doanh'}
-                </span>
+            width: 150,
+            render: (isActive, product) => (
+                <div>
+                    <Switch
+                        checked={isActive === 1}
+                        onChange={(checked) => handleSwitchChange(product.id, checked)}
+                    />
+                </div>
             ),
         },
         {
@@ -482,10 +525,10 @@ const List = () => {
                                             title: "Thao tác",
                                             key: "action",
                                             align: "center",
-                                            render: (_, variant) => (
+                                            render: (id) => (
                                                 <span
                                                     className="action-link action-link-blue"
-                                                    onClick={() => handleEditVariant(variant)}
+                                                    onClick={() => handleEditVariant(id)}
                                                 >
                                                     Cập nhật
                                                 </span>
@@ -522,7 +565,7 @@ const List = () => {
                         : ""}
                 </h5>
 
-                <Form layout="vertical">
+                <Form form={form} layout="vertical">
                     <Row gutter={24}>
                         <Col span={12} className="col-item">
                             <Form.Item
@@ -553,12 +596,31 @@ const List = () => {
 
                             <Form.Item
                                 label="Ngày mở khuyến mại"
+                                name="sale_price_start_at"
+                                initialValue={startDate}
+                                dependencies={["sale_price"]}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const salePrice = getFieldValue("sale_price");
+                                            if (!salePrice || value) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(
+                                                new Error("Vui lòng chọn ngày mở khuyến mại!")
+                                            );
+                                        },
+                                    }),
+                                ]}
                             >
                                 <DatePicker
                                     value={startDate}
                                     onChange={(date) => setStartDate(date)}
                                     className="input-item"
-                                    format="DD-MM-YYYY"
+                                    format="DD/MM/YYYY"
+                                    disabledDate={(current) => {
+                                        return current && current < dayjs().startOf('day');
+                                    }}
                                 />
                             </Form.Item>
 
@@ -615,16 +677,54 @@ const List = () => {
 
                             <Form.Item
                                 label="Ngày đóng khuyến mại"
+                                name="sale_price_end_at"
+                                initialValue={endDate}
+                                dependencies={["sale_price", "sale_price_start_at"]}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const salePrice = getFieldValue("sale_price");
+                                            const startDate = getFieldValue("sale_price_start_at");
+                                            if (!salePrice || value) {
+                                                if (
+                                                    value &&
+                                                    startDate &&
+                                                    dayjs(value).isSame(dayjs(startDate), "day")
+                                                ) {
+                                                    return Promise.reject(
+                                                        new Error("Ngày đóng không được trùng ngày mở")
+                                                    );
+                                                }
+                                                if (
+                                                    value &&
+                                                    startDate &&
+                                                    dayjs(value).isBefore(dayjs(startDate), "day")
+                                                ) {
+                                                    return Promise.reject(
+                                                        new Error("Ngày đóng phải sau ngày mở")
+                                                    );
+                                                }
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(
+                                                new Error("Vui lòng chọn ngày đóng khuyến mại!")
+                                            );
+                                        },
+                                    }),
+                                ]}
                             >
                                 <DatePicker
                                     value={endDate}
                                     onChange={(date) => setEndDate(date)}
                                     className="input-item"
-                                    format="DD-MM-YYYY"
+                                    format="DD/MM/YYYY"
+                                    disabledDate={(current) => {
+                                        return current && current <= dayjs(startDate).startOf('day');
+                                    }}
                                 />
                             </Form.Item>
 
-                            {/* <Form.Item label="Trạng thái kinh doanh">
+                            <Form.Item label="Trạng thái kinh doanh">
                                 <Switch
                                     checked={isActive === 1}
                                     onChange={(checked) => setIsActive(checked ? 1 : 0)}
@@ -632,7 +732,7 @@ const List = () => {
                                 <span style={{ marginLeft: 10 }}>
                                     {isActive === 1 ? "Đang kinh doanh" : "Dừng kinh doanh"}
                                 </span>
-                            </Form.Item> */}
+                            </Form.Item>
                         </Col>
                     </Row>
 

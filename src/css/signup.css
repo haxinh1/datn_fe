@@ -68,4 +68,16 @@ hr{
     align-items: center;
     width: 100%;
 }
+.w-warning {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    color: green;
+}
+.w-fail {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    color: red;
+}
   

@@ -1,13 +1,47 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Tooltip, message } from "antd";
-import { Link } from "react-router-dom";
+import { Avatar, Dropdown, Menu, Modal, Tooltip, message, notification } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
-import logo from "../../assets/images/demos/demo-8/logo.png";
+import logo from "../../assets/images/demo-8/logo.png";
+import { LogoutOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
+import Pusher from "pusher-js";
+import AIChat from "./AIChat.jsx";
+import ChatIcon from './../../components/client/chat/ChatIcon';
+import ChatWindow from './../../components/client/chat/ChatWindow';
+
+let pusherInstance = null;
+
+const initializePusher = (token) => {
+  if (!pusherInstance) {
+    pusherInstance = new Pusher('6b2509032695e872d989', {
+      cluster: 'ap1',
+      encrypted: true,
+      authEndpoint: '/api/broadcasting/auth',
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+      },
+    });
+    console.log('Pusher initialized');
+  }
+  return pusherInstance;
+};
+
+const updatePusherAuth = (token) => {
+  if (pusherInstance) {
+    pusherInstance.config.auth.headers.Authorization = `Bearer ${token || ''}`;
+  }
+};
 
 const Header = () => {
   const [userData, setUserData] = useState(null);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+  const [chatVisible, setChatVisible] = useState(false);
 
   // Cập nhật số lượng sản phẩm trong giỏ hàng
   const updateCartCount = async () => {
@@ -66,10 +100,13 @@ const Header = () => {
   };
 
   useEffect(() => {
-    const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedToken = localStorage.getItem("token");
 
-    if (storedUserId) {
-      fetchUserInfo(storedUserId);
+    if (storedUser && storedToken) {
+      fetchUserInfo(storedUser.id);
+      initializePusher(storedToken);
+      setIsLoggedIn(true);
     } else {
       setUserData(null);
     }
@@ -88,17 +125,19 @@ const Header = () => {
     };
 
     const handleUserLogin = () => {
-      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-      if (storedUserId) {
-        fetchUserInfo(storedUserId);
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const storedToken = localStorage.getItem("token");
+      if (storedUser && storedToken) {
+        fetchUserInfo(storedUser.id);
+        updatePusherAuth(storedToken);
       }
       updateCartCount();
     };
 
     const handleUserUpdated = () => {
-      const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-      if (storedUserId) {
-        fetchUserInfo(storedUserId);
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser) {
+        fetchUserInfo(storedUser.id);
       }
     };
 
@@ -108,12 +147,14 @@ const Header = () => {
     window.addEventListener("user-updated", handleUserUpdated);
 
     const handleStorageChange = (e) => {
-      if (e.key === "cart_items" || e.key === "user") {
+      if (e.key === "cart_items" || e.key === "user" || e.key === "client_token") {
         updateCartCount();
-        if (e.key === "user") {
-          const storedUserId = JSON.parse(localStorage.getItem("user"))?.id;
-          if (storedUserId) {
-            fetchUserInfo(storedUserId);
+        if (e.key === "user" || e.key === "client_token") {
+          const storedUser = JSON.parse(localStorage.getItem("user"));
+          const storedToken = localStorage.getItem("token");
+          if (storedUser && storedToken) {
+            fetchUserInfo(storedUser.id);
+            updatePusherAuth(storedToken);
           } else {
             setUserData(null);
           }
@@ -130,6 +171,104 @@ const Header = () => {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
+
+  // Kiểm tra trạng thái tài khoản qua API (fallback)
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser?.id) {
+        try {
+          console.log('Checking user status via API');
+          const userInfo = await AuthServices.getAUser(storedUser.id);
+          if (userInfo.status === "inactive" || userInfo.status === "banned") {
+            handleLogout(true);
+          }
+        } catch (error) {
+          console.error("Lỗi khi kiểm tra trạng thái người dùng:", error);
+        }
+      }
+    };
+
+    checkUserStatus();
+    const interval = setInterval(checkUserStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Lắng nghe sự kiện Pusher
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser?.id) {
+      const pusher = initializePusher(localStorage.getItem("token"));
+      console.log('Subscribing to channel:', `user.${storedUser.id}`);
+      const channel = pusher.subscribe(`user.${storedUser.id}`);
+
+      channel.bind('user-status-updated', (data) => {
+        console.log('Received Pusher event:', data);
+        if (data.status === 'inactive' || data.status === 'banned') {
+          Modal.warning({
+            title: 'Tài khoản bị khóa',
+            content: 'Tài khoản của bạn đã bị khóa. Bạn sẽ được đăng xuất.',
+            onOk: () => handleLogout(true),
+            okText: 'Đăng xuất',
+            okButtonProps: { autoFocus: true },
+            maskClosable: false,
+          });
+        }
+      });
+
+      return () => {
+        console.log('Unsubscribing from channel:', `user.${storedUser.id}`);
+        channel.unbind_all();
+        channel.unsubscribe();
+      };
+    }
+  }, [userData]);
+
+  // Hàm xử lý đăng xuất
+  const handleLogout = async (isBanned = false) => {
+    setLoading(true);
+    try {
+      console.log('Starting logout');
+      const response = await AuthServices.logoutclient();
+      console.log('Logout response:', response.message);
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+      if (isBanned) {
+        notification.warning({
+          message: "Tài khoản của bạn đã bị khóa, vui lòng thử lại sau!",
+        });
+      }
+    } catch (error) {
+      console.error("Logout failed", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart_items");
+      window.dispatchEvent(new Event("user-logout"));
+      navigate("/");
+      if (isBanned) {
+        message.warning("Tài khoản của bạn đã bị khóa");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hiển thị modal xác nhận đăng xuất
+  const showConfirm = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn đăng xuất?",
+      content: "Bạn sẽ phải đăng nhập lại để tiếp tục.",
+      okText: "Đăng xuất",
+      cancelText: "Hủy",
+      onOk: () => handleLogout(false),
+    });
+  };
 
   // Xử lý sự kiện kéo qua vùng thả
   const handleDragOver = (e) => {
@@ -290,13 +429,20 @@ const Header = () => {
                       className="cart-item-count"
                       style={{
                         position: "absolute",
-                        top: "-6px",
-                        right: "-10px",
-                        backgroundColor: "#eea287",
-                        color: "black",
-                        fontSize: "13px",
-                        padding: "2px 8px",
-                        borderRadius: "50%",
+                        top: "-4px", // Điều chỉnh vị trí lên trên một chút để cân đối
+                        right: "-6px", // Điều chỉnh vị trí sang trái để căn chỉnh tốt hơn
+                        backgroundColor: "black",
+                        color: "white",
+                        fontSize: "12px",
+                        fontWeight: "bold", // Tăng độ đậm cho chữ
+                        lineHeight: "18px", // Đảm bảo chữ nằm giữa hình tròn
+                        width: "18px", // Chiều rộng cố định để tạo hình tròn
+                        height: "18px", // Chiều cao bằng chiều rộng để tạo hình tròn
+                        display: "flex", // Sử dụng flex để căn giữa nội dung
+                        alignItems: "center", // Căn giữa theo chiều dọc
+                        justifyContent: "center", // Căn giữa theo chiều ngang
+                        borderRadius: "50%", // Tạo hình tròn
+                        padding: 0, // Loại bỏ padding để kích thước chính xác
                       }}
                     >
                       {cartItemCount}
@@ -306,19 +452,68 @@ const Header = () => {
               </Tooltip>
             </div>
             <div className="gtranslate_wrapper"></div>
-            <Tooltip title="Tài khoản">
-              <Link
-                to={userData ? `/dashboard/orders/${userData.id}` : "/logincl"}
-                className="wishlist-link"
+
+            {userData ? (
+              <Dropdown
+                overlay={
+                  <Menu>
+                    <Menu.Item key="account">
+                      <Link to={`/dashboard/info/${userData.id}`}>
+                        <span>
+                          <UserOutlined style={{ marginRight: "8px" }} />
+                          Tài khoản
+                        </span>
+                      </Link>
+                    </Menu.Item>
+
+                    {userData.role !== "customer" && ( // Kiểm tra role từ userData
+                      <Menu.Item key="admin">
+                        <Link to='/admin/list-pr'>
+                          <span>
+                            <SettingOutlined style={{ marginRight: "8px" }} />
+                            Quản trị
+                          </span>
+                        </Link>
+                      </Menu.Item>
+                    )}
+
+                    <Menu.Item key="logout">
+                      <span onClick={showConfirm}>
+                        <LogoutOutlined style={{ marginRight: "8px" }} />
+                        Đăng xuất
+                      </span>
+                    </Menu.Item>
+                  </Menu>
+                }
+                placement="bottomRight"
+                trigger={["click"]}
               >
-                {userData && userData.avatar ? (
-                  <Avatar size={36} src={userData.avatar} />
-                ) : (
+                <span style={{ cursor: "pointer" }}>
+                  {userData.avatar ? (
+                    <Avatar size={36} src={userData.avatar} className="wishlist-link" />
+                  ) : (
+                    <i className="icon-user"></i>
+                  )}
+                </span>
+              </Dropdown>
+            ) : (
+              <Tooltip title="Tài khoản">
+                <Link to="/logincl" className="wishlist-link">
                   <i className="icon-user"></i>
-                )}
-              </Link>
-            </Tooltip>
+                </Link>
+              </Tooltip>
+            )}
+
+            <AIChat />
           </div>
+          <AIChat />
+          <ChatIcon onClick={() => setChatVisible(true)} />
+          <ChatWindow
+            visible={chatVisible}
+            onClose={() => setChatVisible(false)}
+            isLoggedIn={!!userData}
+            user={userData ? userData.fullname : ""}
+          />
         </div>
       </div>
     </header>

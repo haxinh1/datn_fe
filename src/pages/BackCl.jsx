@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom';
 import { EyeOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import echo from '../echo'; // Thêm import echo
+import { render } from 'react-dom';
 
 const BackCl = () => {
     const { id } = useParams();
@@ -15,6 +16,7 @@ const BackCl = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [refundDetails, setRefundDetails] = useState(null);
     const [searchKeyword, setSearchKeyword] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Fetch dữ liệu ban đầu
     const fetchData = async () => {
@@ -97,6 +99,14 @@ const BackCl = () => {
         }
     };
 
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            handleSearch(searchKeyword);
+        }, 300); // 500ms debounce
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchKeyword]);
+
     const dataSource = returns.map((item, index) => ({
         key: item.order_id,
         index: index + 1,
@@ -110,22 +120,37 @@ const BackCl = () => {
         reason: item.reason,
         employee_evidence: item.employee_evidence,
         refund_proof: item.refund_proof,
-        raw: item,
+        total_refund_amount: item.total_refund_amount,
+        order_id: item.order_id,
+        products: item.products || [],
     }));
 
     const fetchReturnDetails = async (orderId) => {
         try {
             const response = await OrderService.getReturn(orderId);
-            setRefundDetails(response?.refund_details?.[0]);
+            const refundData = response?.order_return;
+            console.log("Dữ liệu từ fetchReturnDetails:", refundData);
+            setRefundDetails(refundData);
+            return refundData;
         } catch (error) {
             console.error("Lỗi khi lấy chi tiết hoàn trả:", error);
+            return null;
         }
     };
 
-    const showModal = (item) => {
+    const showModal = async (item) => {
         setIsModalVisible(true);
-        setSelectedProducts(item.raw.products || []);
-        fetchReturnDetails(item.raw.order_id);
+        try {
+            const refundData = await fetchReturnDetails(item.order_id);
+            setSelectedProducts(refundData?.products || []);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+            notification.error({
+                message: "Lỗi hiển thị chi tiết",
+                description: "Không thể tải chi tiết đơn hàng.",
+            });
+            setSelectedProducts([]);
+        }
     };
 
     const { data: statusData } = useQuery({
@@ -166,7 +191,7 @@ const BackCl = () => {
             title: "STT",
             dataIndex: "index",
             align: "center",
-            render: (_, __, index) => index + 1,
+            render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
         },
         {
             title: "Mã đơn hàng",
@@ -180,6 +205,13 @@ const BackCl = () => {
             key: "reason",
             align: "center",
             render: (reason) => getReturnReason(reason),
+        },
+        {
+            title: "Số tiền (VNĐ)",
+            dataIndex: "total_refund_amount",
+            key: "total_refund_amount",
+            align: "center",
+            render: (total_refund_amount) => (total_refund_amount ? formatPrice(total_refund_amount) : ""),
         },
         {
             title: "Shop xác nhận hoàn tiền",
@@ -240,7 +272,7 @@ const BackCl = () => {
                 const thumbnail = record.thumbnail;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Image width={60} src={thumbnail} />
+                        <Image width={90} src={thumbnail} />
                         <Link to={`/product-detail/${record.id}`}>
                             <span>{`${productName} ${attributes ? `- ${attributes}` : ""}`}</span>
                         </Link>
@@ -288,7 +320,8 @@ const BackCl = () => {
                 <Table
                     columns={columns}
                     dataSource={dataSource.length > 0 ? dataSource : []}
-                    pagination={{ pageSize: 5 }}
+                    pagination={{ pageSize: 5, current: currentPage }}
+                    onChange={(pagination) => setCurrentPage(pagination.current)}
                 />
             </Skeleton>
 
@@ -297,22 +330,25 @@ const BackCl = () => {
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width={800}
+                width={700}
             >
                 <div className="group1">
                     <Table
                         columns={detailColumns}
                         dataSource={selectedProducts.map((product, index) => ({
-                            ...product,
                             key: index,
                             index: index + 1,
-                            price: product.price,
-                            id: product.product_id,
+                            name: product.name,
+                            thumbnail: product.thumbnail,
+                            attributes: product.attributes,
+                            quantity: product.quantity || 0,
+                            price: product.price || 0,
+                            total: (product.quantity || 0) * (product.price || 0), // Tính thành tiền
                         }))}
                         pagination={false}
                         summary={() => {
                             const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + item.quantity * item.price,
+                                (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
                                 0
                             );
                             return (

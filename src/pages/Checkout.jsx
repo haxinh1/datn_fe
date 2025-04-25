@@ -69,7 +69,7 @@ const Checkout = () => {
           const cartData = await cartServices.fetchCart();
           const detailedCart = await Promise.all(
             cartData.map(async (item) => {
-              const productDetails = await productsServices.fetchProductById(item.product_id);
+              const productDetails = await productsServices.ProductById(item.product_id);
               let variantDetails = null;
 
               if (item.product_variant_id) {
@@ -100,7 +100,7 @@ const Checkout = () => {
         const updatedCartItems = await Promise.all(
           localCartData.map(async (item) => {
             try {
-              const productDetails = await productsServices.fetchProductById(
+              const productDetails = await productsServices.ProductById(
                 item.product_id
               );
 
@@ -390,7 +390,7 @@ const Checkout = () => {
           message.error("Địa chỉ không hợp lệ!");
           return;
         }
-        fullAddress = `${selectedAddressData.detail_address}, ${selectedAddressData.address}`;
+        fullAddress = `${selectedAddressData.detail_address}, staffs ${selectedAddressData.address}`;
       } else {
         if (
           !selectedProvince ||
@@ -455,8 +455,7 @@ const Checkout = () => {
 
       if (orderResponse?.message === "Đặt hàng thành công!") {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        if (selectedPayment === 2) { // Assuming selectedPayment === 2 is COD
-          // Do not clear cart, just notify Header to update count
+        if (selectedPayment === 2) {
           window.dispatchEvent(new Event("cart-updated"));
         }
         nav(`/dashboard/orders/${userId || "guest"}`);
@@ -489,7 +488,7 @@ const Checkout = () => {
       }
       return "Không xác định";
     } else {
-      const attributes = JSON.parse(localuseState(localStorage.getItem("cartAttributes")) || []);
+      const attributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]") || [];
       const productAttributes = attributes.find(
         (attr) =>
           attr.product_id === product.product_id &&
@@ -669,7 +668,6 @@ const Checkout = () => {
       discountValue = selectedCoupon.discount_value;
     }
 
-    // Đảm bảo discountValue không vượt quá subtotal
     if (discountValue > subtotal) {
       discountValue = subtotal;
       message.warning(
@@ -685,7 +683,7 @@ const Checkout = () => {
   const handleRemoveCoupon = () => {
     setSelectedCoupon(null);
     setDiscountAmount(0);
-    message.success("Mã giảm giá đã được hủy!");
+    message.childNodesuccess("Mã giảm giá đã được hủy!");
     setIsCouponModalVisible(false);
   };
 
@@ -1420,12 +1418,28 @@ const Checkout = () => {
                           borderRadius: "6px",
                         }}
                         onClick={async () => {
+                          // Validate fullname, email, and phone_number
+                          if (!userData.fullname || !userData.email || !userData.phone_number) {
+                            return message.warning(
+                              "Vui lòng điền đầy đủ thông tin"
+                            );
+                          }
+
+                          // Validate email format
+                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                          if (!emailRegex.test(userData.email)) {
+                            return message.error("Vui lòng nhập địa chỉ email hợp lệ.");
+                          }
+
+                          // Validate phone number format
+                          const phoneRegex = /^[0-9]{10,11}$/;
+                          if (!phoneRegex.test(userData.phone_number)) {
+                            return message.error("Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số).");
+                          }
+
                           if (!userId) {
                             try {
                               if (
-                                !userData.fullname ||
-                                !userData.phone_number ||
-                                !userData.email ||
                                 !userData.address ||
                                 !selectedProvince ||
                                 !selectedDistrict ||
@@ -1435,13 +1449,9 @@ const Checkout = () => {
                                   "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
                                 );
                               }
-
                               setIsPaymentModalOpen(true);
                             } catch (error) {
-                              console.error(
-                                "Lỗi khi đặt hàng với khách vãng lai:",
-                                error
-                              );
+                              console.error("Lỗi khi đặt hàng với khách vãng lai:", error);
                               message.error("Có lỗi xảy ra khi thanh toán.");
                             }
                           } else {
@@ -1450,7 +1460,6 @@ const Checkout = () => {
                                 "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
                               );
                             }
-
                             setIsPaymentModalOpen(true);
                           }
                         }}

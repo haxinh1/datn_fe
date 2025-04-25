@@ -32,10 +32,11 @@ const Address = () => {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
+  const [form] = Form.useForm();
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
-  const [form] = Form.useForm();
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchAddresses = async () => {
@@ -311,7 +312,7 @@ const Address = () => {
       title: "STT",
       dataIndex: "index",
       align: "center",
-      render: (_, __, index) => index + 1,
+      render: (_, __, index) => (currentPage - 1) * 5 + index + 1,
     },
     {
       title: "Địa chỉ",
@@ -380,7 +381,8 @@ const Address = () => {
           columns={columns}
           dataSource={addresses}
           rowKey="id"
-          pagination={false}
+          pagination={{ pageSize: 5, current: currentPage }}
+          onChange={(pagination) => setCurrentPage(pagination.current)}
         />
       </Skeleton>
 

@@ -1,7 +1,7 @@
 import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { OrderService } from "./../services/order";
 import viVN from "antd/es/locale/vi_VN";
 import dayjs from "dayjs";
@@ -48,6 +48,7 @@ const Order = () => {
   });
   const [searchInput, setSearchInput] = useState(""); // nhập từ ô input
   const [searchKeyword, setSearchKeyword] = useState("");
+  const queryClient = useQueryClient();
 
   // danh sách đơn hàng
   const { data: ordersData = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useQuery({
@@ -140,6 +141,9 @@ const Order = () => {
       notification.success({
         message: "Cập nhật trạng thái đơn hàng thành công!",
       });
+
+      queryClient.invalidateQueries(["orders"]); // Làm mới orders
+      queryClient.invalidateQueries(["searchOrders"]);
     },
     onError: (error) => {
       console.error("Lỗi cập nhật:", error);
@@ -175,7 +179,6 @@ const Order = () => {
           hideEdit(); // Đóng modal sau khi cập nhật
           form.resetFields(); // Reset form về trạng thái ban đầu
           setSelectedOrderId(null); // Xóa ID đã chọn
-          refetchOrders();
         },
       }
     );
@@ -766,7 +769,7 @@ const Order = () => {
 
         <Input.Search
           style={{ width: '400px' }}
-          placeholder="Tìm kiếm đơn hàng..."
+          placeholder="Tìm kiếm mã đơn hàng..."
           allowClear
           enterButton={<SearchOutlined />}
           value={searchInput}
@@ -866,19 +869,19 @@ const Order = () => {
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Phí vận chuyển:
+                    Giảm giá điểm tiêu dùng:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.shipping_fee)}
+                    {formatPrice(orderInfo.discount_points)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 
                 <Table.Summary.Row>
                   <Table.Summary.Cell colSpan={4} align="right">
-                    Giảm giá điểm tiêu dùng:
+                    Phí vận chuyển:
                   </Table.Summary.Cell>
                   <Table.Summary.Cell align="center">
-                    {formatPrice(orderInfo.discount_points)}
+                    {formatPrice(orderInfo.shipping_fee)}
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
 

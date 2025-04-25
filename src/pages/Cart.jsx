@@ -64,7 +64,7 @@ const Cart = () => {
 
           const detailedCart = await Promise.all(
             localCartData.map(async (item) => {
-              const productDetails = await productsServices.fetchProductById(
+              const productDetails = await productsServices.ProductById(
                 item.product_id
               );
               let variantDetails = null;

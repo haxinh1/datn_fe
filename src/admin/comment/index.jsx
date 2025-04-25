@@ -1,7 +1,7 @@
-import { BookOutlined, StarFilled } from "@ant-design/icons";
+import { CommentOutlined, StarFilled } from "@ant-design/icons";
 import React, { useState } from "react";
 import formatDate from "../../utils/formatDate";
-import { Table, Spin, Typography, Button, Select, message } from "antd";
+import { Table, Spin, Typography, Button, Select, message, Skeleton, Image } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CommentServices } from "../../services/comment";
 
@@ -11,6 +11,7 @@ const { Option } = Select;
 const Comment = () => {
   const queryClient = useQueryClient();
   const [selectedComments, setSelectedComments] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: comments, isLoading, error } = useQuery({
     queryKey: ["comments"],
@@ -27,8 +28,6 @@ const Comment = () => {
       message.error("Cập nhật thất bại, vui lòng thử lại!");
     },
   });
-
-
 
   const handleUpdateComment = (id, status) => {
     updateMutation.mutate({ id, status });
@@ -58,43 +57,52 @@ const Comment = () => {
     bulkUpdateMutation.mutate({ comment_ids: selectedComments, action });
   };
 
-
-
-
   const columns = [
     {
       title: "STT",
-      dataIndex: "id",
-      key: "id",
-      render: (_, __, index) => index + 1,
+      dataIndex: "index",
+      align: "center",
+      render: (_, __, index) => (currentPage - 1) * 10 + index + 1,
+    },  
+    {
+      title: "Sản phẩm",
+      dataIndex: "product",
+      key: "product",
+      align: "center",
+      render: (product) => product?.name || "",
     },
     {
-      title: "Products Id",
-      dataIndex: "products_id",
-      key: "products_id",
+      title: "Khách hàng",
+      dataIndex: "user",
+      key: "user",
+      align: "center",
+      render: (user) => user?.fullname || "",
     },
     {
-      title: "Comment",
+      title: "Nội dung",
       dataIndex: "comments",
       key: "comments",
+      align: "center",
     },
+    // {
+    //   title: "Parent Id",
+    //   dataIndex: "parent_id",
+    //   key: "parent_id",
+    //   align: "center",
+    //   render: (parentId) => (parentId ? parentId : "N/A"),
+    // },
+    // {
+    //   title: "Ảnh",
+    //   dataIndex: "image",
+    //   key: "image",
+    //   align: "center",
+    //   render: (image) => <Image width={90} src={image} />,
+    // },
     {
-      title: "Parent Id",
-      dataIndex: "parent_id",
-      key: "parent_id",
-      render: (parentId) => (parentId ? parentId : "N/A"),
-    },
-    {
-      title: "Image",
-      dataIndex: "image",
-      key: "image",
-      render: (image) =>
-        image ? <img src={image} width={50} height={50} alt="Comment" /> : "N/A",
-    },
-    {
-      title: "Rating",
+      title: "Đánh giá sao",
       dataIndex: "rating",
       key: "rating",
+      align: "center",
       render: (rating) => (
         <span>
           {rating} <StarFilled />
@@ -102,9 +110,17 @@ const Comment = () => {
       ),
     },
     {
+      title: "Ngày đăng",
+      dataIndex: "created_at",
+      key: "created_at",
+      align: "center",
+      render: (createdAt) => (createdAt ? formatDate(createdAt) : "N/A"),
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      align: "center",
       render: (status, record) => (
         <Select
           defaultValue={status}
@@ -117,17 +133,7 @@ const Comment = () => {
         </Select>
       ),
     },
-    {
-      title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
-      render: (createdAt) => (createdAt ? formatDate(createdAt) : "N/A"),
-    },
   ];
-
-  if (isLoading) {
-    return <Spin tip="Đang tải dữ liệu..." className="flex justify-center mt-5" />;
-  }
 
   if (error) {
     return <Text type="danger">Không thể tải dữ liệu. Vui lòng thử lại!</Text>;
@@ -136,11 +142,11 @@ const Comment = () => {
   return (
     <>
       <h1 className="mb-5">
-        <BookOutlined style={{ marginRight: "8px" }} />
+        <CommentOutlined style={{ marginRight: "8px" }} />
         Danh sách bình luận
       </h1>
 
-      <div className="mb-4 flex gap-2">
+      <div className='group1'>
         <Button type="primary" onClick={() => handleBulkUpdate("approve")} disabled={selectedComments.length === 0}>
           Duyệt tất cả đã chọn
         </Button>
@@ -148,17 +154,22 @@ const Comment = () => {
           Ẩn tất cả đã chọn
         </Button>
       </div>
-      <Table
-        className="custom-table"
-        dataSource={comments || []}
-        columns={columns}
-        rowKey="id"
-        rowSelection={{
-          selectedRowKeys: selectedComments,
-          onChange: handleSelectChange,
-        }}
-        expandable={{ childrenColumnName: "children" }}
-      />
+
+      <Skeleton active loading={isLoading}>
+        <Table
+          className="custom-table"
+          dataSource={comments || []}
+          columns={columns}
+          rowKey="id"
+          rowSelection={{
+            selectedRowKeys: selectedComments,
+            onChange: handleSelectChange,
+          }}
+          expandable={{ childrenColumnName: "children" }}
+          pagination={{ pageSize: 10, current: currentPage }}
+          onChange={(pagination) => setCurrentPage(pagination.current)}
+        />
+      </Skeleton>
     </>
   );
 };
