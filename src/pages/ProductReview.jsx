@@ -23,25 +23,22 @@ const ProductReview = ({ visible, onClose, product, orderId, setIsDisable }) => 
         },
     });
 
-    const handleUploadChange = ({ file, fileList }) => {
+    const handleUploadChange = ({ file, fileList: newFileList }) => {
         if (file.status === "done" && file.response) {
-            const imageUrl = file.response.secure_url;
-
-            const newFileList = [
-                ...fileList.map(f => ({
-                    uid: f.uid,
-                    name: f.name || "Hình ảnh",
-                    status: "done",
-                    url: f.response?.secure_url || f.url,
-                }))
-            ];
-            setFileList(newFileList);
-
-            form.setFieldsValue({ images: newFileList.map(f => f.url) });
+            const updatedFileList = newFileList.map(f => ({
+                uid: f.uid,
+                name: f.name || "Hình ảnh",
+                status: "done",
+                url: f.response?.secure_url || f.url,
+            }));
+    
+            setFileList(updatedFileList);
+            form.setFieldsValue({ images: updatedFileList.map(f => f.url) });
         } else {
-            setFileList(fileList);
+            setFileList(newFileList);
+            form.setFieldsValue({ images: newFileList.map(f => f.url) });
         }
-    };
+    };    
 
     const onRemove = (file) => {
         const newFileList = fileList.filter(item => item.uid !== file.uid);
@@ -110,7 +107,20 @@ const ProductReview = ({ visible, onClose, product, orderId, setIsDisable }) => 
                     <Input.TextArea rows={4} placeholder="Hãy chia sẻ nhận xét của bạn!" />
                 </Form.Item>
 
-                <Form.Item name="images" label="Ảnh đánh giá">
+                <Form.Item 
+                    name="images" 
+                    label="Ảnh đánh giá"
+                    rules={[
+                        {
+                            validator: (_, value) => {
+                                if (!value || value.length <= 8) {
+                                    return Promise.resolve();
+                                }
+                                return Promise.reject(new Error("Chỉ được tải lên tối đa 8 ảnh."));
+                            }
+                        }
+                    ]}
+                >
                     <Upload
                         multiple
                         listType="picture-card"
@@ -120,7 +130,7 @@ const ProductReview = ({ visible, onClose, product, orderId, setIsDisable }) => 
                         onRemove={onRemove}
                         fileList={fileList}
                     >
-                        {fileList.length >= 4 ? null : (
+                        {fileList.length >= 8 ? null : (
                             <button className="upload-button" type="button">
                                 <UploadOutlined />
                                 <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
@@ -144,9 +154,9 @@ const ProductReview = ({ visible, onClose, product, orderId, setIsDisable }) => 
                 </Row>
 
                 <div className="add">
-                    <Button 
+                    <Button
                         className="btn-item"
-                        type="primary" htmlType="submit" 
+                        type="primary" htmlType="submit"
                         block loading={mutation.isLoading}
                     >
                         Gửi

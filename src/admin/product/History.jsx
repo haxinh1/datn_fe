@@ -431,21 +431,24 @@ const History = () => {
                 <Form.Item
                     name={`price_${record.key}`}
                     initialValue={price}
-                    rules={[
-                        {
-                            required: true,
-                            message: "Vui lòng nhập giá nhập!",
-                        },
-                        {
-                            validator: (_, value) => {
-                                // Ép kiểu value và record.sell_price thành số
-                                if (Number(value) >= Number(record.sell_price)) {
-                                    return Promise.reject("Giá nhập phải nhỏ hơn giá bán!");
-                                }
-                                return Promise.resolve();
-                            }
-                        }
-                    ]}
+                    rules={
+                        confirmStatus === 1
+                            ? [
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập giá nhập!",
+                                },
+                                {
+                                    validator: (_, value) => {
+                                        if (Number(value) >= Number(record.sell_price)) {
+                                            return Promise.reject("Giá nhập phải nhỏ hơn giá bán!");
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]
+                            : [] // Không áp dụng rules nếu confirmStatus không phải 1
+                    }
                 >
                     <InputNumber
                         className="input-form"
@@ -468,20 +471,24 @@ const History = () => {
                 <Form.Item
                     name={`sell_price_${record.key}`}
                     initialValue={sell_price}
-                    rules={[
-                        {
-                            required: true,
-                            message: "Vui lòng nhập giá bán!",
-                        },
-                        {
-                            validator: (_, value) => {
-                                if (Number(value) <= Number(record.price)) {
-                                    return Promise.reject("Giá bán phải lớn hơn giá nhập!");
-                                }
-                                return Promise.resolve();
-                            }
-                        }
-                    ]}
+                    rules={
+                        confirmStatus === 1
+                            ? [
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập giá bán!",
+                                },
+                                {
+                                    validator: (_, value) => {
+                                        if (Number(value) <= Number(record.price)) {
+                                            return Promise.reject("Giá bán phải lớn hơn giá nhập!");
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]
+                            : [] // Không áp dụng rules nếu confirmStatus không phải 1
+                    }
                 >
                     <InputNumber
                         className="input-form"
@@ -504,20 +511,24 @@ const History = () => {
                 <Form.Item
                     name={`sale_price_${record.key}`}
                     initialValue={sale_price}
-                    rules={[
-                        {
-                            required: true,
-                            message: "Vui lòng nhập giá khuyến mại!",
-                        },
-                        {
-                            validator: (_, value) => {
-                                if (value >= record.sell_price) {
-                                    return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
-                                }
-                                return Promise.resolve();
-                            },
-                        },
-                    ]}
+                    rules={
+                        confirmStatus === 1
+                            ? [
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập giá khuyến mại!",
+                                },
+                                {
+                                    validator: (_, value) => {
+                                        if (value >= record.sell_price) {
+                                            return Promise.reject("Giá khuyến mại phải nhỏ hơn giá bán!");
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
+                            ]
+                            : [] // Không áp dụng rules nếu confirmStatus không phải 1
+                    }
                 >
                     <InputNumber
                         className="input-form"
@@ -540,17 +551,21 @@ const History = () => {
                 <Form.Item
                     name={`quantity_${record.key}`}
                     initialValue={quantity}
-                    rules={[
-                        {
-                            required: true,
-                            message: "Vui lòng nhập số lượng!",
-                        },
-                        {
-                            type: "number",
-                            min: 1,
-                            message: "Số lượng phải lớn hơn 0!",
-                        },
-                    ]}
+                    rules={
+                        confirmStatus === 1
+                            ? [
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập số lượng!",
+                                },
+                                {
+                                    type: "number",
+                                    min: 1,
+                                    message: "Số lượng phải lớn hơn 0!",
+                                },
+                            ]
+                            : [] // Không áp dụng rules nếu confirmStatus không phải 1
+                    }
                 >
                     <InputNumber
                         className="input-form"
@@ -565,7 +580,7 @@ const History = () => {
             title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
-            render: (_, record) => formatPrice(record.price * record.quantity),  // ✅ Hiển thị tổng tiền sau khi chỉnh sửa
+            render: (_, record) => formatPrice(record.price * record.quantity),
         },
     ];
 

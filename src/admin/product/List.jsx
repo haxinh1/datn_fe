@@ -15,6 +15,7 @@ const List = () => {
     const queryClient = useQueryClient();
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedBrand, setSelectedBrand] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [currentVariant, setCurrentVariant] = useState(null);
     const [newPrice, setNewPrice] = useState(null);
@@ -63,7 +64,8 @@ const List = () => {
         const matchesCategory = selectedCategory
             ? product.categories.some((cat) => cat.id === selectedCategory)
             : true;
-        return matchesBrand && matchesCategory;
+        const matchesStatus = selectedStatus !== null ? product.is_active === selectedStatus : true;
+        return matchesBrand && matchesCategory && matchesStatus;
     });
 
     // Tách số thành định dạng tiền tệ
@@ -249,22 +251,48 @@ const List = () => {
         },
     });
 
-    // Thêm hàm handleSwitchChange bên ngoài, trong phạm vi component List
     const handleSwitchChange = async (productId, checked) => {
-        try {
-            const payload = { is_active: checked ? 1 : 0 };
-            await productsServices.activeProduct(productId, payload);
-            notification.success({
-                message: "Cập nhật trạng thái thành công",
-                description: `Sản phẩm đã được ${checked ? "mở" : "dừng"} kinh doanh.`,
+        if (checked === false) { // Khi tắt trạng thái (is_active = 0)
+            Modal.confirm({
+                title: "Xác nhận dừng kinh doanh",
+                content: "Bạn có chắc chắn muốn dừng kinh doanh sản phẩm này?",
+                okText: "Xác nhận",
+                cancelText: "Hủy",
+                onOk: async () => {
+                    try {
+                        const payload = { is_active: checked ? 1 : 0 };
+                        await productsServices.activeProduct(productId, payload);
+                        notification.success({
+                            message: "Cập nhật trạng thái thành công",
+                            description: `Sản phẩm đã được ${checked ? "mở" : "dừng"} kinh doanh.`,
+                        });
+                        queryClient.invalidateQueries(["products"]);
+                    } catch (error) {
+                        console.error("Lỗi khi cập nhật trạng thái:", error);
+                        notification.error({
+                            message: "Cập nhật trạng thái thất bại",
+                            description: error.message,
+                        });
+                    }
+                },
             });
-            queryClient.invalidateQueries(["products"]);
-        } catch (error) {
-            console.error("Lỗi khi cập nhật trạng thái:", error);
-            notification.error({
-                message: "Cập nhật trạng thái thất bại",
-                description: error.message,
-            });
+        } else {
+            // Khi bật trạng thái (is_active = 1), không cần confirm
+            try {
+                const payload = { is_active: checked ? 1 : 0 };
+                await productsServices.activeProduct(productId, payload);
+                notification.success({
+                    message: "Cập nhật trạng thái thành công",
+                    description: `Sản phẩm đã được ${checked ? "mở" : "dừng"} kinh doanh.`,
+                });
+                queryClient.invalidateQueries(["products"]);
+            } catch (error) {
+                console.error("Lỗi khi cập nhật trạng thái:", error);
+                notification.error({
+                    message: "Cập nhật trạng thái thất bại",
+                    description: error.message,
+                });
+            }
         }
     };
 
@@ -371,9 +399,8 @@ const List = () => {
             <div className="group1">
                 <div className="group1">
                     <Select
-                        placeholder="Chọn danh mục"
+                        placeholder="Danh mục"
                         className="select-item"
-                        showSearch
                         allowClear
                         onChange={(value) => setSelectedCategory(value)}
                         optionFilterProp="children"
@@ -393,9 +420,8 @@ const List = () => {
                     </Select>
 
                     <Select
-                        placeholder="Chọn thương hiệu"
+                        placeholder="Thương hiệu"
                         className="select-item"
-                        showSearch
                         allowClear
                         onChange={(value) => setSelectedBrand(value)}
                     >
@@ -404,6 +430,16 @@ const List = () => {
                                 {brand.name}
                             </Select.Option>
                         ))}
+                    </Select>
+
+                    <Select
+                        placeholder="Trạng thái"
+                        className="select-item"
+                        allowClear
+                        onChange={(value) => setSelectedStatus(value === undefined ? null : value)}
+                    >
+                        <Select.Option value={1}>Đang kinh doanh</Select.Option>
+                        <Select.Option value={0}>Dừng kinh doanh</Select.Option>
                     </Select>
                 </div>
 

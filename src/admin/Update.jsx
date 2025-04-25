@@ -46,7 +46,7 @@ const Update = () => {
     try {
       const userData = {
         ...values,
-        avatar: image ? image.url : values.avatar || null,
+        avatar: image ? image.url : user?.avatar || null,
         gender: values.gender || null,
         birthday: values.birthday ? dayjs(values.birthday).format('YYYY-MM-DD') : null,
       };
@@ -196,12 +196,29 @@ const Update = () => {
                 <Form.Item
                   name="birthday"
                   label="Ngày sinh"
-                  rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
+                  rules={[
+                    { required: true, message: "Vui lòng chọn ngày sinh" },
+                    () => ({
+                      validator(_, value) {
+                        if (!value) return Promise.resolve();
+
+                        const today = dayjs();
+                        const age = today.diff(value, 'year');
+
+                        return age >= 18
+                          ? Promise.resolve()
+                          : Promise.reject("Bạn phải đủ 18 tuổi trở lên");
+                      },
+                    }),
+                  ]}
                 >
                   <DatePicker
                     className="input-item"
                     format="DD/MM/YYYY"
                     placeholder="DD/MM/YYYY"
+                    disabledDate={(current) =>
+                      current && current > dayjs().endOf("day")
+                    }
                   />
                 </Form.Item>
               </Col>

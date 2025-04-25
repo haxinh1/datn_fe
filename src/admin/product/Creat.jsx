@@ -1064,7 +1064,7 @@ const Creat = () => {
                 )}
 
                 <Modal
-                    title="Tạo thuộc tính mới"
+                    title="Thêm thuộc tính mới"
                     visible={isAttributeModalOpen}
                     onCancel={() => setIsAttributeModalOpen(false)}
                     footer={null}
@@ -1196,7 +1196,7 @@ const Creat = () => {
 
                         <div className="add">
                             <Button type="primary" htmlType="submit">
-                                Tạo
+                                Thêm
                             </Button>
                         </div>
                     </Form>

@@ -370,7 +370,8 @@ const Detail = () => {
                                 <hr />
                                 <div style={{ marginLeft: '60px' }}>
                                     <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mắc nào, hãy liên hệ với Molla</span> <br />
-                                    <span style={{fontSize: '14px'}}><strong>Zalo:</strong> 0987654321</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Zalo:</strong> https://res.cloudinary.com/dzpr0epks/image/upload/v1744125341/gww0d2uevbgnn8whfo5d.jpg</span> <br />
+                                    <span style={{fontSize: '14px'}}><strong>Facebook:</strong> https://res.cloudinary.com/dzpr0epks/image/upload/v1744125341/gww0d2uevbgnn8whfo5d.jpg</span> <br />
                                     <span style={{fontSize: '14px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
                                     <span style={{fontSize: '14px'}}><strong>Hotline:</strong> 09100204</span>
                                 </div>

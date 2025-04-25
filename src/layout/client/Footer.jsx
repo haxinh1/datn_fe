@@ -2,6 +2,7 @@ import React from 'react'
 import { Image } from "antd";
 import logofooter from '../../assets/images/demo-8/logofooter.png';
 import payments from '../../assets/images/payments.png';
+import { Link } from 'react-router-dom';
 
 
 const Footer = () => {
@@ -23,11 +24,11 @@ const Footer = () => {
                                     <div className="widget-about-info">
                                         <div className="row">
                                             <div className="col-sm-6 col-md-4">
-                                                <span className="widget-about-title">Got Question? Call us 24/7</span>
+                                                <span className="widget-about-title">Hotline</span>
                                                 <a href="tel:123456789">+0123 456 789</a>
                                             </div>
                                             <div className="col-sm-6 col-md-8">
-                                                <span className="widget-about-title">Payment Method</span>
+                                                <span className="widget-about-title">Thanh toán</span>
                                                 <figure className="footer-payments">
                                                     <img src={payments} style={{ width: "272px", height: "20px" }} />
                                                 </figure>
@@ -39,40 +40,36 @@ const Footer = () => {
 
                             <div className="col-sm-4 col-lg-2">
                                 <div className="widget">
-                                    <h4 className="widget-title">Information</h4>
+                                    <h4 className="widget-title">Thông tin</h4>
                                     <ul className="widget-list">
-                                        <li><a href="about.html">About Molla</a></li>
-                                        <li><a href="#">How to shop on Molla</a></li>
-                                        <li><a href="faq.html">FAQ</a></li>
-                                        <li><a href="contact.html">Contact us</a></li>
-                                        <li><a href="login.html">Log in</a></li>
+                                        <li><Link to='/'><span>Giới thiệu</span></Link></li>
+                                        <li><Link to='/'><span>Chính sách</span></Link></li>
+                                        <li><Link to='/'><span>Liên hệ</span></Link></li>
+                                        <li><Link to='/signup'><span>Đăng ký</span></Link></li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div className="col-sm-4 col-lg-2">
                                 <div className="widget">
-                                    <h4 className="widget-title">Customer Service</h4>
+                                    <h4 className="widget-title">dịch vụ</h4>
                                     <ul className="widget-list">
-                                        <li><a href="#">Payment Methods</a></li>
-                                        <li><a href="#">Money-back guarantee!</a></li>
-                                        <li><a href="#">Returns</a></li>
-                                        <li><a href="#">Shipping</a></li>
-                                        <li><a href="#">Terms and conditions</a></li>
-                                        <li><a href="#">Privacy Policy</a></li>
+                                        <li><Link to='/'><span>Thanh toán Online</span></Link></li>
+                                        <li><Link to='/'><span>Trả hàng</span></Link></li>
+                                        <li><Link to='/'><span>Hoàn tiền</span></Link></li>
+                                        <li><Link to='/'><span>Vận chuyển</span></Link></li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div className="col-sm-4 col-lg-2">
                                 <div className="widget">
-                                    <h4 className="widget-title">My Account</h4>
+                                    <h4 className="widget-title">tài khoản</h4>
                                     <ul className="widget-list">
-                                        <li><a href="#">Sign In</a></li>
-                                        <li><a href="cart.html">View Cart</a></li>
-                                        <li><a href="#">My Wishlist</a></li>
-                                        <li><a href="#">Track My Order</a></li>
-                                        <li><a href="#">Help</a></li>
+                                        <li><Link to='/logincl'><span>Đăng nhập</span></Link></li>
+                                        <li><Link to='/cart'><span>Giỏ hàng</span></Link></li>
+                                        <li><Link to='/'><span>Đơn hàng</span></Link></li>
+                                        <li><Link to='/'><span>Bảo mật</span></Link></li>
                                     </ul>
                                 </div>
                             </div>
