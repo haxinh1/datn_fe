@@ -343,7 +343,6 @@ const Checkout = () => {
       const userId = user ? user.id : null;
 
       let fullAddress = "";
-
       if (userId) {
         if (!selectedAddress) {
           message.error("Chưa có địa chỉ đặt hàng!");
@@ -367,7 +366,6 @@ const Checkout = () => {
           message.error("Vui lòng điền đầy đủ thông tin địa chỉ!");
           return;
         }
-
         const province = provinces.find(
           (p) => p.ProvinceID === selectedProvince
         );
@@ -375,12 +373,10 @@ const Checkout = () => {
           (d) => d.DistrictID === selectedDistrict
         );
         const ward = wards.find((w) => w.WardCode === selectedWard);
-
         if (!province || !district || !ward) {
           message.error("Thông tin địa chỉ không hợp lệ!");
           return;
         }
-
         fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
       }
 
@@ -422,46 +418,13 @@ const Checkout = () => {
       if (orderResponse?.message === "Đặt hàng thành công!" || orderResponse?.order) {
         message.success("🎉 Đơn hàng đã đặt thành công!");
 
-        // Xóa các sản phẩm được chọn khỏi giỏ hàng
+        // Xử lý giỏ hàng
         try {
-          if (userId) {
-            // For logged-in users, remove items from server
-            const removalResults = await Promise.allSettled(
-              cartItems
-                .filter((item) => item.product_id) // Ensure product_id exists
-                .map(async (item) => {
-                  try {
-                    await cartServices.removeCartItem(
-                      item.product_id,
-                      item.product_variant_id || null
-                    );
-                    return { status: "fulfilled", itemId: item.product_id };
-                  } catch (err) {
-                    console.error(
-                      `Lỗi khi xóa mục giỏ hàng (product_id: ${item.product_id}, variant_id: ${item.product_variant_id}):`,
-                      err
-                    );
-                    return { status: "rejected", itemId: item.product_id, error: err };
-                  }
-                })
-            );
-
-            // Log any failures but don't show warning to user
-            const failedRemovals = removalResults.filter(
-              (result) => result.status === "rejected"
-            );
-            if (failedRemovals.length > 0) {
-              console.warn(
-                "Một số mục trong giỏ hàng không được xóa:",
-                failedRemovals
-              );
-            }
-          } else {
-            // For guest users, update local storage
+          if (!userId) {
+            // Đối với khách vãng lai: Xóa các mục đã đặt khỏi localStorage
             let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
             let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
 
-            // Filter out selected items from localCart
             localCart = localCart.filter(
               (cartItem) =>
                 !cartItems.some(
@@ -471,7 +434,6 @@ const Checkout = () => {
                 )
             );
 
-            // Filter out corresponding attributes
             cartAttributes = cartAttributes.filter(
               (attr) =>
                 !cartItems.some(
@@ -481,23 +443,23 @@ const Checkout = () => {
                 )
             );
 
-            // Update local storage
             localStorage.setItem("cart_items", JSON.stringify(localCart));
             localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
           }
 
-          // Trigger cart update event for COD payments
+          // Kích hoạt sự kiện cập nhật giỏ hàng (cho COD hoặc để đồng bộ giao diện)
           if (selectedPayment === 2) {
             window.dispatchEvent(new Event("cart-updated"));
           }
+
+          // Đặt lại cartItems để làm trống giao diện
+          setCartItems([]);
         } catch (error) {
-          console.error("Lỗi khi cập nhật giỏ hàng:", error);
-          // Log error instead of showing warning, as order is already placed
-          console.warn("Giỏ hàng không được cập nhật hoàn toàn, nhưng đơn hàng đã được đặt.");
+          console.error("Lỗi khi cập nhật giỏ hàng trên client-side:", error);
+          // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
         }
 
         navigate(`/dashboard/orders/${userId || "guest"}`);
-        setCartItems([]);
       } else {
         message.error(orderResponse?.message || "Không thể đặt hàng, vui lòng thử lại.");
       }
