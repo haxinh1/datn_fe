@@ -9,6 +9,7 @@ import {
   InputNumber,
   Tooltip,
   Image,
+  Checkbox,
 } from "antd";
 import { productsServices } from "./../services/product";
 import { ValuesServices } from "../services/attribute_value";
@@ -20,6 +21,7 @@ const Cart = () => {
   const [shippingCost, setShippingCost] = useState(0);
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState([]); // Track selected items
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,10 +31,7 @@ const Cart = () => {
         const userId = user ? user.id : null;
 
         if (userId) {
-          // Người dùng đã đăng nhập: Lấy dữ liệu giỏ hàng từ API
           const cartData = await cartServices.fetchCart();
-
-          // Gọi thêm API để lấy chi tiết sản phẩm và biến thể
           const detailedCart = await Promise.all(
             cartData.map(async (item) => {
               const productDetails = await productsServices.fetchProductById(item.product_id);
@@ -59,14 +58,10 @@ const Cart = () => {
 
           setCartItems(detailedCart);
         } else {
-          // Người dùng chưa đăng nhập: Lấy từ localStorage
           let localCartData = JSON.parse(localStorage.getItem("cart_items")) || [];
-
           const detailedCart = await Promise.all(
             localCartData.map(async (item) => {
-              const productDetails = await productsServices.ProductById(
-                item.product_id
-              );
+              const productDetails = await productsServices.ProductById(item.product_id);
               let variantDetails = null;
 
               if (item.product_variant_id) {
@@ -106,7 +101,6 @@ const Cart = () => {
       try {
         const data = await ValuesServices.fetchValues();
         setAttributeValues(data.data || []);
-        console.log("Attribute values:", data);
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu attribute values:", error);
       }
@@ -120,7 +114,6 @@ const Cart = () => {
     const userId = user ? user.id : null;
 
     if (userId) {
-      // Người dùng đã đăng nhập: Lấy từ product_variant
       if (product.product_variant && product.product_variant.attribute_value_product_variants) {
         return product.product_variant.attribute_value_product_variants
           .map((attr) => {
@@ -133,7 +126,6 @@ const Cart = () => {
       }
       return "Không xác định";
     } else {
-      // Người dùng chưa đăng nhập: Lấy từ cartAttributes
       const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
       const productAttributes = attributes.find(
         (attr) =>
@@ -163,7 +155,8 @@ const Cart = () => {
     }).format(value);
   };
 
-  const subtotal = cartItems.reduce((total, item) => {
+  // Calculate subtotal and total for selected items
+  const subtotal = selectedItems.reduce((total, item) => {
     if (item.product.is_active === 0) {
       return total;
     }
@@ -243,13 +236,11 @@ const Cart = () => {
           if (userId) {
             await cartServices.removeCartItem(productId, productVariantId);
           } else {
-            let localCart =
-              JSON.parse(localStorage.getItem("cart_items")) || [];
+            let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
             localCart = localCart.filter(
               (item) =>
                 item.product_id !== productId ||
-                (productVariantId &&
-                  item.product_variant_id !== productVariantId)
+                (productVariantId && item.product_variant_id !== productVariantId)
             );
             localStorage.setItem("cart_items", JSON.stringify(localCart));
           }
@@ -262,17 +253,21 @@ const Cart = () => {
             )
           );
 
-          let cartAttributes =
-            JSON.parse(localStorage.getItem("cartAttributes")) || [];
+          setSelectedItems((prevSelected) =>
+            prevSelected.filter((item) =>
+              productVariantId
+                ? item.product_variant_id !== productVariantId
+                : item.product_id !== productId
+            )
+          );
+
+          let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
           cartAttributes = cartAttributes.filter(
             (attr) =>
               attr.product_id !== productId ||
               (productVariantId && attr.product_variant_id !== productVariantId)
           );
-          localStorage.setItem(
-            "cartAttributes",
-            JSON.stringify(cartAttributes)
-          );
+          localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
 
           message.success("Sản phẩm đã được xóa thành công!");
           window.dispatchEvent(new Event("cart-updated"));
@@ -286,69 +281,12 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     try {
-      let updatedCartItems = [...cartItems];
-
-      const productsInactive = updatedCartItems.filter(
-        (item) => item.product.is_active === 0
-      );
-
-      if (productsInactive.length > 0) {
-        updatedCartItems = updatedCartItems.filter(
-          (item) => item.product.is_active !== 0
-        );
-
-        const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user ? user.id : null;
-
-        if (userId) {
-          for (const product of productsInactive) {
-            await cartServices.removeCartItem(
-              product.product_id,
-              product.product_variant_id
-            );
-          }
-        } else {
-          let localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
-          localCart = localCart.filter(
-            (item) =>
-              !productsInactive.some(
-                (inactive) =>
-                  inactive.product_id === item.product_id &&
-                  inactive.product_variant_id === item.product_variant_id
-              )
-          );
-          localStorage.setItem("cart_items", JSON.stringify(localCart));
-
-          let cartAttributes =
-            JSON.parse(localStorage.getItem("cartAttributes")) || [];
-          cartAttributes = cartAttributes.filter(
-            (attr) =>
-              !productsInactive.some(
-                (inactive) =>
-                  inactive.product_id === attr.product_id &&
-                  inactive.product_variant_id === attr.product_variant_id
-              )
-          );
-          localStorage.setItem(
-            "cartAttributes",
-            JSON.stringify(cartAttributes)
-          );
-        }
-
-        setCartItems(updatedCartItems);
-        message.warning(
-          `${productsInactive.length} sản phẩm ngừng bán đã bị xóa!`
-        );
-
-        window.dispatchEvent(new Event("cart-updated"));
-      }
-
-      if (updatedCartItems.length === 0) {
-        message.warning("Giỏ hàng của bạn đang trống!");
+      if (selectedItems.length === 0) {
+        message.warning("Vui lòng chọn ít nhất một sản phẩm để thanh toán!");
         return;
       }
 
-      navigate("/checkout");
+      navigate("/checkout", { state: { selectedItems } });
     } catch (error) {
       console.error("Lỗi khi kiểm tra giỏ hàng:", error);
       message.error("Có lỗi xảy ra. Vui lòng thử lại!");
@@ -374,6 +312,7 @@ const Cart = () => {
           }
 
           setCartItems([]);
+          setSelectedItems([]);
           message.success("Xóa toàn bộ sản phẩm thành công");
           window.dispatchEvent(new Event("cart-updated"));
         } catch (error) {
@@ -384,13 +323,55 @@ const Cart = () => {
     });
   };
 
+  // Handle checkbox change
+  const handleCheckboxChange = (record, checked) => {
+    if (checked) {
+      setSelectedItems((prev) => [...prev, record]);
+    } else {
+      setSelectedItems((prev) =>
+        prev.filter(
+          (item) =>
+            item.product_id !== record.product_id ||
+            item.product_variant_id !== record.product_variant_id
+        )
+      );
+    }
+  };
+
   const columns = [
+    {
+      title: "",
+      align: "center",
+      render: (_, record) => {
+        const isProductInactive = record.product.is_active === 0;
+        const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
+
+        if (isProductInactive) {
+          return <span style={{ color: "red", fontWeight: "bold" }}>Ngừng bán</span>;
+        }
+        if (isOutOfStock) {
+          return <span style={{ color: "orange", fontWeight: "bold" }}>Hết hàng</span>;
+        }
+
+        return (
+          <Checkbox
+            onChange={(e) => handleCheckboxChange(record, e.target.checked)}
+            checked={selectedItems.some(
+              (item) =>
+                item.product_id === record.product_id &&
+                item.product_variant_id === record.product_variant_id
+            )}
+          />
+        );
+      },
+    },
     {
       title: "Sản phẩm",
       dataIndex: "product",
       align: "center",
       render: (product, record) => {
         const isProductInactive = product.is_active === 0;
+        const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
 
         return (
           <div
@@ -398,8 +379,7 @@ const Cart = () => {
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              opacity: isProductInactive ? 0.5 : 1,
-              position: "relative",
+              opacity: (isProductInactive || isOutOfStock) ? 0.5 : 1,
             }}
           >
             <Image src={product.thumbnail} width={60} />
@@ -409,22 +389,6 @@ const Cart = () => {
                 <span className="text-muted" style={{ fontSize: "14px" }}>
                   ({getAttributeValue(record)})
                 </span>
-              )}
-              {isProductInactive && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "10px",
-                    left: "0",
-                    width: "100%",
-                    textAlign: "center",
-                    color: "red",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Sản phẩm này ngừng bán
-                </div>
               )}
             </div>
           </div>
@@ -441,23 +405,28 @@ const Cart = () => {
       title: "Số lượng",
       dataIndex: "quantity",
       align: "center",
-      render: (quantity, record, index) => (
-        <InputNumber
-          min={1}
-          value={quantity}
-          onChange={(newQuantity) => handleQuantityChange(index, newQuantity)}
-          disabled={record.product.is_active === 0}
-        />
-      ),
+      render: (quantity, record, index) => {
+        const isProductInactive = record.product.is_active === 0;
+        const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
+
+        return (
+          <InputNumber
+            min={1}
+            value={quantity}
+            onChange={(newQuantity) => handleQuantityChange(index, newQuantity)}
+            disabled={isProductInactive || isOutOfStock}
+          />
+        );
+      },
     },
     {
       title: "Thành tiền",
       dataIndex: "total",
       align: "center",
       render: (_, record) => {
-        if (record.product.is_active === 0) {
-          return "Không tính";
-        }
+        const isProductInactive = record.product.is_active === 0;
+        const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
+
         return formatCurrency(record.price * record.quantity);
       },
     },

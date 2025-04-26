@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
@@ -14,7 +15,7 @@ import {
   Row,
   Col,
 } from "antd";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "./../services/payments";
 import { productsServices } from "./../services/product";
@@ -29,7 +30,8 @@ const Checkout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const nav = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [attributeValues, setAttributeValues] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -60,87 +62,56 @@ const Checkout = () => {
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
 
+  // Lấy dữ liệu sản phẩm được chọn
   useEffect(() => {
     const fetchCartData = async () => {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
+      setIsLoading(true);
+      const { selectedItems } = location.state || { selectedItems: [] };
 
-      if (storedUser?.id) {
-        try {
-          const cartData = await cartServices.fetchCart();
-          const detailedCart = await Promise.all(
-            cartData.map(async (item) => {
-              const productDetails = await productsServices.ProductById(item.product_id);
-              let variantDetails = null;
+      if (!selectedItems || selectedItems.length === 0) {
+        message.error("Không có sản phẩm nào được chọn để thanh toán!");
+        navigate("/cart");
+        return;
+      }
 
-              if (item.product_variant_id) {
-                variantDetails = productDetails.data.variants.find(
-                  (v) => v.id === item.product_variant_id
-                );
-              }
+      try {
+        const detailedCart = await Promise.all(
+          selectedItems.map(async (item) => {
+            const productDetails = await productsServices.ProductById(item.product_id);
+            let variantDetails = null;
 
-              const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
-
-              return {
-                ...item,
-                product: productDetails.data,
-                product_variant: variantDetails,
-                price,
-              };
-            })
-          );
-
-          setCartItems(detailedCart);
-        } catch (error) {
-          console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
-        }
-      } else {
-        const localCartData = JSON.parse(localStorage.getItem("cart_items")) || [];
-        const updatedCartItems = await Promise.all(
-          localCartData.map(async (item) => {
-            try {
-              const productDetails = await productsServices.ProductById(
-                item.product_id
+            if (item.product_variant_id) {
+              variantDetails = productDetails.data.variants.find(
+                (v) => v.id === item.product_variant_id
               );
-
-              let variantDetails = null;
-
-              if (item.product_variant_id) {
-                variantDetails = productDetails.data.variants.find(
-                  (v) => v.id === item.product_variant_id
-                );
-              }
-
-              const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
-
-              return {
-                ...item,
-                product: productDetails.data,
-                product_variant: variantDetails,
-                price,
-              };
-            } catch (error) {
-              console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
-              return {
-                ...item,
-                product: null,
-                product_variant: null,
-                price: 0,
-              };
             }
+
+            const price = variantDetails
+              ? variantDetails.sale_price || variantDetails.sell_price
+              : productDetails.data.sale_price || productDetails.data.sell_price;
+
+            return {
+              ...item,
+              product: productDetails.data,
+              product_variant: variantDetails,
+              price,
+            };
           })
         );
 
-        setCartItems(updatedCartItems);
+        setCartItems(detailedCart);
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
+        message.error("Không thể tải dữ liệu sản phẩm!");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchCartData();
-  }, []);
+  }, [location.state, navigate]);
 
+  // Lấy dữ liệu người dùng
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -167,18 +138,16 @@ const Checkout = () => {
     fetchUserData();
   }, []);
 
+  // Lấy danh sách tỉnh/thành phố
   useEffect(() => {
     const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
-    fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          token: token,
-        },
-      }
-    )
+    fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/province", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data.data)) {
@@ -219,7 +188,7 @@ const Checkout = () => {
         }
       })
       .catch((error) => {
-        console.error("Error fetching districts:", error);
+        console.error("Lỗi khi lấy dữ liệu quận/huyện:", error);
       });
   };
 
@@ -252,7 +221,7 @@ const Checkout = () => {
         }
       })
       .catch((error) => {
-        console.error("Error fetching wards:", error);
+        console.error("Lỗi khi lấy dữ liệu phường/xã:", error);
       });
   };
 
@@ -290,6 +259,9 @@ const Checkout = () => {
         const data = await AuthServices.getAddressByIdUser(userId);
         setAddresses(data);
         const defaultAddress = data.find((address) => address.id_default);
+        if (defaultAddress) {
+          setSelectedAddress(defaultAddress.id);
+        }
       } catch (error) {
         console.error("Lỗi khi lấy địa chỉ:", error);
       } finally {
@@ -304,12 +276,10 @@ const Checkout = () => {
         ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
         : "",
       values.district
-        ? districts.find((d) => d.DistrictID === Number(values.district))
-          ?.DistrictName
+        ? districts.find((d) => d.DistrictID === Number(values.district))?.DistrictName
         : "",
       values.province
-        ? provinces.find((p) => p.ProvinceID === Number(values.province))
-          ?.ProvinceName
+        ? provinces.find((p) => p.ProvinceID === Number(values.province))?.ProvinceName
         : "",
     ]
       .filter(Boolean)
@@ -330,11 +300,8 @@ const Checkout = () => {
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
       const productPrice = item.product_variant
-        ? item.product_variant.sale_price ||
-        item.product_variant.sell_price ||
-        0
+        ? item.product_variant.sale_price || item.product_variant.sell_price || 0
         : item.product?.sale_price || item.product?.sell_price || 0;
-
       return total + productPrice * (item.quantity || 1);
     }, 0)
     : 0;
@@ -345,7 +312,7 @@ const Checkout = () => {
         const payData = await paymentServices.getPayment();
         setPayments(payData);
       } catch (error) {
-        console.error("Error fetching payment methods:", error);
+        console.error("Lỗi khi lấy phương thức thanh toán:", error);
       }
     };
     fetchPayments();
@@ -360,7 +327,6 @@ const Checkout = () => {
         console.error("Lỗi khi lấy dữ liệu attribute values:", error);
       }
     };
-
     fetchAttributeValues();
   }, []);
 
@@ -390,7 +356,7 @@ const Checkout = () => {
           message.error("Địa chỉ không hợp lệ!");
           return;
         }
-        fullAddress = `${selectedAddressData.detail_address}, staffs ${selectedAddressData.address}`;
+        fullAddress = `${selectedAddressData.detail_address}, ${selectedAddressData.address}`;
       } else {
         if (
           !selectedProvince ||
@@ -438,11 +404,11 @@ const Checkout = () => {
                 ? "momo"
                 : null,
         products: cartItems.map((item) => ({
+          id: item.id,
           product_id: item.product_id,
-          product_variant_id: item.product_variant_id,
+          product_variant_id: item.product_variant_id || null,
           quantity: item.quantity,
-          price:
-            item.product_variant?.sale_price || item.product?.sale_price || 0,
+          price: item.product_variant?.sale_price || item.product?.sale_price || 0,
         })),
       };
 
@@ -453,16 +419,87 @@ const Checkout = () => {
         return;
       }
 
-      if (orderResponse?.message === "Đặt hàng thành công!") {
+      if (orderResponse?.message === "Đặt hàng thành công!" || orderResponse?.order) {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        if (selectedPayment === 2) {
-          window.dispatchEvent(new Event("cart-updated"));
+
+        // Xóa các sản phẩm được chọn khỏi giỏ hàng
+        try {
+          if (userId) {
+            // For logged-in users, remove items from server
+            const removalResults = await Promise.allSettled(
+              cartItems
+                .filter((item) => item.product_id) // Ensure product_id exists
+                .map(async (item) => {
+                  try {
+                    await cartServices.removeCartItem(
+                      item.product_id,
+                      item.product_variant_id || null
+                    );
+                    return { status: "fulfilled", itemId: item.product_id };
+                  } catch (err) {
+                    console.error(
+                      `Lỗi khi xóa mục giỏ hàng (product_id: ${item.product_id}, variant_id: ${item.product_variant_id}):`,
+                      err
+                    );
+                    return { status: "rejected", itemId: item.product_id, error: err };
+                  }
+                })
+            );
+
+            // Log any failures but don't show warning to user
+            const failedRemovals = removalResults.filter(
+              (result) => result.status === "rejected"
+            );
+            if (failedRemovals.length > 0) {
+              console.warn(
+                "Một số mục trong giỏ hàng không được xóa:",
+                failedRemovals
+              );
+            }
+          } else {
+            // For guest users, update local storage
+            let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
+            let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
+
+            // Filter out selected items from localCart
+            localCart = localCart.filter(
+              (cartItem) =>
+                !cartItems.some(
+                  (selectedItem) =>
+                    selectedItem.product_id === cartItem.product_id &&
+                    selectedItem.product_variant_id === cartItem.product_variant_id
+                )
+            );
+
+            // Filter out corresponding attributes
+            cartAttributes = cartAttributes.filter(
+              (attr) =>
+                !cartItems.some(
+                  (selectedItem) =>
+                    selectedItem.product_id === attr.product_id &&
+                    selectedItem.product_variant_id === attr.product_variant_id
+                )
+            );
+
+            // Update local storage
+            localStorage.setItem("cart_items", JSON.stringify(localCart));
+            localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
+          }
+
+          // Trigger cart update event for COD payments
+          if (selectedPayment === 2) {
+            window.dispatchEvent(new Event("cart-updated"));
+          }
+        } catch (error) {
+          console.error("Lỗi khi cập nhật giỏ hàng:", error);
+          // Log error instead of showing warning, as order is already placed
+          console.warn("Giỏ hàng không được cập nhật hoàn toàn, nhưng đơn hàng đã được đặt.");
         }
-        nav(`/dashboard/orders/${userId || "guest"}`);
+
+        navigate(`/dashboard/orders/${userId || "guest"}`);
         setCartItems([]);
-        localStorage.removeItem("cartAttributes");
       } else {
-        message.error(orderResponse?.message || "Lỗi không xác định");
+        message.error(orderResponse?.message || "Không thể đặt hàng, vui lòng thử lại.");
       }
     } catch (error) {
       console.error("❌ Lỗi khi đặt hàng:", error);
@@ -539,10 +576,7 @@ const Checkout = () => {
     const address = addresses.find((addr) => addr.id === value);
 
     if (address && address.DistrictID && address.WardCode) {
-      const fee = await calculateShippingFee(
-        address.DistrictID,
-        address.WardCode
-      );
+      const fee = await calculateShippingFee(address.DistrictID, address.WardCode);
       setShippingFee(fee);
     } else {
       setShippingFee(0);
@@ -683,7 +717,7 @@ const Checkout = () => {
   const handleRemoveCoupon = () => {
     setSelectedCoupon(null);
     setDiscountAmount(0);
-    message.childNodesuccess("Mã giảm giá đã được hủy!");
+    message.success("Mã giảm giá đã được hủy!");
     setIsCouponModalVisible(false);
   };
 
@@ -921,16 +955,11 @@ const Checkout = () => {
                                     key={address.id}
                                     value={address.id}
                                   >
-                                    {`${address.detail_address}, ${address.address}`}{" "}
-                                    {address.id_default && "(Mặc định)"}
+                                    {`${address.detail_address}, ${address.address}`} {address.id_default && "(Mặc định)"}
                                   </Select.Option>
                                 ))
                               ) : (
-                                <Select.Option
-                                  disabled
-                                  key="no-address"
-                                  value=""
-                                >
+                                <Select.Option disabled key="no-address" value="">
                                   Chưa có
                                 </Select.Option>
                               )}
@@ -939,10 +968,7 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{
-                                  backgroundColor: "#eea287",
-                                  color: "white",
-                                }}
+                                style={{ backgroundColor: "#eea287", color: "white" }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1080,10 +1106,7 @@ const Checkout = () => {
 
                         <div className="add">
                           <Button
-                            style={{
-                              backgroundColor: "#eea287",
-                              color: "white",
-                            }}
+                            style={{ backgroundColor: "#eea287", color: "white" }}
                             type="primary"
                             htmlType="submit"
                           >
@@ -1121,26 +1144,17 @@ const Checkout = () => {
                         className="table table-summary"
                         style={{ width: "100%", backgroundColor: "white" }}
                       >
-                        <thead
-                          style={{
-                            backgroundColor: "#f1f1f1",
-                            fontSize: "1.1rem",
-                          }}
-                        >
+                        <thead style={{ backgroundColor: "#f1f1f1", fontSize: "1.1rem" }}>
                           <tr>
-                            <th style={{ textAlign: "left", padding: "10px" }}>
-                              Sản phẩm
-                            </th>
-                            <th style={{ textAlign: "right", padding: "10px" }}>
-                              Giá
-                            </th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Sản phẩm</th>
+                            <th style={{ textAlign: "right", padding: "10px" }}>Giá</th>
                           </tr>
                         </thead>
                         <tbody>
                           {cartItemsToDisplay.map((item) => (
-                            <tr key={item.id}>
+                            <tr key={item.id || `${item.product_id}-${item.product_variant_id}`}>
                               <td style={{ padding: "10px" }}>
-                                {item.product?.name || `Sản phẩm #${item.id}`}{" "}
+                                {item.product?.name || `Sản phẩm #${item.product_id}`}{" "}
                                 {item.product_variant_id && (
                                   <span className="text-muted">
                                     ({getAttributeValue(item)})
@@ -1148,15 +1162,11 @@ const Checkout = () => {
                                 )}
                                 (x{item.quantity})
                               </td>
-                              <td
-                                style={{ textAlign: "right", padding: "10px" }}
-                              >
+                              <td style={{ textAlign: "right", padding: "10px" }}>
                                 {formatCurrency(
                                   item.product_variant
-                                    ? item.product_variant.sale_price ||
-                                    item.product_variant.sell_price
-                                    : item.product?.sale_price ||
-                                    item.product?.sell_price
+                                    ? item.product_variant.sale_price || item.product_variant.sell_price
+                                    : item.product?.sale_price || item.product?.sell_price
                                 )}{" "}
                                 VNĐ
                               </td>
@@ -1175,59 +1185,33 @@ const Checkout = () => {
 
                           <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
                             <td style={{ padding: "10px" }}>Phí vận chuyển:</td>
-                            <td
-                              style={{
-                                textAlign: "right",
-                                padding: "10px",
-                                color: "green",
-                              }}
-                            >
+                            <td style={{ textAlign: "right", padding: "10px", color: "green" }}>
                               {formatCurrency(shippingFee)} VNĐ
                             </td>
                           </tr>
 
                           {!userId ? null : (
                             <>
-                              <tr
-                                style={{ fontSize: "12px", fontWeight: "bold" }}
-                              >
+                              <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
                                 <td style={{ padding: "10px" }}>
-                                  Điểm tiêu dùng (
-                                  {formatCurrency(userData.loyalty_points || 0)}
-                                  ):
+                                  Điểm tiêu dùng ({formatCurrency(userData.loyalty_points || 0)}):
                                 </td>
-                                <td
-                                  style={{
-                                    textAlign: "right",
-                                    padding: "10px",
-                                  }}
-                                >
+                                <td style={{ textAlign: "right", padding: "10px" }}>
                                   <input
                                     type="text"
                                     placeholder="Nhập điểm đổi"
                                     value={formattedLoyaltyPoints}
                                     onChange={(e) => {
                                       const rawValue = e.target.value;
-                                      const numericValue =
-                                        unformatNumber(rawValue);
+                                      const numericValue = unformatNumber(rawValue);
 
-                                      if (
-                                        numericValue <= userData.loyalty_points
-                                      ) {
+                                      if (numericValue <= userData.loyalty_points) {
                                         setUsedLoyaltyPoints(numericValue);
-                                        setFormattedLoyaltyPoints(
-                                          formatNumber(numericValue)
-                                        );
+                                        setFormattedLoyaltyPoints(formatNumber(numericValue));
                                       } else {
-                                        message.warning(
-                                          "Bạn không thể dùng quá số điểm hiện có!"
-                                        );
-                                        setUsedLoyaltyPoints(
-                                          userData.loyalty_points
-                                        );
-                                        setFormattedLoyaltyPoints(
-                                          formatNumber(userData.loyalty_points)
-                                        );
+                                        message.warning("Bạn không thể dùng quá số điểm hiện có!");
+                                        setUsedLoyaltyPoints(userData.loyalty_points);
+                                        setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
                                       }
                                     }}
                                     style={{
@@ -1242,39 +1226,20 @@ const Checkout = () => {
                                   />
                                 </td>
                               </tr>
-                              <tr
-                                style={{ fontSize: "12px", fontWeight: "bold" }}
-                              >
-                                <td style={{ padding: "10px" }}>
-                                  Mã giảm giá:
-                                </td>
-                                <td
-                                  style={{
-                                    textAlign: "right",
-                                    padding: "10px",
-                                  }}
-                                >
+                              <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
+                                <td style={{ padding: "10px" }}>Mã giảm giá:</td>
+                                <td style={{ textAlign: "right", padding: "10px" }}>
                                   {selectedCoupon ? (
                                     <span
-                                      style={{
-                                        cursor: "pointer",
-                                        color: "#e48948",
-                                      }}
-                                      onClick={() =>
-                                        setIsCouponModalVisible(true)
-                                      }
+                                      style={{ cursor: "pointer", color: "#e48948" }}
+                                      onClick={() => setIsCouponModalVisible(true)}
                                     >
                                       {selectedCoupon.code}
                                     </span>
                                   ) : (
                                     <span
-                                      style={{
-                                        cursor: "pointer",
-                                        color: "#e48948",
-                                      }}
-                                      onClick={() =>
-                                        setIsCouponModalVisible(true)
-                                      }
+                                      style={{ cursor: "pointer", color: "#e48948" }}
+                                      onClick={() => setIsCouponModalVisible(true)}
                                     >
                                       Chọn mã giảm giá
                                     </span>
@@ -1296,40 +1261,21 @@ const Checkout = () => {
                                   )}
                                 </td>
                               </tr>
-                              {(usedLoyaltyPoints > 0 ||
-                                discountAmount > 0) && (
-                                  <tr
-                                    style={{
-                                      fontSize: "12px",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    <td style={{ padding: "10px" }}>
-                                      Số tiền giảm:
-                                    </td>
-                                    <td
-                                      style={{
-                                        textAlign: "right",
-                                        padding: "10px",
-                                      }}
-                                    >
-                                      <div style={{ color: "#e48948" }}>
-                                        {usedLoyaltyPoints > 0 && (
-                                          <div>
-                                            -{formatCurrency(usedLoyaltyPoints)}{" "}
-                                            (Điểm)
-                                          </div>
-                                        )}
-                                        {discountAmount > 0 && (
-                                          <div>
-                                            -{formatCurrency(discountAmount)} VNĐ
-                                            (Mã)
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
+                              {(usedLoyaltyPoints > 0 || discountAmount > 0) && (
+                                <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
+                                  <td style={{ padding: "10px" }}>Số tiền giảm:</td>
+                                  <td style={{ textAlign: "right", padding: "10px" }}>
+                                    <div style={{ color: "#e48948" }}>
+                                      {usedLoyaltyPoints > 0 && (
+                                        <div>-{formatCurrency(usedLoyaltyPoints)} (Điểm)</div>
+                                      )}
+                                      {discountAmount > 0 && (
+                                        <div>-{formatCurrency(discountAmount)} VNĐ (Mã)</div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
 
                               <Modal
                                 title="Chọn mã giảm giá"
@@ -1350,18 +1296,10 @@ const Checkout = () => {
                                           border: "1px solid #ddd",
                                           borderRadius: "4px",
                                           cursor: "pointer",
-                                          backgroundColor:
-                                            selectedCoupon?.id === coupon.id
-                                              ? "#e48948"
-                                              : "",
-                                          color:
-                                            selectedCoupon?.id === coupon.id
-                                              ? "white"
-                                              : "",
+                                          backgroundColor: selectedCoupon?.id === coupon.id ? "#e48948" : "",
+                                          color: selectedCoupon?.id === coupon.id ? "white" : "",
                                         }}
-                                        onClick={() =>
-                                          setSelectedCoupon(coupon)
-                                        }
+                                        onClick={() => setSelectedCoupon(coupon)}
                                       >
                                         {coupon.code} - {coupon.title} -{" "}
                                         {coupon.discount_type === "percent"
@@ -1386,20 +1324,10 @@ const Checkout = () => {
 
                           <tr
                             className="summary-total"
-                            style={{
-                              backgroundColor: "#f8f8f8",
-                              fontSize: "1rem",
-                              fontWeight: "bold",
-                            }}
+                            style={{ backgroundColor: "#f8f8f8", fontSize: "1rem", fontWeight: "bold" }}
                           >
                             <td style={{ padding: "10px" }}>Tổng tiền:</td>
-                            <td
-                              style={{
-                                textAlign: "right",
-                                padding: "10px",
-                                color: "red",
-                              }}
-                            >
+                            <td style={{ textAlign: "right", padding: "10px", color: "red" }}>
                               {formatCurrency(finalTotal)} VNĐ
                             </td>
                           </tr>
@@ -1418,20 +1346,15 @@ const Checkout = () => {
                           borderRadius: "6px",
                         }}
                         onClick={async () => {
-                          // Validate fullname, email, and phone_number
                           if (!userData.fullname || !userData.email || !userData.phone_number) {
-                            return message.warning(
-                              "Vui lòng điền đầy đủ thông tin"
-                            );
+                            return message.warning("Vui lòng điền đầy đủ thông tin");
                           }
 
-                          // Validate email format
                           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                           if (!emailRegex.test(userData.email)) {
                             return message.error("Vui lòng nhập địa chỉ email hợp lệ.");
                           }
 
-                          // Validate phone number format
                           const phoneRegex = /^[0-9]{10,11}$/;
                           if (!phoneRegex.test(userData.phone_number)) {
                             return message.error("Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số).");
@@ -1507,19 +1430,14 @@ const Checkout = () => {
                       onChange={() => setSelectedPayment(method.id)}
                       required
                     />
-                    <label
-                      className="custom-control-label"
-                      htmlFor={`httt-${method.id}`}
-                    >
+                    <label className="custom-control-label" htmlFor={`httt-${method.id}`}>
                       {displayName}
                     </label>
                   </div>
                 );
               })
             ) : (
-              <p className="text-center font-italic">
-                Loading payment methods...
-              </p>
+              <p className="text-center font-italic">Đang tải phương thức thanh toán...</p>
             )}
           </div>
 
