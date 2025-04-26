@@ -492,7 +492,7 @@ const Header = () => {
                   {userData.avatar ? (
                     <Avatar size={36} src={userData.avatar} className="wishlist-link" />
                   ) : (
-                    <i className="icon-user"></i>
+                    <Avatar size={36} icon={<UserOutlined />} className="wishlist-link" />
                   )}
                 </span>
               </Dropdown>

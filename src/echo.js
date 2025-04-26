@@ -12,7 +12,7 @@ const echo = new Echo({
   authEndpoint: "http://127.0.0.1:8000/broadcasting/auth",
   auth: {
     headers: {
-      Authorization: 'Bearer ' + (localStorage.getItem("client_token") || localStorage.getItem("admin_token")), 
+      Authorization: 'Bearer ' + (localStorage.getItem("token") || localStorage.getItem("token")), 
     },
   },
   withCredentials: true,

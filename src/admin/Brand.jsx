@@ -132,7 +132,7 @@ const Brand = () => {
             </div>
 
             <Modal
-                title="Tạo thương hiệu mới"
+                title="Thêm thương hiệu mới"
                 visible={isModalVisible}
                 onCancel={hideModal}
                 footer={null}
@@ -187,7 +187,7 @@ const Brand = () => {
                     
                     <div className="add">
                         <Button type="primary" htmlType="submit">
-                            Tạo
+                            Thêm
                         </Button>
                     </div>
                 </Form>

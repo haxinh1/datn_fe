@@ -37,7 +37,7 @@ import ProductList from "../components/client/product/ProductList";
 import { Link } from "react-router-dom";
 
 const Home = () => {
- 
+
   return (
     <>
       <Swiper
@@ -240,12 +240,12 @@ const Home = () => {
         </a>
         <div className="banner banner-big d-md-block">
           <div className="banner-content text-center">
-            <h4 className="banner-subtitle text-white">Trending</h4>
-            <h3 className="banner-title text-white">New League</h3>
+            <h4 className="banner-subtitle text-white">thời trang</h4>
+            <h3 className="banner-title text-white">molla</h3>
             <p className="d-none d-lg-block text-white">
-              Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
-              <br />
-              Donec odio. Quisque volutpat mattis eros.{" "}
+              <span style={{fontSize: '16px'}}>
+                mang đến sự đa dạng phong cách thời trang cho nam giới, chuyên cung cấp các sản phẩm chất lượng cao từ áo sơ mi, áo thun, quần jeans đến phụ kiện, giúp phái mạnh tự tin khẳng định phong cách trong mọi hoàn cảnh.{" "}
+              </span>
             </p>
 
             <a href="category.html" className="btn btn-primary-white">
@@ -399,8 +399,8 @@ const Home = () => {
                 <i className="icon-rocket"></i>
               </span>
               <div className="icon-box-content">
-                <h3 className="icon-box-title">Payment & Delivery</h3>
-                <p>Free shipping for orders over $50</p>
+                <h3 className="icon-box-title">Thanh toán & vận chuyển</h3>
+                <span>Thanh toán dễ dàng & giao hàng nhanh chóng</span>
               </div>
             </div>
           </div>
@@ -411,8 +411,8 @@ const Home = () => {
                 <i className="icon-rotate-left"></i>
               </span>
               <div className="icon-box-content">
-                <h3 className="icon-box-title">Return & Refund</h3>
-                <p>Free 100% money back guarantee</p>
+                <h3 className="icon-box-title">trả hàng & hoàn tiền</h3>
+                <span>Hoàn trả 100% số tiền khi cửa hàng sai sót</span>
               </div>
             </div>
           </div>
@@ -423,8 +423,8 @@ const Home = () => {
                 <i className="icon-life-ring"></i>
               </span>
               <div className="icon-box-content">
-                <h3 className="icon-box-title">Quality Support</h3>
-                <p>Alway online feedback 24/7</p>
+                <h3 className="icon-box-title">tư vấn & hỗ trợ</h3>
+                <span>Đội ngũ nhân viên trả lời tin nhắn 24/7</span>
               </div>
             </div>
           </div>
@@ -433,7 +433,7 @@ const Home = () => {
 
       <div className="container instagram">
         <div className="heading text-center">
-          <h2 className="title title-lg">Follow Us On Instagram</h2>
+          <h2 className="title title-lg">theo mõi molla trên instagram</h2>
           <p className="title-desc">Wanna share your style with us?</p>
         </div>
       </div>
@@ -494,7 +494,7 @@ const Home = () => {
         </div>
       </div>
 
-     
+
     </>
   );
 };

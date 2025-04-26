@@ -1141,7 +1141,7 @@ const Add = () => {
                 </Modal>
 
                 <Modal
-                    title="Tạo thương hiệu mới"
+                    title="Thêm thương hiệu mới"
                     visible={isModalVisible}
                     onCancel={() => setIsModalVisible(false)}
                     footer={null}
@@ -1196,7 +1196,7 @@ const Add = () => {
 
                         <div className="add">
                             <Button type="primary" htmlType="submit">
-                                Tạo
+                                Thêm
                             </Button>
                         </div>
                     </Form>

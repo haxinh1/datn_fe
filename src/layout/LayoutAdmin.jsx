@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
-import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined, RollbackOutlined, DatabaseOutlined } from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, RollbackOutlined, DatabaseOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -203,15 +203,6 @@ const LayoutAdmin = () => {
       label: (
         <Link to="/admin/inbox">
           <span>Tin nhắn</span>
-        </Link>
-      ),
-    },
-    {
-      key: "comment",
-      icon: <CommentOutlined />,
-      label: (
-        <Link to="/admin/comment">
-          <span>Đánh giá</span>
         </Link>
       ),
     },

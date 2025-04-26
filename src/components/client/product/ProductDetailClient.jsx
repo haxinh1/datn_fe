@@ -11,6 +11,14 @@ import { Autoplay, Pagination, Navigation } from "swiper/modules";
 import formatVND from "../../../utils/formatPrice";
 import ProductTabs from "./ProductTabs";
 
+const colorMap = {
+  đen: "#333333",
+  trắng: "#ffffff",
+  đỏ: "#ff0000",
+  "xanh dương": "#3a588b",
+  vàng: "#eab656",
+};
+
 const ProductDetailClient = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -27,17 +35,9 @@ const ProductDetailClient = () => {
   const [dataViewed, setDataViewed] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
 
-  const colorMap = {
-    đen: "#333333",
-    trắng: "#ffffff",
-    đỏ: "#ff0000",
-    "xanh dương": "#3a588b",
-    vàng: "#eab656",
-  };
-
   const { Title } = Typography;
 
-  // Tính giá min và max khi có biến thể
+  // Calculate min and max price for variants
   const { minPrice, maxPrice } = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
       return { minPrice: null, maxPrice: null };
@@ -51,22 +51,60 @@ const ProductDetailClient = () => {
     };
   }, [product]);
 
-  // Chọn màu sắc
+  // Get the quantity of the current product/variant in the cart
+  const getCartQuantity = () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    let cartQuantity = 0;
+
+    if (user?.id) {
+      // For authenticated users, fetch cart from server (placeholder)
+      // Replace with actual API call if cart is stored server-side
+      // Example: const cartItems = await cartServices.getCartItems(user.id);
+      const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+      const matchingItem = cartItems.find(
+        (item) =>
+          item.product_id === product.id &&
+          item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
+      );
+      cartQuantity = matchingItem ? matchingItem.quantity : 0;
+    } else {
+      // For unauthenticated users
+      const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
+      const matchingItem = cartItems.find(
+        (item) =>
+          item.product_id === product.id &&
+          item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
+      );
+      cartQuantity = matchingItem ? matchingItem.quantity : 0;
+    }
+
+    return cartQuantity;
+  };
+
+  // Get available stock considering cart contents
+  const getAvailableStock = () => {
+    const totalStock = selectedVariant ? selectedVariant.stock : product.stock;
+    const cartQuantity = getCartQuantity();
+    return Math.max(0, totalStock - cartQuantity);
+  };
+
+  // Select color
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
     setSelectedSize("");
     setSelectedVariant(null);
+    setQuantity(1);
   };
 
-  // Chọn kích thước
+  // Select size
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Định dạng giá tiền
+  // Format price
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -75,7 +113,7 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  // Tìm biến thể
+  // Find variant
   const findVariant = (colorId, sizeId) => {
     const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
@@ -93,31 +131,46 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Thay đổi số lượng
+  // Handle quantity change
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value > 0) {
-      setQuantity(value);
+    const availableStock = getAvailableStock();
+
+    if (isNaN(value) || value < 1) {
+      setQuantity(1);
+      message.warning("Số lượng phải lớn hơn 0.");
+      return;
     }
+
+    if (value > availableStock) {
+      setQuantity(availableStock);
+      message.warning(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
+      return;
+    }
+
+    setQuantity(value);
   };
 
-  // Thêm vào giỏ hàng
+  // Add to cart
   const handleAddToCart = async () => {
-    // Kiểm tra nếu sản phẩm đã ngừng kinh doanh
     if (product.is_active === 0) {
       message.error("Sản phẩm này đã ngừng kinh doanh.");
       return;
     }
 
-    // Kiểm tra nếu có biến thể nhưng chưa chọn
     if (product.variants?.length > 0 && !selectedVariant) {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
 
-    // Kiểm tra nếu biến thể đã chọn có is_active = 0
     if (selectedVariant && selectedVariant.is_active === 0) {
       message.error("Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác.");
+      return;
+    }
+
+    const availableStock = getAvailableStock();
+    if (quantity > availableStock) {
+      message.error(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
       return;
     }
 
@@ -138,12 +191,10 @@ const ProductDetailClient = () => {
 
     try {
       if (user?.id) {
-        // Người dùng đã đăng nhập
         await cartServices.addCartItem(product.id, itemToAdd);
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
       } else {
-        // Người dùng chưa đăng nhập
         let existingAttributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
         let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
 
@@ -162,7 +213,15 @@ const ProductDetailClient = () => {
         );
 
         if (existingProductIndex !== -1) {
-          existingAttributes[existingProductIndex].quantity += newAttributes.quantity;
+          const newTotalQuantity = existingAttributes[existingProductIndex].quantity + quantity;
+          if (newTotalQuantity > (selectedVariant ? selectedVariant.stock : product.stock)) {
+            message.error(
+              `Không thể thêm. Tổng số lượng vượt quá ${selectedVariant ? selectedVariant.stock : product.stock
+              } sản phẩm trong kho.`
+            );
+            return;
+          }
+          existingAttributes[existingProductIndex].quantity = newTotalQuantity;
         } else {
           existingAttributes.push(newAttributes);
         }
@@ -174,7 +233,15 @@ const ProductDetailClient = () => {
         );
 
         if (existingCartItemIndex !== -1) {
-          cartItems[existingCartItemIndex].quantity += quantity;
+          const newTotalQuantity = cartItems[existingCartItemIndex].quantity + quantity;
+          if (newTotalQuantity > (selectedVariant ? selectedVariant.stock : product.stock)) {
+            message.error(
+              `Không thể thêm. Tổng số lượng vượt quá ${selectedVariant ? selectedVariant.stock : product.stock
+              } sản phẩm trong kho.`
+            );
+            return;
+          }
+          cartItems[existingCartItemIndex].quantity = newTotalQuantity;
         } else {
           cartItems.push({
             product_id: product.id,
@@ -194,7 +261,7 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Xử lý kéo thả
+  // Handle drag start
   const stockAvailable =
     (selectedVariant ? selectedVariant.stock : product.stock) > 0 &&
     product.is_active === 1 &&
@@ -217,6 +284,13 @@ const ProductDetailClient = () => {
               ? "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
               : "Sản phẩm hết hàng."
       );
+      return;
+    }
+
+    const availableStock = getAvailableStock();
+    if (quantity > availableStock) {
+      e.preventDefault();
+      message.error(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
       return;
     }
 
@@ -251,7 +325,7 @@ const ProductDetailClient = () => {
     };
   };
 
-  // Lấy dữ liệu sản phẩm
+  // Fetch product data
   const fetchProduct = async () => {
     try {
       const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
@@ -264,7 +338,7 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Lấy sản phẩm đề xuất
+  // Fetch recommended products
   const fetchProductRecommend = async () => {
     try {
       const response = await productsServices.fetchProductRecommendById(id);
@@ -291,10 +365,10 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <Link to="/"><span>Trang Chủ</span></Link>
+              <Link to="/">Trang Chủ</Link>
             </li>
             <li className="breadcrumb-item">
-              <Link to="/list-prcl"><span>Sản Phẩm</span></Link>
+              <Link to="/list-prcl">Sản Phẩm</Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               Chi Tiết
@@ -375,10 +449,7 @@ const ProductDetailClient = () => {
                             setMainImage(item.image);
                           }}
                         >
-                          <img
-                            src={item.image}
-                            alt={`hình ảnh sản phẩm ${index + 1}`}
-                          />
+                          <img src={item.image} alt={`hình ảnh sản phẩm ${index + 1}`} />
                         </a>
                       ))}
                   </div>
@@ -495,10 +566,7 @@ const ProductDetailClient = () => {
                             >
                               <option value="">Chọn size</option>
                               {product.atribute_value_product
-                                .filter(
-                                  (attr) =>
-                                    attr.attribute_value.attribute_id === 2
-                                )
+                                .filter((attr) => attr.attribute_value.attribute_id === 2)
                                 .map((item) => (
                                   <option
                                     key={item.attribute_value_id}
@@ -520,8 +588,9 @@ const ProductDetailClient = () => {
                             id="qty"
                             className="form-control"
                             value={quantity}
+                            INSTANCE OF quantity
                             min="1"
-                            max={selectedVariant?.stock || product.stock}
+                            max={getAvailableStock()}
                             step="1"
                             required
                             onChange={handleQuantityChange}
@@ -612,7 +681,7 @@ const ProductDetailClient = () => {
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <Title level={2} className="text-center" style={{ marginBottom: "20px" }}>
-              Sản Phẩm Hay Được Mua Cùng
+              Sản Phẩm Hay Được M QTL Cùng
             </Title>
             <Row gutter={[16, 16]} justify="center">
               {recommendedProducts.map((product) => (
@@ -636,47 +705,40 @@ const ProductDetailClient = () => {
         {dataViewed.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
-            <div >
-              <Swiper
-                spaceBetween={30}
-                slidesPerView={3}
-                slidesPerGroup={1}
-                autoplay={{
-                  delay: 2500,
-                  disableOnInteraction: false,
-                }}
-                pagination={{ clickable: true }}
-                navigation={true}
-                modules={[Autoplay, Pagination, Navigation]}
-                className="mySwiper"
-              >
-                {dataViewed.map((product, index) => (
-                  <SwiperSlide key={index}>
-                    <div className="product product-7" style={{ width: "300px" }}>
-                      <Card
-                        onClick={() => navigate(`/product-detail/${product.id}`)}
-
-                        hoverable
-                        cover={<img alt={product.name} src={product.thumbnail} />}
-                      >
-                        <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
-                      </Card>
-                      {/* <figure className="product-media">
-                        <a href="product.html">
-                          <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
-                        </a>
-                      </figure>
-
-                      <div className="product-body">
-                        <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
-                        <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
-
-                      </div> */}
-                    </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
+            <Swiper
+              spaceBetween={30}
+              slidesPerView={3}
+              slidesPerGroup={1}
+              autoplay={{
+                delay: 2500,
+                disableOnInteraction: false,
+              }}
+              pagination={{ clickable: true }}
+              navigation={true}
+              modules={[Autoplay, Pagination, Navigation]}
+              className="mySwiper"
+            >
+              {dataViewed.map((product, index) => (
+                <SwiperSlide key={index}>
+                  <div className="product product-7" style={{ width: "300px" }}>
+                    <Card
+                      onClick={() => navigate(`/product-detail/${product.id}`)}
+                      hoverable
+                      cover={<img alt={product.name} src={product.thumbnail} />}
+                    >
+                      <Card.Meta
+                        title={product.name}
+                        description={
+                          product.sale_price
+                            ? formatPrice(product.sale_price)
+                            : formatPrice(product.sell_price) + " VNĐ"
+                        }
+                      />
+                    </Card>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </div>
         )}
 
