@@ -49,6 +49,18 @@ const Header = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
+      // Check if a COD order was just placed
+      const isCodOrderPlaced = localStorage.getItem("codOrderPlaced") === "true";
+
+      if (isCodOrderPlaced) {
+        setCartItemCount(0); // Force cart count to 0 for COD orders
+        // Optionally, clear the flag after a delay or on next cart update
+        setTimeout(() => {
+          localStorage.removeItem("codOrderPlaced");
+        }, 1000); // Remove flag after 1 second to allow UI update
+        return;
+      }
+
       if (userId) {
         const cartData = await cartServices.fetchCart();
         const uniqueProducts = cartData.reduce((acc, item) => {
