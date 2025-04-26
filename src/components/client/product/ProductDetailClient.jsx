@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
@@ -37,7 +38,7 @@ const ProductDetailClient = () => {
 
   const { Title } = Typography;
 
-  // Calculate min and max price for variants
+  // Tính giá min và max cho các biến thể
   const { minPrice, maxPrice } = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
       return { minPrice: null, maxPrice: null };
@@ -51,15 +52,14 @@ const ProductDetailClient = () => {
     };
   }, [product]);
 
-  // Get the quantity of the current product/variant in the cart
+  // Lấy số lượng sản phẩm/biến thể hiện tại trong giỏ hàng
   const getCartQuantity = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     let cartQuantity = 0;
 
     if (user?.id) {
-      // For authenticated users, fetch cart from server (placeholder)
-      // Replace with actual API call if cart is stored server-side
-      // Example: const cartItems = await cartServices.getCartItems(user.id);
+      // Giả lập lấy giỏ hàng từ localStorage cho người dùng đã đăng nhập
+      // Thay bằng API thực tế nếu giỏ hàng được lưu trên server
       const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
       const matchingItem = cartItems.find(
         (item) =>
@@ -68,7 +68,7 @@ const ProductDetailClient = () => {
       );
       cartQuantity = matchingItem ? matchingItem.quantity : 0;
     } else {
-      // For unauthenticated users
+      // Cho người dùng chưa đăng nhập
       const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
       const matchingItem = cartItems.find(
         (item) =>
@@ -81,14 +81,14 @@ const ProductDetailClient = () => {
     return cartQuantity;
   };
 
-  // Get available stock considering cart contents
+  // Tính số lượng khả dụng trong kho (tổng kho trừ số lượng trong giỏ hàng)
   const getAvailableStock = () => {
     const totalStock = selectedVariant ? selectedVariant.stock : product.stock;
     const cartQuantity = getCartQuantity();
     return Math.max(0, totalStock - cartQuantity);
   };
 
-  // Select color
+  // Chọn màu sắc
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
@@ -97,14 +97,14 @@ const ProductDetailClient = () => {
     setQuantity(1);
   };
 
-  // Select size
+  // Chọn kích thước
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Format price
+  // Định dạng giá tiền
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -113,7 +113,7 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  // Find variant
+  // Tìm biến thể
   const findVariant = (colorId, sizeId) => {
     const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
@@ -131,7 +131,7 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Handle quantity change
+  // Xử lý thay đổi số lượng
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
     const availableStock = getAvailableStock();
@@ -144,14 +144,14 @@ const ProductDetailClient = () => {
 
     if (value > availableStock) {
       setQuantity(availableStock);
-      message.warning(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
+      message.warning(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
       return;
     }
 
     setQuantity(value);
   };
 
-  // Add to cart
+  // Thêm vào giỏ hàng
   const handleAddToCart = async () => {
     if (product.is_active === 0) {
       message.error("Sản phẩm này đã ngừng kinh doanh.");
@@ -170,7 +170,7 @@ const ProductDetailClient = () => {
 
     const availableStock = getAvailableStock();
     if (quantity > availableStock) {
-      message.error(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
+      message.error(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
       return;
     }
 
@@ -261,7 +261,7 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Handle drag start
+  // Xử lý kéo thả
   const stockAvailable =
     (selectedVariant ? selectedVariant.stock : product.stock) > 0 &&
     product.is_active === 1 &&
@@ -290,7 +290,7 @@ const ProductDetailClient = () => {
     const availableStock = getAvailableStock();
     if (quantity > availableStock) {
       e.preventDefault();
-      message.error(`Chỉ còn ${availableStock} sản phẩm trong kho.`);
+      message.error(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
       return;
     }
 
@@ -325,7 +325,7 @@ const ProductDetailClient = () => {
     };
   };
 
-  // Fetch product data
+  // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
       const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
@@ -338,7 +338,7 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Fetch recommended products
+  // Lấy sản phẩm đề xuất
   const fetchProductRecommend = async () => {
     try {
       const response = await productsServices.fetchProductRecommendById(id);
@@ -588,12 +588,12 @@ const ProductDetailClient = () => {
                             id="qty"
                             className="form-control"
                             value={quantity}
-                            INSTANCE OF quantity
                             min="1"
                             max={getAvailableStock()}
                             step="1"
                             required
                             onChange={handleQuantityChange}
+                            aria-label={`Số lượng sản phẩm, tối đa ${getAvailableStock()}`}
                           />
                         </div>
                       </div>
@@ -681,7 +681,7 @@ const ProductDetailClient = () => {
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <Title level={2} className="text-center" style={{ marginBottom: "20px" }}>
-              Sản Phẩm Hay Được M QTL Cùng
+              Sản Phẩm Hay Được Mua Cùng
             </Title>
             <Row gutter={[16, 16]} justify="center">
               {recommendedProducts.map((product) => (
