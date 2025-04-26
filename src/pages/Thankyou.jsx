@@ -46,7 +46,7 @@ const Thankyoupage = () => {
       >
         <header className="text-center mb-4">
           <h1 className="text-primary">MOLLA SHOP</h1>
-          <h2>THANH TOÁN {paymentStatus === "00" || "0" ? "Thành công" : "Thất bại"}</h2>
+          <h2>THANH TOÁN {paymentStatus === "00" || "0" ? "THÀNH CÔNG" : "THẤT BẠI"}</h2>
           <span>
             Cảm ơn <strong>{customerName || "quý khách"}</strong> đã đặt hàng
             tại Molla Shop. Dưới đây là thông tin đơn hàng của bạn.
