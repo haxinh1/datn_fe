@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
@@ -62,6 +61,14 @@ const Checkout = () => {
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
 
+  // Hàm phụ để lấy giá sản phẩm, ưu tiên sale_price
+  const getProductPrice = (item) => {
+    if (item.product_variant) {
+      return item.product_variant.sale_price ?? item.product_variant.sell_price ?? 0;
+    }
+    return item.product?.sale_price ?? item.product?.sell_price ?? 0;
+  };
+
   // Lấy dữ liệu sản phẩm được chọn
   useEffect(() => {
     const fetchCartData = async () => {
@@ -86,9 +93,10 @@ const Checkout = () => {
               );
             }
 
-            const price = variantDetails
-              ? variantDetails.sale_price || variantDetails.sell_price
-              : productDetails.data.sale_price || productDetails.data.sell_price;
+            const price = getProductPrice({
+              product: productDetails.data,
+              product_variant: variantDetails,
+            });
 
             return {
               ...item,
@@ -297,14 +305,17 @@ const Checkout = () => {
     mutate(userData);
   };
 
+  // Tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-      const productPrice = item.product_variant
-        ? item.product_variant.sale_price || item.product_variant.sell_price || 0
-        : item.product?.sale_price || item.product?.sell_price || 0;
-      return total + productPrice * (item.quantity || 1);
+      return total + getProductPrice(item) * (item.quantity || 1);
     }, 0)
     : 0;
+
+  const finalTotal = Math.max(
+    0,
+    subtotal - discountAmount + shippingFee - usedLoyaltyPoints
+  );
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -380,17 +391,31 @@ const Checkout = () => {
         fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
       }
 
+      // Kiểm tra dữ liệu trước khi gửi
+      if (usedLoyaltyPoints < 0) {
+        message.error("Số điểm sử dụng không hợp lệ!");
+        return;
+      }
+      if (discountAmount < 0) {
+        message.error("Số tiền giảm giá không hợp lệ!");
+        return;
+      }
+      if (shippingFee < 0) {
+        message.error("Phí vận chuyển không hợp lệ!");
+        return;
+      }
+
       const orderData = {
         user_id: userId || null,
         fullname: userData.fullname,
         email: userData.email,
         phone_number: userData.phone_number,
         address: fullAddress,
-        used_points: usedLoyaltyPoints || 0,
-        shipping_fee: shippingFee,
+        used_points: Number(usedLoyaltyPoints) || 0,
+        shipping_fee: Number(shippingFee) || 0,
         coupon_code: selectedCoupon ? selectedCoupon.code : null,
-        discount_amount: discountAmount,
-        total_amount: finalTotal,
+        discount_amount: Number(discountAmount) || 0,
+        total_amount: Number(finalTotal) || 0,
         payment_method:
           selectedPayment === 2
             ? "cod"
@@ -404,7 +429,7 @@ const Checkout = () => {
           product_id: item.product_id,
           product_variant_id: item.product_variant_id || null,
           quantity: item.quantity,
-          price: item.product_variant?.sale_price || item.product?.sale_price || 0,
+          price: getProductPrice(item),
         })),
       };
 
@@ -465,7 +490,7 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error("❌ Lỗi khi đặt hàng:", error);
-      message.error("Có lỗi xảy ra, vui lòng thử lại.");
+      message.error(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
@@ -682,11 +707,6 @@ const Checkout = () => {
     message.success("Mã giảm giá đã được hủy!");
     setIsCouponModalVisible(false);
   };
-
-  const finalTotal = Math.max(
-    0,
-    subtotal - discountAmount + shippingFee - usedLoyaltyPoints
-  );
 
   return (
     <div>
@@ -1125,12 +1145,7 @@ const Checkout = () => {
                                 (x{item.quantity})
                               </td>
                               <td style={{ textAlign: "right", padding: "10px" }}>
-                                {formatCurrency(
-                                  item.product_variant
-                                    ? item.product_variant.sale_price || item.product_variant.sell_price
-                                    : item.product?.sale_price || item.product?.sell_price
-                                )}{" "}
-                                VNĐ
+                                {formatCurrency(getProductPrice(item))} VNĐ
                               </td>
                             </tr>
                           ))}
@@ -1167,11 +1182,15 @@ const Checkout = () => {
                                       const rawValue = e.target.value;
                                       const numericValue = unformatNumber(rawValue);
 
-                                      if (numericValue <= userData.loyalty_points) {
+                                      if (numericValue <= userData.loyalty_points && numericValue >= 0) {
                                         setUsedLoyaltyPoints(numericValue);
                                         setFormattedLoyaltyPoints(formatNumber(numericValue));
                                       } else {
-                                        message.warning("Bạn không thể dùng quá số điểm hiện có!");
+                                        message.warning(
+                                          numericValue < 0
+                                            ? "Số điểm không thể âm!"
+                                            : "Bạn không thể dùng quá số điểm hiện có!"
+                                        );
                                         setUsedLoyaltyPoints(userData.loyalty_points);
                                         setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
                                       }
@@ -1323,22 +1342,17 @@ const Checkout = () => {
                           }
 
                           if (!userId) {
-                            try {
-                              if (
-                                !userData.address ||
-                                !selectedProvince ||
-                                !selectedDistrict ||
-                                !selectedWard
-                              ) {
-                                return message.error(
-                                  "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
-                                );
-                              }
-                              setIsPaymentModalOpen(true);
-                            } catch (error) {
-                              console.error("Lỗi khi đặt hàng với khách vãng lai:", error);
-                              message.error("Có lỗi xảy ra khi thanh toán.");
+                            if (
+                              !userData.address ||
+                              !selectedProvince ||
+                              !selectedDistrict ||
+                              !selectedWard
+                            ) {
+                              return message.error(
+                                "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
+                              );
                             }
+                            setIsPaymentModalOpen(true);
                           } else {
                             if (!selectedAddress) {
                               return message.error(
