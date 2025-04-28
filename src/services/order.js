@@ -58,31 +58,63 @@ const placeOrder = async (orderData) => {
     Authorization: token ? `Bearer ${token}` : undefined,
   };
 
-  // Lấy cart từ localStorage nếu không có userId
-  if (!userId) {
-    const localCartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-    orderData.cart_items = localCartItems;
-  }
-
   try {
+    // Gọi API để đặt hàng
     const response = await instance.post("/orders/place", orderData, {
       headers,
     });
 
-    // Xóa giỏ hàng trong localStorage nếu đặt hàng thành công (không đăng nhập)
+    console.log("✅ Đặt hàng thành công:", response.data);
+
+    // Nếu người dùng không đăng nhập (vãng lai), xóa sản phẩm trong localStorage
     if (!userId) {
-      localStorage.removeItem("cart_items");
-      localStorage.removeItem("cartAttributes");
+      try {
+        // Lấy giỏ hàng từ localStorage
+        let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
+        let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
+
+        // Lọc bỏ các sản phẩm đã mua khỏi giỏ hàng
+        const purchasedItems = orderData.products.map(item => ({
+          product_id: item.product_id,
+          product_variant_id: item.product_variant_id || null,
+        }));
+
+        // Lọc giỏ hàng để loại bỏ các sản phẩm đã mua
+        localCart = localCart.filter(cartItem =>
+          !purchasedItems.some(
+            purchased =>
+              purchased.product_id === cartItem.product_id &&
+              (purchased.product_variant_id === cartItem.product_variant_id || null)
+          )
+        );
+
+        // Lọc thuộc tính của sản phẩm đã mua khỏi cartAttributes
+        cartAttributes = cartAttributes.filter(attr =>
+          !purchasedItems.some(
+            purchased =>
+              purchased.product_id === attr.product_id &&
+              (purchased.product_variant_id === attr.product_variant_id || null)
+          )
+        );
+
+        // Cập nhật lại giỏ hàng trong localStorage
+        localStorage.setItem("cart_items", JSON.stringify(localCart));
+        localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
+
+        // Kích hoạt sự kiện để cập nhật giỏ hàng trên giao diện
+        window.dispatchEvent(new Event("cart-updated"));
+      } catch (error) {
+        console.error("Lỗi khi cập nhật giỏ hàng trong localStorage:", error);
+        // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
+      }
     }
 
-    console.log("✅ Đặt hàng thành công:", response.data);
-    return response.data;
+    return response.data; // Trả lại dữ liệu của đơn hàng
   } catch (error) {
     console.error("❌ Lỗi khi đặt hàng:", error.response?.data || error);
-    throw error;
+    throw error; // Ném lỗi để gọi lại ở nơi khác nếu cần
   }
 };
-
 // danh sách đơn hàng theo người dùng
 const getOrderByIdUser = async (userId) => {
   const response = await instance.get(`/orders/user/${userId}`);

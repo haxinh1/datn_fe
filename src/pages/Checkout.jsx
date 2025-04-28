@@ -443,45 +443,52 @@ const Checkout = () => {
       if (orderResponse?.message === "Đặt hàng thành công!" || orderResponse?.order) {
         message.success("🎉 Đơn hàng đã đặt thành công!");
 
-        // Xử lý giỏ hàng
-        try {
-          if (!userId) {
-            // Đối với khách vãng lai: Xóa các mục đã đặt khỏi localStorage
+        // Xử lý giỏ hàng vãng lai (xóa các sản phẩm đã chọn trong localStorage)
+        if (!userId) {
+          try {
+            // Lấy giỏ hàng và thuộc tính từ localStorage
             let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
             let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
 
+            // Danh sách sản phẩm đã mua (từ cartItems)
+            const purchasedItems = cartItems.map(item => ({
+              product_id: item.product_id,
+              product_variant_id: item.product_variant_id || null,
+            }));
+
+            // Lọc bỏ các sản phẩm đã mua khỏi localCart
             localCart = localCart.filter(
-              (cartItem) =>
-                !cartItems.some(
-                  (selectedItem) =>
-                    selectedItem.product_id === cartItem.product_id &&
-                    selectedItem.product_variant_id === cartItem.product_variant_id
+              cartItem =>
+                !purchasedItems.some(
+                  purchased =>
+                    purchased.product_id === cartItem.product_id &&
+                    (purchased.product_variant_id === (cartItem.product_variant_id || null))
                 )
             );
 
+            // Lọc bỏ thuộc tính của các sản phẩm đã mua khỏi cartAttributes
             cartAttributes = cartAttributes.filter(
-              (attr) =>
-                !cartItems.some(
-                  (selectedItem) =>
-                    selectedItem.product_id === attr.product_id &&
-                    selectedItem.product_variant_id === attr.product_variant_id
+              attr =>
+                !purchasedItems.some(
+                  purchased =>
+                    purchased.product_id === attr.product_id &&
+                    (purchased.product_variant_id === (attr.product_variant_id || null))
                 )
             );
 
+            // Cập nhật lại localStorage
             localStorage.setItem("cart_items", JSON.stringify(localCart));
             localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
-          }
 
-          // Kích hoạt sự kiện cập nhật giỏ hàng (cho COD hoặc để đồng bộ giao diện)
-          if (selectedPayment === 2) {
+            // Kích hoạt sự kiện cập nhật giỏ hàng
             window.dispatchEvent(new Event("cart-updated"));
-          }
 
-          // Đặt lại cartItems để làm trống giao diện
-          setCartItems([]);
-        } catch (error) {
-          console.error("Lỗi khi cập nhật giỏ hàng trên client-side:", error);
-          // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
+            // Cập nhật giao diện
+            setCartItems([]);
+          } catch (error) {
+            console.error("Lỗi khi cập nhật giỏ hàng trên client-side:", error);
+            // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
+          }
         }
 
         navigate(`/dashboard/orders/${userId || "guest"}`);
