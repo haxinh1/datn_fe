@@ -1,5 +1,5 @@
-import { BookOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
-import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
+import { BookOutlined, CloseOutlined, EditOutlined, EyeOutlined, MenuOutlined, SearchOutlined, ToTopOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Col, ConfigProvider, DatePicker, Form, Image, Input, Modal, notification, Radio, Row, Select, Skeleton, Table, Tooltip, Upload } from "antd";
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { OrderService } from "./../services/order";
@@ -19,9 +19,11 @@ dayjs.extend(isSameOrBefore);
 const Order = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModal, setIsModal] = useState(false);
+  const [isModalCancel, setIsModalCancel] = useState(false);
   const hideModal = () => setIsModalVisible(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const hideEdit = () => setIsModal(false);
+  const hideCancel = () => setIsModalCancel(false);
   const [form] = Form.useForm();
   const [image, setImage] = useState("");
   const [orderDetails, setOrderDetails] = useState([]);
@@ -107,10 +109,10 @@ const Order = () => {
   }));
 
   const validTransitions = {
-    2: [3, 8],
-    3: [4, 8],
+    2: [3],
+    3: [4],
     4: [5, 6],
-    6: [4, 8],
+    6: [4],
   };
 
   const showEdit = (order) => {
@@ -182,6 +184,73 @@ const Order = () => {
         },
       }
     );
+  };
+
+  const showCancel = (order) => {
+    setSelectedOrderId(order.id);
+    setIsModalCancel(true)
+  }
+
+  const { mutate: cancelOrder } = useMutation({
+    mutationFn: ({ orderId, payload }) => OrderService.adminCancel(orderId, payload),
+    onSuccess: () => {
+      notification.success({
+        message: "Hủy đơn thành công!",
+      });
+      queryClient.invalidateQueries(["orders"]); // Làm mới danh sách đơn hàng
+      queryClient.invalidateQueries(["searchOrders"]);
+      hideCancel(); // Đóng modal
+      form.resetFields(); // Reset form
+      setSelectedOrderId(null); // Xóa selectedOrderId
+    },
+    onError: (error) => {
+      console.error("Lỗi khi hủy đơn:", error);
+      notification.error({
+        message: "Hủy đơn thất bại!",
+        description: "Không thể hủy đơn. Vui lòng thử lại sau!",
+      });
+    },
+  });
+
+  const handleCancelOrder = async (values) => {
+    try {
+      // 1. Kiểm tra selectedOrderId
+      if (!selectedOrderId) {
+        notification.error({
+          message: "Error",
+          description: "Không tìm thấy đơn hàng để hủy!",
+        });
+        return;
+      }
+
+      // 2. Lấy user_id từ localStorage
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user?.id;
+      if (!userId) {
+        notification.error({
+          message: "Error",
+          description: "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!",
+        });
+        return;
+      }
+
+      // 3. Tạo payload
+      const payload = {
+        reason: values.reason,
+        user_id: userId,
+      };
+
+      console.log("Payload gửi đi:", payload);
+
+      // 4. Gọi API hủy đơn
+      cancelOrder({ orderId: selectedOrderId, payload });
+    } catch (error) {
+      console.error("Error submitting cancel request:", error);
+      notification.error({
+        message: "Error",
+        description: "Không thể gửi yêu cầu hủy đơn. Vui lòng thử lại sau!",
+      });
+    }
   };
 
   const handleFilterChange = (key, value) => {
@@ -509,7 +578,7 @@ const Order = () => {
       key: "action",
       align: "center",
       render: (_, item) => (
-        <div className="action-container">
+        <div className="group1">
           <Tooltip title="Xem thêm">
             <Button
               color="purple"
@@ -526,6 +595,17 @@ const Order = () => {
                 variant="solid"
                 icon={<EditOutlined />}
                 onClick={() => showEdit(item)}
+              />
+            )}
+          </Tooltip>
+
+          <Tooltip title="Hủy đơn">
+            {([1, 2, 3, 4, 6].includes(item.status?.id)) && (
+              <Button
+                color="danger"
+                variant="solid"
+                icon={<CloseOutlined />}
+                onClick={() => showCancel(item)}
               />
             )}
           </Tooltip>
@@ -966,6 +1046,35 @@ const Order = () => {
           <div className="add">
             <Button type="primary" htmlType="submit">
               Cập nhật
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Hủy đơn"
+        visible={isModalCancel}
+        onCancel={hideCancel}
+        footer={null}
+      >
+        <Form form={form} layout="vertical" onFinish={handleCancelOrder}>
+          <Form.Item
+            label="Lý do hủy đơn"
+            name="reason"
+            rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
+          >
+            <Radio.Group
+
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            >
+              <Radio value="error">Sản phẩm bị hư, hỏng khi vận chuyển</Radio>
+              <Radio value="disconnect">Không thể liên hệ với người đặt</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          <div className="add">
+            <Button type="primary" htmlType="submit">
+              Xác nhận
             </Button>
           </div>
         </Form>

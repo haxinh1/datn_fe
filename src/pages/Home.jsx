@@ -400,7 +400,7 @@ const Home = () => {
               </span>
               <div className="icon-box-content">
                 <h3 className="icon-box-title">Thanh toán & vận chuyển</h3>
-                <span>Thanh toán dễ dàng & giao hàng nhanh chóng</span>
+                <span>Thanh toán dễ dàng & Giao hàng nhanh chóng</span>
               </div>
             </div>
           </div>

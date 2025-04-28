@@ -417,6 +417,13 @@ const ProductDetailClient = () => {
                     </div>
                   </div>
 
+                  <div className="details-filter-row details-row-size">
+                    <label>Lượt xem:</label>
+                    <div className="product-nav product-nav-dots">
+                      <div>{product.views}</div>
+                    </div>
+                  </div>
+
                   {selectedVariant ? (
                     <div className="product-price">
                       {formatPrice(selectedVariant.sale_price || selectedVariant.sell_price)} VNĐ

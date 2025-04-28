@@ -308,21 +308,17 @@ const BackCl = () => {
                         }))}
                         pagination={false}
                         summary={() => {
-                            const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + (item.price || 0),
-                                0
-                            );
                             return (
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         <strong>Số tiền hoàn trả (VNĐ):</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        <strong>{formatPrice(totalAmount)}</strong>
+                                        <strong>{formatPrice(refundDetails?.total_refund_amount || 0)}</strong>
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
                             );
-                        }}                        
+                        }}                                                                    
                     />
                 </div>
             </Modal>

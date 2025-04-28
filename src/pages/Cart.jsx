@@ -64,7 +64,7 @@ const Cart = () => {
 
           const detailedCart = await Promise.all(
             localCartData.map(async (item) => {
-              const productDetails = await productsServices.fetchProductById(
+              const productDetails = await productsServices.ProductById(
                 item.product_id
               );
               let variantDetails = null;
@@ -403,30 +403,33 @@ const Cart = () => {
             }}
           >
             <Image src={product.thumbnail} width={60} />
-            <div>
-              {product.name}
-              {record.product_variant_id && (
-                <span className="text-muted" style={{ fontSize: "14px" }}>
-                  ({getAttributeValue(record)})
-                </span>
-              )}
-              {isProductInactive && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "10px",
-                    left: "0",
-                    width: "100%",
-                    textAlign: "center",
-                    color: "red",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Sản phẩm này ngừng bán
-                </div>
-              )}
-            </div>
+
+            <Link to={`/product-detail/${product.id}`}>
+              <div>
+                {product.name}
+                {record.product_variant_id && (
+                  <span className="text-muted" style={{ fontSize: "14px" }}>
+                    ({getAttributeValue(record)})
+                  </span>
+                )}
+                {isProductInactive && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "10px",
+                      left: "0",
+                      width: "100%",
+                      textAlign: "center",
+                      color: "red",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Sản phẩm này ngừng bán
+                  </div>
+                )}
+              </div>
+            </Link>
           </div>
         );
       },
