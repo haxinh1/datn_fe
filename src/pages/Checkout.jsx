@@ -69,6 +69,46 @@ const Checkout = () => {
     return item.product?.sale_price ?? item.product?.sell_price ?? 0;
   };
 
+  // Validator cho fullname
+  const validateFullname = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập tên khách hàng!"));
+    }
+    const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]+/;
+    if (specialCharRegex.test(value)) {
+      return Promise.reject(new Error("Tên không được chứa ký tự đặc biệt!"));
+    }
+    const multipleSpacesRegex = /\s{2,}/;
+    if (multipleSpacesRegex.test(value)) {
+      return Promise.reject(new Error("Tên không được chứa nhiều khoảng trắng liên tiếp!"));
+    }
+    return Promise.resolve();
+  };
+
+  // Validator cho email
+  const validateEmail = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập email!"));
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return Promise.reject(new Error("Vui lòng nhập email đúng định dạng!"));
+    }
+    return Promise.resolve();
+  };
+
+  // Validator cho phone_number
+  const validatePhoneNumber = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập số điện thoại!"));
+    }
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(value)) {
+      return Promise.reject(new Error("Số điện thoại phải là 10 chữ số!"));
+    }
+    return Promise.resolve();
+  };
+
   // Lấy dữ liệu sản phẩm được chọn
   useEffect(() => {
     const fetchCartData = async () => {
@@ -137,6 +177,12 @@ const Checkout = () => {
             address: data.address?.address || "",
             loyalty_points: data.loyalty_points || 0,
           });
+          // Cập nhật giá trị ban đầu cho form
+          form.setFieldsValue({
+            fullname: data.fullname || "",
+            email: data.email || "",
+            phone_number: data.phone_number || "",
+          });
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu người dùng từ DB:", error);
@@ -144,7 +190,7 @@ const Checkout = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [form]);
 
   // Lấy danh sách tỉnh/thành phố
   useEffect(() => {
@@ -343,6 +389,8 @@ const Checkout = () => {
 
   const handleConfirmPayment = async () => {
     try {
+      // Validate form trước khi xử lý
+      await form.validateFields();
       setIsPaymentModalOpen(false);
 
       if (!selectedPayment) {
@@ -446,17 +494,14 @@ const Checkout = () => {
         // Xử lý giỏ hàng vãng lai (xóa các sản phẩm đã chọn trong localStorage)
         if (!userId) {
           try {
-            // Lấy giỏ hàng và thuộc tính từ localStorage
             let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
             let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
 
-            // Danh sách sản phẩm đã mua (từ cartItems)
             const purchasedItems = cartItems.map(item => ({
               product_id: item.product_id,
               product_variant_id: item.product_variant_id || null,
             }));
 
-            // Lọc bỏ các sản phẩm đã mua khỏi localCart
             localCart = localCart.filter(
               cartItem =>
                 !purchasedItems.some(
@@ -466,7 +511,6 @@ const Checkout = () => {
                 )
             );
 
-            // Lọc bỏ thuộc tính của các sản phẩm đã mua khỏi cartAttributes
             cartAttributes = cartAttributes.filter(
               attr =>
                 !purchasedItems.some(
@@ -476,18 +520,13 @@ const Checkout = () => {
                 )
             );
 
-            // Cập nhật lại localStorage
             localStorage.setItem("cart_items", JSON.stringify(localCart));
             localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
 
-            // Kích hoạt sự kiện cập nhật giỏ hàng
             window.dispatchEvent(new Event("cart-updated"));
-
-            // Cập nhật giao diện
             setCartItems([]);
           } catch (error) {
             console.error("Lỗi khi cập nhật giỏ hàng trên client-side:", error);
-            // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
           }
         }
         window.dispatchEvent(new Event("cart-updated"));
@@ -750,7 +789,7 @@ const Checkout = () => {
         <div className="page-content">
           <div className="checkout">
             <div className="container">
-              <Form layout="vertical">
+              <Form form={form} layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
                     <h1 className="mb-5" style={{ color: "#eea287" }}>
@@ -758,7 +797,11 @@ const Checkout = () => {
                     </h1>
                     <div className="row">
                       <div className="col-sm-6">
-                        <Form.Item label="Tên khách hàng">
+                        <Form.Item
+                          label="Tên khách hàng"
+                          name="fullname"
+                          rules={[{ validator: validateFullname }]}
+                        >
                           <Input
                             className="input-item"
                             type="text"
@@ -774,11 +817,14 @@ const Checkout = () => {
                       </div>
 
                       <div className="col-sm-6">
-                        <Form.Item label="Số điện thoại">
+                        <Form.Item
+                          label="Số điện thoại"
+                          name="phone_number"
+                          rules={[{ validator: validatePhoneNumber }]}
+                        >
                           <Input
                             className="input-item"
                             type="text"
-                            name="phone_number"
                             value={userData.phone_number}
                             onChange={(e) =>
                               setUserData({
@@ -790,11 +836,14 @@ const Checkout = () => {
                         </Form.Item>
                       </div>
                     </div>
-                    <Form.Item label="Email">
+                    <Form.Item
+                      label="Email"
+                      name="email"
+                      rules={[{ validator: validateEmail }]}
+                    >
                       <Input
                         className="input-item"
                         type="text"
-                        name="email"
                         value={userData.email}
                         onChange={(e) =>
                           setUserData({ ...userData, email: e.target.value })
@@ -1334,39 +1383,32 @@ const Checkout = () => {
                           borderRadius: "6px",
                         }}
                         onClick={async () => {
-                          if (!userData.fullname || !userData.email || !userData.phone_number) {
-                            return message.warning("Vui lòng điền đầy đủ thông tin");
-                          }
+                          try {
+                            // Validate form trước khi tiếp tục
+                            await form.validateFields();
 
-                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                          if (!emailRegex.test(userData.email)) {
-                            return message.error("Vui lòng nhập địa chỉ email hợp lệ.");
-                          }
-
-                          const phoneRegex = /^[0-9]{10,11}$/;
-                          if (!phoneRegex.test(userData.phone_number)) {
-                            return message.error("Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số).");
-                          }
-
-                          if (!userId) {
-                            if (
-                              !userData.address ||
-                              !selectedProvince ||
-                              !selectedDistrict ||
-                              !selectedWard
-                            ) {
-                              return message.error(
-                                "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
-                              );
+                            if (!userId) {
+                              if (
+                                !userData.address ||
+                                !selectedProvince ||
+                                !selectedDistrict ||
+                                !selectedWard
+                              ) {
+                                return message.error(
+                                  "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
+                                );
+                              }
+                              setIsPaymentModalOpen(true);
+                            } else {
+                              if (!selectedAddress) {
+                                return message.error(
+                                  "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
+                                );
+                              }
+                              setIsPaymentModalOpen(true);
                             }
-                            setIsPaymentModalOpen(true);
-                          } else {
-                            if (!selectedAddress) {
-                              return message.error(
-                                "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
-                              );
-                            }
-                            setIsPaymentModalOpen(true);
+                          } catch (error) {
+                            message.error("Vui lòng kiểm tra lại thông tin nhập vào!");
                           }
                         }}
                       >
