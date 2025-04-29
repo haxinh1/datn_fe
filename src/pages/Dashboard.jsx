@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
-import { BookOutlined, EnvironmentOutlined, LockOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
+import { BookOutlined, CloseCircleOutlined, EnvironmentOutlined, LockOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
 import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Dashboard = () => {
@@ -103,6 +103,17 @@ const Dashboard = () => {
                           style={{ marginRight: "8px", cursor: "pointer" }}
                         />
                         Hoàn trả
+                      </span>
+                    </Link>
+                  </li>
+
+                  <li className="nav-item">
+                    <Link to={`/dashboard/cancels/${client?.id}`}>
+                      <span className="nav-link">
+                        <CloseCircleOutlined
+                          style={{ marginRight: "8px", cursor: "pointer" }}
+                        />
+                        Đơn hủy
                       </span>
                     </Link>
                   </li>

@@ -55,6 +55,8 @@ import OrderStaff from "./admin/OrderStaff";
 import Cate from "./pages/Cate";
 import DetailCate from "./pages/DetailCate";
 import RoleRouter from "./admin/RoleRouter";
+import Cancel from "./admin/Cancel";
+import Cancels from "./pages/Cancels";
 
 function App() {
   return (
@@ -90,6 +92,7 @@ function App() {
             <Route path="orders/:id" element={<Orders />} />
             <Route path="address/:id" element={<Address />} />
             <Route path="return/:id" element={<Return />} />
+            <Route path="cancels/:id" element={<Cancels />} />
             <Route path="backcl/:id" element={<BackCl />} />
             <Route path="review/:id" element={<Review />} />
           </Route>
@@ -128,6 +131,7 @@ function App() {
             <Route path="orderstaff" element={<OrderStaff />} />
             <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />
+            <Route path="cancel" element={<Cancel />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />
             <Route path="update/:id" element={<Update />} />

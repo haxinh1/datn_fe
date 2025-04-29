@@ -6,6 +6,42 @@ const getAllOrder = async () => {
   return response.data;
 };
 
+// danh sách đơn hủy
+const getAllCancel = async () => {
+  const response = await instance.get("/order-cancels");
+  return response.data;
+};
+
+// danh sách đơn hủy theo người dùng
+const getCancelByUser = async (userId) => {
+  const response = await instance.get(`/order-cancels/user/${userId}`);
+  return response.data;
+};
+
+// client hủy đơn
+const cancelRequest = async (payload) => {
+  const response = await instance.post('/order-cancels/request-cancel', payload);
+  return response.data;
+};
+
+// admin hủy đơn
+const adminCancel = async (orderId, payload) => {
+  const response = await instance.post(`/order-cancels/admin-cancel/${orderId}`, payload);
+  return response.data;
+};
+
+// admin xác nhận hoàn tiền
+const cancelBack = async (cancelId, payload) => {
+  const response = await instance.post(`/order-cancels/refund/${cancelId}`, payload);
+  return response.data;
+};
+
+// client gửi thông tin hoàn tiền
+const infoBack = async (cancelId, payload) => {
+  const response = await instance.post(`/order-cancels/submit-bank-info/${cancelId}`, payload);
+  return response.data;
+};
+
 // tìm kiếm đơn hàng
 const searchOrders = async (keyword = "") => {
   try {
@@ -246,6 +282,12 @@ export const OrderService = {
   placeOrder,
   getAllOrder,
   getAllBill,
+  getAllCancel,
+  getCancelByUser,
+  cancelRequest,
+  adminCancel,
+  cancelBack,
+  infoBack,
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,

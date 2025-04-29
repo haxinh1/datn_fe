@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, Rate, Avatar, Divider, Image, Spin, Form, Button, Input } from 'antd';
 import { CommentServices } from '../../../services/comment';
-import { CommentOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { CommentOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -207,16 +207,15 @@ const ProductTabs = ({ productId, product }) => {
                           <div key={reply.id} style={{ marginBottom: '10px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
                               <Avatar
-                                style={{ backgroundColor: '#1890ff', marginRight: '10px' }}
+                                style={{marginRight: '10px' }}
                                 size="small"
-                                src={reply.user?.avatar || undefined}
-                              >
-                                {!reply.user?.avatar && (reply.user?.fullname?.charAt(0) || 'A')}
-                              </Avatar>
+                                icon={<UserOutlined />}
+                              />
+
                               <div style={{ flex: 1 }}>
                                 <div className='group1'>
                                   <span style={{ fontWeight: 'bold' }}>
-                                    {reply.user?.fullname || 'Anonymous'}
+                                    Molla Shop
                                   </span>
                                   <span style={{ color: '#888' }}>
                                     {new Date(reply.comment_date).toLocaleDateString()}

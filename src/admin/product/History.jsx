@@ -16,10 +16,10 @@ const History = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [detailModal, setDetailModal] = useState(false);
     const [selectedStock, setSelectedStock] = useState(null);
-    const [dateRange, setDateRange] = useState([null, null]); // ✅ Lưu khoảng ngày chọn
+    const [dateRange, setDateRange] = useState([null, null]);
     const { RangePicker } = DatePicker;
-    const [filterStatus, setFilterStatus] = useState(null); // ✅ Trạng thái lọc bảng
-    const [confirmStatus, setConfirmStatus] = useState(null); // ✅ Trạng thái khi xác nhận trong modal
+    const [filterStatus, setFilterStatus] = useState(null);
+    const [confirmStatus, setConfirmStatus] = useState(null);
     const [modalData, setModalData] = useState([]);
     const [form] = Form.useForm();
     const [selectedRows, setSelectedRows] = useState([]);
@@ -107,6 +107,8 @@ const History = () => {
                             price: variant.price,
                             sell_price: fullVariant.sell_price ?? 0,
                             sale_price: fullVariant.sale_price ?? 0,
+                            sale_price_start_at: variant.sale_price_start_at ?? null, // Thêm sale_price_start_at
+                            sale_price_end_at: variant.sale_price_end_at ?? null,
                             quantity: variant.quantity,
                             total: variant.price * variant.quantity,
                         };
@@ -119,6 +121,8 @@ const History = () => {
                         price: product.price,
                         sell_price: fullProduct.sell_price ?? 0,
                         sale_price: fullProduct.sale_price ?? 0,
+                        sale_price_start_at: product.sale_price_start_at ?? null, // Thêm sale_price_start_at
+                        sale_price_end_at: product.sale_price_end_at ?? null,
                         quantity: product.quantity,
                         total: product.price * product.quantity,
                     }];
@@ -172,6 +176,8 @@ const History = () => {
                         price: variant.price,
                         sell_price: fullVariant.sell_price ?? "", // ✅ Lấy giá bán từ API
                         sale_price: fullVariant.sale_price ?? "", // ✅ Lấy giá khuyến mại từ API
+                        sale_price_start_at: fullVariant.sale_price_start_at ?? "",
+                        sale_price_end_at: fullVariant.sale_price_end_at ?? "",
                         quantity: variant.quantity,
                         total: variant.price * variant.quantity,  // ✅ Tính tổng tiền
                     };
@@ -182,10 +188,25 @@ const History = () => {
                     price: product.price,
                     sell_price: fullProduct.sell_price ?? "", // ✅ Lấy giá bán từ API
                     sale_price: fullProduct.sale_price ?? "", // ✅ Lấy giá khuyến mại từ API
+                    sale_price_start_at: fullProduct.sale_price_start_at ?? "",
+                    sale_price_end_at: fullProduct.sale_price_end_at ?? "",
                     quantity: product.quantity,
                     total: product.price * product.quantity,  // ✅ Tính tổng tiền
                 }];
         });
+    };
+
+    const handleDateChange = (date, type, record) => {
+        setModalData(prevData =>
+            prevData.map(item =>
+                item.key === record.key
+                    ? {
+                        ...item,
+                        [type === "start" ? "sale_price_start_at" : "sale_price_end_at"]: date ? date.format("YYYY-MM-DD") : null,
+                    }
+                    : item
+            )
+        );
     };
 
     const handleConfirm = async () => {
@@ -210,23 +231,32 @@ const History = () => {
 
     const processUpdate = async (status, showNotification) => {
         if (!isModalVisible) return;
-
+    
         const groupedProducts = {};
-
+    
         modalData.forEach(item => {
             const productId = item.originalProductId || item.key.replace(/^V-|^P-/, "");
-
+    
             if (!groupedProducts[productId]) {
                 groupedProducts[productId] = { id: Number(productId), variants: [] };
             }
-
+    
+            // Chỉ thêm sale_price_start_at và sale_price_end_at nếu sale_price có giá trị
+            const salePriceData = item.sale_price && item.sale_price !== ""
+                ? {
+                    sale_price: item.sale_price,
+                    sale_price_start_at: item.sale_price_start_at || "",
+                    sale_price_end_at: item.sale_price_end_at || "",
+                }
+                : { sale_price: item.sale_price };
+    
             if (item.isVariant) {
                 groupedProducts[productId].variants.push({
                     id: Number(item.key.replace("V-", "")),
                     quantity: item.quantity,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price,
+                    ...salePriceData, // Thêm sale_price và 2 ngày nếu có
                 });
             } else {
                 groupedProducts[productId] = {
@@ -234,29 +264,28 @@ const History = () => {
                     quantity: item.quantity,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price,
+                    ...salePriceData, // Thêm sale_price và 2 ngày nếu có
                 };
             }
         });
-
+    
         const payload = {
-            status: status, // ✅ Gửi trạng thái được cập nhật (mặc định là 0 nếu chưa chọn)
+            status: status,
             reason: "Nhập hàng bổ sung",
             products: Object.values(groupedProducts),
         };
-
+    
         console.log("Dữ liệu gửi đi:", JSON.stringify(payload, null, 2));
-
+    
         try {
             await productsServices.confirm(selectedStock.id, payload);
-
-            // ✅ Hiển thị thông báo nếu chọn trạng thái -1 hoặc 1
+    
             if (showNotification) {
                 notification.success({
                     message: `Đơn nhập hàng đã được ${status === -1 ? "hủy" : "hoàn thành"}!`,
                 });
             }
-
+    
             setIsModalVisible(false);
             setSelectedStock(null);
             setConfirmStatus(null);
@@ -544,6 +573,88 @@ const History = () => {
             ),
         },
         {
+            title: "Ngày mở KM",
+            dataIndex: "sale_price_start_at",
+            key: "sale_price_start_at",
+            align: "center",
+            render: (sale_price_start_at, record) => {
+                return (
+                    <Form.Item
+                        name={`sale_price_start_at_${record.key}`}
+                        initialValue={sale_price_start_at ? dayjs(sale_price_start_at) : null}
+                        rules={[
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    const salePrice = getFieldValue(`sale_price_${record.key}`);
+                                    if (!salePrice) {
+                                        return Promise.resolve();
+                                    }
+                                    if (!value) {
+                                        return Promise.reject("Vui lòng chọn ngày mở khuyến mại!");
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
+                    >
+                        <DatePicker
+                            className="input-form"
+                            format="DD/MM/YYYY"
+                            value={sale_price_start_at ? dayjs(sale_price_start_at) : null}
+                            onChange={(date) => handleDateChange(date, "start", record)}
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
+                    </Form.Item>
+                );
+            },
+        },
+        {
+            title: "Ngày đóng KM",
+            dataIndex: "sale_price_end_at",
+            key: "sale_price_end_at",
+            align: "center",
+            render: (sale_price_end_at, record) => {
+                return (
+                    <Form.Item
+                        name={`sale_price_end_at_${record.key}`}
+                        initialValue={sale_price_end_at ? dayjs(sale_price_end_at) : null}
+                        rules={[
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    const salePrice = getFieldValue(`sale_price_${record.key}`);
+                                    const startDate = getFieldValue(`sale_price_start_at_${record.key}`);
+                                    if (!salePrice) {
+                                        return Promise.resolve();
+                                    }
+                                    if (!startDate) {
+                                        return Promise.resolve();
+                                    }
+                                    if (!value) {
+                                        return Promise.reject("Vui lòng chọn ngày đóng khuyến mại!");
+                                    }
+                                    if (value && startDate && value.isSame(startDate, 'day')) {
+                                        return Promise.reject("Ngày đóng không được trùng ngày mở!");
+                                    }
+                                    if (value && startDate && value.isBefore(startDate, 'day')) {
+                                        return Promise.reject("Ngày đóng phải sau ngày mở!");
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
+                    >
+                        <DatePicker
+                            className="input-form"
+                            format="DD/MM/YYYY"
+                            value={sale_price_end_at ? dayjs(sale_price_end_at) : null}
+                            onChange={(date) => handleDateChange(date, "end", record)}
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
+                    </Form.Item>
+                );
+            },
+        },
+        {
             title: "Số lượng",
             dataIndex: "quantity",
             align: "center",
@@ -619,6 +730,18 @@ const History = () => {
             dataIndex: "sale_price",
             align: "center",
             render: (sale_price) => (sale_price ? formatPrice(sale_price) : ""),
+        },
+        {
+            title: "Ngày mở KM",
+            dataIndex: "sale_price_start_at",
+            align: "center",
+            render: (sale_price_start_at) => sale_price_start_at ? dayjs(sale_price_start_at).format("DD/MM/YYYY") : null
+        },
+        {
+            title: "Ngày đóng KM",
+            dataIndex: "sale_price_end_at",
+            align: "center",
+            render: (sale_price_end_at) => sale_price_end_at ? dayjs(sale_price_end_at).format("DD/MM/YYYY") : null,
         },
         {
             title: "Tổng tiền (VNĐ)",  // ✅ Thêm cột tổng tiền
@@ -758,7 +881,7 @@ const History = () => {
                 visible={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
                 footer={null}
-                width={1000}
+                width={1200}
             >
                 <Form
                     form={form}
@@ -778,7 +901,7 @@ const History = () => {
                             );
                             return (
                                 <Table.Summary.Row>
-                                    <Table.Summary.Cell colSpan={6} align="right">
+                                    <Table.Summary.Cell colSpan={8} align="right">
                                         <strong>Tổng giá trị (VNĐ):</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
@@ -814,7 +937,7 @@ const History = () => {
                 visible={detailModal}
                 onCancel={() => setDetailModal(false)}
                 footer={null}
-                width={800}
+                width={1000}
             >
                 <Table
                     columns={modalcolumns}
@@ -824,7 +947,7 @@ const History = () => {
                     bordered
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={6} align="right">
+                            <Table.Summary.Cell colSpan={8} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">

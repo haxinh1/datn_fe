@@ -251,7 +251,11 @@ const Signup = () => {
               <Form.Item
                 name="fullname"
                 label="Họ và tên"
-                rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập tên khách hàng" },
+                  { pattern: /^[a-zA-Z\sÀ-ỹ]+$/u, message: "Tên không được chứa ký tự đặc biệt" },
+                  { pattern: /^(?!\s+$).+/, message: "Tên không được chứa toàn khoảng trắng" },
+                ]}
               >
                 <Input className="input-item" placeholder="Nhập họ và tên" />
               </Form.Item>

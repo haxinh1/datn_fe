@@ -658,8 +658,11 @@ const Add = () => {
                     <Col span={8} className="col-item">
                         <Form.Item
                             label="Tên sản phẩm"
-                            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
                             name="name"
+                            rules={[
+                                { required: true, message: "Vui lòng nhập tên sản phẩm" },
+                                { pattern: /^(?!\s+$).+/, message: "Tên không được chứa toàn khoảng trắng" },
+                            ]}
                         >
                             <Input className="input-item" onChange={handleNameChange} />
                         </Form.Item>
