@@ -315,9 +315,21 @@ const Checkout = () => {
         const defaultAddress = data.find((address) => address.id_default);
         if (defaultAddress) {
           setSelectedAddress(defaultAddress.id);
+          // Tính phí vận chuyển dựa trên địa chỉ mặc định
+          if (defaultAddress.DistrictID && defaultAddress.WardCode) {
+            const fee = await calculateShippingFee(defaultAddress.DistrictID, defaultAddress.WardCode);
+            setShippingFee(fee);
+          } else {
+            setShippingFee(0);
+            message.warning("Địa chỉ mặc định không hợp lệ, vui lòng chọn địa chỉ khác.");
+          }
+        } else {
+          setShippingFee(0);
+          message.warning("Không có địa chỉ mặc định, vui lòng chọn địa chỉ.");
         }
       } catch (error) {
         console.error("Lỗi khi lấy địa chỉ:", error);
+        setShippingFee(0);
       } finally {
         setIsLoading(false);
       }
@@ -975,6 +987,7 @@ const Checkout = () => {
                           name="address"
                           rules={[
                             {
+                              required: true,
                               message: "Vui lòng chọn địa chỉ",
                             },
                           ]}
