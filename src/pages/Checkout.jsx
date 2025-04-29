@@ -490,7 +490,7 @@ const Checkout = () => {
             // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
           }
         }
-
+        window.dispatchEvent(new Event("cart-updated"));
         navigate(`/dashboard/orders/${userId || "guest"}`);
       } else {
         message.error(orderResponse?.message || "Không thể đặt hàng, vui lòng thử lại.");
