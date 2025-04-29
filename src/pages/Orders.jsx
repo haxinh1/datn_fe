@@ -322,6 +322,55 @@ const Orders = () => {
     });
   };
 
+  const handleCancelOrder = (orderId) => {
+    Modal.confirm({
+      title: "Xác nhận hủy đơn",
+      content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const payload = {
+            order_status_id: 8,
+            note: "",
+            employee_evidence: "",
+          };
+          const response = await OrderService.updateOrderStatus(
+            orderId,
+            payload
+          );
+          if (
+            response &&
+            response.message === "Cập nhật trạng thái đơn hàng thành công"
+          ) {
+            notification.success({
+              message: "Đơn hàng đã được hủy",
+              description: "Đơn hàng của bạn đã được hủy thành công.",
+            });
+            setOrders((prevOrders) =>
+              prevOrders.map((order) =>
+                order.id === orderId
+                  ? { ...order, status: { id: 8, name: "Hủy đơn" } }
+                  : order
+              )
+            );
+          } else {
+            notification.error({
+              message: "Update Failed",
+              description: "An error occurred while canceling the order.",
+            });
+          }
+        } catch (error) {
+          console.error("Error canceling order:", error);
+          notification.error({
+            message: "Error",
+            description: "Unable to cancel the order.",
+          });
+        }
+      },
+    });
+  };
+
   useEffect(() => {
     const fetchBanks = async () => {
       try {
@@ -755,6 +804,7 @@ const Orders = () => {
             <span className="text-name">Hẹn gặp lại</span>
           </div>
         </div>
+
         <div className="add">
           {(orderStatus === 5 || orderStatus === 7) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
@@ -763,14 +813,27 @@ const Orders = () => {
               </Button>
             </Link>
           )}
+
           {(orderStatus === 1 || orderStatus === 2 || orderStatus === 3) && (
-            <Button
-              color="danger"
-              variant="solid"
-              onClick={() => showCancelModal(selectedOrderId)}
-            >
-              Hủy đơn
-            </Button>
+            <>
+              {orderInfo.payment_id === 2 ? (
+                <Button
+                  color="danger"
+                  variant="solid"
+                  onClick={() => handleCancelOrder(selectedOrderId)}
+                >
+                  Hủy đơn
+                </Button>
+              ) : (orderInfo.payment_id === 1 || orderInfo.payment_id === 3) ? (
+                <Button
+                  color="danger"
+                  variant="solid"
+                  onClick={() => showCancelModal(selectedOrderId)}
+                >
+                  Hủy đơn
+                </Button>
+              ) : null}
+            </>
           )}
         </div>
       </Modal>
@@ -851,7 +914,7 @@ const Orders = () => {
                   {banks.map((bank) => (
                     <Select.Option key={bank.code} value={bank.name} label={bank.name}>
                       <div className="select-option-item">
-                        <img src={bank.logo} alt={bank.name} style={{ width: '30px', height: '30px' }} />
+                        <img src={bank.logo} alt={bank.name} style={{ width: '100px' }} />
                         <span>{bank.name}</span>
                       </div>
                     </Select.Option>
@@ -876,17 +939,16 @@ const Orders = () => {
 
               <Form.Item label="QR ngân hàng (nếu có)" name="bank_qr">
                 <Upload
-                  listType="picture-card"
+                  listType="picture"
                   action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                   data={{ upload_preset: "quangOsuy" }}
                   onChange={onHandleBank}
                   maxCount={1}
                 >
                   {!image && (
-                    <button className="upload-button" type="button">
-                      <UploadOutlined />
-                      <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                    </button>
+                    <Button icon={<UploadOutlined />} className="btn-item">
+                      Tải ảnh lên
+                    </Button>
                   )}
                 </Upload>
               </Form.Item>

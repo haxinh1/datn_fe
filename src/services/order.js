@@ -36,6 +36,12 @@ const cancelBack = async (cancelId, payload) => {
   return response.data;
 };
 
+// client gửi thông tin hoàn tiền
+const infoBack = async (cancelId, payload) => {
+  const response = await instance.post(`/order-cancels/submit-bank-info/${cancelId}`, payload);
+  return response.data;
+};
+
 // tìm kiếm đơn hàng
 const searchOrders = async (keyword = "") => {
   try {
@@ -249,6 +255,7 @@ export const OrderService = {
   cancelRequest,
   adminCancel,
   cancelBack,
+  infoBack,
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,

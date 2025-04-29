@@ -578,7 +578,7 @@ const Order = () => {
       key: "action",
       align: "center",
       render: (_, item) => (
-        <div className="group1">
+        <div className="action-container">
           <Tooltip title="Xem thêm">
             <Button
               color="purple"

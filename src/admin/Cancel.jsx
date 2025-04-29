@@ -206,9 +206,19 @@ const Cancel = () => {
             title: "",
             key: "action",
             align: "center",
-            render: (_, item) => (
-                <div className="action-container">
-                    {item.status_id === 8 && (
+            render: (_, item) => {
+                // Điều kiện để nút "Hoàn tiền" được bấm:
+                // - status_id phải là 8
+                // - bank_account_number và bank_name phải có dữ liệu
+                const isButtonEnabled = 
+                    item.status_id === 8 && 
+                    item.bank_account_number && 
+                    item.bank_account_number.trim() !== "" && 
+                    item.bank_name && 
+                    item.bank_name.trim() !== "";
+    
+                return (
+                    <div className="action-container">
                         <Tooltip title="Hoàn tiền">
                             <Button
                                 color="danger"
@@ -218,11 +228,12 @@ const Cancel = () => {
                                     setSelectedItem(item);
                                     setIsModalOpen(true);
                                 }}
+                                disabled={!isButtonEnabled}
                             />
                         </Tooltip>
-                    )}
-                </div>
-            ),
+                    </div>
+                );
+            },
         },
     ];
 
