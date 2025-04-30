@@ -29,7 +29,7 @@ const Logincl = () => {
       if (response?.token) {
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
-        sessionStorage.setItem("user", JSON.stringify(response.user))
+        sessionStorage.setItem("user", JSON.stringify(response.user));
 
         message.success("Đăng nhập thành công!");
 
@@ -42,6 +42,9 @@ const Logincl = () => {
           }
           localStorage.removeItem("cart_items");
           message.success("Giỏ hàng của bạn đã được chuyển lên tài khoản!");
+
+          // Kích hoạt sự kiện cart-updated để cập nhật số lượng giỏ hàng
+          window.dispatchEvent(new Event("cart-updated"));
         }
 
         // Phát ra sự kiện đăng nhập

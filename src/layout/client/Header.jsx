@@ -54,14 +54,14 @@ const Header = () => {
 
       if (isCodOrderPlaced) {
         setCartItemCount(0); // Force cart count to 0 for COD orders
-        // Optionally, clear the flag after a delay or on next cart update
         setTimeout(() => {
           localStorage.removeItem("codOrderPlaced");
-        }, 1000); // Remove flag after 1 second to allow UI update
+        }, 1000);
         return;
       }
 
       if (userId) {
+        // Lấy giỏ hàng từ API cho người dùng đã đăng nhập
         const cartData = await cartServices.fetchCart();
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${item.product_variant_id || "default"}`;
@@ -72,6 +72,7 @@ const Header = () => {
         }, {});
         setCartItemCount(Object.keys(uniqueProducts).length);
       } else {
+        // Lấy giỏ hàng từ localStorage cho người dùng vãng lai
         const cartData = JSON.parse(localStorage.getItem("cart_items")) || [];
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${item.product_variant_id || "default"}`;
