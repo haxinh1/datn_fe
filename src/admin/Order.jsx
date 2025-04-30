@@ -640,20 +640,7 @@ const Order = () => {
       dataIndex: "employee_evidence",
       key: "employee_evidence",
       align: "center",
-      render: (employee_evidence) => {
-        // Kiểm tra nếu là ảnh
-        const isImage = employee_evidence && (employee_evidence.endsWith(".jpg") || employee_evidence.endsWith(".jpeg") || employee_evidence.endsWith(".png"));
-        // Kiểm tra nếu là video
-        const isVideo = employee_evidence && (employee_evidence.endsWith(".mp4") || employee_evidence.endsWith(".webm"));
-        if (isImage) {
-          // Nếu là ảnh, hiển thị ảnh với Ant Design Image component
-          return <Image width={60} src={employee_evidence} alt="Employee Evidence" />;
-        } else if (isVideo) {
-          // Nếu là video, chỉ hiển thị URL của video
-          return <a className="text-url" href={employee_evidence} target="_blank" rel="noopener noreferrer">{employee_evidence}</a>;
-        }
-        return null; // Nếu không phải ảnh hay video, không hiển thị gì
-      }
+      render: (employee_evidence) => employee_evidence ? <Image width={60} src={employee_evidence} /> : null,
     },
     {
       title: "Người cập nhật",

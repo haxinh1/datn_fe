@@ -12,6 +12,21 @@ const getAllCancel = async () => {
   return response.data;
 };
 
+// tìm kiếm đơn hủy
+const searchOrderCancel = async (keyword = "") => {
+  try {
+    const response = await instance.get('/admin/orders-cancel/search', {
+      params: { keyword },
+    });
+
+    // ✅ API trả về mảng đơn hàng trực tiếp
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Lỗi khi gọi API tìm kiếm đơn hàng:", error);
+    return []; // fallback tránh crash
+  }
+};
+
 // danh sách đơn hủy theo người dùng
 const getCancelByUser = async (userId) => {
   const response = await instance.get(`/order-cancels/user/${userId}`);
@@ -174,6 +189,11 @@ const getDetailOrder = async (orderId) => {
   return response.data;
 };
 
+const getCodeOrder = async (orderCode) => {
+  const response = await instance.get(`/orders/code/${orderCode}`);
+  return response.data;
+};
+
 // danh sách quản lý đơn hàng
 const getOrderStatus = async (id) => {
   const response = await instance.get(`/orders/${id}/statuses`);
@@ -276,6 +296,7 @@ const retryPayment = async (orderId, paymentMethod, totalMomo) => {
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
+  getCodeOrder,
   searchOrders,
   searchOrderReturn,
   getDetailOrder,
@@ -283,6 +304,7 @@ export const OrderService = {
   getAllOrder,
   getAllBill,
   getAllCancel,
+  searchOrderCancel,
   getCancelByUser,
   cancelRequest,
   adminCancel,
