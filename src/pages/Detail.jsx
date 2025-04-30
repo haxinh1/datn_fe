@@ -9,7 +9,7 @@ import headerBg from "../assets/images/page-header-bg.jpg";
 import axios from 'axios';
 
 const Detail = () => {
-    const { id } = useParams();
+    const { code } = useParams();
     const [order, setOrder] = useState(null);
     const [orders, setOrders] = useState([]);
     const [detail, setDetail] = useState([]);
@@ -20,12 +20,12 @@ const Detail = () => {
     const [banks, setBanks] = useState([]);
     const [image, setImage] = useState("");
     const [returnReason, setReturnReason] = useState("");
-    const [selectedReturnReason, setSelectedReturnReason] = useState(""); // Lý do trả hàng đã chọn
+    const [selectedReturnReason, setSelectedReturnReason] = useState("");
     const [isCustomReason, setIsCustomReason] = useState(false);
 
     const fetchOrder = async () => {
         try {
-            const data = await OrderService.getDetailOrder(id);
+            const data = await OrderService.getCodeOrder(code);
             setOrder(data.order);
             setIsLoading(false);
         } catch (error) {
@@ -35,7 +35,8 @@ const Detail = () => {
 
     const fetchDetailOrder = async () => {
         try {
-            const data = await OrderService.getOrderById(id);
+            if (!order?.id) return;
+            const data = await OrderService.getOrderById(order.id);
             if (data && Array.isArray(data)) {
                 setDetail(data);
                 setIsLoading(false);
@@ -49,14 +50,15 @@ const Detail = () => {
 
     useEffect(() => {
         fetchOrder();
-    }, [id]);
+    }, [code]);
 
     useEffect(() => {
-        fetchDetailOrder();
-    }, [id]);
+        if (order) {
+            fetchDetailOrder();
+        }
+    }, [order]);
 
-    // hàm xác nhận đã nhận hàng
-    const handleMarkAsReceived = (id) => {
+    const handleMarkAsReceived = () => {
         Modal.confirm({
             title: "Xác nhận đã nhận hàng",
             content: "Để hỗ trợ đổi trả hàng, hãy quay lại video khi bạn mở kiện hàng nhé!",
@@ -72,24 +74,21 @@ const Detail = () => {
 
                     console.log("Dữ liệu gửi đi:", payload);
 
-                    // Gọi API để cập nhật trạng thái đơn hàng
-                    const response = await OrderService.updateOrderStatus(id, payload);
+                    const response = await OrderService.updateOrderStatus(order.id, payload);
                     console.log("Phản hồi từ API:", response);
 
-                    // Kiểm tra phản hồi chính xác từ API
                     if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
                         notification.success({
                             message: "Cảm ơn bạn đã tin tưởng Molla Shop",
                             description: "Hẹn gặp lại!",
                         });
 
-                        await fetchOrder();         // 🔁 Cập nhật lại dữ liệu đơn hàng
+                        await fetchOrder();
                         await fetchDetailOrder();
 
-                        // Cập nhật lại danh sách đơn hàng với trạng thái mới
                         setOrders((prevOrders) =>
-                            prevOrders.map((order) =>
-                                order.id === id ? { ...order, status: { id: 7, name: "Hoàn thành" } } : order
+                            prevOrders.map((item) =>
+                                item.id === order.id ? { ...item, status: { id: 7, name: "Hoàn thành" } } : item
                             )
                         );
                     } else {
@@ -109,8 +108,7 @@ const Detail = () => {
         });
     };
 
-    // hãm xác nhận hủy đơn
-    const handleCancelOrder = (id) => {
+    const handleCancelOrder = () => {
         Modal.confirm({
             title: "Xác nhận hủy đơn",
             content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
@@ -126,24 +124,21 @@ const Detail = () => {
 
                     console.log("Dữ liệu gửi đi:", payload);
 
-                    // Gọi API để cập nhật trạng thái đơn hàng
-                    const response = await OrderService.updateOrderStatus(id, payload);
+                    const response = await OrderService.updateOrderStatus(order.id, payload);
                     console.log("Phản hồi từ API:", response);
 
-                    // Kiểm tra phản hồi chính xác từ API
                     if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
                         notification.success({
                             message: "Đơn hàng đã được hủy",
                             description: "Đơn hàng của bạn đã được hủy thành công.",
                         });
 
-                        await fetchOrder();         // 🔁 Cập nhật lại dữ liệu đơn hàng
+                        await fetchOrder();
                         await fetchDetailOrder();
 
-                        // Cập nhật lại danh sách đơn hàng với trạng thái mới
                         setOrders((prevOrders) =>
-                            prevOrders.map((order) =>
-                                order.id === orderId ? { ...order, status: { id: 8, name: "Hủy đơn" } } : order
+                            prevOrders.map((item) =>
+                                item.id === order.id ? { ...item, status: { id: 8, name: "Hủy đơn" } } : item
                             )
                         );
                     } else {
@@ -163,7 +158,6 @@ const Detail = () => {
         });
     };
 
-    // Hàm hiển thị modal hủy đơn
     const showCancelModal = () => {
         setIsCancelModalVisible(true);
     };
@@ -184,17 +178,13 @@ const Detail = () => {
         if (info.file.status === "done" && info.file.response) {
             const imageUrl = info.file.response.secure_url;
             setImage(imageUrl);
-            form.setFieldsValue({ bank_qr: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+            form.setFieldsValue({ bank_qr: imageUrl });
         } else if (info.file.status === "removed") {
-            setImage(""); // Xóa ảnh khi người dùng xóa
-            form.setFieldsValue({ bank_qr: "" }); // Cập nhật lại giá trị trong form
+            setImage("");
+            form.setFieldsValue({ bank_qr: "" });
         }
     };
 
-    const selectedOrder = orders.find(order => order.id === selectedOrderId);
-    const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
-
-    // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
@@ -249,7 +239,7 @@ const Detail = () => {
             render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
         },
         {
-            title: "Tổng tiền (VNĐ)", // ✅ Thêm cột tổng tiền
+            title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
             render: (_, record) => formatPrice(record.quantity * record.sell_price),
@@ -288,7 +278,6 @@ const Detail = () => {
                         : order.payment?.name === "MOMO"
                             ? "Thanh toán qua Momo"
                             : order.payment?.name
-
         },
         {
             key: "status",
@@ -306,18 +295,18 @@ const Detail = () => {
                             color="primary"
                             variant="solid"
                             icon={<CheckOutlined />}
-                            onClick={() => handleMarkAsReceived(id)}
+                            onClick={() => handleMarkAsReceived()}
                         >
                             Đã nhận hàng
                         </Button>
                     )}
 
-                    {(order.status?.id === 1 || order.status?.id === 2 || order.status?.id === 3) && order.payment_id === 2 && (
+                    {/* {(order.status?.id === 1 || order.status?.id === 2 || order.status?.id === 3) && order.payment_id === 2 && (
                         <Button
                             color="danger"
                             variant="solid"
                             icon={<CloseOutlined />}
-                            onClick={() => handleCancelOrder(id)}
+                            onClick={() => handleCancelOrder()}
                         >
                             Hủy đơn
                         </Button>
@@ -328,15 +317,15 @@ const Detail = () => {
                             color="danger"
                             variant="solid"
                             icon={<CloseOutlined />}
-                            onClick={() => showCancelModal(id)}
+                            onClick={() => showCancelModal()}
                         >
                             Hủy đơn
                         </Button>
-                    )}
+                    )} */}
                 </div>
             ),
         }
-    ] : []
+    ] : [];
 
     const orderColumns = [
         {
@@ -580,4 +569,3 @@ const Detail = () => {
 };
 
 export default Detail;
-

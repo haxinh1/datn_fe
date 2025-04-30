@@ -1,5 +1,5 @@
-import { CloseCircleOutlined, RollbackOutlined, UploadOutlined } from "@ant-design/icons";
-import { Button, Form, Image, Skeleton, Table, Tooltip, Upload, Modal, notification } from "antd";
+import { CloseCircleOutlined, MenuOutlined, RollbackOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, Form, Image, Skeleton, Table, Tooltip, Upload, Modal, notification, Input } from "antd";
 import React, { useState } from "react";
 import { OrderService } from "../services/order";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,16 +13,35 @@ const Cancel = () => {
     const hideModal = () => setIsModalOpen(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [image, setImage] = useState("");
+    const [searchKeyword, setSearchKeyword] = useState("");
+    const [filterStatus, setFilterStatus] = useState(null);
     const queryClient = useQueryClient();
 
     // Danh sách đơn hàng
     const { data: cancels, isLoading } = useQuery({
-        queryKey: ["complete"],
+        queryKey: ["cancel", searchKeyword, filterStatus],
         queryFn: async () => {
-            const response = await OrderService.getAllCancel();
-            return Array.isArray(response.order_cancels) ? response.order_cancels : [];
+            let response;
+            if (searchKeyword.trim()) {
+                response = await OrderService.searchOrderCancel(searchKeyword);
+                response = response?.order_cancels || response || [];
+            } else {
+                response = await OrderService.getAllCancel();
+                response = response?.order_cancels || [];
+            }
+            if (filterStatus !== null) {
+                response = response.filter(item => item.status_id === filterStatus);
+            }
+            return response;
         },
     });
+
+    const handleSearch = (keyword) => {
+        setSearchKeyword(keyword);
+    };
+
+    const countPendingRefund = cancels?.filter(item => item.status_id === 8).length || 0;
+    const countRefunded = cancels?.filter(item => item.status_id === 12).length || 0;
 
     const onHandleChange = (info) => {
         if (info.file.status === "done" && info.file.response) {
@@ -44,7 +63,7 @@ const Cancel = () => {
             });
 
             // Invalidate query để gọi lại API và lấy dữ liệu mới
-            queryClient.invalidateQueries(["complete"]);
+            queryClient.invalidateQueries(["cancel"]);
 
             // Đóng modal và reset form
             hideModal();
@@ -210,13 +229,13 @@ const Cancel = () => {
                 // Điều kiện để nút "Hoàn tiền" được bấm:
                 // - status_id phải là 8
                 // - bank_account_number và bank_name phải có dữ liệu
-                const isButtonEnabled = 
-                    item.status_id === 8 && 
-                    item.bank_account_number && 
-                    item.bank_account_number.trim() !== "" && 
-                    item.bank_name && 
+                const isButtonEnabled =
+                    item.status_id === 8 &&
+                    item.bank_account_number &&
+                    item.bank_account_number.trim() !== "" &&
+                    item.bank_name &&
                     item.bank_name.trim() !== "";
-    
+
                 return (
                     <div className="action-container">
                         <Tooltip title="Hoàn tiền">
@@ -243,6 +262,33 @@ const Cancel = () => {
                 <CloseCircleOutlined style={{ marginRight: "8px" }} />
                 Đơn hủy
             </h1>
+
+            <div className="group1">
+                <Tooltip title="Danh sách đơn hàng">
+                    <Button
+                        icon={<MenuOutlined />}
+                        onClick={() => setFilterStatus(null)}
+                    />
+                </Tooltip>
+
+                <Button onClick={() => setFilterStatus(8)}>
+                    Chờ hoàn tiền ({countPendingRefund})
+                </Button>
+
+                <Button onClick={() => setFilterStatus(12)}>
+                    Đã hoàn tiền ({countRefunded})
+                </Button>
+
+                <Input.Search
+                    style={{ width: '400px' }}
+                    placeholder="Tìm kiếm mã đơn hàng..."
+                    allowClear
+                    enterButton={<SearchOutlined />}
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    onSearch={handleSearch}
+                />
+            </div>
 
             <Skeleton active loading={isLoading}>
                 <Table

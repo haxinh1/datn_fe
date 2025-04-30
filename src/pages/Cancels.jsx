@@ -16,15 +16,28 @@ const Cancels = () => {
     const [form] = Form.useForm();
     const [banks, setBanks] = useState([]);
     const [image, setImage] = useState("");
+    const [searchKeyword, setSearchKeyword] = useState("");
     const [selectedCancelId, setSelectedCancelId] = useState(null);
 
-    const { data: cancels = [], isLoading } = useQuery({
-        queryKey: ["cancels", id],
+    const { data: cancels = [], isLoading, refetch } = useQuery({
+        queryKey: ["cancels", id, searchKeyword],
         queryFn: async () => {
-            const response = await OrderService.getCancelByUser(id);
-            return Array.isArray(response.order_cancels) ? response.order_cancels : [];
+            if (searchKeyword.trim()) {
+                return await OrderService.searchOrderCancel(searchKeyword);
+            } else {
+                const response = await OrderService.getCancelByUser(id);
+                return Array.isArray(response.order_cancels) ? response.order_cancels : [];
+            }
         },
-    });
+    });    
+
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            refetch(); // gọi lại API với keyword mới
+        }, 500); // debounce 500ms
+    
+        return () => clearTimeout(delayDebounce);
+    }, [searchKeyword]);    
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -52,14 +65,14 @@ const Cancels = () => {
     const handleSubmitBankInfo = async (values) => {
         try {
             if (!selectedCancelId) return;
-    
+
             await OrderService.infoBack(selectedCancelId, values); // Dùng order_cancels.id
-    
+
             notification.success({
                 message: "Thành công",
                 description: "Thông tin hoàn tiền đã được gửi.",
             });
-    
+
             hideModal();
             form.resetFields();
             setImage("");
@@ -70,7 +83,7 @@ const Cancels = () => {
                 description: "Gửi thông tin thất bại. Vui lòng thử lại.",
             });
         }
-    };       
+    };
 
     // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
@@ -155,7 +168,7 @@ const Cancels = () => {
                 const hasRefundInfo = item.bank_account_number && item.bank_name;
                 // Kiểm tra payment_id: disable nếu payment_id là 2
                 const isPaymentDisabled = item.order?.payment_id === 2;
-    
+
                 return (
                     <div className="action-container">
                         <Tooltip title="Yêu cầu hoàn tiền">
@@ -182,6 +195,16 @@ const Cancels = () => {
                 <CloseCircleOutlined style={{ marginRight: "8px" }} />
                 Đơn hủy
             </h1>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+                <Input
+                    style={{ width: '400px' }}
+                    placeholder="Tìm kiếm mã đơn hàng..."
+                    allowClear
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                />
+            </div>
 
             <Skeleton active loading={isLoading}>
                 <Table
