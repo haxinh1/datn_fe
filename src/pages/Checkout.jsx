@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
@@ -43,7 +44,8 @@ const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const [mainForm] = Form.useForm(); // Form cho form chính
+  const [addressForm] = Form.useForm(); // Form cho modal thêm địa chỉ
   const [shippingFee, setShippingFee] = useState(0);
   const [usedLoyaltyPoints, setUsedLoyaltyPoints] = useState(0);
   const [formattedLoyaltyPoints, setFormattedLoyaltyPoints] = useState("0");
@@ -177,8 +179,7 @@ const Checkout = () => {
             address: data.address?.address || "",
             loyalty_points: data.loyalty_points || 0,
           });
-          // Cập nhật giá trị ban đầu cho form
-          form.setFieldsValue({
+          mainForm.setFieldsValue({
             fullname: data.fullname || "",
             email: data.email || "",
             phone_number: data.phone_number || "",
@@ -190,7 +191,7 @@ const Checkout = () => {
     };
 
     fetchUserData();
-  }, [form]);
+  }, [mainForm]);
 
   // Lấy danh sách tỉnh/thành phố
   useEffect(() => {
@@ -206,6 +207,8 @@ const Checkout = () => {
       .then((data) => {
         if (Array.isArray(data.data)) {
           setProvinces(data.data);
+        } else {
+          console.error("Dữ liệu tỉnh/thành phố không hợp lệ:", data);
         }
       })
       .catch((error) => {
@@ -214,9 +217,11 @@ const Checkout = () => {
   }, []);
 
   const handleProvinceChange = (value) => {
+    setSelectedProvince(value);
     setDistricts([]);
     setWards([]);
-    setSelectedProvince(value);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
 
     if (!value) return;
 
@@ -239,6 +244,8 @@ const Checkout = () => {
       .then((data) => {
         if (Array.isArray(data.data)) {
           setDistricts(data.data);
+        } else {
+          console.error("Dữ liệu quận/huyện không hợp lệ:", data);
         }
       })
       .catch((error) => {
@@ -247,8 +254,8 @@ const Checkout = () => {
   };
 
   const handleDistrictChange = (value) => {
-    setWards([]);
     setSelectedDistrict(value);
+    setWards([]);
     setSelectedWard(null);
 
     if (!value) return;
@@ -272,6 +279,8 @@ const Checkout = () => {
       .then((data) => {
         if (Array.isArray(data.data)) {
           setWards(data.data);
+        } else {
+          console.error("Dữ liệu phường/xã không hợp lệ:", data);
         }
       })
       .catch((error) => {
@@ -293,13 +302,18 @@ const Checkout = () => {
         message: "Địa chỉ mới đã được thêm",
       });
       fetchAddresses();
-      form.resetFields();
+      addressForm.resetFields();
+      setSelectedProvince(null);
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setDistricts([]);
+      setWards([]);
       setIsModalVisible(false);
     },
     onError: (error) => {
       notification.error({
         message: "Thêm thất bại",
-        description: error.message,
+        description: error.message || "Có lỗi xảy ra, vui lòng thử lại!",
       });
     },
   });
@@ -311,21 +325,22 @@ const Checkout = () => {
     if (userId) {
       try {
         const data = await AuthServices.getAddressByIdUser(userId);
-        setAddresses(data);
-        const defaultAddress = data.find((address) => address.id_default);
-        if (defaultAddress) {
-          setSelectedAddress(defaultAddress.id);
-          // Tính phí vận chuyển dựa trên địa chỉ mặc định
-          if (defaultAddress.DistrictID && defaultAddress.WardCode) {
-            const fee = await calculateShippingFee(defaultAddress.DistrictID, defaultAddress.WardCode);
-            setShippingFee(fee);
+        if (Array.isArray(data)) {
+          setAddresses(data);
+          const defaultAddress = data.find((address) => address.id_default);
+          if (defaultAddress) {
+            setSelectedAddress(defaultAddress.id);
+            if (defaultAddress.DistrictID && defaultAddress.WardCode) {
+              const fee = await calculateShippingFee(defaultAddress.DistrictID, defaultAddress.WardCode);
+              setShippingFee(fee);
+            } else {
+              setShippingFee(0);
+              message.warning("Địa chỉ mặc định không hợp lệ, vui lòng chọn địa chỉ khác.");
+            }
           } else {
             setShippingFee(0);
-            message.warning("Địa chỉ mặc định không hợp lệ, vui lòng chọn địa chỉ khác.");
+            message.warning("Không có địa chỉ mặc định, vui lòng chọn địa chỉ.");
           }
-        } else {
-          setShippingFee(0);
-          message.warning("Không có địa chỉ mặc định, vui lòng chọn địa chỉ.");
         }
       } catch (error) {
         console.error("Lỗi khi lấy địa chỉ:", error);
@@ -336,31 +351,39 @@ const Checkout = () => {
     }
   };
 
-  const handleAdd = (values) => {
-    const formattedAddress = [
-      values.ward
-        ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
-        : "",
-      values.district
-        ? districts.find((d) => d.DistrictID === Number(values.district))?.DistrictName
-        : "",
-      values.province
-        ? provinces.find((p) => p.ProvinceID === Number(values.province))?.ProvinceName
-        : "",
-    ]
-      .filter(Boolean)
-      .join(", ");
+  const handleAdd = async (values) => {
+    try {
+      const formattedAddress = [
+        values.ward
+          ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
+          : "",
+        values.district
+          ? districts.find((d) => d.DistrictID === Number(values.district))?.DistrictName
+          : "",
+        values.province
+          ? provinces.find((p) => p.ProvinceID === Number(values.province))?.ProvinceName
+          : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
 
-    const userData = {
-      address: formattedAddress,
-      detail_address: values.detail_address,
-      id_default: values.id_default,
-      ProvinceID: values.province,
-      DistrictID: values.district,
-      WardCode: values.ward,
-    };
+      const userData = {
+        address: formattedAddress,
+        detail_address: values.detail_address,
+        id_default: values.id_default,
+        ProvinceID: values.province,
+        DistrictID: values.district,
+        WardCode: values.ward,
+      };
 
-    mutate(userData);
+      await mutate(userData);
+    } catch (error) {
+      console.error("Lỗi khi thêm địa chỉ:", error);
+      notification.error({
+        message: "Thêm thất bại",
+        description: "Có lỗi xảy ra khi thêm địa chỉ, vui lòng thử lại!",
+      });
+    }
   };
 
   // Tính tổng tiền
@@ -401,8 +424,7 @@ const Checkout = () => {
 
   const handleConfirmPayment = async () => {
     try {
-      // Validate form trước khi xử lý
-      await form.validateFields();
+      await mainForm.validateFields();
       setIsPaymentModalOpen(false);
 
       if (!selectedPayment) {
@@ -451,7 +473,6 @@ const Checkout = () => {
         fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
       }
 
-      // Kiểm tra dữ liệu trước khi gửi
       if (usedLoyaltyPoints < 0) {
         message.error("Số điểm sử dụng không hợp lệ!");
         return;
@@ -503,30 +524,29 @@ const Checkout = () => {
       if (orderResponse?.message === "Đặt hàng thành công!" || orderResponse?.order) {
         message.success("🎉 Đơn hàng đã đặt thành công!");
 
-        // Xử lý giỏ hàng vãng lai (xóa các sản phẩm đã chọn trong localStorage)
         if (!userId) {
           try {
             let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
             let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
 
-            const purchasedItems = cartItems.map(item => ({
+            const purchasedItems = cartItems.map((item) => ({
               product_id: item.product_id,
               product_variant_id: item.product_variant_id || null,
             }));
 
             localCart = localCart.filter(
-              cartItem =>
+              (cartItem) =>
                 !purchasedItems.some(
-                  purchased =>
+                  (purchased) =>
                     purchased.product_id === cartItem.product_id &&
                     (purchased.product_variant_id === (cartItem.product_variant_id || null))
                 )
             );
 
             cartAttributes = cartAttributes.filter(
-              attr =>
+              (attr) =>
                 !purchasedItems.some(
-                  purchased =>
+                  (purchased) =>
                     purchased.product_id === attr.product_id &&
                     (purchased.product_variant_id === (attr.product_variant_id || null))
                 )
@@ -615,6 +635,12 @@ const Checkout = () => {
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    addressForm.resetFields();
+    setSelectedProvince(null);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+    setDistricts([]);
+    setWards([]);
   };
 
   const handleAddressChange = async (value) => {
@@ -801,7 +827,7 @@ const Checkout = () => {
         <div className="page-content">
           <div className="checkout">
             <div className="container">
-              <Form form={form} layout="vertical">
+              <Form form={mainForm} layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
                     <h1 className="mb-5" style={{ color: "#eea287" }}>
@@ -982,10 +1008,7 @@ const Checkout = () => {
                       </div>
                     ) : (
                       <div>
-                        <Form.Item
-                          label="Chọn địa chỉ"
-                          name="address"
-                        >
+                        <Form.Item label="Chọn địa chỉ" name="address">
                           <div className="attribute">
                             <Select
                               className="input-item"
@@ -996,11 +1019,9 @@ const Checkout = () => {
                             >
                               {addresses.length > 0 ? (
                                 addresses.map((address) => (
-                                  <Select.Option
-                                    key={address.id}
-                                    value={address.id}
-                                  >
-                                    {`${address.detail_address}, ${address.address}`} {address.id_default && "(Mặc định)"}
+                                  <Select.Option key={address.id} value={address.id}>
+                                    {`${address.detail_address}, ${address.address}`}{" "}
+                                    {address.id_default && "(Mặc định)"}
                                   </Select.Option>
                                 ))
                               ) : (
@@ -1026,11 +1047,11 @@ const Checkout = () => {
 
                     <Modal
                       title="Thêm địa chỉ mới"
-                      visible={isModalVisible}
+                      open={isModalVisible}
                       onCancel={handleCancel}
                       footer={null}
                     >
-                      <Form form={form} layout="vertical" onFinish={handleAdd}>
+                      <Form form={addressForm} layout="vertical" onFinish={handleAdd}>
                         <Row gutter={24}>
                           <Col span={12}>
                             <Form.Item
@@ -1047,6 +1068,7 @@ const Checkout = () => {
                                 className="input-item"
                                 onChange={handleProvinceChange}
                                 placeholder="Chọn tỉnh/thành phố"
+                                value={selectedProvince}
                               >
                                 {provinces.map((province) => (
                                   <Select.Option
@@ -1074,12 +1096,10 @@ const Checkout = () => {
                                 placeholder="Chọn Phường/Xã"
                                 disabled={!selectedDistrict}
                                 onChange={handleWardChange}
+                                value={selectedWard}
                               >
                                 {wards.map((ward) => (
-                                  <Select.Option
-                                    key={ward.WardCode}
-                                    value={ward.WardCode}
-                                  >
+                                  <Select.Option key={ward.WardCode} value={ward.WardCode}>
                                     {ward.WardName}
                                   </Select.Option>
                                 ))}
@@ -1103,6 +1123,7 @@ const Checkout = () => {
                                 placeholder="Chọn Quận/Huyện"
                                 onChange={handleDistrictChange}
                                 disabled={!selectedProvince}
+                                value={selectedDistrict}
                               >
                                 {districts.map((district) => (
                                   <Select.Option
@@ -1125,10 +1146,7 @@ const Checkout = () => {
                                 },
                               ]}
                             >
-                              <Input
-                                className="input-item"
-                                placeholder="Nhập địa chỉ cụ thể"
-                              />
+                              <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" />
                             </Form.Item>
                           </Col>
                         </Row>
@@ -1201,14 +1219,12 @@ const Checkout = () => {
                               <td style={{ padding: "10px" }}>
                                 {item.product?.name || `Sản phẩm #${item.product_id}`}{" "}
                                 {item.product_variant_id && (
-                                  <span className="text-muted">
-                                    ({getAttributeValue(item)})
-                                  </span>
+                                  <span className="text-muted">({getAttributeValue(item)})</span>
                                 )}
                                 (x{item.quantity})
                               </td>
                               <td style={{ textAlign: "right", padding: "10px" }}>
-                                {formatCurrency(getProductPrice(item))} VNĐ
+                                {formatCurrency(getProductPrice(item) * item.quantity)} VNĐ
                               </td>
                             </tr>
                           ))}
@@ -1323,7 +1339,7 @@ const Checkout = () => {
 
                               <Modal
                                 title="Chọn mã giảm giá"
-                                visible={isCouponModalVisible}
+                                open={isCouponModalVisible}
                                 onCancel={() => setIsCouponModalVisible(false)}
                                 footer={null}
                                 width={400}
@@ -1340,7 +1356,8 @@ const Checkout = () => {
                                           border: "1px solid #ddd",
                                           borderRadius: "4px",
                                           cursor: "pointer",
-                                          backgroundColor: selectedCoupon?.id === coupon.id ? "#e48948" : "",
+                                          backgroundColor:
+                                            selectedCoupon?.id === coupon.id ? "#e48948" : "",
                                           color: selectedCoupon?.id === coupon.id ? "white" : "",
                                         }}
                                         onClick={() => setSelectedCoupon(coupon)}
@@ -1355,20 +1372,24 @@ const Checkout = () => {
                                     <p>Không có mã giảm giá nào.</p>
                                   )}
                                 </div>
-                                <button
+                                <Button
                                   type="primary"
                                   onClick={applyDiscount}
                                   className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                                 >
                                   Sử dụng
-                                </button>
+                                </Button>
                               </Modal>
                             </>
                           )}
 
                           <tr
                             className="summary-total"
-                            style={{ backgroundColor: "#f8f8f8", fontSize: "1rem", fontWeight: "bold" }}
+                            style={{
+                              backgroundColor: "#f8f8f8",
+                              fontSize: "1rem",
+                              fontWeight: "bold",
+                            }}
                           >
                             <td style={{ padding: "10px" }}>Tổng tiền:</td>
                             <td style={{ textAlign: "right", padding: "10px", color: "red" }}>
@@ -1378,8 +1399,8 @@ const Checkout = () => {
                         </tbody>
                       </table>
 
-                      <button
-                        type="button"
+                      <Button
+                        type="primary"
                         className="btn btn-primary btn-block"
                         style={{
                           fontSize: "1.2rem",
@@ -1391,8 +1412,7 @@ const Checkout = () => {
                         }}
                         onClick={async () => {
                           try {
-                            // Validate form trước khi tiếp tục
-                            await form.validateFields();
+                            await mainForm.validateFields();
 
                             if (!userId) {
                               if (
@@ -1420,7 +1440,7 @@ const Checkout = () => {
                         }}
                       >
                         Thanh Toán
-                      </button>
+                      </Button>
                     </div>
                   </aside>
                 </div>
@@ -1430,7 +1450,7 @@ const Checkout = () => {
         </div>
         <Modal
           title="Chọn phương thức thanh toán"
-          visible={isPaymentModalOpen}
+          open={isPaymentModalOpen}
           onCancel={() => setIsPaymentModalOpen(false)}
           footer={null}
         >
