@@ -985,12 +985,6 @@ const Checkout = () => {
                         <Form.Item
                           label="Chọn địa chỉ"
                           name="address"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Vui lòng chọn địa chỉ",
-                            },
-                          ]}
                         >
                           <div className="attribute">
                             <Select

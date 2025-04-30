@@ -22,7 +22,45 @@ const Cart = () => {
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState([]); // Track selected items
+  const [isAllSelected, setIsAllSelected] = useState(false); // Thêm trạng thái mới
   const navigate = useNavigate();
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      // Chọn tất cả các sản phẩm hợp lệ (không ngừng bán và không hết hàng)
+      const validItems = cartItems.filter(
+        (item) =>
+          item.product.is_active !== 0 &&
+          (item.product_variant ? item.product_variant.stock : item.product.stock) > 0
+      );
+      setSelectedItems(validItems);
+      setIsAllSelected(true);
+    } else {
+      // Bỏ chọn tất cả
+      setSelectedItems([]);
+      setIsAllSelected(false);
+    }
+  };
+
+  useEffect(() => {
+    const validItems = cartItems.filter(
+      (item) =>
+        item.product.is_active !== 0 &&
+        (item.product_variant ? item.product_variant.stock : item.product.stock) > 0
+    );
+
+    if (validItems.length > 0 && validItems.every((item) =>
+      selectedItems.some(
+        (selected) =>
+          selected.product_id === item.product_id &&
+          selected.product_variant_id === item.product_variant_id
+      )
+    )) {
+      setIsAllSelected(true);
+    } else {
+      setIsAllSelected(false);
+    }
+  }, [selectedItems, cartItems]);
+
 
   useEffect(() => {
     const getCart = async () => {
@@ -340,7 +378,16 @@ const Cart = () => {
 
   const columns = [
     {
-      title: "",
+      title: (<Checkbox
+        checked={isAllSelected}
+        onChange={(e) => handleSelectAll(e.target.checked)}
+        disabled={cartItems.length === 0 || cartItems.every(
+          (item) =>
+            item.product.is_active === 0 ||
+            (item.product_variant ? item.product_variant.stock : item.product.stock) === 0
+        )}
+      >
+      </Checkbox>),
       align: "center",
       render: (_, record) => {
         const isProductInactive = record.product.is_active === 0;
