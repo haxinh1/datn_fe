@@ -82,7 +82,6 @@ const Cart = () => {
                 );
               }
 
-              // Check if sale_price is valid based on sale_price_end_at
               const currentDate = new Date();
               const salePriceEndAt = variantDetails?.sale_price_end_at || productDetails.data.sale_price_end_at;
               const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
@@ -118,7 +117,6 @@ const Cart = () => {
                 );
               }
 
-              // Check if sale_price is valid based on sale_price_end_at
               const currentDate = new Date();
               const salePriceEndAt = variantDetails?.sale_price_end_at || productDetails.data.sale_price_end_at;
               const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
@@ -212,13 +210,11 @@ const Cart = () => {
     }).format(value);
   };
 
-  // Calculate subtotal and total for selected items
   const subtotal = selectedItems.reduce((total, item) => {
     if (item.product.is_active === 0) {
       return total;
     }
 
-    // Check if sale_price is valid based on sale_price_end_at
     const currentDate = new Date();
     const salePriceEndAt = item.product_variant?.sale_price_end_at || item.product.sale_price_end_at;
     const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
@@ -474,7 +470,6 @@ const Cart = () => {
       title: "Giá bán",
       dataIndex: "price",
       render: (_, record) => {
-        // Check if sale_price is valid based on sale_price_end_at
         const currentDate = new Date();
         const salePriceEndAt = record.product_variant?.sale_price_end_at || record.product.sale_price_end_at;
         const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
@@ -517,7 +512,6 @@ const Cart = () => {
         const isProductInactive = record.product.is_active === 0;
         const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
 
-        // Check if sale_price is valid based on sale_price_end_at
         const currentDate = new Date();
         const salePriceEndAt = record.product_variant?.sale_price_end_at || record.product.sale_price_end_at;
         const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;

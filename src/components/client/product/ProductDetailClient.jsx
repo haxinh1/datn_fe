@@ -33,10 +33,28 @@ const ProductDetailClient = () => {
   const [avgRate, setAvgRate] = useState(null);
   const [dataViewed, setDataViewed] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
 
   const { Title } = Typography;
 
-  // Hàm kiểm tra giá sale còn hiệu lực
+  useEffect(() => {
+    const fetchCart = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (user?.id) {
+        try {
+          const cartData = await cartServices.fetchCart();
+          setCartItems(cartData);
+        } catch (error) {
+          console.error("Lỗi khi lấy giỏ hàng:", error);
+        }
+      } else {
+        const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+        setCartItems(localCart);
+      }
+    };
+    fetchCart();
+  }, []);
+
   const isSalePriceValid = (salePriceEndAt) => {
     if (!salePriceEndAt) return false;
     const currentDate = new Date();
@@ -44,7 +62,6 @@ const ProductDetailClient = () => {
     return currentDate <= endDate;
   };
 
-  // Tính giá min và max cho các biến thể
   const { minPrice, maxPrice } = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
       const productPrice = isSalePriceValid(product.sale_price_end_at)
@@ -63,40 +80,21 @@ const ProductDetailClient = () => {
     };
   }, [product]);
 
-  // Lấy số lượng sản phẩm/biến thể hiện tại trong giỏ hàng
   const getCartQuantity = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    let cartQuantity = 0;
-
-    if (user?.id) {
-      const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-      const matchingItem = cartItems.find(
-        (item) =>
-          item.product_id === product.id &&
-          item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
-      );
-      cartQuantity = matchingItem ? matchingItem.quantity : 0;
-    } else {
-      const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-      const matchingItem = cartItems.find(
-        (item) =>
-          item.product_id === product.id &&
-          item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
-      );
-      cartQuantity = matchingItem ? matchingItem.quantity : 0;
-    }
-
-    return cartQuantity;
+    const matchingItem = cartItems.find(
+      (item) =>
+        item.product_id === product.id &&
+        item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
+    );
+    return matchingItem ? matchingItem.quantity : 0;
   };
 
-  // Tính số lượng khả dụng trong kho
   const getAvailableStock = () => {
     const totalStock = selectedVariant ? selectedVariant.stock : product.stock;
     const cartQuantity = getCartQuantity();
     return Math.max(0, totalStock - cartQuantity);
   };
 
-  // Chọn màu sắc
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
@@ -105,14 +103,12 @@ const ProductDetailClient = () => {
     setQuantity(1);
   };
 
-  // Chọn kích thước
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Định dạng giá tiền
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -121,7 +117,6 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  // Tìm biến thể
   const findVariant = (colorId, sizeId) => {
     const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
@@ -139,7 +134,6 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Xử lý thay đổi số lượng
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
     const availableStock = getAvailableStock();
@@ -159,7 +153,6 @@ const ProductDetailClient = () => {
     setQuantity(value);
   };
 
-  // Thêm vào giỏ hàng
   const handleAddToCart = async () => {
     if (product.is_active === 0) {
       message.error("Sản phẩm này đã ngừng kinh doanh.");
@@ -204,6 +197,8 @@ const ProductDetailClient = () => {
     try {
       if (user?.id) {
         await cartServices.addCartItem(product.id, itemToAdd);
+        const updatedCart = await cartServices.fetchCart();
+        setCartItems(updatedCart);
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
       } else {
@@ -264,6 +259,7 @@ const ProductDetailClient = () => {
 
         localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
         localStorage.setItem("cart_items", JSON.stringify(cartItems));
+        setCartItems(cartItems);
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
       }
@@ -273,7 +269,6 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Xử lý kéo thả
   const stockAvailable =
     (selectedVariant ? selectedVariant.stock : product.stock) > 0 &&
     product.is_active === 1 &&
@@ -341,7 +336,6 @@ const ProductDetailClient = () => {
     };
   };
 
-  // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
       const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
@@ -354,7 +348,6 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Lấy sản phẩm đề xuất
   const fetchProductRecommend = async () => {
     try {
       const response = await productsServices.fetchProductRecommendById(id);
@@ -651,10 +644,10 @@ const ProductDetailClient = () => {
                           }}
                           href="#"
                           className={`btn-product btn-cart ${!stockAvailable ||
-                              product.is_active === 0 ||
-                              (selectedVariant && selectedVariant.is_active === 0)
-                              ? "disabled text-muted"
-                              : ""
+                            product.is_active === 0 ||
+                            (selectedVariant && selectedVariant.is_active === 0)
+                            ? "disabled text-muted"
+                            : ""
                             }`}
                           style={{
                             pointerEvents:
