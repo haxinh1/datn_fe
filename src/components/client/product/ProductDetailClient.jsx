@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { productsServices } from "../../../services/product";
@@ -9,7 +8,6 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
-import formatVND from "../../../utils/formatPrice";
 import ProductTabs from "./ProductTabs";
 
 const colorMap = {
@@ -38,13 +36,26 @@ const ProductDetailClient = () => {
 
   const { Title } = Typography;
 
+  // Hàm kiểm tra giá sale còn hiệu lực
+  const isSalePriceValid = (salePriceEndAt) => {
+    if (!salePriceEndAt) return false;
+    const currentDate = new Date();
+    const endDate = new Date(salePriceEndAt);
+    return currentDate <= endDate;
+  };
+
   // Tính giá min và max cho các biến thể
   const { minPrice, maxPrice } = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
-      return { minPrice: null, maxPrice: null };
+      const productPrice = isSalePriceValid(product.sale_price_end_at)
+        ? parseFloat(product.sale_price)
+        : parseFloat(product.sell_price);
+      return { minPrice: productPrice, maxPrice: productPrice };
     }
     const prices = product.variants.map((variant) =>
-      variant.sale_price ? parseFloat(variant.sale_price) : parseFloat(variant.sell_price)
+      isSalePriceValid(variant.sale_price_end_at)
+        ? parseFloat(variant.sale_price)
+        : parseFloat(variant.sell_price)
     );
     return {
       minPrice: Math.min(...prices),
@@ -58,8 +69,6 @@ const ProductDetailClient = () => {
     let cartQuantity = 0;
 
     if (user?.id) {
-      // Giả lập lấy giỏ hàng từ localStorage cho người dùng đã đăng nhập
-      // Thay bằng API thực tế nếu giỏ hàng được lưu trên server
       const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
       const matchingItem = cartItems.find(
         (item) =>
@@ -68,7 +77,6 @@ const ProductDetailClient = () => {
       );
       cartQuantity = matchingItem ? matchingItem.quantity : 0;
     } else {
-      // Cho người dùng chưa đăng nhập
       const cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
       const matchingItem = cartItems.find(
         (item) =>
@@ -81,7 +89,7 @@ const ProductDetailClient = () => {
     return cartQuantity;
   };
 
-  // Tính số lượng khả dụng trong kho (tổng kho trừ số lượng trong giỏ hàng)
+  // Tính số lượng khả dụng trong kho
   const getAvailableStock = () => {
     const totalStock = selectedVariant ? selectedVariant.stock : product.stock;
     const cartQuantity = getCartQuantity();
@@ -181,8 +189,12 @@ const ProductDetailClient = () => {
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
       price: selectedVariant
-        ? selectedVariant.sale_price || selectedVariant.sell_price
-        : product.sale_price || product.sell_price,
+        ? isSalePriceValid(selectedVariant.sale_price_end_at)
+          ? selectedVariant.sale_price
+          : selectedVariant.sell_price
+        : isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
@@ -299,8 +311,12 @@ const ProductDetailClient = () => {
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
       price: selectedVariant
-        ? selectedVariant.sale_price || selectedVariant.sell_price
-        : product.sale_price || product.sell_price,
+        ? isSalePriceValid(selectedVariant.sale_price_end_at)
+          ? selectedVariant.sale_price
+          : selectedVariant.sell_price
+        : isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
@@ -497,11 +513,19 @@ const ProductDetailClient = () => {
 
                   {selectedVariant ? (
                     <div className="product-price">
-                      {formatPrice(selectedVariant.sale_price || selectedVariant.sell_price)} VNĐ
+                      {formatPrice(
+                        isSalePriceValid(selectedVariant.sale_price_end_at)
+                          ? selectedVariant.sale_price
+                          : selectedVariant.sell_price
+                      )} VNĐ
                     </div>
                   ) : product.variants && product.variants.length === 0 ? (
                     <div className="product-price">
-                      {formatPrice(product.sale_price || product.sell_price)} VNĐ
+                      {formatPrice(
+                        isSalePriceValid(product.sale_price_end_at)
+                          ? product.sale_price
+                          : product.sell_price
+                      )} VNĐ
                     </div>
                   ) : (
                     <div className="product-price">
@@ -627,10 +651,10 @@ const ProductDetailClient = () => {
                           }}
                           href="#"
                           className={`btn-product btn-cart ${!stockAvailable ||
-                            product.is_active === 0 ||
-                            (selectedVariant && selectedVariant.is_active === 0)
-                            ? "disabled text-muted"
-                            : ""
+                              product.is_active === 0 ||
+                              (selectedVariant && selectedVariant.is_active === 0)
+                              ? "disabled text-muted"
+                              : ""
                             }`}
                           style={{
                             pointerEvents:
@@ -700,7 +724,11 @@ const ProductDetailClient = () => {
                   >
                     <Card.Meta
                       title={product.name}
-                      description={`${formatPrice(product.sale_price || product.sell_price)} VNĐ`}
+                      description={`${formatPrice(
+                        isSalePriceValid(product.sale_price_end_at)
+                          ? product.sale_price
+                          : product.sell_price
+                      )} VNĐ`}
                     />
                   </Card>
                 </Col>
@@ -735,11 +763,11 @@ const ProductDetailClient = () => {
                     >
                       <Card.Meta
                         title={product.name}
-                        description={
-                          product.sale_price
-                            ? formatPrice(product.sale_price)
-                            : formatPrice(product.sell_price) + " VNĐ"
-                        }
+                        description={`${formatPrice(
+                          isSalePriceValid(product.sale_price_end_at)
+                            ? product.sale_price
+                            : product.sell_price
+                        )} VNĐ`}
                       />
                     </Card>
                   </div>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
@@ -17,8 +16,8 @@ import {
 } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
-import { paymentServices } from "./../services/payments";
-import { productsServices } from "./../services/product";
+import { paymentServices } from "../services/payments";
+import { productsServices } from "../services/product";
 import { AuthServices } from "../services/auth";
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
@@ -44,8 +43,8 @@ const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [mainForm] = Form.useForm(); // Form cho form chính
-  const [addressForm] = Form.useForm(); // Form cho modal thêm địa chỉ
+  const [mainForm] = Form.useForm();
+  const [addressForm] = Form.useForm();
   const [shippingFee, setShippingFee] = useState(0);
   const [usedLoyaltyPoints, setUsedLoyaltyPoints] = useState(0);
   const [formattedLoyaltyPoints, setFormattedLoyaltyPoints] = useState("0");
@@ -63,12 +62,40 @@ const Checkout = () => {
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
 
-  // Hàm phụ để lấy giá sản phẩm, ưu tiên sale_price
+  // Hàm phụ để lấy giá sản phẩm, kiểm tra sale_price_end_at
   const getProductPrice = (item) => {
-    if (item.product_variant) {
-      return item.product_variant.sale_price ?? item.product_variant.sell_price ?? 0;
+    try {
+      const currentDate = new Date();
+      const salePriceEndAt = item.product_variant?.sale_price_end_at || item.product?.sale_price_end_at;
+      let isSaleValid = false;
+
+      // Check if salePriceEndAt is a valid date and not expired
+      if (salePriceEndAt) {
+        const saleEndDate = new Date(salePriceEndAt);
+        isSaleValid = !isNaN(saleEndDate.getTime()) && saleEndDate > currentDate;
+      }
+
+      if (item.product_variant) {
+        const salePrice = Number(item.product_variant.sale_price);
+        const sellPrice = Number(item.product_variant.sell_price);
+        return isSaleValid && !isNaN(salePrice) && salePrice > 0
+          ? salePrice
+          : !isNaN(sellPrice) && sellPrice > 0
+            ? sellPrice
+            : 0;
+      }
+
+      const salePrice = Number(item.product?.sale_price);
+      const sellPrice = Number(item.product?.sell_price);
+      return isSaleValid && !isNaN(salePrice) && salePrice > 0
+        ? salePrice
+        : !isNaN(sellPrice) && sellPrice > 0
+          ? sellPrice
+          : 0;
+    } catch (error) {
+      console.error("Error in getProductPrice:", error, { item });
+      return 0; // Fallback to 0 if there's an error
     }
-    return item.product?.sale_price ?? item.product?.sell_price ?? 0;
   };
 
   // Validator cho fullname
@@ -126,33 +153,52 @@ const Checkout = () => {
       try {
         const detailedCart = await Promise.all(
           selectedItems.map(async (item) => {
-            const productDetails = await productsServices.ProductById(item.product_id);
-            let variantDetails = null;
+            try {
+              const productDetails = await productsServices.ProductById(item.product_id);
+              if (!productDetails?.data) {
+                throw new Error(`Product not found for ID: ${item.product_id}`);
+              }
 
-            if (item.product_variant_id) {
-              variantDetails = productDetails.data.variants.find(
-                (v) => v.id === item.product_variant_id
-              );
+              let variantDetails = null;
+              if (item.product_variant_id) {
+                variantDetails = productDetails.data.variants?.find(
+                  (v) => v.id === item.product_variant_id
+                );
+                if (!variantDetails) {
+                  console.warn(`Variant not found for ID: ${item.product_variant_id}`);
+                }
+              }
+
+              const price = getProductPrice({
+                product: productDetails.data,
+                product_variant: variantDetails,
+              });
+
+              return {
+                ...item,
+                product: productDetails.data,
+                product_variant: variantDetails,
+                price,
+              };
+            } catch (error) {
+              console.error(`Error processing item ${item.product_id}:`, error);
+              return null; // Skip invalid items
             }
-
-            const price = getProductPrice({
-              product: productDetails.data,
-              product_variant: variantDetails,
-            });
-
-            return {
-              ...item,
-              product: productDetails.data,
-              product_variant: variantDetails,
-              price,
-            };
           })
         );
 
-        setCartItems(detailedCart);
+        // Filter out null items (failed fetches)
+        const validCartItems = detailedCart.filter((item) => item !== null);
+        setCartItems(validCartItems);
+
+        if (validCartItems.length === 0) {
+          message.error("Không thể tải dữ liệu sản phẩm hợp lệ!");
+          navigate("/cart");
+        }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
         message.error("Không thể tải dữ liệu sản phẩm!");
+        navigate("/cart");
       } finally {
         setIsLoading(false);
       }
@@ -177,7 +223,7 @@ const Checkout = () => {
             email: data.email || "",
             phone_number: data.phone_number || "",
             address: data.address?.address || "",
-            loyalty_points: data.loyalty_points || 0,
+            loyalty_points: Number(data.loyalty_points) || 0,
           });
           mainForm.setFieldsValue({
             fullname: data.fullname || "",
@@ -389,7 +435,9 @@ const Checkout = () => {
   // Tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-      return total + getProductPrice(item) * (item.quantity || 1);
+      const price = getProductPrice(item);
+      const quantity = Number(item.quantity) || 1;
+      return total + price * quantity;
     }, 0)
     : 0;
 
@@ -402,7 +450,7 @@ const Checkout = () => {
     const fetchPayments = async () => {
       try {
         const payData = await paymentServices.getPayment();
-        setPayments(payData);
+        setPayments(Array.isArray(payData) ? payData : []);
       } catch (error) {
         console.error("Lỗi khi lấy phương thức thanh toán:", error);
       }
@@ -414,7 +462,7 @@ const Checkout = () => {
     const fetchAttributeValues = async () => {
       try {
         const data = await ValuesServices.fetchValues();
-        setAttributeValues(data);
+        setAttributeValues(data || { data: [] });
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu attribute values:", error);
       }
@@ -509,7 +557,7 @@ const Checkout = () => {
           id: item.id,
           product_id: item.product_id,
           product_variant_id: item.product_variant_id || null,
-          quantity: item.quantity,
+          quantity: Number(item.quantity) || 1,
           price: getProductPrice(item),
         })),
       };
@@ -573,12 +621,36 @@ const Checkout = () => {
   };
 
   const getAttributeValue = (product) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user ? user.id : null;
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user ? user.id : null;
 
-    if (userId) {
-      if (product.product_variant && product.product_variant.attribute_value_product_variants) {
-        return product.product_variant.attribute_value_product_variants
+      if (userId) {
+        if (product.product_variant && product.product_variant.attribute_value_product_variants) {
+          return product.product_variant.attribute_value_product_variants
+            .map((attr) => {
+              if (!attributeValues?.data) return "Không xác định";
+              const attribute = attributeValues.data.find(
+                (av) => String(av.id) === String(attr.attribute_value_id)
+              );
+              return attribute ? attribute.value : "Không xác định";
+            })
+            .join(", ");
+        }
+        return "Không xác định";
+      } else {
+        const attributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]") || [];
+        const productAttributes = attributes.find(
+          (attr) =>
+            attr.product_id === product.product_id &&
+            attr.product_variant_id === product.product_variant_id
+        );
+
+        if (!productAttributes || !productAttributes.attributes) {
+          return "Không xác định";
+        }
+
+        return productAttributes.attributes
           .map((attr) => {
             if (!attributeValues?.data) return "Không xác định";
             const attribute = attributeValues.data.find(
@@ -588,41 +660,37 @@ const Checkout = () => {
           })
           .join(", ");
       }
+    } catch (error) {
+      console.error("Error in getAttributeValue:", error, { product });
       return "Không xác định";
-    } else {
-      const attributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]") || [];
-      const productAttributes = attributes.find(
-        (attr) =>
-          attr.product_id === product.product_id &&
-          attr.product_variant_id === product.product_variant_id
-      );
-
-      if (!productAttributes || !productAttributes.attributes) {
-        return "Không xác định";
-      }
-
-      return productAttributes.attributes
-        .map((attr) => {
-          if (!attributeValues?.data) return "Không xác định";
-          const attribute = attributeValues.data.find(
-            (av) => String(av.id) === String(attr.attribute_value_id)
-          );
-          return attribute ? attribute.value : "Không xác định";
-        })
-        .join(", ");
     }
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat("vi-VN", {}).format(value);
+    try {
+      return new Intl.NumberFormat("vi-VN", {}).format(Number(value) || 0);
+    } catch (error) {
+      console.error("Error in formatCurrency:", error, { value });
+      return "0";
+    }
   };
 
   const formatNumber = (value) => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    try {
+      return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    } catch (error) {
+      console.error("Error in formatNumber:", error, { value });
+      return value.toString();
+    }
   };
 
   const unformatNumber = (value) => {
-    return Number(value.replace(/\./g, ""));
+    try {
+      return Number(value.replace(/\./g, ""));
+    } catch (error) {
+      console.error("Error in unformatNumber:", error, { value });
+      return 0;
+    }
   };
 
   useEffect(() => {
@@ -644,23 +712,31 @@ const Checkout = () => {
   };
 
   const handleAddressChange = async (value) => {
-    const address = addresses.find((addr) => addr.id === value);
-
-    if (address && address.DistrictID && address.WardCode) {
-      const fee = await calculateShippingFee(address.DistrictID, address.WardCode);
-      setShippingFee(fee);
-    } else {
+    try {
+      const address = addresses.find((addr) => addr.id === value);
+      if (address && address.DistrictID && address.WardCode) {
+        const fee = await calculateShippingFee(address.DistrictID, address.WardCode);
+        setShippingFee(fee);
+      } else {
+        setShippingFee(0);
+      }
+      setSelectedAddress(value);
+    } catch (error) {
+      console.error("Error in handleAddressChange:", error);
       setShippingFee(0);
     }
-
-    setSelectedAddress(value);
   };
 
   useEffect(() => {
     const fetchShippingFeeForGuest = async () => {
       if (!userId && selectedDistrict && selectedWard) {
-        const fee = await calculateShippingFee(selectedDistrict, selectedWard);
-        setShippingFee(fee);
+        try {
+          const fee = await calculateShippingFee(selectedDistrict, selectedWard);
+          setShippingFee(fee);
+        } catch (error) {
+          console.error("Error in fetchShippingFeeForGuest:", error);
+          setShippingFee(0);
+        }
       }
     };
 
@@ -674,7 +750,7 @@ const Checkout = () => {
     const params = {
       service_id: 53320,
       service_type_id: 1,
-      insurance_value: subtotal,
+      insurance_value: Math.max(subtotal, 0),
       coupon: "",
       to_ward_code: WardCode,
       to_district_id: Number(DistrictId),
@@ -737,7 +813,7 @@ const Checkout = () => {
 
         if (storedUser?.id) {
           userCouponsData = await CouponServices.getCounponById(storedUser.id);
-          setUserCoupons(userCouponsData);
+          setUserCoupons(Array.isArray(userCouponsData) ? userCouponsData : []);
         }
 
         const searchParams = {
@@ -765,24 +841,29 @@ const Checkout = () => {
       return;
     }
 
-    let discountValue = 0;
+    try {
+      let discountValue = 0;
 
-    if (selectedCoupon.discount_type === "percent") {
-      discountValue = (subtotal * selectedCoupon.discount_value) / 100;
-    } else if (selectedCoupon.discount_type === "fix_amount") {
-      discountValue = selectedCoupon.discount_value;
+      if (selectedCoupon.discount_type === "percent") {
+        discountValue = (subtotal * selectedCoupon.discount_value) / 100;
+      } else if (selectedCoupon.discount_type === "fix_amount") {
+        discountValue = selectedCoupon.discount_value;
+      }
+
+      if (discountValue > subtotal) {
+        discountValue = subtotal;
+        message.warning(
+          `Mã giảm giá vượt quá giá trị đơn hàng. Tổng tiền đã được giảm xuống 0 VNĐ (không bao gồm phí vận chuyển).`
+        );
+      }
+
+      setDiscountAmount(discountValue);
+      message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
+      setIsCouponModalVisible(false);
+    } catch (error) {
+      console.error("Error in applyDiscount:", error);
+      message.error("Lỗi khi áp dụng mã giảm giá!");
     }
-
-    if (discountValue > subtotal) {
-      discountValue = subtotal;
-      message.warning(
-        `Mã giảm giá vượt quá giá trị đơn hàng. Tổng tiền đã được giảm xuống 0 VNĐ (không bao gồm phí vận chuyển).`
-      );
-    }
-
-    setDiscountAmount(discountValue);
-    message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
-    setIsCouponModalVisible(false);
   };
 
   const handleRemoveCoupon = () => {
@@ -1258,20 +1339,24 @@ const Checkout = () => {
                                     placeholder="Nhập điểm đổi"
                                     value={formattedLoyaltyPoints}
                                     onChange={(e) => {
-                                      const rawValue = e.target.value;
-                                      const numericValue = unformatNumber(rawValue);
+                                      try {
+                                        const rawValue = e.target.value;
+                                        const numericValue = unformatNumber(rawValue);
 
-                                      if (numericValue <= userData.loyalty_points && numericValue >= 0) {
-                                        setUsedLoyaltyPoints(numericValue);
-                                        setFormattedLoyaltyPoints(formatNumber(numericValue));
-                                      } else {
-                                        message.warning(
-                                          numericValue < 0
-                                            ? "Số điểm không thể âm!"
-                                            : "Bạn không thể dùng quá số điểm hiện có!"
-                                        );
-                                        setUsedLoyaltyPoints(userData.loyalty_points);
-                                        setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
+                                        if (numericValue <= userData.loyalty_points && numericValue >= 0) {
+                                          setUsedLoyaltyPoints(numericValue);
+                                          setFormattedLoyaltyPoints(formatNumber(numericValue));
+                                        } else {
+                                          message.warning(
+                                            numericValue < 0
+                                              ? "Số điểm không thể âm!"
+                                              : "Bạn không thể dùng quá số điểm hiện có!"
+                                          );
+                                          setUsedLoyaltyPoints(userData.loyalty_points);
+                                          setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
+                                        }
+                                      } catch (error) {
+                                        console.error("Error in loyalty points input:", error);
                                       }
                                     }}
                                     style={{
@@ -1435,6 +1520,7 @@ const Checkout = () => {
                               setIsPaymentModalOpen(true);
                             }
                           } catch (error) {
+                            console.error("Error in payment button click:", error);
                             message.error("Vui lòng kiểm tra lại thông tin nhập vào!");
                           }
                         }}

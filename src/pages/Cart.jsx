@@ -21,12 +21,12 @@ const Cart = () => {
   const [shippingCost, setShippingCost] = useState(0);
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedItems, setSelectedItems] = useState([]); // Track selected items
-  const [isAllSelected, setIsAllSelected] = useState(false); // Thêm trạng thái mới
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
   const navigate = useNavigate();
+
   const handleSelectAll = (checked) => {
     if (checked) {
-      // Chọn tất cả các sản phẩm hợp lệ (không ngừng bán và không hết hàng)
       const validItems = cartItems.filter(
         (item) =>
           item.product.is_active !== 0 &&
@@ -35,7 +35,6 @@ const Cart = () => {
       setSelectedItems(validItems);
       setIsAllSelected(true);
     } else {
-      // Bỏ chọn tất cả
       setSelectedItems([]);
       setIsAllSelected(false);
     }
@@ -48,19 +47,21 @@ const Cart = () => {
         (item.product_variant ? item.product_variant.stock : item.product.stock) > 0
     );
 
-    if (validItems.length > 0 && validItems.every((item) =>
-      selectedItems.some(
-        (selected) =>
-          selected.product_id === item.product_id &&
-          selected.product_variant_id === item.product_variant_id
+    if (
+      validItems.length > 0 &&
+      validItems.every((item) =>
+        selectedItems.some(
+          (selected) =>
+            selected.product_id === item.product_id &&
+            selected.product_variant_id === item.product_variant_id
+        )
       )
-    )) {
+    ) {
       setIsAllSelected(true);
     } else {
       setIsAllSelected(false);
     }
   }, [selectedItems, cartItems]);
-
 
   useEffect(() => {
     const getCart = async () => {
@@ -81,9 +82,18 @@ const Cart = () => {
                 );
               }
 
+              // Check if sale_price is valid based on sale_price_end_at
+              const currentDate = new Date();
+              const salePriceEndAt = variantDetails?.sale_price_end_at || productDetails.data.sale_price_end_at;
+              const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
+
               const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
+                ? isSaleValid && variantDetails.sale_price
+                  ? variantDetails.sale_price
+                  : variantDetails.sell_price
+                : isSaleValid && productDetails.data.sale_price
+                  ? productDetails.data.sale_price
+                  : productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -108,9 +118,18 @@ const Cart = () => {
                 );
               }
 
+              // Check if sale_price is valid based on sale_price_end_at
+              const currentDate = new Date();
+              const salePriceEndAt = variantDetails?.sale_price_end_at || productDetails.data.sale_price_end_at;
+              const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
+
               const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
+                ? isSaleValid && variantDetails.sale_price
+                  ? variantDetails.sale_price
+                  : variantDetails.sell_price
+                : isSaleValid && productDetails.data.sale_price
+                  ? productDetails.data.sale_price
+                  : productDetails.data.sell_price;
 
               return {
                 ...item,
@@ -199,9 +218,18 @@ const Cart = () => {
       return total;
     }
 
+    // Check if sale_price is valid based on sale_price_end_at
+    const currentDate = new Date();
+    const salePriceEndAt = item.product_variant?.sale_price_end_at || item.product.sale_price_end_at;
+    const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
+
     const price = item.product_variant
-      ? item.product_variant.sale_price || item.product_variant.sell_price
-      : item.price;
+      ? isSaleValid && item.product_variant.sale_price
+        ? item.product_variant.sale_price
+        : item.product_variant.sell_price
+      : isSaleValid && item.product.sale_price
+        ? item.product.sale_price
+        : item.product.sell_price;
 
     return total + price * item.quantity;
   }, 0);
@@ -361,7 +389,6 @@ const Cart = () => {
     });
   };
 
-  // Handle checkbox change
   const handleCheckboxChange = (record, checked) => {
     if (checked) {
       setSelectedItems((prev) => [...prev, record]);
@@ -378,16 +405,17 @@ const Cart = () => {
 
   const columns = [
     {
-      title: (<Checkbox
-        checked={isAllSelected}
-        onChange={(e) => handleSelectAll(e.target.checked)}
-        disabled={cartItems.length === 0 || cartItems.every(
-          (item) =>
-            item.product.is_active === 0 ||
-            (item.product_variant ? item.product_variant.stock : item.product.stock) === 0
-        )}
-      >
-      </Checkbox>),
+      title: (
+        <Checkbox
+          checked={isAllSelected}
+          onChange={(e) => handleSelectAll(e.target.checked)}
+          disabled={cartItems.length === 0 || cartItems.every(
+            (item) =>
+              item.product.is_active === 0 ||
+              (item.product_variant ? item.product_variant.stock : item.product.stock) === 0
+          )}
+        />
+      ),
       align: "center",
       render: (_, record) => {
         const isProductInactive = record.product.is_active === 0;
@@ -445,7 +473,22 @@ const Cart = () => {
     {
       title: "Giá bán",
       dataIndex: "price",
-      render: (price) => formatCurrency(price),
+      render: (_, record) => {
+        // Check if sale_price is valid based on sale_price_end_at
+        const currentDate = new Date();
+        const salePriceEndAt = record.product_variant?.sale_price_end_at || record.product.sale_price_end_at;
+        const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
+
+        const price = record.product_variant
+          ? isSaleValid && record.product_variant.sale_price
+            ? record.product_variant.sale_price
+            : record.product_variant.sell_price
+          : isSaleValid && record.product.sale_price
+            ? record.product.sale_price
+            : record.product.sell_price;
+
+        return formatCurrency(price);
+      },
       align: "center",
     },
     {
@@ -474,7 +517,20 @@ const Cart = () => {
         const isProductInactive = record.product.is_active === 0;
         const isOutOfStock = (record.product_variant ? record.product_variant.stock : record.product.stock) === 0;
 
-        return formatCurrency(record.price * record.quantity);
+        // Check if sale_price is valid based on sale_price_end_at
+        const currentDate = new Date();
+        const salePriceEndAt = record.product_variant?.sale_price_end_at || record.product.sale_price_end_at;
+        const isSaleValid = salePriceEndAt && new Date(salePriceEndAt) > currentDate;
+
+        const price = record.product_variant
+          ? isSaleValid && record.product_variant.sale_price
+            ? record.product_variant.sale_price
+            : record.product_variant.sell_price
+          : isSaleValid && record.product.sale_price
+            ? record.product.sale_price
+            : record.product.sell_price;
+
+        return formatCurrency(price * record.quantity);
       },
     },
     {
