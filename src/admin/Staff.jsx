@@ -1,5 +1,5 @@
 import { EyeOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Image, Modal, Skeleton, Table, Tooltip } from 'antd';
+import { Avatar, Button, Image, Input, Modal, Skeleton, Table, Tooltip } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AuthServices } from '../services/auth';
@@ -15,6 +15,7 @@ const Staff = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const hideModal = () => setIsModalVisible(false);
     const [orderDetails, setOrderDetails] = useState([]);
+    const [searchCode, setSearchCode] = useState("");
     const [orderInfo, setOrderInfo] = useState({
         shipping_fee: "",
         discount_points: "",
@@ -129,11 +130,11 @@ const Staff = () => {
                     {userData.role === 'admin'
                         ? 'Quản lý'
                         : userData.role === 'manager'
-                        ? 'Nhân viên'
-                        : 'Khách hàng'}
+                            ? 'Nhân viên'
+                            : 'Khách hàng'}
                 </div>
             ),
-        },        
+        },
         {
             key: 'created_at',
             label: 'Ngày tham gia',
@@ -282,19 +283,37 @@ const Staff = () => {
                     />
                 </div>
 
-                <Skeleton active loading={isLoading}>
-                    <Table
-                        columns={detailColumns}
-                        style={{ width: '1000px' }}
-                        dataSource={staff ? staff.map((item, index) => ({
-                            ...item,
-                            key: index,
-                            index: index + 1,
-                        })) : []}
-                        pagination={{ pageSize: 10 }}
-                        bordered
-                    />
-                </Skeleton>
+                <div className='card-info'>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+                        <Input
+                            style={{ width: '400px' }}
+                            placeholder="Tìm theo mã đơn hàng..."
+                            allowClear
+                            value={searchCode}
+                            onChange={(e) => setSearchCode(e.target.value)}
+                        />
+                    </div>
+
+                    <Skeleton active loading={isLoading}>
+                        <Table
+                            columns={detailColumns}
+                            style={{ width: '800px' }}
+                            dataSource={
+                                staff
+                                    ? staff
+                                        .filter(item => item.order?.code?.toLowerCase().includes(searchCode.toLowerCase()))
+                                        .map((item, index) => ({
+                                            ...item,
+                                            key: index,
+                                            index: index + 1,
+                                        }))
+                                    : []
+                            }
+                            pagination={{ pageSize: 10 }}
+                            bordered
+                        />
+                    </Skeleton>
+                </div>
             </div>
 
             <Modal

@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartServices } from "./../services/cart";
-import {
-  message,
-  Modal,
-  Button,
-  Table,
-  InputNumber,
-  Tooltip,
-  Image,
-  Checkbox,
-} from "antd";
+import { message, Modal, Button, Table, InputNumber, Tooltip, Image, Checkbox } from "antd";
 import { productsServices } from "./../services/product";
 import { ValuesServices } from "../services/attribute_value";
 import { DeleteOutlined } from "@ant-design/icons";
@@ -378,19 +369,22 @@ const Cart = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "10px",
               opacity: (isProductInactive || isOutOfStock) ? 0.5 : 1,
             }}
           >
             <Image src={product.thumbnail} width={60} />
-            <div>
-              {product.name}
-              {record.product_variant_id && (
-                <span className="text-muted" style={{ fontSize: "14px" }}>
-                  ({getAttributeValue(record)})
-                </span>
-              )}
-            </div>
+
+            <Link to={`/product-detail/${product.id}`}>
+              <div>
+                {product.name}
+                {record.product_variant_id && (
+                  <span className="text-muted" style={{ fontSize: "14px" }}>
+                    ({getAttributeValue(record)})
+                  </span>
+                )}
+              </div>
+            </Link>
           </div>
         );
       },

@@ -1039,14 +1039,13 @@ const Order = () => {
       </Modal>
 
       <Modal
-        title="Hủy đơn"
+        title="Lý do hủy đơn"
         visible={isModalCancel}
         onCancel={hideCancel}
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleCancelOrder}>
           <Form.Item
-            label="Lý do hủy đơn"
             name="reason"
             rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
           >

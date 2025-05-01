@@ -108,6 +108,18 @@ const Update = () => {
     );
   };
 
+  const isGoogleAccount = () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return false;
+      const parsedUser = JSON.parse(storedUser);
+      return !!parsedUser.google_id;
+    } catch (err) {
+      console.error("Lỗi khi parse user từ localStorage:", err);
+      return false;
+    }
+  };
+
   return (
     <div>
       <h1 className="mb-5">
@@ -133,8 +145,14 @@ const Update = () => {
 
             <Form.Item
               label="Số điện thoại"
-              rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
               name="phone_number"
+              rules={[
+                { required: true, message: "Vui lòng nhập số điện thoại" },
+                {
+                  pattern: /^\d{10}$/,
+                  message: "Số điện thoại phải gồm đúng 10 chữ số",
+                },
+              ]}
             >
               <Input className="input-item" />
             </Form.Item>
@@ -169,10 +187,16 @@ const Update = () => {
           <Col span={8}>
             <Form.Item
               label="Email"
-              rules={[{ required: true, message: "Vui lòng nhập Email" }]}
               name="email"
+              rules={[
+                {
+                  required: true,
+                  type: "email",
+                  message: "Vui lòng nhập email hợp lệ",
+                },
+              ]}
             >
-              <Input className="input-item" />
+              <Input className="input-item" disabled={isGoogleAccount()} />
             </Form.Item>
           </Col>
 

@@ -33,7 +33,7 @@ const GoogleCallbackHandler = () => {
         window.dispatchEvent(new Event("user-login"));
 
         // Chuyển hướng đến dashboard với user id
-        navigate(`/dashboard/orders/${user.id}`, { replace: true });
+        navigate(`/`, { replace: true });
         message.success("Đăng nhập bằng Google thành công!");
       } catch (err) {
         console.error("Lỗi khi xử lý user từ query:", err);

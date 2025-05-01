@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Modal, notification, Table, Skeleton, Image, Form, Row, Col, Select, Input, Radio, Upload } from 'antd';
+import { Button, Modal, notification, Table, Skeleton, Image, Form, Row, Col, Select, Input, Radio, Upload, Tooltip } from 'antd';
 import { OrderService } from '../services/order';
 import "../css/review.css";
-import { CheckOutlined, CloseOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import headerBg from "../assets/images/page-header-bg.jpg";
 import axios from 'axios';
@@ -14,14 +14,12 @@ const Detail = () => {
     const [orders, setOrders] = useState([]);
     const [detail, setDetail] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
-    const hideCancel = () => setIsCancelModalVisible(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const hideModal = () => setIsModalOpen(false);
     const [form] = Form.useForm();
     const [banks, setBanks] = useState([]);
     const [image, setImage] = useState("");
-    const [returnReason, setReturnReason] = useState("");
-    const [selectedReturnReason, setSelectedReturnReason] = useState("");
-    const [isCustomReason, setIsCustomReason] = useState(false);
+    const [cancelData, setCancelData] = useState(null);
 
     const fetchOrder = async () => {
         try {
@@ -55,6 +53,24 @@ const Detail = () => {
     useEffect(() => {
         if (order) {
             fetchDetailOrder();
+        }
+    }, [order]);
+
+    const fetchCancelData = async () => {
+        try {
+            if (!order?.id) return;
+            const response = await OrderService.getACancel(order.id);
+            setCancelData(response.order_cancel);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hủy:", error);
+            setCancelData(null);
+        }
+    };
+
+    // Gọi fetchCancelData khi order thay đổi
+    useEffect(() => {
+        if (order) {
+            fetchCancelData();
         }
     }, [order]);
 
@@ -108,58 +124,25 @@ const Detail = () => {
         });
     };
 
-    const handleCancelOrder = () => {
-        Modal.confirm({
-            title: "Xác nhận hủy đơn",
-            content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
-            okText: "Xác nhận",
-            cancelText: "Hủy",
-            onOk: async () => {
-                try {
-                    const payload = {
-                        order_status_id: 8,
-                        note: "",
-                        employee_evidence: "",
-                    };
+    const handleSubmitBankInfo = async (values) => {
+        try {
+            await OrderService.infoBack(cancelData.id, values); // Dùng order_cancels.id
 
-                    console.log("Dữ liệu gửi đi:", payload);
+            notification.success({
+                message: "Thành công",
+                description: "Thông tin hoàn tiền đã được gửi.",
+            });
 
-                    const response = await OrderService.updateOrderStatus(order.id, payload);
-                    console.log("Phản hồi từ API:", response);
-
-                    if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
-                        notification.success({
-                            message: "Đơn hàng đã được hủy",
-                            description: "Đơn hàng của bạn đã được hủy thành công.",
-                        });
-
-                        await fetchOrder();
-                        await fetchDetailOrder();
-
-                        setOrders((prevOrders) =>
-                            prevOrders.map((item) =>
-                                item.id === order.id ? { ...item, status: { id: 8, name: "Hủy đơn" } } : item
-                            )
-                        );
-                    } else {
-                        notification.error({
-                            message: "Cập nhật thất bại",
-                            description: "Có lỗi xảy ra khi hủy đơn hàng.",
-                        });
-                    }
-                } catch (error) {
-                    console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
-                    notification.error({
-                        message: "Lỗi",
-                        description: "Không thể hủy đơn hàng.",
-                    });
-                }
-            },
-        });
-    };
-
-    const showCancelModal = () => {
-        setIsCancelModalVisible(true);
+            hideModal();
+            form.resetFields();
+            setImage("");
+        } catch (error) {
+            console.error("Lỗi khi gửi thông tin ngân hàng:", error);
+            notification.error({
+                message: "Lỗi",
+                description: "Gửi thông tin thất bại. Vui lòng thử lại.",
+            });
+        }
     };
 
     useEffect(() => {
@@ -191,6 +174,25 @@ const Detail = () => {
             maximumFractionDigits: 0,
         });
         return formatter.format(price);
+    };
+
+    const getReturnReason = (note) => {
+        switch (note) {
+            case "mistake":
+                return "Đặt nhầm sản phẩm";
+            case "better":
+                return "Tìm thấy ưu đãi tốt hơn";
+            case "size_change":
+                return "Đổi size/màu";
+            case "error":
+                return "Sản phẩm bị hư, hỏng khi vận chuyển";
+            case "disconnect":
+                return "Không thể liên hệ với người đặt";
+            case "other":
+                return "Khác";
+            default:
+                return note || "";
+        }
     };
 
     const detailColumns = [
@@ -300,32 +302,52 @@ const Detail = () => {
                             Đã nhận hàng
                         </Button>
                     )}
-
-                    {/* {(order.status?.id === 1 || order.status?.id === 2 || order.status?.id === 3) && order.payment_id === 2 && (
-                        <Button
-                            color="danger"
-                            variant="solid"
-                            icon={<CloseOutlined />}
-                            onClick={() => handleCancelOrder()}
-                        >
-                            Hủy đơn
-                        </Button>
-                    )}
-
-                    {(order.status?.id === 1 || order.status?.id === 2 || order.status?.id === 3) && [1, 3].includes(order.payment_id) && (
-                        <Button
-                            color="danger"
-                            variant="solid"
-                            icon={<CloseOutlined />}
-                            onClick={() => showCancelModal()}
-                        >
-                            Hủy đơn
-                        </Button>
-                    )} */}
                 </div>
             ),
         }
     ] : [];
+
+    const cancelDataSource = cancelData
+        ? [
+            {
+                key: "created_at",
+                label: "Ngày hủy",
+                value: cancelData.created_at ? dayjs(cancelData.created_at).format("DD/MM/YYYY") : "",
+            },
+            {
+                key: "reason",
+                label: "Lý do hủy đơn",
+                value: getReturnReason(cancelData.reason),
+            },
+            {
+                key: "refund_proof",
+                label: "Xác nhận hoàn tiền",
+                value: cancelData.refund_proof ? (
+                    <Image width={60} src={cancelData.refund_proof} />
+                ) : "",
+            },
+            {
+                key: "action",
+                label: "",
+                value: (
+                    <div className="">
+                        {(order.status?.id === 8 && !cancelData.bank_account_number && !cancelData.bank_name) && (
+                            <Button
+                                color="danger"
+                                variant="solid"
+                                icon={<RollbackOutlined />}
+                                onClick={() => {
+                                    setIsModalOpen(true);
+                                }}
+                            >
+                                Yêu cầu hoàn tiền
+                            </Button>
+                        )}
+                    </div>
+                ),
+            },
+        ]
+        : [];
 
     const orderColumns = [
         {
@@ -357,13 +379,24 @@ const Detail = () => {
                 <div className="page-content">
                     <div className="container">
                         <div className="group1">
-                            <Skeleton active loading={isLoading}>
-                                <Table
-                                    columns={orderColumns}
-                                    dataSource={dataSource}
-                                    pagination={false}
-                                />
-                            </Skeleton>
+                            <div className='card-info'>
+                                <Skeleton active loading={isLoading}>
+                                    <Table
+                                        columns={orderColumns}
+                                        dataSource={dataSource}
+                                        pagination={false}
+                                    />
+
+                                    {order?.status?.id >= 8 && (
+                                        <Table
+                                            columns={orderColumns}
+                                            dataSource={cancelDataSource}
+                                            pagination={false}
+                                            showHeader={false}
+                                        />
+                                    )}
+                                </Skeleton>
+                            </div>
 
                             <div className='card-info'>
                                 <Skeleton active loading={isLoading}>
@@ -422,22 +455,16 @@ const Detail = () => {
                             </div>
 
                             <Modal
-                                title="Hủy đơn hàng"
-                                visible={isCancelModalVisible}
-                                onCancel={() => {
-                                    setIsCancelModalVisible(false);
-                                    form.resetFields();
-                                    setSelectedReturnReason("");
-                                    setReturnReason("");
-                                    setIsCustomReason(false);
-                                    setImage("");
-                                }}
+                                title="Gửi thông tin hoàn tiền"
+                                open={isModalOpen}
+                                onCancel={hideModal}
                                 footer={null}
                                 width={600}
                             >
                                 <Form
                                     layout="vertical"
                                     form={form}
+                                    onFinish={handleSubmitBankInfo}
                                 >
                                     <Row gutter={24}>
                                         <Col span={24} className="col-item">
@@ -481,14 +508,15 @@ const Detail = () => {
                                                     placeholder="Nhập số tài khoản"
                                                 />
                                             </Form.Item>
+                                        </Col>
 
+                                        <Col span={12} className="col-item">
                                             <Form.Item label="QR ngân hàng (nếu có)" name="bank_qr">
                                                 <Upload
                                                     listType="picture"
                                                     action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                                                     data={{ upload_preset: "quangOsuy" }}
                                                     onChange={onHandleBank}
-                                                    maxCount={1}
                                                 >
                                                     {!image && (
                                                         <Button icon={<UploadOutlined />} className="btn-item">
@@ -498,63 +526,10 @@ const Detail = () => {
                                                 </Upload>
                                             </Form.Item>
                                         </Col>
-
-                                        <Col span={12} className="col-item">
-                                            <Form.Item
-                                                label="Lý do hủy đơn"
-                                                name="reason"
-                                                rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
-                                            >
-                                                <Radio.Group
-                                                    value={selectedReturnReason}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value;
-                                                        setSelectedReturnReason(value);
-                                                        if (value === "other") {
-                                                            setIsCustomReason(true);
-                                                        } else {
-                                                            setIsCustomReason(false);
-                                                            setReturnReason("");
-                                                            form.setFieldsValue({ customReason: "" });
-                                                        }
-                                                    }}
-                                                    style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-                                                >
-                                                    <Radio value="mistake">Tôi đặt nhầm sản phẩm</Radio>
-                                                    <Radio value="better">Tôi tìm thấy ưu đãi tốt hơn</Radio>
-                                                    <Radio value="size_change">Tôi muốn đổi size/màu</Radio>
-                                                    <Radio value="other">Khác</Radio>
-                                                </Radio.Group>
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-
-                                    <Row gutter={24}>
-                                        <Col span={24}>
-                                            {isCustomReason && (
-                                                <Form.Item
-                                                    label="Nhập lý do hủy đơn"
-                                                    name="customReason"
-                                                    rules={[{ required: true, message: "Vui lòng nhập lý do hủy đơn" }]}
-                                                >
-                                                    <Input.TextArea
-                                                        value={returnReason}
-                                                        onChange={(e) => setReturnReason(e.target.value)}
-                                                        placeholder="Nhập lý do hủy đơn tại đây..."
-                                                        rows={3}
-                                                    />
-                                                </Form.Item>
-                                            )}
-                                        </Col>
                                     </Row>
 
                                     <div className="add">
-                                        <Button
-                                            color="danger"
-                                            variant="solid"
-                                            htmlType="submit"
-                                            style={{ backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" }}
-                                        >
+                                        <Button color="danger" variant="solid" htmlType="submit">
                                             Gửi yêu cầu
                                         </Button>
                                     </div>
