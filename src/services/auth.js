@@ -1,12 +1,12 @@
-import instance from "../axios"; // axios instance với base URL
+import instance from "../axios"; 
 
 const fetchAuth = async () => {
   try {
-    const response = await instance.get("/admin/users"); // Kiểm tra API URL có đúng không
-    return response?.data ? response : { data: [] }; // Trả về mảng rỗng nếu không có dữ liệu
+    const response = await instance.get("/admin/users"); 
+    return response?.data ? response : { data: [] }; 
   } catch (error) {
     console.error("Lỗi gọi API:", error);
-    return { data: [] }; // Tránh lỗi khi API bị lỗi
+    return { data: [] }; 
   }
 };
 
@@ -15,13 +15,13 @@ const getAllCustomer = async (payload) => {
   return response.data;
 };
 
-// tìm kiếm khách hàng
+
 const searchUsers = async (keyword = "") => {
   try {
     const response = await instance.get("/admin/users/search", {
       params: { keyword },
     });
-    return response.data || []; // Trả về danh sách khách hàng hoặc mảng rỗng nếu không có kết quả
+    return response.data || []; 
   } catch (error) {
     console.error("Lỗi khi tìm kiếm khách hàng:", error);
     return [];
@@ -48,7 +48,7 @@ const bannedHistory = async (id) => {
   return response.data;
 };
 
-// nhật ký hoạt động của nhân viên
+
 const getModifiedById = async (id) => {
   const response = await instance.get(`/orders/modified-by/${id}`);
   return response.data;
@@ -64,16 +64,16 @@ const register = async (userData) => {
   }
 };
 
-// cập nhật tài khoản
+
 const update = async (id, userData) => {
   const response = await instance.put(`/admin/users/${id}`, userData);
   return response.data;
 };
 
-// đổi mật khẩu
+
 const changePassword = async (id, userData) => {
   const token =
-    localStorage.getItem("client_token") || localStorage.getItem("adminToken"); // Lấy token từ localStorage
+    localStorage.getItem("client_token") || localStorage.getItem("adminToken"); 
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -85,7 +85,7 @@ const changePassword = async (id, userData) => {
       userData,
       {
         headers: {
-          Authorization: `Bearer ${token}`, // Gửi token trong header Authorization
+          Authorization: `Bearer ${token}`, 
         },
       }
     );
@@ -95,13 +95,13 @@ const changePassword = async (id, userData) => {
   }
 };
 
-// quên mật khẩu client
+
 const forget = async (userData) => {
   const response = await instance.post("/forgot-password", userData);
   return response.data;
 };
 
-// đặt lại mật khẩu
+
 const reset = async (userData) => {
   const response = await instance.post("/reset-password", userData);
   return response.data;
@@ -124,9 +124,9 @@ const login = async (phone_number, password) => {
   });
 
   if (response.data.access_token) {
-    // Lưu token và user vào localStorage
+    
     localStorage.setItem("client_token", response.data.access_token);
-    localStorage.setItem("client", JSON.stringify(response.data.user)); // Lưu thông tin user
+    localStorage.setItem("client", JSON.stringify(response.data.user)); 
   }
 
   return response.data;
@@ -146,42 +146,37 @@ const loginad = async (phone_number, password) => {
 };
 
 const logoutclient = async () => {
-  const token = localStorage.getItem("client_token"); // Đảm bảo lấy đúng key
+  const token = localStorage.getItem("client_token");
 
-  // Xóa token client trước khi gửi yêu cầu logout
-  if (token) {
-    try {
-      // Gửi yêu cầu logout với Authorization header
-      const response = await instance.post(
-        "/client/logout",
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Nếu cần, bạn có thể xử lý response tại đây, ví dụ: kiểm tra xem logout thành công hay chưa
-
-      // Sau khi logout thành công, xóa cả client_token và user khỏi localStorage
-      localStorage.removeItem("client_token"); // Xóa token client
-      localStorage.removeItem("client"); // Xóa thông tin user
-      localStorage.removeItem("user"); // Xóa thông tin user
-
-      return { message: "Client logged out successfully" };
-    } catch (error) {
-      console.error("Logout failed", error);
-      return { message: "Logout failed. Please try again!" };
-    }
+  if (!token) {
+    return;
   }
 
-  // Nếu không tìm thấy client_token, có thể người dùng đã không đăng nhập
-  return { message: "No client token found" };
+  try {
+    // Call the logout API
+    await instance.post(
+      "/client/logout",
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    // Clear authentication data from localStorage
+    localStorage.removeItem("client_token");
+    localStorage.removeItem("client");
+
+    // Redirect to the login page and refresh the page
+    window.location.href = "/logincl";
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
 };
 
 const logoutad = async () => {
   const token = localStorage.getItem("adminToken");
 
-  // Xóa token admin trước khi gửi yêu cầu logout
+  
   if (token) {
     const response = await instance.post(
       "/admin/logout",
@@ -190,7 +185,7 @@ const logoutad = async () => {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    // Xóa token admin
+    
     localStorage.removeItem("adminToken");
   }
 
@@ -207,13 +202,13 @@ const getAddressByIdUser = async (userId) => {
 
   const response = await instance.get(`user-addresses/${userId}`, {
     headers: {
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`, 
     },
   });
   return response.data;
 };
 
-//người dùng thêm địa chỉ
+
 const addAddress = async (payload) => {
   const token = localStorage.getItem("client_token");
 
@@ -223,7 +218,7 @@ const addAddress = async (payload) => {
 
   const response = await instance.post("/user-addresses", payload, {
     headers: {
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`, 
     },
   });
   return response.data;
@@ -238,13 +233,13 @@ const getaAddress = async (id) => {
 
   const response = await instance.get(`/useraddress-addresses/${id}`, {
     headers: {
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`, 
     },
   });
   return response.data;
 };
 
-//người dùng sửa địa chỉ
+
 const updateAddress = async (id, payload) => {
   const token = localStorage.getItem("client_token");
 
@@ -254,7 +249,7 @@ const updateAddress = async (id, payload) => {
 
   const response = await instance.put(`/user-addresses/${id}`, payload, {
     headers: {
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`, 
     },
   });
   return response.data;
@@ -269,13 +264,13 @@ const deleteAddress = async (id) => {
 
   const response = await instance.delete(`/user-addresses/${id}`, {
     headers: {
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`, 
     },
   });
   return response.data;
 };
 
-// đăng nhập Google
+
 const loginGoogle = async () => {
   const response = await instance.get("/auth/google");
   return response.data;

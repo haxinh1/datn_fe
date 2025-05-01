@@ -16,18 +16,18 @@ const ProductById = async (id) => {
 };
 
 const fetchProductById = async (id) => {
-    const token =
-        localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+    // const token =
+    //     localStorage.getItem("client_token") || localStorage.getItem("admin_token");
 
-    if (!token) {
-        throw new Error("Token xác thực không có trong localStorage");
-    }
+    // if (!token) {
+    //     throw new Error("Token xác thực không có trong localStorage");
+    // }
     const response = await instance.get(`/product-detail/${id}`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
+        // {
+        //     headers: {
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // }
     );
     return response.data;
 };

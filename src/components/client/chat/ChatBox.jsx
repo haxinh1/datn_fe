@@ -11,8 +11,8 @@ const fetchChatSessions = async () => {
   return data.chat_sessions;
 };
 
-const sendMessage = async ({ chat_session_id, message }) => {
-  await axios.post("/chat/send-message", { chat_session_id, message });
+const sendMessage = async ({ chat_session_id, message, type = "text" }) => {
+  await axios.post("/chat/send-message", { chat_session_id, message, type });
 };
 
 
@@ -35,7 +35,7 @@ const fakeSessions = [
   },
 ];
 
-const ChatBox = () => {
+const ChatBox = ({ isLoggedIn }) => {
   const [isHovered, setIsHovered] = useState(false);
   const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState(null);
@@ -63,7 +63,7 @@ const ChatBox = () => {
 
   return (
     <div>
-      <Tooltip title="Chat với chúng tôi!" placement="left">
+      <Tooltip title={isLoggedIn ? "Chat với chúng tôi!" : "Vui lòng đăng nhập để sử dụng chat"} placement="left">
         <FloatButton
           icon={<MessageOutlined style={{ fontSize: 20 }} />}
           type="primary"
@@ -75,7 +75,14 @@ const ChatBox = () => {
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          onClick={() => setChatVisible(true)}
+          onClick={() => {
+            if (isLoggedIn) {
+              setChatVisible(true);
+            } else {
+              message.warning("Vui lòng đăng nhập để sử dụng chat");
+            }
+          }}
+          disabled={!isLoggedIn} // Disable the button if the user is not logged in
         />
       </Tooltip>
 
@@ -99,22 +106,71 @@ const ChatBox = () => {
         </Card>
 
         {selectedChat && (
-          <Card style={{ width: 400, position: 'fixed', bottom: 20, right: 20 }} title={`Chat với ${selectedChat.guest_name || `Khách hàng #${selectedChat.id}`}`}>
-            <List
-              dataSource={selectedChat.messages}
-              renderItem={(msg) => (
-                <List.Item>{msg.message}</List.Item>
-              )}
-            />
+          <Card
+            style={{ width: 400, position: "fixed", bottom: 20, right: 20 }}
+            title={`Chat với ${selectedChat.guest_name || `Khách hàng #${selectedChat.id}`}`}
+          >
+          <List
+            dataSource={messages}
+            renderItem={(item) => {
+              const isCustomer = item.sender_type === 'customer' || item.sender_type === 'guest';
+              return (
+                <List.Item
+                  style={{
+                    display: 'flex',
+                    justifyContent: isCustomer ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: '70%',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: isCustomer ? '#1890ff' : '#f0f0f0',
+                      color: isCustomer ? 'white' : 'black',
+                    }}
+                  >
+                    <div style={{ fontSize: 12, opacity: 0.7 }}>
+                      {isCustomer
+                        ? isLoggedIn
+                          ? user
+                          : localStorage.getItem('guest_name')
+                        : 'Nhân viên'}
+                    </div>
+                    {item.type === 'image' ? (
+                      <img
+                        src={item.message} // Assuming the API returns the image URL in `message`
+                        alt="Uploaded"
+                        style={{ maxWidth: '100%', borderRadius: 8 }}
+                      />
+                    ) : (
+                      <div>{item.message}</div>
+                    )}
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
             <Input.TextArea
               rows={2}
-              value={message} 
+              value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Nhập tin nhắn..."
             />
             <Button type="primary" onClick={handleSendMessage} style={{ marginTop: "10px" }}>
               Gửi
             </Button>
+            <Upload
+              beforeUpload={(file) => {
+                handleMediaUpload(file);
+                return false;
+              }}
+              showUploadList={false}
+            >
+              <Button icon={<UploadOutlined />} style={{ marginLeft: 8 }}>
+                Tải ảnh/Video
+              </Button>
+            </Upload>
           </Card>
         )}
       </Drawer>

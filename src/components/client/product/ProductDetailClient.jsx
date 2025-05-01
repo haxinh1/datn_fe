@@ -251,6 +251,24 @@ const ProductDetailClient = () => {
     };
   };
 
+  const getVariantPriceRange = (product) => {
+    const variantPrices =
+      product.variants?.map((variant) =>
+        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
+      ) || [];
+
+    if (variantPrices.length === 0) {
+      const price =
+        product.sale_price > 0 ? product.sale_price : product.sell_price;
+      return { minPrice: price, maxPrice: price };
+    }
+
+    const minPrice = Math.min(...variantPrices);
+    const maxPrice = Math.max(...variantPrices);
+
+    return { minPrice, maxPrice };
+  };
+
   // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
@@ -435,22 +453,14 @@ const ProductDetailClient = () => {
 
                   {product.is_active === 1 && (
                     <>
-                      {selectedVariant ? (
+                     {(selectedColor && selectedSize) && (
                         <div className="details-filter-row details-row-size">
                           <label>Tồn kho:</label>
                           <div className="product-nav product-nav-dots">
-                            <div>{selectedVariant.stock}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="details-filter-row details-row-size">
-                          <label>Tồn kho:</label>
-                          <div className="product-nav product-nav-dots">
-                            <div>{product.stock}</div>
+                            <div>{selectedVariant ? selectedVariant.stock : product.stock}</div>
                           </div>
                         </div>
                       )}
-
                       {product.atribute_value_product?.length > 0 && (
                         <div className="details-filter-row details-row-size">
                           <label htmlFor="Color">Màu:</label>
@@ -659,7 +669,15 @@ const ProductDetailClient = () => {
                         hoverable
                         cover={<img alt={product.name} src={product.thumbnail} />}
                       >
-                        <Card.Meta title={product.name} description={product.sale_price ? formatPrice(product.sale_price) : formatPrice(product.sell_price) + " VND"} />
+                        <Card.Meta title={product.name} description={(() => {
+                          const { minPrice, maxPrice } =
+                            getVariantPriceRange(product);
+                          return minPrice === maxPrice
+                            ? `${formatPrice(minPrice)} VNĐ`
+                            : `${formatPrice(minPrice)} - ${formatPrice(
+                              maxPrice
+                            )} VNĐ`;
+                        })()} />
                       </Card>
                       {/* <figure className="product-media">
                         <a href="product.html">

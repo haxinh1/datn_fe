@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Input, Button, Form, List, message } from 'antd';
+import { Modal, Input, Button, Form, List, message, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import {
   createChatSession,
   getChatSessions,
@@ -163,6 +164,33 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     }
     setLoading(false);
   };
+
+  const handleImageUpload = async (file) => {
+    if (!chatSession) {
+      return message.error('Vui lòng khởi tạo phiên chat trước');
+    }
+  
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chat_session_id', chatSession.id);
+    formData.append('type', 'image');
+  
+    if (!isLoggedIn) {
+      formData.append('guest_phone', localStorage.getItem('guest_phone'));
+      formData.append('guest_name', localStorage.getItem('guest_name'));
+    }
+  
+    try {
+      setLoading(true);
+      const response = await sendMessage(formData); // Ensure your `sendMessage` API supports FormData
+      setMessages((prevMessages) => [...prevMessages, response.data.message]); // Update messages
+      message.success('Ảnh đã được tải lên thành công');
+    } catch (error) {
+      message.error('Không thể tải ảnh');
+    } finally {
+      setLoading(false);
+    }
+  };
   
 
   return (
@@ -237,12 +265,23 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
               name="message"
               rules={[{ required: true, message: 'Vui lòng nhập tin nhắn!' }]}
             >
-              <Input placeholder="Tin nhắn" />
+              <Input placeholder="Tin nhắn" /> 
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading}>
                 Gửi
               </Button>
+              <Upload
+                beforeUpload={(file) => {
+                  handleImageUpload(file); // Correct function name
+                  return false; // Prevent default upload behavior
+                }}
+                showUploadList={false}
+              >
+                <Button icon={<UploadOutlined />} loading={loading} style={{ marginLeft: 8 }}>
+                  Tải ảnh
+                </Button>
+              </Upload>
               <Button style={{ marginLeft: 8 }} onClick={handleCloseSession} loading={loading}>
                 Kết thúc
               </Button>

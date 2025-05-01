@@ -30,9 +30,9 @@ const Logincl = () => {
         localStorage.setItem("client_token", response.token);
         localStorage.setItem("client", JSON.stringify(response.user));
         localStorage.setItem("user", JSON.stringify(response.user));
-
+  
         message.success("Đăng nhập thành công!");
-
+  
         // Kiểm tra và đẩy giỏ hàng từ localStorage lên database
         const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
         if (localCart.length > 0) {
@@ -43,11 +43,17 @@ const Logincl = () => {
           localStorage.removeItem("cart_items");
           message.success("Giỏ hàng của bạn đã được chuyển lên tài khoản!");
         }
-
+  
         // Phát ra sự kiện đăng nhập
         window.dispatchEvent(new Event("user-login"));
-
+  
+        // Navigate to the home page
         navigate("/");
+  
+        // Optionally refresh the page
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       } else {
         notification.error({
           message: "Lỗi",
@@ -63,7 +69,6 @@ const Logincl = () => {
     }
     setLoading(false);
   };
-
   const handleGoogleLogin = async () => {
     window.location.href = "http://127.0.0.1:8000/api/auth/google";
   };

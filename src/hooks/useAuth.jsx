@@ -2,34 +2,37 @@ import { useEffect, useState } from "react";
 
 const useAuth = () => {
   const [user, setUser] = useState(() => {
-    // Lấy dữ liệu user từ sessionStorage khi khởi tạo state
-    const storedUser = sessionStorage.getItem("user");
+    const storedUser = localStorage.getItem("client");
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("client_token"));
+
   useEffect(() => {
     const checkAuth = () => {
-      const storedUser = sessionStorage.getItem("user");
-      if (storedUser) {
+      const storedUser = localStorage.getItem("client");
+      const token = localStorage.getItem("client_token");
+
+      if (storedUser && token) {
         setUser(JSON.parse(storedUser));
+        setIsLoggedIn(true);
       } else {
-        console.log("Không có người dùng trong sessionStorage, chuyển hướng đến trang đăng nhập...");
-        window.location.href = "/loginad"; // Redirect tới trang login nếu không có user
+        setUser(null);
+        setIsLoggedIn(false);
       }
     };
 
     checkAuth();
 
-    // Lắng nghe thay đổi của sessionStorage
+    // Listen for changes in localStorage (e.g., login/logout events)
     window.addEventListener("storage", checkAuth);
 
-    // Cleanup event listeners khi component bị unmount
     return () => {
       window.removeEventListener("storage", checkAuth);
     };
   }, []);
 
-  return { user, isAdmin: user?.role === "admin" || user?.role === "manager" };
+  return { user, isLoggedIn, isAdmin: user?.role === "admin" || user?.role === "manager" };
 };
 
 export default useAuth;
