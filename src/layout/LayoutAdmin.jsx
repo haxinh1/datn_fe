@@ -269,9 +269,9 @@ const LayoutAdmin = () => {
               </div>
             )}
 
-            <Tooltip title="Thông báo">
+            {/* <Tooltip title="Thông báo">
               <BellOutlined style={{ fontSize: "24px", cursor: "pointer" }} />
-            </Tooltip>
+            </Tooltip> */}
 
             <Dropdown overlay={menu} trigger={["hover"]}>
               <Button

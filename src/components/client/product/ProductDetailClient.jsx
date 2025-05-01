@@ -338,7 +338,7 @@ const ProductDetailClient = () => {
 
   const fetchProduct = async () => {
     try {
-      const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
+      const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
       setProduct(data);
       setDataViewed(dataViewed || []);
       setAvgRate(avgRate);
@@ -497,12 +497,12 @@ const ProductDetailClient = () => {
                     </div>
                   </div>
 
-                  <div className="details-filter-row details-row-size">
+                  {/* <div className="details-filter-row details-row-size">
                     <label>Lượt xem:</label>
                     <div className="product-nav product-nav-dots">
                       <div>{product.views}</div>
                     </div>
-                  </div>
+                  </div> */}
 
                   {selectedVariant ? (
                     <div className="product-price">

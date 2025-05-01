@@ -33,7 +33,7 @@ const ChangePass = () => {
         message: "Đổi mật khẩu thành công!",
         description: "Mật khẩu của bạn đã được thay đổi.",
       });
-      navigate("/dashboard");
+      navigate(`/dashboard/info/${id}`);
       console.log(response);
     } catch (error) {
       console.error("Lỗi khi đổi mật khẩu:", error);

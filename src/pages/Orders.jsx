@@ -468,6 +468,13 @@ const Orders = () => {
   const selectedOrder = orders.find((order) => order.id === selectedOrderId);
   const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
 
+  const isWithinSevenDays = (updatedAt) => {
+    const updatedDate = dayjs(updatedAt);
+    const currentDate = dayjs();
+    const diffInDays = currentDate.diff(updatedDate, "day");
+    return diffInDays <= 7;
+  };
+
   const detailColumns = [
     {
       title: "Sản phẩm",
@@ -806,7 +813,7 @@ const Orders = () => {
         </div>
 
         <div className="add">
-          {(orderStatus === 5 || orderStatus === 7) && (
+          {((orderStatus === 5 || orderStatus === 7) && isWithinSevenDays(selectedOrder?.updated_at)) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
               <Button color="danger" variant="solid">
                 Trả hàng

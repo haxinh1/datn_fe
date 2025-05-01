@@ -109,10 +109,10 @@ const OrderStaff = () => {
     }));
 
     const validTransitions = {
-        2: [3, 8],
-        3: [4, 8],
+        2: [3],
+        3: [4],
         4: [5, 6],
-        6: [4, 8],
+        6: [4],
     };
 
     const showEdit = (order) => {
@@ -885,14 +885,13 @@ const OrderStaff = () => {
             </Modal>
 
             <Modal
-                title="Hủy đơn"
+                title="Lý do hủy đơn"
                 visible={isModalCancel}
                 onCancel={hideCancel}
                 footer={null}
             >
                 <Form form={form} layout="vertical" onFinish={handleCancelOrder}>
                     <Form.Item
-                        label="Lý do hủy đơn"
                         name="reason"
                         rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
                     >
