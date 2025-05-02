@@ -71,7 +71,16 @@ const fetchTopRevenueDays = async () => {
   }
 };
 
+const fetchRevenueStock = async () => {
+  try {
+    const { data } = await instance.get("/statistics/revenue-stocks");
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
+};
 export const statisticServices = {
+  fetchRevenueStock,
   fetchTopUserBought,
   fetchTopProductBought,
   fetchRevenue,
