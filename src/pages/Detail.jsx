@@ -1,52 +1,80 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Modal, notification, Table, Skeleton, Image } from 'antd';
+import { Button, Modal, notification, Table, Skeleton, Image, Form, Row, Col, Select, Input, Radio, Upload, Tooltip } from 'antd';
 import { OrderService } from '../services/order';
 import "../css/review.css";
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { CheckOutlined, RollbackOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import headerBg from "../assets/images/page-header-bg.jpg";
+import axios from 'axios';
 
 const Detail = () => {
-    const { id } = useParams();
+    const { code } = useParams();
     const [order, setOrder] = useState(null);
     const [orders, setOrders] = useState([]);
     const [detail, setDetail] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const hideModal = () => setIsModalOpen(false);
+    const [form] = Form.useForm();
+    const [banks, setBanks] = useState([]);
+    const [image, setImage] = useState("");
+    const [cancelData, setCancelData] = useState(null);
 
-    useEffect(() => {
-        const fetchOrder = async () => {
-            try {
-                const data = await OrderService.getDetailOrder(id);
-                setOrder(data.order);
+    const fetchOrder = async () => {
+        try {
+            const data = await OrderService.getCodeOrder(code);
+            setOrder(data.order);
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+        }
+    };
+
+    const fetchDetailOrder = async () => {
+        try {
+            if (!order?.id) return;
+            const data = await OrderService.getOrderById(order.id);
+            if (data && Array.isArray(data)) {
+                setDetail(data);
                 setIsLoading(false);
-            } catch (error) {
-                console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+            } else {
+                console.error("Dữ liệu chi tiết không hợp lệ.");
             }
-        };
-        fetchOrder();
-    }, [id]);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchDetailOrder = async () => {
-            try {
-                const data = await OrderService.getOrderById(id);
-                // Kiểm tra dữ liệu trả về có hợp lệ
-                if (data && Array.isArray(data)) {
-                    setDetail(data);
-                    setIsLoading(false);
-                } else {
-                    console.error("Dữ liệu chi tiết không hợp lệ.");
-                }
-            } catch (error) {
-                console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
-            }
-        };
-        fetchDetailOrder();
-    }, [id]);
+        fetchOrder();
+    }, [code]);
 
-    // hàm xác nhận đã nhận hàng
-    const handleMarkAsReceived = (id) => {
+    useEffect(() => {
+        if (order) {
+            fetchDetailOrder();
+        }
+    }, [order]);
+
+    const fetchCancelData = async () => {
+        try {
+            if (!order?.id) return;
+            const response = await OrderService.getACancel(order.id);
+            setCancelData(response.order_cancel);
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết đơn hủy:", error);
+            setCancelData(null);
+        }
+    };
+
+    // Gọi fetchCancelData khi order thay đổi
+    useEffect(() => {
+        if (order) {
+            fetchCancelData();
+        }
+    }, [order]);
+
+    const handleMarkAsReceived = () => {
         Modal.confirm({
             title: "Xác nhận đã nhận hàng",
             content: "Để hỗ trợ đổi trả hàng, hãy quay lại video khi bạn mở kiện hàng nhé!",
@@ -62,21 +90,22 @@ const Detail = () => {
 
                     console.log("Dữ liệu gửi đi:", payload);
 
-                    // Gọi API để cập nhật trạng thái đơn hàng
-                    const response = await OrderService.updateOrderStatus(id, payload);
+                    const response = await OrderService.updateOrderStatus(order.id, payload);
                     console.log("Phản hồi từ API:", response);
 
-                    // Kiểm tra phản hồi chính xác từ API
                     if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
                         notification.success({
                             message: "Cảm ơn bạn đã tin tưởng Molla Shop",
                             description: "Hẹn gặp lại!",
                         });
 
-                        // Cập nhật lại danh sách đơn hàng với trạng thái mới
+                        await fetchOrder();
+                        await fetchDetailOrder();
+                        await fetchCancelData();
+
                         setOrders((prevOrders) =>
-                            prevOrders.map((order) =>
-                                order.id === id ? { ...order, status: { id: 7, name: "Hoàn thành" } } : order
+                            prevOrders.map((item) =>
+                                item.id === order.id ? { ...item, status: { id: 7, name: "Hoàn thành" } } : item
                             )
                         );
                     } else {
@@ -96,67 +125,79 @@ const Detail = () => {
         });
     };
 
-    // hãm xác nhận hủy đơn
-    const handleCancelOrder = (id) => {
-        Modal.confirm({
-            title: "Xác nhận hủy đơn",
-            content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
-            okText: "Xác nhận",
-            cancelText: "Hủy",
-            onOk: async () => {
-                try {
-                    const payload = {
-                        order_status_id: 8,
-                        note: "",
-                        employee_evidence: "",
-                    };
+    const handleSubmitBankInfo = async (values) => {
+        try {
+            await OrderService.infoBack(cancelData.id, values); // Dùng order_cancels.id
 
-                    console.log("Dữ liệu gửi đi:", payload);
+            notification.success({
+                message: "Thành công",
+                description: "Thông tin hoàn tiền đã được gửi.",
+            });
 
-                    // Gọi API để cập nhật trạng thái đơn hàng
-                    const response = await OrderService.updateOrderStatus(id, payload);
-                    console.log("Phản hồi từ API:", response);
+            await fetchOrder();
+            await fetchDetailOrder();
+            await fetchCancelData();
 
-                    // Kiểm tra phản hồi chính xác từ API
-                    if (response && response.message === "Cập nhật trạng thái đơn hàng thành công") {
-                        notification.success({
-                            message: "Đơn hàng đã được hủy",
-                            description: "Đơn hàng của bạn đã được hủy thành công.",
-                        });
-
-                        // Cập nhật lại danh sách đơn hàng với trạng thái mới
-                        setOrders((prevOrders) =>
-                            prevOrders.map((order) =>
-                                order.id === orderId ? { ...order, status: { id: 8, name: "Hủy đơn" } } : order
-                            )
-                        );
-                    } else {
-                        notification.error({
-                            message: "Cập nhật thất bại",
-                            description: "Có lỗi xảy ra khi hủy đơn hàng.",
-                        });
-                    }
-                } catch (error) {
-                    console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
-                    notification.error({
-                        message: "Lỗi",
-                        description: "Không thể hủy đơn hàng.",
-                    });
-                }
-            },
-        });
+            hideModal();
+            form.resetFields();
+            setImage("");
+        } catch (error) {
+            console.error("Lỗi khi gửi thông tin ngân hàng:", error);
+            notification.error({
+                message: "Lỗi",
+                description: "Gửi thông tin thất bại. Vui lòng thử lại.",
+            });
+        }
     };
 
-    const selectedOrder = orders.find(order => order.id === selectedOrderId);
-    const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
+    useEffect(() => {
+        const fetchBanks = async () => {
+            try {
+                const res = await axios.get("https://api.vietqr.io/v2/banks");
+                setBanks(res.data.data);
+            } catch (err) {
+                console.error("Lỗi khi tải danh sách ngân hàng:", err);
+            }
+        };
+        fetchBanks();
+    }, []);
 
-    // Tách số thành định dạng tiền tệ
+    const onHandleBank = (info) => {
+        if (info.file.status === "done" && info.file.response) {
+            const imageUrl = info.file.response.secure_url;
+            setImage(imageUrl);
+            form.setFieldsValue({ bank_qr: imageUrl });
+        } else if (info.file.status === "removed") {
+            setImage("");
+            form.setFieldsValue({ bank_qr: "" });
+        }
+    };
+
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
             maximumFractionDigits: 0,
         });
         return formatter.format(price);
+    };
+
+    const getReturnReason = (note) => {
+        switch (note) {
+            case "mistake":
+                return "Đặt nhầm sản phẩm";
+            case "better":
+                return "Tìm thấy ưu đãi tốt hơn";
+            case "size_change":
+                return "Đổi size/màu";
+            case "error":
+                return "Sản phẩm bị hư, hỏng khi vận chuyển";
+            case "disconnect":
+                return "Không thể liên hệ với người đặt";
+            case "other":
+                return "Khác";
+            default:
+                return note || "";
+        }
     };
 
     const detailColumns = [
@@ -205,7 +246,7 @@ const Detail = () => {
             render: (sell_price) => (sell_price ? formatPrice(sell_price) : ""),
         },
         {
-            title: "Tổng tiền (VNĐ)", // ✅ Thêm cột tổng tiền
+            title: "Tổng tiền (VNĐ)",
             dataIndex: "total",
             align: "center",
             render: (_, record) => formatPrice(record.quantity * record.sell_price),
@@ -244,7 +285,6 @@ const Detail = () => {
                         : order.payment?.name === "MOMO"
                             ? "Thanh toán qua Momo"
                             : order.payment?.name
-
         },
         {
             key: "status",
@@ -262,26 +302,57 @@ const Detail = () => {
                             color="primary"
                             variant="solid"
                             icon={<CheckOutlined />}
-                            onClick={() => handleMarkAsReceived(id)}
+                            onClick={() => handleMarkAsReceived()}
                         >
                             Đã nhận hàng
-                        </Button>
-                    )}
-
-                    {(order.status?.id === 1 || order.status?.id === 2 || order.status?.id === 3) && (
-                        <Button
-                            color="danger"
-                            variant="solid"
-                            icon={<CloseOutlined />}
-                            onClick={() => handleCancelOrder(id)}
-                        >
-                            Hủy đơn
                         </Button>
                     )}
                 </div>
             ),
         }
-    ] : []
+    ] : [];
+
+    const cancelDataSource = cancelData
+        ? [
+            {
+                key: "created_at",
+                label: "Ngày hủy",
+                value: cancelData.created_at ? dayjs(cancelData.created_at).format("DD/MM/YYYY") : "",
+            },
+            {
+                key: "reason",
+                label: "Lý do hủy đơn",
+                value: getReturnReason(cancelData.reason),
+            },
+            {
+                key: "refund_proof",
+                label: "Xác nhận hoàn tiền",
+                value: cancelData.refund_proof ? (
+                    <Image width={60} src={cancelData.refund_proof} />
+                ) : "",
+            },
+            {
+                key: "action",
+                label: "",
+                value: (
+                    <div className="">
+                        {(order.status?.id === 8 && !cancelData.bank_account_number && !cancelData.bank_name) && (
+                            <Button
+                                color="danger"
+                                variant="solid"
+                                icon={<RollbackOutlined />}
+                                onClick={() => {
+                                    setIsModalOpen(true);
+                                }}
+                            >
+                                Yêu cầu hoàn tiền
+                            </Button>
+                        )}
+                    </div>
+                ),
+            },
+        ]
+        : [];
 
     const orderColumns = [
         {
@@ -313,13 +384,24 @@ const Detail = () => {
                 <div className="page-content">
                     <div className="container">
                         <div className="group1">
-                            <Skeleton active loading={isLoading}>
-                                <Table
-                                    columns={orderColumns}
-                                    dataSource={dataSource}
-                                    pagination={false}
-                                />
-                            </Skeleton>
+                            <div className='card-info'>
+                                <Skeleton active loading={isLoading}>
+                                    <Table
+                                        columns={orderColumns}
+                                        dataSource={dataSource}
+                                        pagination={false}
+                                    />
+
+                                    {order?.status?.id >= 8 && (
+                                        <Table
+                                            columns={orderColumns}
+                                            dataSource={cancelDataSource}
+                                            pagination={false}
+                                            showHeader={false}
+                                        />
+                                    )}
+                                </Skeleton>
+                            </div>
 
                             <div className='card-info'>
                                 <Skeleton active loading={isLoading}>
@@ -369,12 +451,95 @@ const Detail = () => {
 
                                 <hr />
                                 <div style={{ marginLeft: '60px' }}>
-                                    <span style={{fontSize: '16px', fontWeight:'bold'}}>Để được hỗ trợ đổi trả hay có bất kì thắc mắc nào, hãy liên hệ với Molla</span> <br />
-                                    <span style={{fontSize: '14px'}}><strong>Zalo:</strong> 0987654321</span> <br />
-                                    <span style={{fontSize: '14px'}}><strong>Email:</strong> hotro@mollashop.com</span><br />
-                                    <span style={{fontSize: '14px'}}><strong>Hotline:</strong> 09100204</span>
+                                    <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Để được hỗ trợ đổi trả hay có bất kì thắc mắc nào, hãy liên hệ với Molla</span> <br />
+                                    <span style={{ fontSize: '14px' }}><strong>Zalo:</strong> https://res.cloudinary.com/dzpr0epks/image/upload/v1744125341/gww0d2uevbgnn8whfo5d.jpg</span> <br />
+                                    <span style={{ fontSize: '14px' }}><strong>Facebook:</strong> https://res.cloudinary.com/dzpr0epks/image/upload/v1744125341/gww0d2uevbgnn8whfo5d.jpg</span> <br />
+                                    <span style={{ fontSize: '14px' }}><strong>Email:</strong> hotro@mollashop.com</span><br />
+                                    <span style={{ fontSize: '14px' }}><strong>Hotline:</strong> 09100204</span>
                                 </div>
                             </div>
+
+                            <Modal
+                                title="Gửi thông tin hoàn tiền"
+                                open={isModalOpen}
+                                onCancel={hideModal}
+                                footer={null}
+                                width={600}
+                            >
+                                <Form
+                                    layout="vertical"
+                                    form={form}
+                                    onFinish={handleSubmitBankInfo}
+                                >
+                                    <Row gutter={24}>
+                                        <Col span={24} className="col-item">
+                                            <Form.Item
+                                                label="Ngân hàng"
+                                                name="bank_name"
+                                                rules={[{ required: true, message: "Vui lòng chọn ngân hàng" }]}
+                                            >
+                                                <Select
+                                                    className="input-item"
+                                                    allowClear
+                                                    showSearch
+                                                    placeholder="Chọn ngân hàng"
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) =>
+                                                        option?.label?.toLowerCase().includes(input.toLowerCase())
+                                                    }
+                                                >
+                                                    {banks.map((bank) => (
+                                                        <Select.Option key={bank.code} value={bank.name} label={bank.name}>
+                                                            <div className="select-option-item">
+                                                                <img src={bank.logo} alt={bank.name} style={{ width: '100px' }} />
+                                                                <span>{bank.name}</span>
+                                                            </div>
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={24}>
+                                        <Col span={12} className="col-item">
+                                            <Form.Item
+                                                label="Số tài khoản"
+                                                name="bank_account_number"
+                                                rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                                            >
+                                                <Input
+                                                    className="input-item"
+                                                    placeholder="Nhập số tài khoản"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+
+                                        <Col span={12} className="col-item">
+                                            <Form.Item label="QR ngân hàng (nếu có)" name="bank_qr">
+                                                <Upload
+                                                    listType="picture"
+                                                    action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                                                    data={{ upload_preset: "quangOsuy" }}
+                                                    onChange={onHandleBank}
+                                                >
+                                                    {!image && (
+                                                        <Button icon={<UploadOutlined />} className="btn-item">
+                                                            Tải ảnh lên
+                                                        </Button>
+                                                    )}
+                                                </Upload>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <div className="add">
+                                        <Button color="danger" variant="solid" htmlType="submit">
+                                            Gửi yêu cầu
+                                        </Button>
+                                    </div>
+                                </Form>
+                            </Modal>
                         </div>
                     </div>
                 </div>
@@ -384,4 +549,3 @@ const Detail = () => {
 };
 
 export default Detail;
-

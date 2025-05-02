@@ -26,15 +26,14 @@ const GoogleCallbackHandler = () => {
         }
 
         // Lưu vào localStorage
-        localStorage.setItem("client_token", token);
-        localStorage.setItem("client", JSON.stringify(user));
+        localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
 
         // Phát sự kiện user-login để thông báo cho Header
         window.dispatchEvent(new Event("user-login"));
 
         // Chuyển hướng đến dashboard với user id
-        navigate(`/dashboard/orders/${user.id}`, { replace: true });
+        navigate(`/`, { replace: true });
         message.success("Đăng nhập bằng Google thành công!");
       } catch (err) {
         console.error("Lỗi khi xử lý user từ query:", err);

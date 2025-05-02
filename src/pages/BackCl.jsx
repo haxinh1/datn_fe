@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, Table, Tooltip, Image, Skeleton, Input } from 'antd';
+import { Button, Modal, Table, Tooltip, Image, Skeleton, Input, notification } from 'antd'; // Thêm notification
 import { OrderService } from '../services/order';
 import { Link, useParams } from 'react-router-dom';
 import { EyeOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import echo from '../echo'; // Thêm import echo
 import { render } from 'react-dom';
 
 const BackCl = () => {
@@ -17,22 +18,69 @@ const BackCl = () => {
     const [searchKeyword, setSearchKeyword] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await OrderService.getOrderReturnByIdUser(id);
-                if (response?.order_returns && Array.isArray(response.order_returns)) {
-                    setReturns(response.order_returns);
-                }
-                setIsLoading(false);
-            } catch (error) {
-                console.error("Lỗi khi lấy dữ liệu đơn hàng hoàn trả:", error);
-                setIsLoading(false);
+    // Fetch dữ liệu ban đầu
+    const fetchData = async () => {
+        try {
+            const response = await OrderService.getOrderReturnByIdUser(id);
+            if (response?.order_returns && Array.isArray(response.order_returns)) {
+                setReturns(response.order_returns);
             }
-        };
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu đơn hàng hoàn trả:", error);
+            setIsLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchData();
-    }, []);
+
+        // Lắng nghe sự kiện OrderReturnStatusUpdated
+        const channel = echo.channel('order-return-status-channel');
+        channel.listen('.order-return-status-updated', (event) => {
+            console.log('Sự kiện OrderReturnStatusUpdated:', event);
+
+            // Cập nhật danh sách returns
+            setReturns((prevReturns) => {
+                const updatedReturns = prevReturns.map((item) => {
+                    if (item.order_id === event.order_id) {
+                        return {
+                            ...item,
+                            order: {
+                                ...item.order,
+                                status_id: event.status_id,
+                                updated_at: event.updated_at,
+                            },
+                            note: event.note || item.note,
+                        };
+                    }
+                    return item;
+                });
+                return updatedReturns;
+            });
+
+            // Hiển thị thông báo (tùy chọn)
+            notification.info({
+                message: 'Cập nhật trạng thái đơn hàng',
+                description: `Đơn hàng ${event.order_id} đã được cập nhật trạng thái.`,
+            });
+        });
+
+        // Cleanup khi component unmount
+        return () => {
+            channel.stopListening('.order-return-status-updated');
+            echo.leaveChannel('order-return-status-channel');
+        };
+    }, [id]); // Thêm id vào dependencies để fetch lại dữ liệu khi id thay đổi
+
+    // Debounce search
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            handleSearch(searchKeyword);
+        }, 300);
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchKeyword]);
 
     const handleSearch = async (keyword) => {
         setIsLoading(true);
@@ -60,7 +108,7 @@ const BackCl = () => {
     }, [searchKeyword]);
 
     const dataSource = returns.map((item, index) => ({
-        key: item.order_id, // quan trọng cho Table
+        key: item.order_id,
         index: index + 1,
         code: item.order.code,
         fullname: item.order.fullname,
@@ -105,7 +153,6 @@ const BackCl = () => {
         }
     };
 
-    // danh sách trạng thái
     const { data: statusData } = useQuery({
         queryKey: ["status"],
         queryFn: async () => {
@@ -131,7 +178,6 @@ const BackCl = () => {
         }
     };
 
-    // Tách số thành định dạng tiền tệ
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
@@ -185,7 +231,6 @@ const BackCl = () => {
             render: (_, record) => {
                 const statusName = statusData?.find(s => s.id === record.status_id)?.name || "";
                 const statusColorClass = [8, 9, 11].includes(record.status_id) ? "action-link-red" : "action-link-blue";
-
                 return <div className={statusColorClass}>{statusName}</div>;
             },
         },
@@ -224,9 +269,7 @@ const BackCl = () => {
                 const attributes = record.attributes
                     ? record.attributes.map(attr => attr.attribute_name).join(" - ")
                     : "";
-
-                const thumbnail = record.thumbnail;  // Lấy ảnh sản phẩm
-
+                const thumbnail = record.thumbnail;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Image width={90} src={thumbnail} />
@@ -244,15 +287,19 @@ const BackCl = () => {
         },
         {
             title: "Giá hoàn (VNĐ)",
+            dataIndex: "return_price",
+            align: "center",
+            render: (_, record) => {
+                const { price, quantity } = record;
+                const returnPrice = quantity ? price / quantity : 0;
+                return formatPrice(returnPrice);
+            },
+        },        
+        {
+            title: "Thành tiền (VNĐ)",
             dataIndex: "price",
             align: "center",
             render: (price) => (price ? formatPrice(price) : ""),
-        },
-        {
-            title: "Thành tiền (VNĐ)",
-            dataIndex: "total",
-            align: "center",
-            render: (_, record) => formatPrice(record.quantity * record.price),
         },
     ];
 
@@ -263,7 +310,7 @@ const BackCl = () => {
                 Đơn hàng hoàn trả
             </h1>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
                 <Input
                     style={{ width: '400px' }}
                     placeholder="Tìm kiếm mã đơn hàng..."
@@ -297,33 +344,29 @@ const BackCl = () => {
                             index: index + 1,
                             name: product.name,
                             thumbnail: product.thumbnail,
-                            attributes: product.attributes, 
+                            attributes: product.attributes,
                             quantity: product.quantity || 0,
                             price: product.price || 0,
                             total: (product.quantity || 0) * (product.price || 0), // Tính thành tiền
                         }))}
                         pagination={false}
                         summary={() => {
-                            const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
-                                0
-                            );
                             return (
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         <strong>Số tiền hoàn trả (VNĐ):</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        <strong>{formatPrice(totalAmount)}</strong>
+                                        <strong>{formatPrice(refundDetails?.total_refund_amount || 0)}</strong>
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
                             );
-                        }}
+                        }}                                                                    
                     />
                 </div>
             </Modal>
         </div>
     );
-}
+};
 
 export default BackCl;

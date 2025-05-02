@@ -1,23 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import {
-  Button,
-  message,
-  Modal,
-  Radio,
-  Form,
-  Select,
-  Input,
-  notification,
-  Tooltip,
-  Row,
-  Col,
-} from "antd";
-import { Link, useNavigate } from "react-router-dom";
+import { Button, message, Modal, Radio, Form, Select, Input, notification, Tooltip, Row, Col } from "antd";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
-import { paymentServices } from "./../services/payments";
-import { productsServices } from "./../services/product";
+import { paymentServices } from "../services/payments";
+import { productsServices } from "../services/product";
 import { AuthServices } from "../services/auth";
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
@@ -29,7 +17,8 @@ const Checkout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const nav = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [attributeValues, setAttributeValues] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -42,7 +31,8 @@ const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const cartItemsToDisplay = Array.isArray(cartItems) ? cartItems : [];
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const [mainForm] = Form.useForm();
+  const [addressForm] = Form.useForm();
   const [shippingFee, setShippingFee] = useState(0);
   const [usedLoyaltyPoints, setUsedLoyaltyPoints] = useState(0);
   const [formattedLoyaltyPoints, setFormattedLoyaltyPoints] = useState("0");
@@ -56,72 +46,121 @@ const Checkout = () => {
   const [userId, setUserId] = useState(null);
   const [coupons, setCoupons] = useState([]);
   const [userCoupons, setUserCoupons] = useState([]);
-  const [discountCode, setDiscountCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
 
+  // Hàm phụ để lấy giá sản phẩm, kiểm tra sale_price_end_at
+  const getProductPrice = (item) => {
+    try {
+      const currentDate = new Date();
+      const salePriceEndAt = item.product_variant?.sale_price_end_at || item.product?.sale_price_end_at;
+      let isSaleValid = false;
+
+      // Check if salePriceEndAt is a valid date and not expired
+      if (salePriceEndAt) {
+        const saleEndDate = new Date(salePriceEndAt);
+        isSaleValid = !isNaN(saleEndDate.getTime()) && saleEndDate > currentDate;
+      }
+
+      if (item.product_variant) {
+        const salePrice = Number(item.product_variant.sale_price);
+        const sellPrice = Number(item.product_variant.sell_price);
+        return isSaleValid && !isNaN(salePrice) && salePrice > 0
+          ? salePrice
+          : !isNaN(sellPrice) && sellPrice > 0
+            ? sellPrice
+            : 0;
+      }
+
+      const salePrice = Number(item.product?.sale_price);
+      const sellPrice = Number(item.product?.sell_price);
+      return isSaleValid && !isNaN(salePrice) && salePrice > 0
+        ? salePrice
+        : !isNaN(sellPrice) && sellPrice > 0
+          ? sellPrice
+          : 0;
+    } catch (error) {
+      console.error("Error in getProductPrice:", error, { item });
+      return 0; // Fallback to 0 if there's an error
+    }
+  };
+
+  // Validator cho fullname
+  const validateFullname = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập tên khách hàng!"));
+    }
+    const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]+/;
+    if (specialCharRegex.test(value)) {
+      return Promise.reject(new Error("Tên không được chứa ký tự đặc biệt!"));
+    }
+    const multipleSpacesRegex = /\s{2,}/;
+    if (multipleSpacesRegex.test(value)) {
+      return Promise.reject(new Error("Tên không được chứa nhiều khoảng trắng liên tiếp!"));
+    }
+    return Promise.resolve();
+  };
+
+  // Validator cho email
+  const validateEmail = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập email!"));
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return Promise.reject(new Error("Vui lòng nhập email đúng định dạng!"));
+    }
+    return Promise.resolve();
+  };
+
+  // Validator cho phone_number
+  const validatePhoneNumber = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Vui lòng nhập số điện thoại!"));
+    }
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(value)) {
+      return Promise.reject(new Error("Số điện thoại phải là 10 chữ số!"));
+    }
+    return Promise.resolve();
+  };
+
+  // Lấy dữ liệu sản phẩm được chọn
   useEffect(() => {
     const fetchCartData = async () => {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
+      setIsLoading(true);
+      const { selectedItems } = location.state || { selectedItems: [] };
 
-      if (storedUser?.id) {
-        // Nếu đã đăng nhập => Lấy giỏ hàng từ API
-        try {
-          const cartData = await cartServices.fetchCart();
+      if (!selectedItems || selectedItems.length === 0) {
+        message.error("Không có sản phẩm nào được chọn để thanh toán!");
+        navigate("/cart");
+        return;
+      }
 
-          // Gọi thêm API để lấy chi tiết sản phẩm và biến thể
-          const detailedCart = await Promise.all(
-            cartData.map(async (item) => {
-              const productDetails = await productsServices.fetchProductById(item.product_id);
-              let variantDetails = null;
-
-              if (item.product_variant_id) {
-                variantDetails = productDetails.data.variants.find(
-                  (v) => v.id === item.product_variant_id
-                );
+      try {
+        const detailedCart = await Promise.all(
+          selectedItems.map(async (item) => {
+            try {
+              const productDetails = await productsServices.ProductById(item.product_id);
+              if (!productDetails?.data) {
+                throw new Error(`Product not found for ID: ${item.product_id}`);
               }
 
-              const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
+              let variantDetails = null;
+              if (item.product_variant_id) {
+                variantDetails = productDetails.data.variants?.find(
+                  (v) => v.id === item.product_variant_id
+                );
+                if (!variantDetails) {
+                  console.warn(`Variant not found for ID: ${item.product_variant_id}`);
+                }
+              }
 
-              return {
-                ...item,
+              const price = getProductPrice({
                 product: productDetails.data,
                 product_variant: variantDetails,
-                price,
-              };
-            })
-          );
-
-          setCartItems(detailedCart);
-        } catch (error) {
-          console.error("Lỗi khi lấy dữ liệu giỏ hàng từ API:", error);
-        }
-      } else {
-        // Nếu chưa đăng nhập => Lấy giỏ hàng từ localStorage
-        const localCartData = JSON.parse(localStorage.getItem("cart_items")) || [];
-
-        // Fetch thông tin sản phẩm từ API
-        const updatedCartItems = await Promise.all(
-          localCartData.map(async (item) => {
-            try {
-              const productDetails = await productsServices.fetchProductById(
-                item.product_id
-              );
-
-              let variantDetails = null;
-
-              if (item.product_variant_id) {
-                variantDetails = productDetails.data.variants.find(
-                  (v) => v.id === item.product_variant_id
-                );
-              }
-
-              const price = variantDetails
-                ? variantDetails.sale_price || variantDetails.sell_price
-                : productDetails.data.sale_price || productDetails.data.sell_price;
+              });
 
               return {
                 ...item,
@@ -130,25 +169,33 @@ const Checkout = () => {
                 price,
               };
             } catch (error) {
-              console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
-              return {
-                ...item,
-                product: null,
-                product_variant: null,
-                price: 0,
-              };
+              console.error(`Error processing item ${item.product_id}:`, error);
+              return null; // Skip invalid items
             }
           })
         );
 
-        console.log("✅ Giỏ hàng local đã cập nhật:", updatedCartItems);
-        setCartItems(updatedCartItems);
+        // Filter out null items (failed fetches)
+        const validCartItems = detailedCart.filter((item) => item !== null);
+        setCartItems(validCartItems);
+
+        if (validCartItems.length === 0) {
+          message.error("Không thể tải dữ liệu sản phẩm hợp lệ!");
+          navigate("/cart");
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
+        message.error("Không thể tải dữ liệu sản phẩm!");
+        navigate("/cart");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchCartData();
-  }, []);
+  }, [location.state, navigate]);
 
+  // Lấy dữ liệu người dùng
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -159,16 +206,18 @@ const Checkout = () => {
         const response = await AuthServices.getAUser(storedUser.id);
         if (response) {
           const data = response;
-          console.log("✅ Dữ liệu người dùng từ API:", data);
           setUserData({
             fullname: data.fullname || "",
             email: data.email || "",
             phone_number: data.phone_number || "",
             address: data.address?.address || "",
-            loyalty_points: data.loyalty_points || 0,
+            loyalty_points: Number(data.loyalty_points) || 0,
           });
-        } else {
-          console.warn("❗ Không có dữ liệu user từ response:", response);
+          mainForm.setFieldsValue({
+            fullname: data.fullname || "",
+            email: data.email || "",
+            phone_number: data.phone_number || "",
+          });
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu người dùng từ DB:", error);
@@ -176,24 +225,24 @@ const Checkout = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [mainForm]);
 
+  // Lấy danh sách tỉnh/thành phố
   useEffect(() => {
     const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
-    fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          token: token,
-        },
-      }
-    )
+    fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/province", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data.data)) {
           setProvinces(data.data);
+        } else {
+          console.error("Dữ liệu tỉnh/thành phố không hợp lệ:", data);
         }
       })
       .catch((error) => {
@@ -202,21 +251,16 @@ const Checkout = () => {
   }, []);
 
   const handleProvinceChange = (value) => {
+    setSelectedProvince(value);
     setDistricts([]);
     setWards([]);
-    setSelectedProvince(value);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
 
-    if (!value) {
-      console.error("Invalid province ID:", value);
-      return;
-    }
-    console.log("ProvinceID:", value);
+    if (!value) return;
+
     const selectedProvince = provinces.find((p) => p.ProvinceID === value);
-
-    if (!selectedProvince) {
-      console.error("Province not found for value:", value);
-      return;
-    }
+    if (!selectedProvince) return;
 
     const provinceId = selectedProvince.ProvinceID;
     const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
@@ -232,34 +276,26 @@ const Checkout = () => {
     )
       .then((res) => res.json())
       .then((data) => {
-        if (data.code === 400) {
-          console.error("Error fetching districts:", data.message);
-        } else if (Array.isArray(data.data)) {
+        if (Array.isArray(data.data)) {
           setDistricts(data.data);
         } else {
-          console.error("Unexpected response format:", data);
+          console.error("Dữ liệu quận/huyện không hợp lệ:", data);
         }
       })
       .catch((error) => {
-        console.error("Error fetching districts:", error);
+        console.error("Lỗi khi lấy dữ liệu quận/huyện:", error);
       });
   };
 
   const handleDistrictChange = (value) => {
-    setWards([]);
     setSelectedDistrict(value);
+    setWards([]);
     setSelectedWard(null);
 
-    if (!value) {
-      console.error("Invalid district ID:", value);
-      return;
-    }
-    console.log("DistrictID:", value);
+    if (!value) return;
+
     const selectedDistrictData = districts.find((d) => d.DistrictID === value);
-    if (!selectedDistrictData) {
-      console.error("District not found for value:", value);
-      return;
-    }
+    if (!selectedDistrictData) return;
 
     const districtId = selectedDistrictData.DistrictID;
     const token = "bc7b2c04-055c-11f0-b2ef-7aa43f19aaea";
@@ -278,17 +314,16 @@ const Checkout = () => {
         if (Array.isArray(data.data)) {
           setWards(data.data);
         } else {
-          console.error("Error fetching wards:", data);
+          console.error("Dữ liệu phường/xã không hợp lệ:", data);
         }
       })
       .catch((error) => {
-        console.error("Error fetching wards:", error);
+        console.error("Lỗi khi lấy dữ liệu phường/xã:", error);
       });
   };
 
   const handleWardChange = (value) => {
     setSelectedWard(value);
-    console.log("WardCode:", value);
   };
 
   const { mutate } = useMutation({
@@ -296,18 +331,23 @@ const Checkout = () => {
       const response = await AuthServices.addAddress(userData);
       return response;
     },
-    onSuccess: (data, userData) => {
+    onSuccess: () => {
       notification.success({
         message: "Địa chỉ mới đã được thêm",
       });
       fetchAddresses();
-      form.resetFields();
+      addressForm.resetFields();
+      setSelectedProvince(null);
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setDistricts([]);
+      setWards([]);
       setIsModalVisible(false);
     },
     onError: (error) => {
       notification.error({
         message: "Thêm thất bại",
-        description: error.message,
+        description: error.message || "Có lỗi xảy ra, vui lòng thử lại!",
       });
     },
   });
@@ -319,66 +359,88 @@ const Checkout = () => {
     if (userId) {
       try {
         const data = await AuthServices.getAddressByIdUser(userId);
-        setAddresses(data);
-        console.log("Dữ liệu địa chỉ:", data);
-        const defaultAddress = data.find((address) => address.id_default);
+        if (Array.isArray(data)) {
+          setAddresses(data);
+          const defaultAddress = data.find((address) => address.id_default);
+          if (defaultAddress) {
+            setSelectedAddress(defaultAddress.id);
+            if (defaultAddress.DistrictID && defaultAddress.WardCode) {
+              const fee = await calculateShippingFee(defaultAddress.DistrictID, defaultAddress.WardCode);
+              setShippingFee(fee);
+            } else {
+              setShippingFee(0);
+              message.warning("Địa chỉ mặc định không hợp lệ, vui lòng chọn địa chỉ khác.");
+            }
+          } else {
+            setShippingFee(0);
+            message.warning("Không có địa chỉ mặc định, vui lòng chọn địa chỉ.");
+          }
+        }
       } catch (error) {
         console.error("Lỗi khi lấy địa chỉ:", error);
+        setShippingFee(0);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleAdd = (values) => {
-    const formattedAddress = [
-      values.ward
-        ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
-        : "",
-      values.district
-        ? districts.find((d) => d.DistrictID === Number(values.district))
-          ?.DistrictName
-        : "",
-      values.province
-        ? provinces.find((p) => p.ProvinceID === Number(values.province))
-          ?.ProvinceName
-        : "",
-    ]
-      .filter(Boolean)
-      .join(", ");
+  const handleAdd = async (values) => {
+    try {
+      const formattedAddress = [
+        values.ward
+          ? wards.find((w) => w.WardCode === String(values.ward))?.WardName
+          : "",
+        values.district
+          ? districts.find((d) => d.DistrictID === Number(values.district))?.DistrictName
+          : "",
+        values.province
+          ? provinces.find((p) => p.ProvinceID === Number(values.province))?.ProvinceName
+          : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
 
-    const userData = {
-      address: formattedAddress,
-      detail_address: values.detail_address,
-      id_default: values.id_default,
-      ProvinceID: values.province,
-      DistrictID: values.district,
-      WardCode: values.ward,
-    };
+      const userData = {
+        address: formattedAddress,
+        detail_address: values.detail_address,
+        id_default: values.id_default,
+        ProvinceID: values.province,
+        DistrictID: values.district,
+        WardCode: values.ward,
+      };
 
-    console.log("Dữ liệu gửi đi:", userData);
-    mutate(userData);
+      await mutate(userData);
+    } catch (error) {
+      console.error("Lỗi khi thêm địa chỉ:", error);
+      notification.error({
+        message: "Thêm thất bại",
+        description: "Có lỗi xảy ra khi thêm địa chỉ, vui lòng thử lại!",
+      });
+    }
   };
 
+  // Tính tổng tiền
   const subtotal = Array.isArray(cartItems)
     ? cartItems.reduce((total, item) => {
-      const productPrice = item.product_variant
-        ? item.product_variant.sale_price ||
-        item.product_variant.sell_price ||
-        0
-        : item.product?.sale_price || item.product?.sell_price || 0;
-
-      return total + productPrice * (item.quantity || 1);
+      const price = getProductPrice(item);
+      const quantity = Number(item.quantity) || 1;
+      return total + price * quantity;
     }, 0)
     : 0;
+
+  const finalTotal = Math.max(
+    0,
+    subtotal - discountAmount + shippingFee - usedLoyaltyPoints
+  );
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         const payData = await paymentServices.getPayment();
-        setPayments(payData);
+        setPayments(Array.isArray(payData) ? payData : []);
       } catch (error) {
-        console.error("Error fetching payment methods:", error);
+        console.error("Lỗi khi lấy phương thức thanh toán:", error);
       }
     };
     fetchPayments();
@@ -388,18 +450,17 @@ const Checkout = () => {
     const fetchAttributeValues = async () => {
       try {
         const data = await ValuesServices.fetchValues();
-        setAttributeValues(data);
-        console.log("Dữ liệu attributeValues từ API:", data);
+        setAttributeValues(data || { data: [] });
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu attribute values:", error);
       }
     };
-
     fetchAttributeValues();
   }, []);
 
   const handleConfirmPayment = async () => {
     try {
+      await mainForm.validateFields();
       setIsPaymentModalOpen(false);
 
       if (!selectedPayment) {
@@ -411,7 +472,6 @@ const Checkout = () => {
       const userId = user ? user.id : null;
 
       let fullAddress = "";
-
       if (userId) {
         if (!selectedAddress) {
           message.error("Chưa có địa chỉ đặt hàng!");
@@ -435,7 +495,6 @@ const Checkout = () => {
           message.error("Vui lòng điền đầy đủ thông tin địa chỉ!");
           return;
         }
-
         const province = provinces.find(
           (p) => p.ProvinceID === selectedProvince
         );
@@ -443,13 +502,24 @@ const Checkout = () => {
           (d) => d.DistrictID === selectedDistrict
         );
         const ward = wards.find((w) => w.WardCode === selectedWard);
-
         if (!province || !district || !ward) {
           message.error("Thông tin địa chỉ không hợp lệ!");
           return;
         }
-
         fullAddress = `${userData.address}, ${ward.WardName}, ${district.DistrictName}, ${province.ProvinceName}`;
+      }
+
+      if (usedLoyaltyPoints < 0) {
+        message.error("Số điểm sử dụng không hợp lệ!");
+        return;
+      }
+      if (discountAmount < 0) {
+        message.error("Số tiền giảm giá không hợp lệ!");
+        return;
+      }
+      if (shippingFee < 0) {
+        message.error("Phí vận chuyển không hợp lệ!");
+        return;
       }
 
       const orderData = {
@@ -458,11 +528,11 @@ const Checkout = () => {
         email: userData.email,
         phone_number: userData.phone_number,
         address: fullAddress,
-        used_points: usedLoyaltyPoints || 0,
-        shipping_fee: shippingFee,
+        used_points: Number(usedLoyaltyPoints) || 0,
+        shipping_fee: Number(shippingFee) || 0,
         coupon_code: selectedCoupon ? selectedCoupon.code : null,
-        discount_amount: discountAmount,
-        total_amount: finalTotal,
+        discount_amount: Number(discountAmount) || 0,
+        total_amount: Number(finalTotal) || 0,
         payment_method:
           selectedPayment === 2
             ? "cod"
@@ -472,46 +542,103 @@ const Checkout = () => {
                 ? "momo"
                 : null,
         products: cartItems.map((item) => ({
+          id: item.id,
           product_id: item.product_id,
-          product_variant_id: item.product_variant_id,
-          quantity: item.quantity,
-          price:
-            item.product_variant?.sale_price || item.product?.sale_price || 0,
+          product_variant_id: item.product_variant_id || null,
+          quantity: Number(item.quantity) || 1,
+          price: getProductPrice(item),
         })),
       };
 
-      console.log("orderData:", orderData);
-
       const orderResponse = await OrderService.placeOrder(orderData);
-      console.log("orderResponse:", orderResponse);
 
       if (orderResponse?.payment_url) {
         window.location.href = orderResponse.payment_url;
         return;
       }
 
-      if (orderResponse?.message === "Đặt hàng thành công!") {
+      if (orderResponse?.message === "Đặt hàng thành công!" || orderResponse?.order) {
         message.success("🎉 Đơn hàng đã đặt thành công!");
-        nav(`/dashboard/orders/${userId || "guest"}`);
-        setCartItems([]);
-        localStorage.removeItem("cartAttributes");
+
+        if (!userId) {
+          try {
+            let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
+            let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
+
+            const purchasedItems = cartItems.map((item) => ({
+              product_id: item.product_id,
+              product_variant_id: item.product_variant_id || null,
+            }));
+
+            localCart = localCart.filter(
+              (cartItem) =>
+                !purchasedItems.some(
+                  (purchased) =>
+                    purchased.product_id === cartItem.product_id &&
+                    (purchased.product_variant_id === (cartItem.product_variant_id || null))
+                )
+            );
+
+            cartAttributes = cartAttributes.filter(
+              (attr) =>
+                !purchasedItems.some(
+                  (purchased) =>
+                    purchased.product_id === attr.product_id &&
+                    (purchased.product_variant_id === (attr.product_variant_id || null))
+                )
+            );
+
+            localStorage.setItem("cart_items", JSON.stringify(localCart));
+            localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
+
+            window.dispatchEvent(new Event("cart-updated"));
+            setCartItems([]);
+          } catch (error) {
+            console.error("Lỗi khi cập nhật giỏ hàng trên client-side:", error);
+          }
+        }
+        window.dispatchEvent(new Event("cart-updated"));
+        navigate(`/dashboard/orders/${userId || "guest"}`);
       } else {
-        message.error(orderResponse?.message || "Lỗi không xác định");
+        message.error(orderResponse?.message || "Không thể đặt hàng, vui lòng thử lại.");
       }
     } catch (error) {
       console.error("❌ Lỗi khi đặt hàng:", error);
-      message.error("Có lỗi xảy ra, vui lòng thử lại.");
+      message.error(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
   const getAttributeValue = (product) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user ? user.id : null;
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user ? user.id : null;
 
-    if (userId) {
-      // Người dùng đã đăng nhập: Lấy từ product_variant
-      if (product.product_variant && product.product_variant.attribute_value_product_variants) {
-        return product.product_variant.attribute_value_product_variants
+      if (userId) {
+        if (product.product_variant && product.product_variant.attribute_value_product_variants) {
+          return product.product_variant.attribute_value_product_variants
+            .map((attr) => {
+              if (!attributeValues?.data) return "Không xác định";
+              const attribute = attributeValues.data.find(
+                (av) => String(av.id) === String(attr.attribute_value_id)
+              );
+              return attribute ? attribute.value : "Không xác định";
+            })
+            .join(", ");
+        }
+        return "Không xác định";
+      } else {
+        const attributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]") || [];
+        const productAttributes = attributes.find(
+          (attr) =>
+            attr.product_id === product.product_id &&
+            attr.product_variant_id === product.product_variant_id
+        );
+
+        if (!productAttributes || !productAttributes.attributes) {
+          return "Không xác định";
+        }
+
+        return productAttributes.attributes
           .map((attr) => {
             if (!attributeValues?.data) return "Không xác định";
             const attribute = attributeValues.data.find(
@@ -521,63 +648,40 @@ const Checkout = () => {
           })
           .join(", ");
       }
+    } catch (error) {
+      console.error("Error in getAttributeValue:", error, { product });
       return "Không xác định";
-    } else {
-      // Người dùng chưa đăng nhập: Lấy từ cartAttributes
-      const attributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
-      const productAttributes = attributes.find(
-        (attr) =>
-          attr.product_id === product.product_id &&
-          attr.product_variant_id === product.product_variant_id
-      );
-
-      if (!productAttributes || !productAttributes.attributes) {
-        return "Không xác định";
-      }
-
-      return productAttributes.attributes
-        .map((attr) => {
-          if (!attributeValues?.data) return "Không xác định";
-          const attribute = attributeValues.data.find(
-            (av) => String(av.id) === String(attr.attribute_value_id)
-          );
-          return attribute ? attribute.value : "Không xác định";
-        })
-        .join(", ");
     }
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat("vi-VN", {}).format(value);
+    try {
+      return new Intl.NumberFormat("vi-VN", {}).format(Number(value) || 0);
+    } catch (error) {
+      console.error("Error in formatCurrency:", error, { value });
+      return "0";
+    }
   };
 
   const formatNumber = (value) => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    try {
+      return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    } catch (error) {
+      console.error("Error in formatNumber:", error, { value });
+      return value.toString();
+    }
   };
 
   const unformatNumber = (value) => {
-    return Number(value.replace(/\./g, ""));
+    try {
+      return Number(value.replace(/\./g, ""));
+    } catch (error) {
+      console.error("Error in unformatNumber:", error, { value });
+      return 0;
+    }
   };
 
   useEffect(() => {
-    const fetchAddresses = async () => {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const userId = storedUser?.id;
-
-      if (userId) {
-        try {
-          const data = await AuthServices.getAddressByIdUser(userId);
-          setAddresses(data);
-          console.log("Dữ liệu địa chỉ:", data);
-          const defaultAddress = data.find((address) => address.id_default);
-        } catch (error) {
-          console.error("Lỗi khi lấy địa chỉ:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
     fetchAddresses();
   }, []);
 
@@ -587,29 +691,40 @@ const Checkout = () => {
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    addressForm.resetFields();
+    setSelectedProvince(null);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+    setDistricts([]);
+    setWards([]);
   };
 
   const handleAddressChange = async (value) => {
-    const address = addresses.find((addr) => addr.id === value);
-
-    if (address && address.DistrictID && address.WardCode) {
-      const fee = await calculateShippingFee(
-        address.DistrictID,
-        address.WardCode
-      );
-      setShippingFee(fee);
-    } else {
+    try {
+      const address = addresses.find((addr) => addr.id === value);
+      if (address && address.DistrictID && address.WardCode) {
+        const fee = await calculateShippingFee(address.DistrictID, address.WardCode);
+        setShippingFee(fee);
+      } else {
+        setShippingFee(0);
+      }
+      setSelectedAddress(value);
+    } catch (error) {
+      console.error("Error in handleAddressChange:", error);
       setShippingFee(0);
     }
-
-    setSelectedAddress(value);
   };
 
   useEffect(() => {
     const fetchShippingFeeForGuest = async () => {
       if (!userId && selectedDistrict && selectedWard) {
-        const fee = await calculateShippingFee(selectedDistrict, selectedWard);
-        setShippingFee(fee);
+        try {
+          const fee = await calculateShippingFee(selectedDistrict, selectedWard);
+          setShippingFee(fee);
+        } catch (error) {
+          console.error("Error in fetchShippingFeeForGuest:", error);
+          setShippingFee(0);
+        }
       }
     };
 
@@ -623,7 +738,7 @@ const Checkout = () => {
     const params = {
       service_id: 53320,
       service_type_id: 1,
-      insurance_value: subtotal,
+      insurance_value: Math.max(subtotal, 0),
       coupon: "",
       to_ward_code: WardCode,
       to_district_id: Number(DistrictId),
@@ -657,12 +772,10 @@ const Checkout = () => {
       if (data.code === 200) {
         return data.data.total;
       } else {
-        console.log("Service ID 53320 failed. Trying 53322...");
         data = await tryServiceId(53322);
         if (data.code === 200) {
           return data.data.total;
         } else {
-          console.log("Service ID 53322 failed. Trying 53321...");
           data = await tryServiceId(53321);
           if (data.code === 200) {
             return data.data.total;
@@ -688,8 +801,7 @@ const Checkout = () => {
 
         if (storedUser?.id) {
           userCouponsData = await CouponServices.getCounponById(storedUser.id);
-          setUserCoupons(userCouponsData);
-          console.log("User Coupons:", userCouponsData);
+          setUserCoupons(Array.isArray(userCouponsData) ? userCouponsData : []);
         }
 
         const searchParams = {
@@ -701,12 +813,8 @@ const Checkout = () => {
         if (availableCouponsData?.data) {
           setCoupons(availableCouponsData.data);
         } else {
-          console.warn("Không có dữ liệu coupons từ searchCoupons.");
           setCoupons([]);
         }
-
-        console.log("User Coupons:", userCouponsData);
-        console.log("Available Coupons:", availableCouponsData.data);
       } catch (error) {
         console.error("❌ Lỗi khi lấy danh sách mã giảm giá:", error);
       }
@@ -721,21 +829,30 @@ const Checkout = () => {
       return;
     }
 
-    let discountValue = 0;
+    try {
+      let discountValue = 0;
 
-    if (selectedCoupon.discount_type === "percent") {
-      discountValue = (subtotal * selectedCoupon.discount_value) / 100;
-    } else if (selectedCoupon.discount_type === "fix_amount") {
-      discountValue = selectedCoupon.discount_value;
+      if (selectedCoupon.discount_type === "percent") {
+        discountValue = (subtotal * selectedCoupon.discount_value) / 100;
+      } else if (selectedCoupon.discount_type === "fix_amount") {
+        discountValue = selectedCoupon.discount_value;
+      }
+
+      if (discountValue > subtotal) {
+        discountValue = subtotal;
+        message.warning(
+          `Mã giảm giá vượt quá giá trị đơn hàng. Tổng tiền đã được giảm xuống 0 VNĐ (không bao gồm phí vận chuyển).`
+        );
+      }
+
+      setDiscountAmount(discountValue);
+      message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
+      setIsCouponModalVisible(false);
+    } catch (error) {
+      console.error("Error in applyDiscount:", error);
+      message.error("Lỗi khi áp dụng mã giảm giá!");
     }
-
-    setDiscountAmount(discountValue);
-    message.success(`Mã giảm giá ${selectedCoupon.code} đã được áp dụng!`);
-    setIsCouponModalVisible(false);
   };
-
-  const finalTotal =
-    subtotal - discountAmount + shippingFee - usedLoyaltyPoints;
 
   const handleRemoveCoupon = () => {
     setSelectedCoupon(null);
@@ -779,7 +896,7 @@ const Checkout = () => {
         <div className="page-content">
           <div className="checkout">
             <div className="container">
-              <Form layout="vertical">
+              <Form form={mainForm} layout="vertical">
                 <div className="row">
                   <div className="col-lg-9">
                     <h1 className="mb-5" style={{ color: "#eea287" }}>
@@ -787,7 +904,11 @@ const Checkout = () => {
                     </h1>
                     <div className="row">
                       <div className="col-sm-6">
-                        <Form.Item label="Tên khách hàng">
+                        <Form.Item
+                          label="Tên khách hàng"
+                          name="fullname"
+                          rules={[{ validator: validateFullname }]}
+                        >
                           <Input
                             className="input-item"
                             type="text"
@@ -803,11 +924,14 @@ const Checkout = () => {
                       </div>
 
                       <div className="col-sm-6">
-                        <Form.Item label="Số điện thoại">
+                        <Form.Item
+                          label="Số điện thoại"
+                          name="phone_number"
+                          rules={[{ validator: validatePhoneNumber }]}
+                        >
                           <Input
                             className="input-item"
                             type="text"
-                            name="phone_number"
                             value={userData.phone_number}
                             onChange={(e) =>
                               setUserData({
@@ -819,11 +943,14 @@ const Checkout = () => {
                         </Form.Item>
                       </div>
                     </div>
-                    <Form.Item label="Email">
+                    <Form.Item
+                      label="Email"
+                      name="email"
+                      rules={[{ validator: validateEmail }]}
+                    >
                       <Input
                         className="input-item"
                         type="text"
-                        name="email"
                         value={userData.email}
                         onChange={(e) =>
                           setUserData({ ...userData, email: e.target.value })
@@ -950,15 +1077,7 @@ const Checkout = () => {
                       </div>
                     ) : (
                       <div>
-                        <Form.Item
-                          label="Chọn địa chỉ"
-                          name="address"
-                          rules={[
-                            {
-                              message: "Vui lòng chọn địa chỉ",
-                            },
-                          ]}
-                        >
+                        <Form.Item label="Chọn địa chỉ" name="address">
                           <div className="attribute">
                             <Select
                               className="input-item"
@@ -969,20 +1088,13 @@ const Checkout = () => {
                             >
                               {addresses.length > 0 ? (
                                 addresses.map((address) => (
-                                  <Select.Option
-                                    key={address.id}
-                                    value={address.id}
-                                  >
+                                  <Select.Option key={address.id} value={address.id}>
                                     {`${address.detail_address}, ${address.address}`}{" "}
                                     {address.id_default && "(Mặc định)"}
                                   </Select.Option>
                                 ))
                               ) : (
-                                <Select.Option
-                                  disabled
-                                  key="no-address"
-                                  value=""
-                                >
+                                <Select.Option disabled key="no-address" value="">
                                   Chưa có
                                 </Select.Option>
                               )}
@@ -991,10 +1103,7 @@ const Checkout = () => {
                             <Tooltip title="Thêm địa chỉ mới">
                               <Button
                                 className="btn-import"
-                                style={{
-                                  backgroundColor: "#eea287",
-                                  color: "white",
-                                }}
+                                style={{ backgroundColor: "#eea287", color: "white" }}
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={showModal}
@@ -1007,11 +1116,11 @@ const Checkout = () => {
 
                     <Modal
                       title="Thêm địa chỉ mới"
-                      visible={isModalVisible}
+                      open={isModalVisible}
                       onCancel={handleCancel}
                       footer={null}
                     >
-                      <Form form={form} layout="vertical" onFinish={handleAdd}>
+                      <Form form={addressForm} layout="vertical" onFinish={handleAdd}>
                         <Row gutter={24}>
                           <Col span={12}>
                             <Form.Item
@@ -1028,6 +1137,7 @@ const Checkout = () => {
                                 className="input-item"
                                 onChange={handleProvinceChange}
                                 placeholder="Chọn tỉnh/thành phố"
+                                value={selectedProvince}
                               >
                                 {provinces.map((province) => (
                                   <Select.Option
@@ -1055,12 +1165,10 @@ const Checkout = () => {
                                 placeholder="Chọn Phường/Xã"
                                 disabled={!selectedDistrict}
                                 onChange={handleWardChange}
+                                value={selectedWard}
                               >
                                 {wards.map((ward) => (
-                                  <Select.Option
-                                    key={ward.WardCode}
-                                    value={ward.WardCode}
-                                  >
+                                  <Select.Option key={ward.WardCode} value={ward.WardCode}>
                                     {ward.WardName}
                                   </Select.Option>
                                 ))}
@@ -1084,6 +1192,7 @@ const Checkout = () => {
                                 placeholder="Chọn Quận/Huyện"
                                 onChange={handleDistrictChange}
                                 disabled={!selectedProvince}
+                                value={selectedDistrict}
                               >
                                 {districts.map((district) => (
                                   <Select.Option
@@ -1106,10 +1215,7 @@ const Checkout = () => {
                                 },
                               ]}
                             >
-                              <Input
-                                className="input-item"
-                                placeholder="Nhập địa chỉ cụ thể"
-                              />
+                              <Input className="input-item" placeholder="Nhập địa chỉ cụ thể" />
                             </Form.Item>
                           </Col>
                         </Row>
@@ -1132,10 +1238,7 @@ const Checkout = () => {
 
                         <div className="add">
                           <Button
-                            style={{
-                              backgroundColor: "#eea287",
-                              color: "white",
-                            }}
+                            style={{ backgroundColor: "#eea287", color: "white" }}
                             type="primary"
                             htmlType="submit"
                           >
@@ -1173,44 +1276,24 @@ const Checkout = () => {
                         className="table table-summary"
                         style={{ width: "100%", backgroundColor: "white" }}
                       >
-                        <thead
-                          style={{
-                            backgroundColor: "#f1f1f1",
-                            fontSize: "1.1rem",
-                          }}
-                        >
+                        <thead style={{ backgroundColor: "#f1f1f1", fontSize: "1.1rem" }}>
                           <tr>
-                            <th style={{ textAlign: "left", padding: "10px" }}>
-                              Sản phẩm
-                            </th>
-                            <th style={{ textAlign: "right", padding: "10px" }}>
-                              Giá
-                            </th>
+                            <th style={{ textAlign: "left", padding: "10px" }}>Sản phẩm</th>
+                            <th style={{ textAlign: "right", padding: "10px" }}>Giá</th>
                           </tr>
                         </thead>
                         <tbody>
                           {cartItemsToDisplay.map((item) => (
-                            <tr key={item.id}>
+                            <tr key={item.id || `${item.product_id}-${item.product_variant_id}`}>
                               <td style={{ padding: "10px" }}>
-                                {item.product?.name || `Sản phẩm #${item.id}`}{" "}
+                                {item.product?.name || `Sản phẩm #${item.product_id}`}{" "}
                                 {item.product_variant_id && (
-                                  <span className="text-muted">
-                                    ({getAttributeValue(item)})
-                                  </span>
+                                  <span className="text-muted">({getAttributeValue(item)})</span>
                                 )}
                                 (x{item.quantity})
                               </td>
-                              <td
-                                style={{ textAlign: "right", padding: "10px" }}
-                              >
-                                {formatCurrency(
-                                  item.product_variant
-                                    ? item.product_variant.sale_price ||
-                                    item.product_variant.sell_price
-                                    : item.product?.sale_price ||
-                                    item.product?.sell_price
-                                )}{" "}
-                                VNĐ
+                              <td style={{ textAlign: "right", padding: "10px" }}>
+                                {formatCurrency(getProductPrice(item) * item.quantity)} VNĐ
                               </td>
                             </tr>
                           ))}
@@ -1221,65 +1304,47 @@ const Checkout = () => {
                           >
                             <td style={{ padding: "10px" }}>Tổng:</td>
                             <td style={{ textAlign: "right", padding: "10px" }}>
-                              {subtotal.toLocaleString()} VNĐ
+                              {formatCurrency(subtotal)} VNĐ
                             </td>
                           </tr>
 
                           <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
                             <td style={{ padding: "10px" }}>Phí vận chuyển:</td>
-                            <td
-                              style={{
-                                textAlign: "right",
-                                padding: "10px",
-                                color: "green",
-                              }}
-                            >
+                            <td style={{ textAlign: "right", padding: "10px", color: "green" }}>
                               {formatCurrency(shippingFee)} VNĐ
                             </td>
                           </tr>
 
                           {!userId ? null : (
                             <>
-                              <tr
-                                style={{ fontSize: "12px", fontWeight: "bold" }}
-                              >
+                              <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
                                 <td style={{ padding: "10px" }}>
-                                  Điểm tiêu dùng (
-                                  {formatCurrency(userData.loyalty_points || 0)}
-                                  ):
+                                  Điểm tiêu dùng ({formatCurrency(userData.loyalty_points || 0)}):
                                 </td>
-                                <td
-                                  style={{
-                                    textAlign: "right",
-                                    padding: "10px",
-                                  }}
-                                >
+                                <td style={{ textAlign: "right", padding: "10px" }}>
                                   <input
                                     type="text"
                                     placeholder="Nhập điểm đổi"
                                     value={formattedLoyaltyPoints}
                                     onChange={(e) => {
-                                      const rawValue = e.target.value;
-                                      const numericValue =
-                                        unformatNumber(rawValue);
+                                      try {
+                                        const rawValue = e.target.value;
+                                        const numericValue = unformatNumber(rawValue);
 
-                                      if (
-                                        numericValue <= userData.loyalty_points
-                                      ) {
-                                        setUsedLoyaltyPoints(numericValue);
-                                        setFormattedLoyaltyPoints(
-                                          formatNumber(numericValue)
-                                        );
-                                      } else {
-                                        message.warning(
-                                          "Bạn không thể dùng quá số điểm hiện có!"
-                                        );
-                                        setUsedLoyaltyPoints(
-                                          userData.loyalty_points
-                                        );
-                                        setFormattedLoyaltyPoints(
-                                          formatNumber(userData.loyalty_points)
-                                        );
+                                        if (numericValue <= userData.loyalty_points && numericValue >= 0) {
+                                          setUsedLoyaltyPoints(numericValue);
+                                          setFormattedLoyaltyPoints(formatNumber(numericValue));
+                                        } else {
+                                          message.warning(
+                                            numericValue < 0
+                                              ? "Số điểm không thể âm!"
+                                              : "Bạn không thể dùng quá số điểm hiện có!"
+                                          );
+                                          setUsedLoyaltyPoints(userData.loyalty_points);
+                                          setFormattedLoyaltyPoints(formatNumber(userData.loyalty_points));
+                                        }
+                                      } catch (error) {
+                                        console.error("Error in loyalty points input:", error);
                                       }
                                     }}
                                     style={{
@@ -1294,39 +1359,20 @@ const Checkout = () => {
                                   />
                                 </td>
                               </tr>
-                              <tr
-                                style={{ fontSize: "12px", fontWeight: "bold" }}
-                              >
-                                <td style={{ padding: "10px" }}>
-                                  Mã giảm giá:
-                                </td>
-                                <td
-                                  style={{
-                                    textAlign: "right",
-                                    padding: "10px",
-                                  }}
-                                >
+                              <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
+                                <td style={{ padding: "10px" }}>Mã giảm giá:</td>
+                                <td style={{ textAlign: "right", padding: "10px" }}>
                                   {selectedCoupon ? (
                                     <span
-                                      style={{
-                                        cursor: "pointer",
-                                        color: "#e48948",
-                                      }}
-                                      onClick={() =>
-                                        setIsCouponModalVisible(true)
-                                      }
+                                      style={{ cursor: "pointer", color: "#e48948" }}
+                                      onClick={() => setIsCouponModalVisible(true)}
                                     >
                                       {selectedCoupon.code}
                                     </span>
                                   ) : (
                                     <span
-                                      style={{
-                                        cursor: "pointer",
-                                        color: "#e48948",
-                                      }}
-                                      onClick={() =>
-                                        setIsCouponModalVisible(true)
-                                      }
+                                      style={{ cursor: "pointer", color: "#e48948" }}
+                                      onClick={() => setIsCouponModalVisible(true)}
                                     >
                                       Chọn mã giảm giá
                                     </span>
@@ -1348,44 +1394,25 @@ const Checkout = () => {
                                   )}
                                 </td>
                               </tr>
-                              {(usedLoyaltyPoints > 0 ||
-                                discountAmount > 0) && (
-                                  <tr
-                                    style={{
-                                      fontSize: "12px",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    <td style={{ padding: "10px" }}>
-                                      Số tiền giảm:
-                                    </td>
-                                    <td
-                                      style={{
-                                        textAlign: "right",
-                                        padding: "10px",
-                                      }}
-                                    >
-                                      <div style={{ color: "#e48948" }}>
-                                        {usedLoyaltyPoints > 0 && (
-                                          <div>
-                                            -{formatCurrency(usedLoyaltyPoints)}{" "}
-                                            (Điểm)
-                                          </div>
-                                        )}
-                                        {discountAmount > 0 && (
-                                          <div>
-                                            -{formatCurrency(discountAmount)} VNĐ
-                                            (Mã)
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
+                              {(usedLoyaltyPoints > 0 || discountAmount > 0) && (
+                                <tr style={{ fontSize: "12px", fontWeight: "bold" }}>
+                                  <td style={{ padding: "10px" }}>Số tiền giảm:</td>
+                                  <td style={{ textAlign: "right", padding: "10px" }}>
+                                    <div style={{ color: "#e48948" }}>
+                                      {usedLoyaltyPoints > 0 && (
+                                        <div>-{formatCurrency(usedLoyaltyPoints)} (Điểm)</div>
+                                      )}
+                                      {discountAmount > 0 && (
+                                        <div>-{formatCurrency(discountAmount)} VNĐ (Mã)</div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
 
                               <Modal
                                 title="Chọn mã giảm giá"
-                                visible={isCouponModalVisible}
+                                open={isCouponModalVisible}
                                 onCancel={() => setIsCouponModalVisible(false)}
                                 footer={null}
                                 width={400}
@@ -1403,17 +1430,10 @@ const Checkout = () => {
                                           borderRadius: "4px",
                                           cursor: "pointer",
                                           backgroundColor:
-                                            selectedCoupon?.id === coupon.id
-                                              ? "#e48948"
-                                              : "",
-                                          color:
-                                            selectedCoupon?.id === coupon.id
-                                              ? "white"
-                                              : "",
+                                            selectedCoupon?.id === coupon.id ? "#e48948" : "",
+                                          color: selectedCoupon?.id === coupon.id ? "white" : "",
                                         }}
-                                        onClick={() =>
-                                          setSelectedCoupon(coupon)
-                                        }
+                                        onClick={() => setSelectedCoupon(coupon)}
                                       >
                                         {coupon.code} - {coupon.title} -{" "}
                                         {coupon.discount_type === "percent"
@@ -1425,13 +1445,13 @@ const Checkout = () => {
                                     <p>Không có mã giảm giá nào.</p>
                                   )}
                                 </div>
-                                <button
+                                <Button
                                   type="primary"
                                   onClick={applyDiscount}
                                   className="btn btn-outline-primary-2 btn-order btn-block fs-5"
                                 >
                                   Sử dụng
-                                </button>
+                                </Button>
                               </Modal>
                             </>
                           )}
@@ -1445,13 +1465,7 @@ const Checkout = () => {
                             }}
                           >
                             <td style={{ padding: "10px" }}>Tổng tiền:</td>
-                            <td
-                              style={{
-                                textAlign: "right",
-                                padding: "10px",
-                                color: "red",
-                              }}
-                            >
+                            <td style={{ textAlign: "right", padding: "10px", color: "red" }}>
                               {formatCurrency(finalTotal)} VNĐ
                             </td>
                           </tr>
@@ -1470,12 +1484,11 @@ const Checkout = () => {
                           borderRadius: "6px",
                         }}
                         onClick={async () => {
-                          if (!userId) {
-                            try {
+                          try {
+                            await mainForm.validateFields();
+
+                            if (!userId) {
                               if (
-                                !userData.fullname ||
-                                !userData.phone_number ||
-                                !userData.email ||
                                 !userData.address ||
                                 !selectedProvince ||
                                 !selectedDistrict ||
@@ -1485,23 +1498,18 @@ const Checkout = () => {
                                   "Vui lòng điền đầy đủ thông tin địa chỉ trước khi thanh toán."
                                 );
                               }
-
                               setIsPaymentModalOpen(true);
-                            } catch (error) {
-                              console.error(
-                                "Lỗi khi đặt hàng với khách vãng lai:",
-                                error
-                              );
-                              message.error("Có lỗi xảy ra khi thanh toán.");
+                            } else {
+                              if (!selectedAddress) {
+                                return message.error(
+                                  "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
+                                );
+                              }
+                              setIsPaymentModalOpen(true);
                             }
-                          } else {
-                            if (!selectedAddress) {
-                              return message.error(
-                                "Vui lòng chọn địa chỉ giao hàng trước khi thanh toán."
-                              );
-                            }
-
-                            setIsPaymentModalOpen(true);
+                          } catch (error) {
+                            console.error("Error in payment button click:", error);
+                            message.error("Vui lòng kiểm tra lại thông tin nhập vào!");
                           }
                         }}
                       >
@@ -1516,7 +1524,7 @@ const Checkout = () => {
         </div>
         <Modal
           title="Chọn phương thức thanh toán"
-          visible={isPaymentModalOpen}
+          open={isPaymentModalOpen}
           onCancel={() => setIsPaymentModalOpen(false)}
           footer={null}
         >
@@ -1548,19 +1556,14 @@ const Checkout = () => {
                       onChange={() => setSelectedPayment(method.id)}
                       required
                     />
-                    <label
-                      className="custom-control-label"
-                      htmlFor={`httt-${method.id}`}
-                    >
+                    <label className="custom-control-label" htmlFor={`httt-${method.id}`}>
                       {displayName}
                     </label>
                   </div>
                 );
               })
             ) : (
-              <p className="text-center font-italic">
-                Loading payment methods...
-              </p>
+              <p className="text-center font-italic">Đang tải phương thức thanh toán...</p>
             )}
           </div>
 

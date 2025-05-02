@@ -8,8 +8,15 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
-import formatVND from "../../../utils/formatPrice";
 import ProductTabs from "./ProductTabs";
+
+const colorMap = {
+  đen: "#333333",
+  trắng: "#ffffff",
+  đỏ: "#ff0000",
+  "xanh dương": "#3a588b",
+  vàng: "#eab656",
+};
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
@@ -26,24 +33,46 @@ const ProductDetailClient = () => {
   const [avgRate, setAvgRate] = useState(null);
   const [dataViewed, setDataViewed] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
-
-  const colorMap = {
-    đen: "#333333",
-    trắng: "#ffffff",
-    đỏ: "#ff0000",
-    "xanh dương": "#3a588b",
-    vàng: "#eab656",
-  };
+  const [cartItems, setCartItems] = useState([]);
 
   const { Title } = Typography;
 
-  // Tính giá min và max khi có biến thể
+  useEffect(() => {
+    const fetchCart = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (user?.id) {
+        try {
+          const cartData = await cartServices.fetchCart();
+          setCartItems(cartData);
+        } catch (error) {
+          console.error("Lỗi khi lấy giỏ hàng:", error);
+        }
+      } else {
+        const localCart = JSON.parse(localStorage.getItem("cart_items")) || [];
+        setCartItems(localCart);
+      }
+    };
+    fetchCart();
+  }, []);
+
+  const isSalePriceValid = (salePriceEndAt) => {
+    if (!salePriceEndAt) return false;
+    const currentDate = new Date();
+    const endDate = new Date(salePriceEndAt);
+    return currentDate <= endDate;
+  };
+
   const { minPrice, maxPrice } = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
-      return { minPrice: null, maxPrice: null };
+      const productPrice = isSalePriceValid(product.sale_price_end_at)
+        ? parseFloat(product.sale_price)
+        : parseFloat(product.sell_price);
+      return { minPrice: productPrice, maxPrice: productPrice };
     }
     const prices = product.variants.map((variant) =>
-      variant.sale_price ? parseFloat(variant.sale_price) : parseFloat(variant.sell_price)
+      isSalePriceValid(variant.sale_price_end_at)
+        ? parseFloat(variant.sale_price)
+        : parseFloat(variant.sell_price)
     );
     return {
       minPrice: Math.min(...prices),
@@ -51,22 +80,35 @@ const ProductDetailClient = () => {
     };
   }, [product]);
 
-  // Chọn màu sắc
+  const getCartQuantity = () => {
+    const matchingItem = cartItems.find(
+      (item) =>
+        item.product_id === product.id &&
+        item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
+    );
+    return matchingItem ? matchingItem.quantity : 0;
+  };
+
+  const getAvailableStock = () => {
+    const totalStock = selectedVariant ? selectedVariant.stock : product.stock;
+    const cartQuantity = getCartQuantity();
+    return Math.max(0, totalStock - cartQuantity);
+  };
+
   const handleColorSelect = (colorId) => {
     setSelectedColor(colorId);
     setSelectedColorId(colorId);
     setSelectedSize("");
     setSelectedVariant(null);
+    setQuantity(1);
   };
 
-  // Chọn kích thước
   const handleSizeSelect = (sizeId) => {
     setSelectedSize(sizeId);
     setSelectedSizeId(sizeId);
     findVariant(selectedColor, sizeId);
   };
 
-  // Định dạng giá tiền
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
       style: "decimal",
@@ -75,7 +117,6 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  // Tìm biến thể
   const findVariant = (colorId, sizeId) => {
     const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
@@ -93,31 +134,44 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Thay đổi số lượng
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value > 0) {
-      setQuantity(value);
+    const availableStock = getAvailableStock();
+
+    if (isNaN(value) || value < 1) {
+      setQuantity(1);
+      message.warning("Số lượng phải lớn hơn 0.");
+      return;
     }
+
+    if (value > availableStock) {
+      setQuantity(availableStock);
+      message.warning(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
+      return;
+    }
+
+    setQuantity(value);
   };
 
-  // Thêm vào giỏ hàng
   const handleAddToCart = async () => {
-    // Kiểm tra nếu sản phẩm đã ngừng kinh doanh
     if (product.is_active === 0) {
       message.error("Sản phẩm này đã ngừng kinh doanh.");
       return;
     }
 
-    // Kiểm tra nếu có biến thể nhưng chưa chọn
     if (product.variants?.length > 0 && !selectedVariant) {
       message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
       return;
     }
 
-    // Kiểm tra nếu biến thể đã chọn có is_active = 0
     if (selectedVariant && selectedVariant.is_active === 0) {
       message.error("Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác.");
+      return;
+    }
+
+    const availableStock = getAvailableStock();
+    if (quantity > availableStock) {
+      message.error(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
       return;
     }
 
@@ -128,8 +182,12 @@ const ProductDetailClient = () => {
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
       price: selectedVariant
-        ? selectedVariant.sale_price || selectedVariant.sell_price
-        : product.sale_price || product.sell_price,
+        ? isSalePriceValid(selectedVariant.sale_price_end_at)
+          ? selectedVariant.sale_price
+          : selectedVariant.sell_price
+        : isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
@@ -138,12 +196,12 @@ const ProductDetailClient = () => {
 
     try {
       if (user?.id) {
-        // Người dùng đã đăng nhập
         await cartServices.addCartItem(product.id, itemToAdd);
+        const updatedCart = await cartServices.fetchCart();
+        setCartItems(updatedCart);
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
       } else {
-        // Người dùng chưa đăng nhập
         let existingAttributes = JSON.parse(localStorage.getItem("cartAttributes")) || [];
         let cartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
 
@@ -162,7 +220,15 @@ const ProductDetailClient = () => {
         );
 
         if (existingProductIndex !== -1) {
-          existingAttributes[existingProductIndex].quantity += newAttributes.quantity;
+          const newTotalQuantity = existingAttributes[existingProductIndex].quantity + quantity;
+          if (newTotalQuantity > (selectedVariant ? selectedVariant.stock : product.stock)) {
+            message.error(
+              `Không thể thêm. Tổng số lượng vượt quá ${selectedVariant ? selectedVariant.stock : product.stock
+              } sản phẩm trong kho.`
+            );
+            return;
+          }
+          existingAttributes[existingProductIndex].quantity = newTotalQuantity;
         } else {
           existingAttributes.push(newAttributes);
         }
@@ -174,7 +240,15 @@ const ProductDetailClient = () => {
         );
 
         if (existingCartItemIndex !== -1) {
-          cartItems[existingCartItemIndex].quantity += quantity;
+          const newTotalQuantity = cartItems[existingCartItemIndex].quantity + quantity;
+          if (newTotalQuantity > (selectedVariant ? selectedVariant.stock : product.stock)) {
+            message.error(
+              `Không thể thêm. Tổng số lượng vượt quá ${selectedVariant ? selectedVariant.stock : product.stock
+              } sản phẩm trong kho.`
+            );
+            return;
+          }
+          cartItems[existingCartItemIndex].quantity = newTotalQuantity;
         } else {
           cartItems.push({
             product_id: product.id,
@@ -185,6 +259,7 @@ const ProductDetailClient = () => {
 
         localStorage.setItem("cartAttributes", JSON.stringify(existingAttributes));
         localStorage.setItem("cart_items", JSON.stringify(cartItems));
+        setCartItems(cartItems);
         message.success("Sản phẩm đã được thêm vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
       }
@@ -194,7 +269,6 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Xử lý kéo thả
   const stockAvailable =
     (selectedVariant ? selectedVariant.stock : product.stock) > 0 &&
     product.is_active === 1 &&
@@ -220,13 +294,24 @@ const ProductDetailClient = () => {
       return;
     }
 
+    const availableStock = getAvailableStock();
+    if (quantity > availableStock) {
+      e.preventDefault();
+      message.error(`Chỉ còn ${availableStock} sản phẩm khả dụng trong kho.`);
+      return;
+    }
+
     const dragData = {
       product_id: product.id,
       product_variant_id: selectedVariant ? selectedVariant.id : null,
       quantity: quantity,
       price: selectedVariant
-        ? selectedVariant.sale_price || selectedVariant.sell_price
-        : product.sale_price || product.sell_price,
+        ? isSalePriceValid(selectedVariant.sale_price_end_at)
+          ? selectedVariant.sale_price
+          : selectedVariant.sell_price
+        : isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
       attributes: [
         { attribute_id: 1, attribute_value_id: selectedColorId },
         { attribute_id: 2, attribute_value_id: selectedSizeId },
@@ -252,21 +337,27 @@ const ProductDetailClient = () => {
   };
 
   const getVariantPriceRange = (product) => {
-    const variantPrices =
-      product.variants?.map((variant) =>
-        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
-      ) || [];
-
-    if (variantPrices.length === 0) {
-      const price =
-        product.sale_price > 0 ? product.sale_price : product.sell_price;
-      return { minPrice: price, maxPrice: price };
+    if (!product.variants || product.variants.length === 0) {
+      return {
+        minPrice: isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
+        maxPrice: isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
+      };
     }
 
-    const minPrice = Math.min(...variantPrices);
-    const maxPrice = Math.max(...variantPrices);
+    const prices = product.variants.map((variant) =>
+      isSalePriceValid(variant.sale_price_end_at)
+        ? variant.sale_price
+        : variant.sell_price
+    );
 
-    return { minPrice, maxPrice };
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
   };
 
   // Lấy dữ liệu sản phẩm
@@ -282,7 +373,6 @@ const ProductDetailClient = () => {
     }
   };
 
-  // Lấy sản phẩm đề xuất
   const fetchProductRecommend = async () => {
     try {
       const response = await productsServices.fetchProductRecommendById(id);
@@ -309,10 +399,10 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <Link to="/"><span>Trang Chủ</span></Link>
+              <Link to="/">Trang Chủ</Link>
             </li>
             <li className="breadcrumb-item">
-              <Link to="/list-prcl"><span>Sản Phẩm</span></Link>
+              <Link to="/list-prcl">Sản Phẩm</Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               Chi Tiết
@@ -393,10 +483,7 @@ const ProductDetailClient = () => {
                             setMainImage(item.image);
                           }}
                         >
-                          <img
-                            src={item.image}
-                            alt={`hình ảnh sản phẩm ${index + 1}`}
-                          />
+                          <img src={item.image} alt={`hình ảnh sản phẩm ${index + 1}`} />
                         </a>
                       ))}
                   </div>
@@ -435,13 +522,28 @@ const ProductDetailClient = () => {
                     </div>
                   </div>
 
+                  {/* <div className="details-filter-row details-row-size">
+                    <label>Lượt xem:</label>
+                    <div className="product-nav product-nav-dots">
+                      <div>{product.views}</div>
+                    </div>
+                  </div> */}
+
                   {selectedVariant ? (
                     <div className="product-price">
-                      {formatPrice(selectedVariant.sale_price || selectedVariant.sell_price)} VNĐ
+                      {formatPrice(
+                        isSalePriceValid(selectedVariant.sale_price_end_at)
+                          ? selectedVariant.sale_price
+                          : selectedVariant.sell_price
+                      )} VNĐ
                     </div>
                   ) : product.variants && product.variants.length === 0 ? (
                     <div className="product-price">
-                      {formatPrice(product.sale_price || product.sell_price)} VNĐ
+                      {formatPrice(
+                        isSalePriceValid(product.sale_price_end_at)
+                          ? product.sale_price
+                          : product.sell_price
+                      )} VNĐ
                     </div>
                   ) : (
                     <div className="product-price">
@@ -453,7 +555,7 @@ const ProductDetailClient = () => {
 
                   {product.is_active === 1 && (
                     <>
-                     {(selectedColor && selectedSize) && (
+                      {(selectedColor && selectedSize) && (
                         <div className="details-filter-row details-row-size">
                           <label>Tồn kho:</label>
                           <div className="product-nav product-nav-dots">
@@ -505,10 +607,7 @@ const ProductDetailClient = () => {
                             >
                               <option value="">Chọn size</option>
                               {product.atribute_value_product
-                                .filter(
-                                  (attr) =>
-                                    attr.attribute_value.attribute_id === 2
-                                )
+                                .filter((attr) => attr.attribute_value.attribute_id === 2)
                                 .map((item) => (
                                   <option
                                     key={item.attribute_value_id}
@@ -531,10 +630,11 @@ const ProductDetailClient = () => {
                             className="form-control"
                             value={quantity}
                             min="1"
-                            max={selectedVariant?.stock || product.stock}
+                            max={getAvailableStock()}
                             step="1"
                             required
                             onChange={handleQuantityChange}
+                            aria-label={`Số lượng sản phẩm, tối đa ${getAvailableStock()}`}
                           />
                         </div>
                       </div>
@@ -632,10 +732,15 @@ const ProductDetailClient = () => {
                     hoverable
                     cover={<img alt={product.name} src={product.thumbnail} />}
                   >
-                    <Card.Meta
-                      title={product.name}
-                      description={`${formatPrice(product.sale_price || product.sell_price)} VNĐ`}
-                    />
+                    <Card.Meta title={product.name} description={(() => {
+                      const { minPrice, maxPrice } =
+                        getVariantPriceRange(product);
+                      return minPrice === maxPrice
+                        ? `${formatPrice(minPrice)} VNĐ`
+                        : `${formatPrice(minPrice)} - ${formatPrice(
+                          maxPrice
+                        )} VNĐ`;
+                    })()} />
                   </Card>
                 </Col>
               ))}
@@ -679,17 +784,6 @@ const ProductDetailClient = () => {
                             )} VNĐ`;
                         })()} />
                       </Card>
-                      {/* <figure className="product-media">
-                        <a href="product.html">
-                          <img style={{ width: "300px", height: "300px" }} src={product.thumbnail} alt="Product image" className="product-image" />
-                        </a>
-                      </figure>
-
-                      <div className="product-body">
-                        <h3 className="product-title"><a href="product.html">{product.name}</a></h3>
-                        <div className="product-price">{product.sale_price > 0 ? formatVND(product.sale_price) : formatVND(product.sell_price)} VND</div>
-
-                      </div> */}
                     </div>
                   </SwiperSlide>
                 ))}

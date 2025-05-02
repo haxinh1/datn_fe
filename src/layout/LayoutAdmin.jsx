@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Layout, Menu, theme, Modal, Avatar, Button, Tooltip, Dropdown } from "antd";
-import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, CommentOutlined, RollbackOutlined, DatabaseOutlined } from "@ant-design/icons";
+import { HomeOutlined, BookOutlined, MessageOutlined, LogoutOutlined, ProductOutlined, ImportOutlined, PrinterOutlined, GroupOutlined, TableOutlined, ProjectOutlined, EditOutlined, SettingOutlined, LockOutlined, BellOutlined, TeamOutlined, RollbackOutlined, DatabaseOutlined, CloseCircleFilled, CloseCircleOutlined } from "@ant-design/icons";
 import "./layoutAdmin.css";
 import { AuthServices } from "../services/auth";
 import logo from "../assets/images/logo-footer.png";
@@ -56,8 +56,8 @@ const LayoutAdmin = () => {
 
   const forceLogout = async () => {
     try {
-      const tokenBefore = localStorage.getItem("adminToken");
-      localStorage.removeItem("admin_token");
+      const tokenBefore = localStorage.getItem("token");
+      localStorage.removeItem("token");
 
       await AuthServices.logoutad(
         "/admin/logout",
@@ -69,8 +69,9 @@ const LayoutAdmin = () => {
         }
       );
 
-      localStorage.removeItem("adminToken");
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     } catch (error) {
       console.error("Lỗi khi logout:", error);
     } finally {
@@ -143,6 +144,15 @@ const LayoutAdmin = () => {
       ),
     },
     {
+      key: "cancel",
+      icon: <CloseCircleOutlined />,
+      label: (
+        <Link to="/admin/cancel">
+          <span>Đơn hủy</span>
+        </Link>
+      ),
+    },
+    {
       key: "bill",
       icon: <PrinterOutlined />,
       label: (
@@ -205,15 +215,6 @@ const LayoutAdmin = () => {
         </Link>
       ),
     },
-    {
-      key: "comment",
-      icon: <CommentOutlined />,
-      label: (
-        <Link to="/admin/comment">
-          <span>Đánh giá</span>
-        </Link>
-      ),
-    },
     !isManager && {
       key: "dashboardad",
       icon: <DatabaseOutlined />,
@@ -268,9 +269,9 @@ const LayoutAdmin = () => {
               </div>
             )}
 
-            <Tooltip title="Thông báo">
+            {/* <Tooltip title="Thông báo">
               <BellOutlined style={{ fontSize: "24px", cursor: "pointer" }} />
-            </Tooltip>
+            </Tooltip> */}
 
             <Dropdown overlay={menu} trigger={["hover"]}>
               <Button

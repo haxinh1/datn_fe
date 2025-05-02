@@ -6,6 +6,63 @@ const getAllOrder = async () => {
   return response.data;
 };
 
+// danh sách đơn hủy
+const getAllCancel = async () => {
+  const response = await instance.get("/order-cancels");
+  return response.data;
+};
+
+// 1 đơn hủy
+const getACancel = async (orderId) => {
+  const response = await instance.get(`/order-cancels/order/${orderId}`);
+  return response.data;
+};
+
+// tìm kiếm đơn hủy
+const searchOrderCancel = async (keyword = "") => {
+  try {
+    const response = await instance.get('/admin/orders-cancel/search', {
+      params: { keyword },
+    });
+
+    // ✅ API trả về mảng đơn hàng trực tiếp
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Lỗi khi gọi API tìm kiếm đơn hàng:", error);
+    return []; // fallback tránh crash
+  }
+};
+
+// danh sách đơn hủy theo người dùng
+const getCancelByUser = async (userId) => {
+  const response = await instance.get(`/order-cancels/user/${userId}`);
+  return response.data;
+};
+
+// client hủy đơn
+const cancelRequest = async (payload) => {
+  const response = await instance.post('/order-cancels/request-cancel', payload);
+  return response.data;
+};
+
+// admin hủy đơn
+const adminCancel = async (orderId, payload) => {
+  const response = await instance.post(`/order-cancels/admin-cancel/${orderId}`, payload);
+  return response.data;
+};
+
+// admin xác nhận hoàn tiền
+const cancelBack = async (cancelId, payload) => {
+  const response = await instance.post(`/order-cancels/refund/${cancelId}`, payload);
+  return response.data;
+};
+
+// client gửi thông tin hoàn tiền
+const infoBack = async (cancelId, payload) => {
+  const response = await instance.post(`/order-cancels/submit-bank-info/${cancelId}`, payload);
+  return response.data;
+};
+
 // tìm kiếm đơn hàng
 const searchOrders = async (keyword = "") => {
   try {
@@ -49,7 +106,7 @@ const getAllStatus = async () => {
 };
 
 const placeOrder = async (orderData) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user ? user.id : null;
 
@@ -58,31 +115,63 @@ const placeOrder = async (orderData) => {
     Authorization: token ? `Bearer ${token}` : undefined,
   };
 
-  // Lấy cart từ localStorage nếu không có userId
-  if (!userId) {
-    const localCartItems = JSON.parse(localStorage.getItem("cart_items")) || [];
-    orderData.cart_items = localCartItems;
-  }
-
   try {
+    // Gọi API để đặt hàng
     const response = await instance.post("/orders/place", orderData, {
       headers,
     });
 
-    // Xóa giỏ hàng trong localStorage nếu đặt hàng thành công (không đăng nhập)
+    console.log("✅ Đặt hàng thành công:", response.data);
+
+    // Nếu người dùng không đăng nhập (vãng lai), xóa sản phẩm trong localStorage
     if (!userId) {
-      localStorage.removeItem("cart_items");
-      localStorage.removeItem("cartAttributes");
+      try {
+        // Lấy giỏ hàng từ localStorage
+        let localCart = JSON.parse(localStorage.getItem("cart_items") || "[]");
+        let cartAttributes = JSON.parse(localStorage.getItem("cartAttributes") || "[]");
+
+        // Lọc bỏ các sản phẩm đã mua khỏi giỏ hàng
+        const purchasedItems = orderData.products.map(item => ({
+          product_id: item.product_id,
+          product_variant_id: item.product_variant_id || null,
+        }));
+
+        // Lọc giỏ hàng để loại bỏ các sản phẩm đã mua
+        localCart = localCart.filter(cartItem =>
+          !purchasedItems.some(
+            purchased =>
+              purchased.product_id === cartItem.product_id &&
+              (purchased.product_variant_id === cartItem.product_variant_id || null)
+          )
+        );
+
+        // Lọc thuộc tính của sản phẩm đã mua khỏi cartAttributes
+        cartAttributes = cartAttributes.filter(attr =>
+          !purchasedItems.some(
+            purchased =>
+              purchased.product_id === attr.product_id &&
+              (purchased.product_variant_id === attr.product_variant_id || null)
+          )
+        );
+
+        // Cập nhật lại giỏ hàng trong localStorage
+        localStorage.setItem("cart_items", JSON.stringify(localCart));
+        localStorage.setItem("cartAttributes", JSON.stringify(cartAttributes));
+
+        // Kích hoạt sự kiện để cập nhật giỏ hàng trên giao diện
+        window.dispatchEvent(new Event("cart-updated"));
+      } catch (error) {
+        console.error("Lỗi khi cập nhật giỏ hàng trong localStorage:", error);
+        // Không hiển thị lỗi cho người dùng vì đơn hàng đã đặt thành công
+      }
     }
 
-    console.log("✅ Đặt hàng thành công:", response.data);
-    return response.data;
+    return response.data; // Trả lại dữ liệu của đơn hàng
   } catch (error) {
     console.error("❌ Lỗi khi đặt hàng:", error.response?.data || error);
-    throw error;
+    throw error; // Ném lỗi để gọi lại ở nơi khác nếu cần
   }
 };
-
 // danh sách đơn hàng theo người dùng
 const getOrderByIdUser = async (userId) => {
   const response = await instance.get(`/orders/user/${userId}`);
@@ -106,6 +195,11 @@ const getDetailOrder = async (orderId) => {
   return response.data;
 };
 
+const getCodeOrder = async (orderCode) => {
+  const response = await instance.get(`/orders/code/${orderCode}`);
+  return response.data;
+};
+
 // danh sách quản lý đơn hàng
 const getOrderStatus = async (id) => {
   const response = await instance.get(`/orders/${id}/statuses`);
@@ -114,7 +208,7 @@ const getOrderStatus = async (id) => {
 
 const updateOrderStatus = async (id, payload) => {
   // Lấy client_token từ localStorage
-  const clientToken = localStorage.getItem("client_token");
+  const clientToken = localStorage.getItem("token");
 
   // Gửi client_token trong headers khi gọi API
   const response = await instance.put(`/orders/${id}/update-status`, payload, {
@@ -180,7 +274,7 @@ const confirmBack = async (id, payload) => {
 };
 
 const retryPayment = async (orderId, paymentMethod, totalMomo) => {
-  const clientToken = localStorage.getItem("client_token");
+  const clientToken = localStorage.getItem("token");
   try {
     const data = {
       payment_method: paymentMethod,
@@ -208,12 +302,21 @@ const retryPayment = async (orderId, paymentMethod, totalMomo) => {
 // Xuất các hàm để dùng trong các component
 export const OrderService = {
   getOrderById,
+  getCodeOrder,
   searchOrders,
   searchOrderReturn,
   getDetailOrder,
   placeOrder,
   getAllOrder,
   getAllBill,
+  getAllCancel,
+  getACancel,
+  searchOrderCancel,
+  getCancelByUser,
+  cancelRequest,
+  adminCancel,
+  cancelBack,
+  infoBack,
   getAllStatus,
   getOrderStatus,
   updateOrderStatus,

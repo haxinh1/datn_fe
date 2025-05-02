@@ -371,7 +371,7 @@ const Back = () => {
         try {
             const values = await form.validateFields();
             setIsLoading(true);
-            const payload = { 
+            const payload = {
                 approve_stock: values.approveStock,
                 user_id: JSON.parse(localStorage.getItem("user")).id,
             };
@@ -601,16 +601,20 @@ const Back = () => {
         },
         {
             title: "Giá hoàn (VNĐ)",
+            dataIndex: "return_price",
+            align: "center",
+            render: (_, record) => {
+                const { price, quantity } = record;
+                const returnPrice = quantity ? price / quantity : 0;
+                return formatPrice(returnPrice);
+            },
+        },
+        {
+            title: "Thành tiền (VNĐ)",
             dataIndex: "price",
             align: "center",
             render: (price) => (price ? formatPrice(price) : ""),
         },
-        {
-            title: "Thành tiền (VNĐ)",
-            dataIndex: "total",
-            align: "center",
-            render: (_, record) => formatPrice(record.quantity * record.price),
-        }
     ];
 
     return (
@@ -707,17 +711,13 @@ const Back = () => {
                         }))}
                         pagination={false}
                         summary={() => {
-                            const totalAmount = selectedProducts.reduce(
-                                (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
-                                0
-                            );
                             return (
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={4} align="right">
                                         <strong>Số tiền hoàn trả (VNĐ):</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell align="center">
-                                        <strong>{formatPrice(totalAmount)}</strong>
+                                        <strong>{formatPrice(refundDetails?.total_refund_amount || 0)}</strong>
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
                             );

@@ -699,10 +699,18 @@ const Edit = () => {
                     <Col span={8} className="col-item">
                         <Form.Item
                             label="Tên sản phẩm"
-                            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
                             name="name"
+                            rules={[
+                                { required: true, message: "Vui lòng nhập tên sản phẩm" },
+                                { pattern: /^(?!\s+$).+/, message: "Tên không được chứa toàn khoảng trắng" },
+                            ]}
+                            
                         >
-                            <Input className="input-item" onChange={handleNameChange} />
+                            <Input 
+                                className="input-item" 
+                                onChange={handleNameChange} 
+                                disabled={product?.total_sales > 0}
+                            />
                         </Form.Item>
 
                         <Form.Item
@@ -710,7 +718,10 @@ const Edit = () => {
                             rules={[{ required: true, message: "Vui lòng nhập Slug" }]}
                             name="slug"
                         >
-                            <Input className="input-item" />
+                            <Input 
+                                className="input-item" 
+                                disabled={product?.total_sales > 0}
+                            />
                         </Form.Item>
 
                         <Form.Item
@@ -722,6 +733,7 @@ const Edit = () => {
                                 className="input-item"
                                 placeholder="Chọn thương hiệu"
                                 showSearch
+                                disabled={product?.total_sales > 0}
                             >
                                 {brands && brands.map((brand) => (
                                     <Option key={brand.id} value={brand.id}>
@@ -741,6 +753,7 @@ const Edit = () => {
                                 placeholder="Chọn danh mục"
                                 showSearch
                                 optionFilterProp="children"
+                                disabled={product?.total_sales > 0}
                                 filterOption={(input, option) =>
                                     option.children.toLowerCase().includes(input.toLowerCase())
                                 }

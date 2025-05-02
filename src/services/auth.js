@@ -72,8 +72,7 @@ const update = async (id, userData) => {
 
 
 const changePassword = async (id, userData) => {
-  const token =
-    localStorage.getItem("client_token") || localStorage.getItem("adminToken"); 
+  const token = localStorage.getItem("token"); // Lấy token từ localStorage
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -124,9 +123,9 @@ const login = async (phone_number, password) => {
   });
 
   if (response.data.access_token) {
-    
-    localStorage.setItem("client_token", response.data.access_token);
-    localStorage.setItem("client", JSON.stringify(response.data.user)); 
+    // Lưu token và user vào localStorage
+    localStorage.setItem("token", response.data.access_token);
+    localStorage.setItem("user", JSON.stringify(response.data.user)); // Lưu thông tin user
   }
 
   return response.data;
@@ -139,17 +138,38 @@ const loginad = async (phone_number, password) => {
   });
 
   if (response.data.access_token) {
-    localStorage.setItem("adminToken", response.data.access_token);
+    localStorage.setItem("token", response.data.access_token);
   }
 
   return response.data;
 };
 
 const logoutclient = async () => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token"); // Đảm bảo lấy đúng key
 
-  if (!token) {
-    return;
+  // Xóa token client trước khi gửi yêu cầu logout
+  if (token) {
+    try {
+      // Gửi yêu cầu logout với Authorization header
+      const response = await instance.post(
+        "/client/logout",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Nếu cần, bạn có thể xử lý response tại đây, ví dụ: kiểm tra xem logout thành công hay chưa
+
+      // Sau khi logout thành công, xóa cả client_token và user khỏi localStorage
+      localStorage.removeItem("token"); // Xóa token client
+      localStorage.removeItem("user"); // Xóa thông tin user
+
+      return { message: "Client logged out successfully" };
+    } catch (error) {
+      console.error("Logout failed", error);
+      return { message: "Logout failed. Please try again!" };
+    }
   }
 
   try {
@@ -174,7 +194,7 @@ const logoutclient = async () => {
 };
 
 const logoutad = async () => {
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("token");
 
   
   if (token) {
@@ -185,16 +205,15 @@ const logoutad = async () => {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    
-    localStorage.removeItem("adminToken");
+    // Xóa token admin
+    localStorage.removeItem("token");
   }
 
   return { message: "Admin logged out and adminToken cleared" };
 };
 
 const getAddressByIdUser = async (userId) => {
-  const token =
-    localStorage.getItem("client_token") || localStorage.getItem("admin_token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -210,7 +229,7 @@ const getAddressByIdUser = async (userId) => {
 
 
 const addAddress = async (payload) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -225,7 +244,7 @@ const addAddress = async (payload) => {
 };
 
 const getaAddress = async (id) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -241,7 +260,7 @@ const getaAddress = async (id) => {
 
 
 const updateAddress = async (id, payload) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");
@@ -256,7 +275,7 @@ const updateAddress = async (id, payload) => {
 };
 
 const deleteAddress = async (id) => {
-  const token = localStorage.getItem("client_token");
+  const token = localStorage.getItem("token");
 
   if (!token) {
     throw new Error("Token xác thực không có trong localStorage");

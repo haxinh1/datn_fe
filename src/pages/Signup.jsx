@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import "../css/signup.css";
 import { UploadOutlined } from "@ant-design/icons";
 import moment from "moment/moment";
+import dayjs from "dayjs";
 
 const Signup = () => {
   const [form] = Form.useForm();
@@ -159,7 +160,7 @@ const Signup = () => {
       });
       navigate("/confirm");
     },
-    
+
     onError: (error) => {
       notification.error({
         message: "Đăng ký thất bại",
@@ -191,11 +192,11 @@ const Signup = () => {
         : "",
       values.district
         ? districts.find((d) => d.DistrictID === Number(values.district))
-            ?.DistrictName
+          ?.DistrictName
         : "",
       values.province
         ? provinces.find((p) => p.ProvinceID === Number(values.province))
-            ?.ProvinceName
+          ?.ProvinceName
         : "",
     ]
       .filter(Boolean)
@@ -250,7 +251,11 @@ const Signup = () => {
               <Form.Item
                 name="fullname"
                 label="Họ và tên"
-                rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập tên khách hàng" },
+                  { pattern: /^[a-zA-Z\sÀ-ỹ]+$/u, message: "Tên không được chứa ký tự đặc biệt" },
+                  { pattern: /^(?!\s+$).+/, message: "Tên không được chứa toàn khoảng trắng" },
+                ]}
               >
                 <Input className="input-item" placeholder="Nhập họ và tên" />
               </Form.Item>
@@ -277,15 +282,34 @@ const Signup = () => {
                     label="Ngày sinh"
                     rules={[
                       { required: true, message: "Vui lòng chọn ngày sinh" },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value) {
+                            return Promise.resolve();
+                          }
+
+                          const today = dayjs();
+                          const age = today.diff(value, 'year');
+
+                          if (age >= 18) {
+                            return Promise.resolve();
+                          }
+
+                          return Promise.reject("Bạn phải đủ 18 tuổi trở lên");
+                        },
+                      }),
                     ]}
                   >
                     <DatePicker
                       className="input-item"
                       format="DD/MM/YYYY"
                       placeholder="DD/MM/YYYY"
-                      disabledDate={(current) => current && current > moment().endOf("day")}
+                      disabledDate={(current) =>
+                        current && current > dayjs().endOf("day")
+                      }
                     />
                   </Form.Item>
+
                 </Col>
               </Row>
             </Col>
@@ -334,6 +358,10 @@ const Signup = () => {
                 label="Số điện thoại"
                 rules={[
                   { required: true, message: "Vui lòng nhập số điện thoại" },
+                  {
+                    pattern: /^\d{10}$/,
+                    message: "Số điện thoại phải gồm đúng 10 chữ số",
+                  },
                 ]}
               >
                 <Input
@@ -453,11 +481,11 @@ const Signup = () => {
                 rules={
                   selectedWard
                     ? [
-                        {
-                          required: true,
-                          message: "Vui lòng nhập địa chỉ cụ thể",
-                        },
-                      ]
+                      {
+                        required: true,
+                        message: "Vui lòng nhập địa chỉ cụ thể",
+                      },
+                    ]
                     : []
                 }
               >

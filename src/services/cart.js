@@ -13,7 +13,7 @@ const fetchCart = async () => {
       // Nếu người dùng đã đăng nhập, lấy giỏ hàng từ database
       const response = await instance.get("/cart", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("client_token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         params: { user_id: userId },
         withCredentials: true,
@@ -35,7 +35,7 @@ const fetchCart = async () => {
 // Thêm sản phẩm vào giỏ hàng
 const addCartItem = async (productId, payload) => {
   try {
-    const token = localStorage.getItem("client_token");
+    const token = localStorage.getItem("token");
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user ? user.id : null;
 
@@ -84,7 +84,7 @@ const addCartItem = async (productId, payload) => {
 
 // Cập nhật số lượng sản phẩm trong giỏ hàng
 const updateCartItem = async (productId, newQuantity, variantId = null) => {
-  const token = localStorage.getItem("client_token"); // or wherever the token is stored
+  const token = localStorage.getItem("token"); // or wherever the token is stored
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
   const response = await instance.put(
@@ -129,7 +129,7 @@ const removeCartItem = async (productId, variantId = null) => {
       return { message: "Sản phẩm đã được xóa khỏi giỏ hàng (local)!" };
     }
 
-    const token = localStorage.getItem("client_token");
+    const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
     const response = await instance.delete(
@@ -157,7 +157,7 @@ const clearCart = async () => {
       return { message: "Giỏ hàng đã được xóa (local)!" };
     }
 
-    const token = localStorage.getItem("client_token");
+    const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
     // Call the backend to delete all cart items (correct route is used here)

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox, Upload } from "antd";
+import { Button, Table, InputNumber, notification, AutoComplete, Tooltip, Form, Checkbox, Upload, DatePicker, Modal } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { productsServices } from "../../services/product";
 import { DeleteOutlined, ImportOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import "../../css/add.css";
 import "../../css/list.css";
+import dayjs from "dayjs";
 
 const Import = () => {
     const [form] = Form.useForm();
@@ -130,14 +131,23 @@ const Import = () => {
                 };
             }
 
+            // Chỉ thêm sale_price_start_at và sale_price_end_at nếu sale_price có giá trị
+            const salePriceData = item.sale_price && item.sale_price !== ""
+                ? {
+                    sale_price: item.sale_price,
+                    sale_price_start_at: item.sale_price_start_at || "",
+                    sale_price_end_at: item.sale_price_end_at || ""
+                }
+                : {};
+
             if (item.variantName.includes("-")) {
                 // Nếu là biến thể, thêm vào danh sách variants
                 groupedProducts[item.productId].variants.push({
                     id: item.id,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price || '',
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    ...salePriceData // Thêm sale_price và 2 ngày nếu có
                 });
             } else {
                 // Nếu là sản phẩm đơn, lưu trực tiếp
@@ -145,8 +155,8 @@ const Import = () => {
                     id: item.productId,
                     price: item.price,
                     sell_price: item.sell_price,
-                    sale_price: item.sale_price || '',
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    ...salePriceData // Thêm sale_price và 2 ngày nếu có
                 };
             }
         });
@@ -154,7 +164,6 @@ const Import = () => {
         const productsArray = Object.values(groupedProducts);
 
         const payload = {
-            // user_id: 1,
             products: productsArray
         };
 
@@ -194,26 +203,25 @@ const Import = () => {
         setSelectedRowKeys([]); // Reset lại danh sách đã chọn
     };
 
-    // Gửi dữ liệu nhập hàng
-    const handleSubmit = async () => {
+    const handleDateChange = (date, type, record) => {
+        setAddedVariants(prevVariants =>
+            prevVariants.map(item =>
+                item.key === record.key
+                    ? {
+                        ...item,
+                        ...(type === "start" && { sale_price_start_at: date ? date.format("YYYY-MM-DD") : null }),
+                        ...(type === "end" && { sale_price_end_at: date ? date.format("YYYY-MM-DD") : null }),
+                    }
+                    : item
+            )
+        );
+    };
+
+    // Hàm gọi API nhập hàng
+    const submitImport = async (payload) => {
         try {
-            await form.validateFields(); // Kiểm tra form trước khi submit
-
-            const payload = preparePayload(); // Lấy dữ liệu đúng format
-
-            if (!payload.products.length) {
-                notification.error({
-                    message: "Lỗi nhập hàng",
-                    description: "Không có sản phẩm nào được chọn!",
-                });
-                return;
-            }
-
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
-
             const response = await productsServices.importProduct(payload);
 
-            // ✅ Thông báo dựa vào role
             if (loggedInUserRole === 'admin') {
                 notification.success({
                     message: "Nhập hàng thành công.",
@@ -225,8 +233,60 @@ const Import = () => {
                 });
             }
 
-            setAddedVariants([]); // Reset danh sách sản phẩm sau khi nhập hàng thành công
+            setAddedVariants([]);
             form.resetFields();
+        } catch (error) {
+            console.error("Lỗi khi nhập hàng:", error);
+            notification.error({
+                message: "Lỗi nhập hàng",
+                description: "Không thể nhập hàng. Vui lòng thử lại sau!",
+            });
+        }
+    };
+
+    // Gửi dữ liệu nhập hàng
+    // Gửi dữ liệu nhập hàng
+    const handleSubmit = async () => {
+        try {
+            await form.validateFields(); // Kiểm tra form trước khi submit
+
+            const payload = preparePayload();
+
+            if (!payload.products.length) {
+                notification.error({
+                    message: "Lỗi nhập hàng",
+                    description: "Không có sản phẩm nào được chọn!",
+                });
+                return;
+            }
+
+            // Kiểm tra nếu role là manager và giá nhập cao hơn giá bán
+            if (loggedInUserRole === "manager") {
+                const hasInvalidPrice = addedVariants.some(item => item.price > item.sell_price);
+
+                if (hasInvalidPrice) {
+                    // Hiển thị modal cảnh báo
+                    Modal.confirm({
+                        title: "Cảnh báo giá nhập",
+                        content: "Có một số sản phẩm có giá nhập cao hơn giá bán. Bạn có chắc chắn muốn tiếp tục nhập hàng không?",
+                        okText: "Xác nhận",
+                        cancelText: "Hủy",
+                        onOk: () => {
+                            // Nếu xác nhận, gọi API nhập hàng
+                            submitImport(payload);
+                        },
+                        onCancel: () => {
+                            // Nếu hủy, không làm gì cả
+                            return;
+                        },
+                    });
+                    return; // Dừng lại để đợi người dùng xác nhận
+                }
+            }
+
+            // Nếu không có vấn đề gì, gọi API nhập hàng ngay
+            await submitImport(payload);
+
         } catch (error) {
             console.error("Lỗi khi nhập hàng:", error);
         }
@@ -308,7 +368,6 @@ const Import = () => {
                             title: "Tên sản phẩm",
                             dataIndex: "variantName",
                             align: "center",
-                            width: 300
                         },
                         {
                             title: "Giá nhập (VNĐ)",
@@ -397,19 +456,23 @@ const Import = () => {
                             dataIndex: "sale_price",
                             align: "center",
                             render: (_, record) => {
-                                const uniqueKey = `${record.productId}_${record.id}`; // Định danh duy nhất
-
+                                const uniqueKey = `${record.productId}_${record.id}`;
                                 return (
                                     <Form.Item
                                         name={`sale_price_${uniqueKey}`}
+                                        initialValue={record.sale_price}
                                         rules={[
                                             loggedInUserRole !== "manager" && ({
                                                 validator(_, value) {
-                                                    if (value !== undefined && value !== null && value !== "") {
-                                                        if (value >= record.sell_price) {
-                                                            return Promise.reject("Giá KM phải nhỏ hơn giá bán!");
-                                                        }
+                                                    // Nếu không nhập giá KM, bỏ qua validate
+                                                    if (value === undefined || value === null || value === "") {
+                                                        return Promise.resolve();
                                                     }
+                                                    // Nếu nhập giá KM, kiểm tra giá trị
+                                                    if (value >= record.sell_price) {
+                                                        return Promise.reject("Giá KM phải nhỏ hơn giá bán!");
+                                                    }
+
                                                     return Promise.resolve();
                                                 },
                                             }),
@@ -425,6 +488,86 @@ const Import = () => {
                                                 form.setFieldsValue({ [`sale_price_${uniqueKey}`]: value });
                                                 updateItem(record.key, "sale_price", value);
                                             }}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },
+                        {
+                            title: "Ngày mở KM",
+                            dataIndex: "sale_price_start_at",
+                            key: "sale_price_start_at",
+                            align: "center",
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`;
+                                return (
+                                    <Form.Item
+                                        name={`sale_price_start_at_${uniqueKey}`}
+                                        initialValue={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                                        rules={
+                                            loggedInUserRole !== "manager"
+                                                ? [
+                                                    ({ getFieldValue }) => ({
+                                                        validator(_, value) {
+                                                            const salePrice = getFieldValue(`sale_price_${uniqueKey}`);
+                                                            if (!salePrice) return Promise.resolve();
+                                                            if (!value) return Promise.reject("Vui lòng chọn ngày mở khuyến mại!");
+                                                            return Promise.resolve();
+                                                        },
+                                                    }),
+                                                ]
+                                                : []
+                                        }
+                                    >
+                                        <DatePicker
+                                            className="input-form"
+                                            format="DD/MM/YYYY"
+                                            disabled={loggedInUserRole === "manager"}
+                                            value={record.sale_price_start_at ? dayjs(record.sale_price_start_at) : null}
+                                            onChange={(date) => handleDateChange(date, "start", record)}
+                                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                                        />
+                                    </Form.Item>
+                                );
+                            },
+                        },
+                        {
+                            title: "Ngày đóng KM",
+                            dataIndex: "sale_price_end_at",
+                            key: "sale_price_end_at",
+                            align: "center",
+                            render: (_, record) => {
+                                const uniqueKey = `${record.productId}_${record.id}`;
+                                return (
+                                    <Form.Item
+                                        name={`sale_price_end_at_${uniqueKey}`}
+                                        initialValue={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                                        rules={
+                                            loggedInUserRole !== "manager"
+                                                ? [
+                                                    ({ getFieldValue }) => ({
+                                                        validator(_, value) {
+                                                            const salePrice = getFieldValue(`sale_price_${uniqueKey}`);
+                                                            const startDate = getFieldValue(`sale_price_start_at_${uniqueKey}`);
+                                                            if (!salePrice) return Promise.resolve();
+                                                            if (!startDate) return Promise.resolve();
+                                                            if (!value) return Promise.reject("Vui lòng chọn ngày đóng khuyến mại!");
+                                                            if (value.isSame(startDate, 'day')) return Promise.reject("Ngày đóng không được trùng ngày mở!");
+                                                            if (value.isBefore(startDate, 'day')) return Promise.reject("Ngày đóng phải sau ngày mở!");
+                                                            return Promise.resolve();
+                                                        },
+                                                    }),
+                                                ]
+                                                : []
+                                        }
+                                    >
+                                        <DatePicker
+                                            className="input-form"
+                                            format="DD/MM/YYYY"
+                                            disabled={loggedInUserRole === "manager"}
+                                            value={record.sale_price_end_at ? dayjs(record.sale_price_end_at) : null}
+                                            onChange={(date) => handleDateChange(date, "end", record)}
+                                            disabledDate={(current) => current && current < dayjs().startOf('day')}
                                         />
                                     </Form.Item>
                                 );

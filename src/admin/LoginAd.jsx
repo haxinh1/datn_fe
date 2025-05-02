@@ -12,7 +12,7 @@ const LoginAd = () => {
   const handleLogin = async (values) => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem("admin_token");
+      const adminToken = localStorage.getItem("token");
 
       const response = await AuthServices.loginad(values.phone_number, values.password, {
         headers: {
@@ -21,7 +21,7 @@ const LoginAd = () => {
       });
 
       if (response && response.access_token) {
-        localStorage.setItem("admin_token", response.access_token);
+        localStorage.setItem("token", response.access_token);
         localStorage.setItem("user", JSON.stringify(response.admin));
         sessionStorage.setItem("user", JSON.stringify(response.admin));
         message.success("Đăng nhập thành công!");

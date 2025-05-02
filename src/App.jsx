@@ -42,7 +42,6 @@ import Address from "./pages/Address";
 import Bill from "./admin/Bill";
 import Customer from "./admin/Customer";
 import ProductReview from "./pages/ProductReview";
-import Comment from "./admin/comment";
 import Review from "./pages/Review";
 import Detail from "./pages/Detail";
 import User from "./admin/User";
@@ -56,6 +55,8 @@ import OrderStaff from "./admin/OrderStaff";
 import Cate from "./pages/Cate";
 import DetailCate from "./pages/DetailCate";
 import RoleRouter from "./admin/RoleRouter";
+import Cancel from "./admin/Cancel";
+import Cancels from "./pages/Cancels";
 
 function App() {
   return (
@@ -76,8 +77,7 @@ function App() {
           <Route path="detailcate/:id" element={<DetailCate />} />
           <Route path="list-prcl" element={<ListProduct />} />
           <Route path="thanks" element={<Thankyoupage />} />
-          <Route path="review/:id" element={<Review />} />
-          <Route path="detail/:id" element={<Detail />} />
+          <Route path="detail/:code" element={<Detail />} />
           <Route path="google-callback" element={<GoogleCallbackHandler />} />
           <Route
             path="dashboard"
@@ -92,7 +92,9 @@ function App() {
             <Route path="orders/:id" element={<Orders />} />
             <Route path="address/:id" element={<Address />} />
             <Route path="return/:id" element={<Return />} />
+            <Route path="cancels/:id" element={<Cancels />} />
             <Route path="backcl/:id" element={<BackCl />} />
+            <Route path="review/:id" element={<Review />} />
           </Route>
         </Route>
       </Routes>
@@ -129,11 +131,11 @@ function App() {
             <Route path="orderstaff" element={<OrderStaff />} />
             <Route path="back" element={<Back />} />
             <Route path="bill" element={<Bill />} />
+            <Route path="cancel" element={<Cancel />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="coupon" element={<Coupon />} />
             <Route path="update/:id" element={<Update />} />
             <Route path="change/:id" element={<Change />} />
-            <Route path="comment" element={<Comment />} />
           </Route>
         </Route>
       </Routes>

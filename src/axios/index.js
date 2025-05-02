@@ -8,9 +8,9 @@ const instance = axios.create({
 // Middleware để thêm Authorization header (nếu có token)
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("admin_token") || localStorage.getItem("client_token"); // Hoặc lấy từ nơi khác (ví dụ: context, sessionStorage)
+    const token = localStorage.getItem("token")
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // Thêm Bearer token vào header
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

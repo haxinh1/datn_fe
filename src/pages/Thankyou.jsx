@@ -17,15 +17,15 @@ const Thankyoupage = () => {
   const orderId = orderInfo ? orderInfo.split(" ").pop() : "Không có thông tin";
   const totalAmount = query.get("vnp_Amount")
     ? (Number(query.get("vnp_Amount")) / 100).toLocaleString("vi-VN", {
-        style: "currency",
-        currency: "VND",
-      })
+      style: "currency",
+      currency: "VND",
+    })
     : query.get("momo_Amount")
-    ? Number(query.get("momo_Amount")).toLocaleString("vi-VN", {
+      ? Number(query.get("momo_Amount")).toLocaleString("vi-VN", {
         style: "currency",
         currency: "VND",
       })
-    : "Không có thông tin";
+      : "Không có thông tin";
 
   const paymentStatus = query.get("vnp_ResponseCode") || momoResponseCode;
   const paymentMethod = query.get("vnp_CardType") || momoPaymentType;
@@ -46,7 +46,7 @@ const Thankyoupage = () => {
       >
         <header className="text-center mb-4">
           <h1 className="text-primary">MOLLA SHOP</h1>
-          <h2>THANH TOÁN THÀNH CÔNG</h2>
+          <h2>THANH TOÁN {paymentStatus === "00" || "0" ? "THÀNH CÔNG" : "THẤT BẠI"}</h2>
           <span>
             Cảm ơn <strong>{customerName || "quý khách"}</strong> đã đặt hàng
             tại Molla Shop. Dưới đây là thông tin đơn hàng của bạn.

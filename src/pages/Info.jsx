@@ -108,13 +108,12 @@ const Info = () => {
 
             // Cập nhật localStorage
             const updatedClient = {
-                ...JSON.parse(localStorage.getItem("client")),
+                ...JSON.parse(localStorage.getItem("user")),
                 fullname: response.fullname,
                 phone_number: response.phone_number,
                 email: response.email,
                 avatar: response.avatar,
             };
-            localStorage.setItem("client", JSON.stringify(updatedClient));
             localStorage.setItem("user", JSON.stringify(updatedClient));
 
             // Phát sự kiện user-updated
@@ -141,7 +140,7 @@ const Info = () => {
 
     const isGoogleAccount = () => {
         try {
-            const storedUser = localStorage.getItem("client");
+            const storedUser = localStorage.getItem("user");
             if (!storedUser) return false;
             const parsedUser = JSON.parse(storedUser);
             return !!parsedUser.google_id;
@@ -405,7 +404,13 @@ const Info = () => {
                             <Form.Item
                                 label="Số điện thoại"
                                 name="phone_number"
-                                rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập số điện thoại" },
+                                    {
+                                        pattern: /^\d{10}$/,
+                                        message: "Số điện thoại phải gồm đúng 10 chữ số",
+                                    },
+                                ]}
                             >
                                 <Input className="input-item" />
                             </Form.Item>
@@ -437,7 +442,13 @@ const Info = () => {
                             <Form.Item
                                 label="Email"
                                 name="email"
-                                rules={[{ required: true, message: "Vui lòng nhập Email" }]}
+                                rules={[
+                                    {
+                                        required: true,
+                                        type: "email",
+                                        message: "Vui lòng nhập email hợp lệ",
+                                    },
+                                ]}
                             >
                                 <Input className="input-item" disabled={isGoogleAccount()} />
                             </Form.Item>
@@ -463,12 +474,29 @@ const Info = () => {
                                     <Form.Item
                                         name="birthday"
                                         label="Ngày sinh"
-                                        rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
+                                        rules={[
+                                            { required: true, message: "Vui lòng chọn ngày sinh" },
+                                            () => ({
+                                                validator(_, value) {
+                                                    if (!value) return Promise.resolve();
+
+                                                    const today = dayjs();
+                                                    const age = today.diff(value, 'year');
+
+                                                    return age >= 18
+                                                        ? Promise.resolve()
+                                                        : Promise.reject("Bạn phải đủ 18 tuổi trở lên");
+                                                },
+                                            }),
+                                        ]}
                                     >
                                         <DatePicker
                                             className="input-item"
                                             format="DD/MM/YYYY"
                                             placeholder="DD/MM/YYYY"
+                                            disabledDate={(current) =>
+                                                current && current > dayjs().endOf("day")
+                                            }
                                         />
                                     </Form.Item>
                                 </Col>

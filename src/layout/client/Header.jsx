@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthServices } from "./../../services/auth";
 import { cartServices } from "./../../services/cart";
 import logo from "../../assets/images/demo-8/logo.png";
-import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { LogoutOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
 import Pusher from "pusher-js";
 import AIChat from "./AIChat.jsx";
 import ChatIcon from './../../components/client/chat/ChatIcon';
@@ -49,7 +49,19 @@ const Header = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user ? user.id : null;
 
+      // Check if a COD order was just placed
+      const isCodOrderPlaced = localStorage.getItem("codOrderPlaced") === "true";
+
+      if (isCodOrderPlaced) {
+        setCartItemCount(0); // Force cart count to 0 for COD orders
+        setTimeout(() => {
+          localStorage.removeItem("codOrderPlaced");
+        }, 1000);
+        return;
+      }
+
       if (userId) {
+        // Lấy giỏ hàng từ API cho người dùng đã đăng nhập
         const cartData = await cartServices.fetchCart();
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${item.product_variant_id || "default"}`;
@@ -60,6 +72,7 @@ const Header = () => {
         }, {});
         setCartItemCount(Object.keys(uniqueProducts).length);
       } else {
+        // Lấy giỏ hàng từ localStorage cho người dùng vãng lai
         const cartData = JSON.parse(localStorage.getItem("cart_items")) || [];
         const uniqueProducts = cartData.reduce((acc, item) => {
           const key = `${item.product_id}-${item.product_variant_id || "default"}`;
@@ -89,7 +102,7 @@ const Header = () => {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    const storedToken = localStorage.getItem("client_token");
+    const storedToken = localStorage.getItem("token");
 
     if (storedUser && storedToken) {
       fetchUserInfo(storedUser.id);
@@ -114,7 +127,7 @@ const Header = () => {
 
     const handleUserLogin = () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
-      const storedToken = localStorage.getItem("client_token");
+      const storedToken = localStorage.getItem("token");
       if (storedUser && storedToken) {
         fetchUserInfo(storedUser.id);
         updatePusherAuth(storedToken);
@@ -139,7 +152,7 @@ const Header = () => {
         updateCartCount();
         if (e.key === "user" || e.key === "client_token") {
           const storedUser = JSON.parse(localStorage.getItem("user"));
-          const storedToken = localStorage.getItem("client_token");
+          const storedToken = localStorage.getItem("token");
           if (storedUser && storedToken) {
             fetchUserInfo(storedUser.id);
             updatePusherAuth(storedToken);
@@ -186,7 +199,7 @@ const Header = () => {
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser?.id) {
-      const pusher = initializePusher(localStorage.getItem("client_token"));
+      const pusher = initializePusher(localStorage.getItem("token"));
       console.log('Subscribing to channel:', `user.${storedUser.id}`);
       const channel = pusher.subscribe(`user.${storedUser.id}`);
 
@@ -218,12 +231,11 @@ const Header = () => {
     try {
       console.log("Starting logout");
       const response = await AuthServices.logoutclient();
-      console.log("Logout response:", response.message);
-  
-      // Clear authentication data from localStorage
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client");
+      console.log('Logout response:', response.message);
+
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
       localStorage.removeItem("cart_items");
   
       // Dispatch logout event
@@ -242,10 +254,7 @@ const Header = () => {
       }
     } catch (error) {
       console.error("Logout failed", error);
-  
-      // Clear authentication data from localStorage even if logout API fails
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client");
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("cart_items");
   
@@ -472,6 +481,18 @@ const Header = () => {
                         </span>
                       </Link>
                     </Menu.Item>
+
+                    {userData.role !== "customer" && ( // Kiểm tra role từ userData
+                      <Menu.Item key="admin">
+                        <Link to='/admin/list-pr'>
+                          <span>
+                            <SettingOutlined style={{ marginRight: "8px" }} />
+                            Quản trị
+                          </span>
+                        </Link>
+                      </Menu.Item>
+                    )}
+
                     <Menu.Item key="logout">
                       <span onClick={showConfirm}>
                         <LogoutOutlined style={{ marginRight: "8px" }} />
@@ -487,7 +508,7 @@ const Header = () => {
                   {userData.avatar ? (
                     <Avatar size={36} src={userData.avatar} className="wishlist-link" />
                   ) : (
-                    <i className="icon-user"></i>
+                    <Avatar size={36} icon={<UserOutlined />} className="wishlist-link" />
                   )}
                 </span>
               </Dropdown>
@@ -498,8 +519,8 @@ const Header = () => {
                 </Link>
               </Tooltip>
             )}
-            
-            <AIChat/>
+
+            <AIChat />
           </div>
           <AIChat />
           <ChatIcon onClick={() => setChatVisible(true)} />

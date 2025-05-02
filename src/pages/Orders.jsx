@@ -1,5 +1,5 @@
-import { ArrowRightOutlined, BookOutlined, CheckOutlined, CommentOutlined, MenuOutlined, PrinterOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Radio, Tabs, Tooltip, notification } from "antd";
+import { ArrowRightOutlined, BookOutlined, CheckOutlined, CommentOutlined, MenuOutlined, PrinterOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Image, Input, Modal, Skeleton, Table, Radio, Tabs, Tooltip, notification, Form, Row, Col, Select, Upload } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -8,6 +8,7 @@ import { paymentServices } from "../services/payments";
 import { useQuery } from "@tanstack/react-query";
 import echo from "../echo";
 import logo from "../assets/images/logo.png";
+import axios from "axios";
 const { TabPane } = Tabs;
 
 const Orders = () => {
@@ -36,6 +37,14 @@ const Orders = () => {
   });
   const [activeTab, setActiveTab] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+  const hideCancel = () => setIsCancelModalVisible(false);
+  const [form] = Form.useForm();
+  const [banks, setBanks] = useState([]);
+  const [image, setImage] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [selectedReturnReason, setSelectedReturnReason] = useState(""); // Lý do trả hàng đã chọn
+  const [isCustomReason, setIsCustomReason] = useState(false);
 
   const formatPrice = (price) => {
     const formatter = new Intl.NumberFormat("de-DE", {
@@ -362,8 +371,109 @@ const Orders = () => {
     });
   };
 
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const res = await axios.get("https://api.vietqr.io/v2/banks");
+        setBanks(res.data.data);
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách ngân hàng:", err);
+      }
+    };
+    fetchBanks();
+  }, []);
+
+  // Hàm hiển thị modal hủy đơn
+  const showCancelModal = (orderId) => {
+    setSelectedOrderId(orderId);
+    setIsCancelModalVisible(true);
+  };
+
+  const handleSubmitCancel = async () => {
+    try {
+      const formValues = await form.validateFields();
+      const { bank_account_number, bank_name, bank_qr, reason, customReason } = formValues;
+
+      const reasonToSend = reason === "other" ? customReason : reason;
+      if (!reasonToSend) {
+        notification.error({
+          message: "Error",
+          description: "Vui lòng chọn hoặc nhập lý do hủy đơn!",
+        });
+        return;
+      }
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user?.id;
+      if (!userId) {
+        notification.error({
+          message: "Error",
+          description: "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!",
+        });
+        return;
+      }
+
+      // 4. Tạo payload để gửi đi
+      const payload = {
+        order_id: selectedOrderId,
+        bank_account_number,
+        bank_name,
+        bank_qr: bank_qr || null, // bank_qr là tùy chọn
+        reason: reasonToSend,
+        user_id: userId,
+      };
+
+      const response = await OrderService.cancelRequest(payload);
+
+      notification.success({
+        message: "Thành công",
+        description: "Gửi yêu cầu hủy đơn thành công.",
+      });
+
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.id === selectedOrderId
+            ? { ...order, status: { id: 8, name: "Hủy đơn" } }
+            : order
+        )
+      );
+
+      setTimeout(() => {
+        setIsCancelModalVisible(false);
+        form.resetFields();
+        setSelectedReturnReason("");
+        setReturnReason("");
+        setIsCustomReason(false);
+        setImage("");
+      }, 1000);
+    } catch (error) {
+      notification.error({
+        message: "Error",
+        description: "Không thể gửi yêu cầu hủy đơn. Vui lòng thử lại sau!",
+      });
+    }
+  };
+
+  const onHandleBank = (info) => {
+    if (info.file.status === "done" && info.file.response) {
+      const imageUrl = info.file.response.secure_url;
+      setImage(imageUrl);
+      form.setFieldsValue({ bank_qr: imageUrl }); // Cập nhật giá trị vào form dưới dạng string
+    } else if (info.file.status === "removed") {
+      setImage(""); // Xóa ảnh khi người dùng xóa
+      form.setFieldsValue({ bank_qr: "" }); // Cập nhật lại giá trị trong form
+    }
+  };
+
   const selectedOrder = orders.find((order) => order.id === selectedOrderId);
   const orderStatus = selectedOrder ? selectedOrder.status?.id : null;
+
+  const isWithinSevenDays = (updatedAt) => {
+    const updatedDate = dayjs(updatedAt);
+    const currentDate = dayjs();
+    const diffInDays = currentDate.diff(updatedDate, "day");
+    return diffInDays <= 7;
+  };
 
   const detailColumns = [
     {
@@ -517,10 +627,10 @@ const Orders = () => {
                 <Button
                   color="primary"
                   variant="solid"
-                  disabled={!(isCompleted && canReview)} 
-                  icon={<CommentOutlined/>}
+                  disabled={!(isCompleted && canReview)}
+                  icon={<CommentOutlined />}
                   onClick={() => navigate(`/dashboard/review/${item.id}`)}
-                />  
+                />
               </Tooltip>
             )}
 
@@ -701,22 +811,36 @@ const Orders = () => {
             <span className="text-name">Hẹn gặp lại</span>
           </div>
         </div>
+
         <div className="add">
-          {(orderStatus === 5 || orderStatus === 7) && (
+          {((orderStatus === 5 || orderStatus === 7) && isWithinSevenDays(selectedOrder?.updated_at)) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
               <Button color="danger" variant="solid">
                 Trả hàng
               </Button>
             </Link>
           )}
+
           {(orderStatus === 1 || orderStatus === 2 || orderStatus === 3) && (
-            <Button
-              color="danger"
-              variant="solid"
-              onClick={() => handleCancelOrder(selectedOrderId)}
-            >
-              Hủy đơn
-            </Button>
+            <>
+              {orderInfo.payment_id === 2 ? (
+                <Button
+                  color="danger"
+                  variant="solid"
+                  onClick={() => handleCancelOrder(selectedOrderId)}
+                >
+                  Hủy đơn
+                </Button>
+              ) : (orderInfo.payment_id === 1 || orderInfo.payment_id === 3) ? (
+                <Button
+                  color="danger"
+                  variant="solid"
+                  onClick={() => showCancelModal(selectedOrderId)}
+                >
+                  Hủy đơn
+                </Button>
+              ) : null}
+            </>
           )}
         </div>
       </Modal>
@@ -756,6 +880,147 @@ const Orders = () => {
             Xác nhận
           </Button>
         </div>
+      </Modal>
+
+      <Modal
+        title="Hủy đơn hàng"
+        visible={isCancelModalVisible}
+        onCancel={() => {
+          setIsCancelModalVisible(false);
+          form.resetFields();
+          setSelectedReturnReason("");
+          setReturnReason("");
+          setIsCustomReason(false);
+          setImage("");
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          layout="vertical"
+          form={form}
+          onFinish={handleSubmitCancel}
+        >
+          <Row gutter={24}>
+            <Col span={24} className="col-item">
+              <Form.Item
+                label="Ngân hàng"
+                name="bank_name"
+                rules={[{ required: true, message: "Vui lòng chọn ngân hàng" }]}
+              >
+                <Select
+                  className="input-item"
+                  allowClear
+                  showSearch
+                  placeholder="Chọn ngân hàng"
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {banks.map((bank) => (
+                    <Select.Option key={bank.code} value={bank.name} label={bank.name}>
+                      <div className="select-option-item">
+                        <img src={bank.logo} alt={bank.name} style={{ width: '100px' }} />
+                        <span>{bank.name}</span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={12} className="col-item">
+              <Form.Item
+                label="Số tài khoản"
+                name="bank_account_number"
+                rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+              >
+                <Input
+                  className="input-item"
+                  placeholder="Nhập số tài khoản"
+                />
+              </Form.Item>
+
+              <Form.Item label="QR ngân hàng (nếu có)" name="bank_qr">
+                <Upload
+                  listType="picture"
+                  action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
+                  data={{ upload_preset: "quangOsuy" }}
+                  onChange={onHandleBank}
+                  maxCount={1}
+                >
+                  {!image && (
+                    <Button icon={<UploadOutlined />} className="btn-item">
+                      Tải ảnh lên
+                    </Button>
+                  )}
+                </Upload>
+              </Form.Item>
+            </Col>
+
+            <Col span={12} className="col-item">
+              <Form.Item
+                label="Lý do hủy đơn"
+                name="reason"
+                rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
+              >
+                <Radio.Group
+                  value={selectedReturnReason}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedReturnReason(value);
+                    if (value === "other") {
+                      setIsCustomReason(true);
+                    } else {
+                      setIsCustomReason(false);
+                      setReturnReason("");
+                      form.setFieldsValue({ customReason: "" });
+                    }
+                  }}
+                  style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+                >
+                  <Radio value="mistake">Tôi đặt nhầm sản phẩm</Radio>
+                  <Radio value="better">Tôi tìm thấy ưu đãi tốt hơn</Radio>
+                  <Radio value="size_change">Tôi muốn đổi size/màu</Radio>
+                  <Radio value="other">Khác</Radio>
+                </Radio.Group>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={24}>
+              {isCustomReason && (
+                <Form.Item
+                  label="Nhập lý do hủy đơn"
+                  name="customReason"
+                  rules={[{ required: true, message: "Vui lòng nhập lý do hủy đơn" }]}
+                >
+                  <Input.TextArea
+                    value={returnReason}
+                    onChange={(e) => setReturnReason(e.target.value)}
+                    placeholder="Nhập lý do hủy đơn tại đây..."
+                    rows={3}
+                  />
+                </Form.Item>
+              )}
+            </Col>
+          </Row>
+
+          <div className="add">
+            <Button
+              color="danger"
+              variant="solid"
+              htmlType="submit"
+              style={{ backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" }}
+            >
+              Gửi yêu cầu
+            </Button>
+          </div>
+        </Form>
       </Modal>
     </div>
   );

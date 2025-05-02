@@ -227,25 +227,46 @@ const ListProduct = () => {
       [productId]: variant.thumbnail,
     }));
 
+    const currentDate = new Date();
+    const effectivePrice =
+      variant.sale_price > 0 &&
+        variant.sale_price_end_at &&
+        new Date(variant.sale_price_end_at) >= currentDate
+        ? variant.sale_price
+        : variant.sell_price;
+
     setSelectedVariantData((prevVariants) => ({
       ...prevVariants,
       [productId]: {
         ...variant,
-        sale_price:
-          variant.sale_price > 0 ? variant.sale_price : variant.sell_price,
+        sale_price: effectivePrice,
       },
     }));
   };
 
   const getVariantPriceRange = (product) => {
-    const variantPrices =
-      product.variants?.map((variant) =>
-        variant.sale_price > 0 ? variant.sale_price : variant.sell_price
-      ) || [];
+    const currentDate = new Date(); // Current date for comparison
 
+    // Helper function to get the effective price
+    const getEffectivePrice = (item) => {
+      // Check if sale_price exists, is greater than 0, and sale_price_end_at is not expired
+      if (
+        item.sale_price > 0 &&
+        item.sale_price_end_at &&
+        new Date(item.sale_price_end_at) >= currentDate
+      ) {
+        return item.sale_price;
+      }
+      return item.sell_price;
+    };
+
+    // Handle variants
+    const variantPrices =
+      product.variants?.map((variant) => getEffectivePrice(variant)) || [];
+
+    // If no variants, use the product's price
     if (variantPrices.length === 0) {
-      const price =
-        product.sale_price > 0 ? product.sale_price : product.sell_price;
+      const price = getEffectivePrice(product);
       return { minPrice: price, maxPrice: price };
     }
 

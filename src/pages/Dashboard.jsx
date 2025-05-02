@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
-import { BookOutlined, EnvironmentOutlined, LockOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
+import { BookOutlined, CloseCircleOutlined, EnvironmentOutlined, LockOutlined, RollbackOutlined, UserOutlined } from "@ant-design/icons";
 import headerBg from "../assets/images/page-header-bg.jpg";
 
 const Dashboard = () => {
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const storedClient = JSON.parse(localStorage.getItem("client"));
+    const storedClient = JSON.parse(localStorage.getItem("user"));
     setClient(storedClient);
   }, []);
 
@@ -22,8 +22,7 @@ const Dashboard = () => {
         const user = JSON.parse(decodeURIComponent(encodedUser));
 
         // Lưu vào localStorage
-        localStorage.setItem("client_token", token);
-        localStorage.setItem("client", JSON.stringify(user));
+        localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
         setClient(user);
 
@@ -34,7 +33,7 @@ const Dashboard = () => {
       }
     } else {
       // Nếu không có token/user trong URL, lấy từ localStorage
-      const storedClient = JSON.parse(localStorage.getItem("client"));
+      const storedClient = JSON.parse(localStorage.getItem("user"));
       if (storedClient) {
         setClient(storedClient);
       }
@@ -43,7 +42,7 @@ const Dashboard = () => {
 
   const isGoogleAccount = () => {
     try {
-      const storedUser = localStorage.getItem("client");
+      const storedUser = localStorage.getItem("user");
       if (!storedUser) return false;
       const parsedUser = JSON.parse(storedUser);
       return !!parsedUser.google_id;
@@ -104,6 +103,17 @@ const Dashboard = () => {
                           style={{ marginRight: "8px", cursor: "pointer" }}
                         />
                         Hoàn trả
+                      </span>
+                    </Link>
+                  </li>
+
+                  <li className="nav-item">
+                    <Link to={`/dashboard/cancels/${client?.id}`}>
+                      <span className="nav-link">
+                        <CloseCircleOutlined
+                          style={{ marginRight: "8px", cursor: "pointer" }}
+                        />
+                        Đơn hủy
                       </span>
                     </Link>
                   </li>
