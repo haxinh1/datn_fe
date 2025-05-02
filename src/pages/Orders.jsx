@@ -43,7 +43,6 @@ const Orders = () => {
   const [banks, setBanks] = useState([]);
   const [image, setImage] = useState("");
   const [returnReason, setReturnReason] = useState("");
-  const [selectedReturnReason, setSelectedReturnReason] = useState(""); // Lý do trả hàng đã chọn
   const [isCustomReason, setIsCustomReason] = useState(false);
 
   const formatPrice = (price) => {
@@ -392,10 +391,9 @@ const Orders = () => {
   const handleSubmitCancel = async () => {
     try {
       const formValues = await form.validateFields();
-      const { bank_account_number, bank_name, bank_qr, reason, customReason } = formValues;
+      const { bank_account_number, bank_name, bank_qr } = formValues;
 
-      const reasonToSend = reason === "other" ? customReason : reason;
-      if (!reasonToSend) {
+      if (!returnReason) {
         notification.error({
           message: "Error",
           description: "Vui lòng chọn hoặc nhập lý do hủy đơn!",
@@ -413,13 +411,12 @@ const Orders = () => {
         return;
       }
 
-      // 4. Tạo payload để gửi đi
       const payload = {
         order_id: selectedOrderId,
         bank_account_number,
         bank_name,
-        bank_qr: bank_qr || null, // bank_qr là tùy chọn
-        reason: reasonToSend,
+        bank_qr: bank_qr || null,
+        reason: returnReason, // Sử dụng trực tiếp returnReason
         user_id: userId,
       };
 
@@ -441,7 +438,6 @@ const Orders = () => {
       setTimeout(() => {
         setIsCancelModalVisible(false);
         form.resetFields();
-        setSelectedReturnReason("");
         setReturnReason("");
         setIsCustomReason(false);
         setImage("");
@@ -813,7 +809,7 @@ const Orders = () => {
         </div>
 
         <div className="add">
-          {((orderStatus === 5 || orderStatus === 7) && isWithinSevenDays(selectedOrder?.updated_at)) && (
+          {((orderStatus === 7) && isWithinSevenDays(selectedOrder?.updated_at)) && (
             <Link to={`/dashboard/return/${selectedOrderId}`}>
               <Button color="danger" variant="solid">
                 Trả hàng
@@ -888,7 +884,6 @@ const Orders = () => {
         onCancel={() => {
           setIsCancelModalVisible(false);
           form.resetFields();
-          setSelectedReturnReason("");
           setReturnReason("");
           setIsCustomReason(false);
           setImage("");
@@ -968,24 +963,25 @@ const Orders = () => {
                 rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
               >
                 <Radio.Group
-                  value={selectedReturnReason}
+                  value={returnReason}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setSelectedReturnReason(value);
-                    if (value === "other") {
+                    setReturnReason(value);
+                    if (value === "Khác") {
                       setIsCustomReason(true);
+                      setReturnReason("");
+                      form.setFieldsValue({ reason: "" });
                     } else {
                       setIsCustomReason(false);
-                      setReturnReason("");
-                      form.setFieldsValue({ customReason: "" });
+                      form.setFieldsValue({ reason: value });
                     }
                   }}
                   style={{ display: "flex", flexDirection: "column", gap: "10px" }}
                 >
-                  <Radio value="mistake">Tôi đặt nhầm sản phẩm</Radio>
-                  <Radio value="better">Tôi tìm thấy ưu đãi tốt hơn</Radio>
-                  <Radio value="size_change">Tôi muốn đổi size/màu</Radio>
-                  <Radio value="other">Khác</Radio>
+                  <Radio value="Tôi đặt nhầm sản phẩm">Tôi đặt nhầm sản phẩm</Radio>
+                  <Radio value="Tôi tìm thấy ưu đãi tốt hơn">Tôi tìm thấy ưu đãi tốt hơn</Radio>
+                  <Radio value="Tôi muốn đổi size/màu">Tôi muốn đổi size/màu</Radio>
+                  <Radio value="Khác">Khác</Radio>
                 </Radio.Group>
               </Form.Item>
             </Col>
@@ -1001,7 +997,10 @@ const Orders = () => {
                 >
                   <Input.TextArea
                     value={returnReason}
-                    onChange={(e) => setReturnReason(e.target.value)}
+                    onChange={(e) => {
+                      setReturnReason(e.target.value);
+                      form.setFieldsValue({ reason: e.target.value });
+                    }}
                     placeholder="Nhập lý do hủy đơn tại đây..."
                     rows={3}
                   />
