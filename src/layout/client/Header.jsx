@@ -229,7 +229,7 @@ const Header = () => {
   const handleLogout = async (isBanned = false) => {
     setLoading(true);
     try {
-      console.log('Starting logout');
+      console.log("Starting logout");
       const response = await AuthServices.logoutclient();
       console.log('Logout response:', response.message);
 
@@ -237,9 +237,16 @@ const Header = () => {
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");
       localStorage.removeItem("cart_items");
-
+  
+      // Dispatch logout event
       window.dispatchEvent(new Event("user-logout"));
+  
+      // Navigate to the home page
       navigate("/");
+  
+      // Reload the page to ensure the UI reflects the logout state
+      window.location.reload();
+  
       if (isBanned) {
         notification.warning({
           message: "Tài khoản của bạn đã bị khóa, vui lòng thử lại sau!",
@@ -250,8 +257,16 @@ const Header = () => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("cart_items");
+  
+      // Dispatch logout event
       window.dispatchEvent(new Event("user-logout"));
+  
+      // Navigate to the home page
       navigate("/");
+  
+      // Reload the page to ensure the UI reflects the logout state
+      window.location.reload();
+  
       if (isBanned) {
         message.warning("Tài khoản của bạn đã bị khóa");
       }

@@ -336,6 +336,31 @@ const ProductDetailClient = () => {
     };
   };
 
+  const getVariantPriceRange = (product) => {
+    if (!product.variants || product.variants.length === 0) {
+      return {
+        minPrice: isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
+        maxPrice: isSalePriceValid(product.sale_price_end_at)
+          ? product.sale_price
+          : product.sell_price,
+      };
+    }
+
+    const prices = product.variants.map((variant) =>
+      isSalePriceValid(variant.sale_price_end_at)
+        ? variant.sale_price
+        : variant.sell_price
+    );
+
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  };
+
+  // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
       const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
@@ -530,22 +555,14 @@ const ProductDetailClient = () => {
 
                   {product.is_active === 1 && (
                     <>
-                      {selectedVariant ? (
+                      {(selectedColor && selectedSize) && (
                         <div className="details-filter-row details-row-size">
                           <label>Tồn kho:</label>
                           <div className="product-nav product-nav-dots">
-                            <div>{selectedVariant.stock}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="details-filter-row details-row-size">
-                          <label>Tồn kho:</label>
-                          <div className="product-nav product-nav-dots">
-                            <div>{product.stock}</div>
+                            <div>{selectedVariant ? selectedVariant.stock : product.stock}</div>
                           </div>
                         </div>
                       )}
-
                       {product.atribute_value_product?.length > 0 && (
                         <div className="details-filter-row details-row-size">
                           <label htmlFor="Color">Màu:</label>
@@ -715,14 +732,15 @@ const ProductDetailClient = () => {
                     hoverable
                     cover={<img alt={product.name} src={product.thumbnail} />}
                   >
-                    <Card.Meta
-                      title={product.name}
-                      description={`${formatPrice(
-                        isSalePriceValid(product.sale_price_end_at)
-                          ? product.sale_price
-                          : product.sell_price
-                      )} VNĐ`}
-                    />
+                    <Card.Meta title={product.name} description={(() => {
+                      const { minPrice, maxPrice } =
+                        getVariantPriceRange(product);
+                      return minPrice === maxPrice
+                        ? `${formatPrice(minPrice)} VNĐ`
+                        : `${formatPrice(minPrice)} - ${formatPrice(
+                          maxPrice
+                        )} VNĐ`;
+                    })()} />
                   </Card>
                 </Col>
               ))}
@@ -733,40 +751,44 @@ const ProductDetailClient = () => {
         {dataViewed.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
-            <Swiper
-              spaceBetween={30}
-              slidesPerView={3}
-              slidesPerGroup={1}
-              autoplay={{
-                delay: 2500,
-                disableOnInteraction: false,
-              }}
-              pagination={{ clickable: true }}
-              navigation={true}
-              modules={[Autoplay, Pagination, Navigation]}
-              className="mySwiper"
-            >
-              {dataViewed.map((product, index) => (
-                <SwiperSlide key={index}>
-                  <div className="product product-7" style={{ width: "300px" }}>
-                    <Card
-                      onClick={() => navigate(`/product-detail/${product.id}`)}
-                      hoverable
-                      cover={<img alt={product.name} src={product.thumbnail} />}
-                    >
-                      <Card.Meta
-                        title={product.name}
-                        description={`${formatPrice(
-                          isSalePriceValid(product.sale_price_end_at)
-                            ? product.sale_price
-                            : product.sell_price
-                        )} VNĐ`}
-                      />
-                    </Card>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <div >
+              <Swiper
+                spaceBetween={30}
+                slidesPerView={3}
+                slidesPerGroup={1}
+                autoplay={{
+                  delay: 2500,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation]}
+                className="mySwiper"
+              >
+                {dataViewed.map((product, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="product product-7" style={{ width: "300px" }}>
+                      <Card
+                        onClick={() => navigate(`/product-detail/${product.id}`)}
+
+                        hoverable
+                        cover={<img alt={product.name} src={product.thumbnail} />}
+                      >
+                        <Card.Meta title={product.name} description={(() => {
+                          const { minPrice, maxPrice } =
+                            getVariantPriceRange(product);
+                          return minPrice === maxPrice
+                            ? `${formatPrice(minPrice)} VNĐ`
+                            : `${formatPrice(minPrice)} - ${formatPrice(
+                              maxPrice
+                            )} VNĐ`;
+                        })()} />
+                      </Card>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           </div>
         )}
 

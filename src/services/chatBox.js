@@ -8,8 +8,8 @@ export const getChatSessions = (guestPhone) => {
 };
 
 export const sendMessage = (messageData) => {
-    return instance.post('/chat/send-message', messageData);
-};
+    return instance.post("/chat/send-message", messageData);
+  };
 
 export const getMessages = (chatSessionId) => {
     return instance.get(`/chat/messages/${chatSessionId}`);
