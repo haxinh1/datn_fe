@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 
 const useAuth = () => {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("client");
+    const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("client_token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
   useEffect(() => {
     const checkAuth = () => {
-      const storedUser = localStorage.getItem("client");
-      const token = localStorage.getItem("client_token");
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
 
       if (storedUser && token) {
         setUser(JSON.parse(storedUser));
