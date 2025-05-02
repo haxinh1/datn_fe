@@ -1447,10 +1447,16 @@ const Checkout = () => {
                                         }}
                                         onClick={() => setSelectedCoupon(coupon)}
                                       >
-                                        {coupon.code} - {coupon.title} -{" "}
+                                        {coupon.code} -{" "}
                                         {coupon.discount_type === "percent"
                                           ? `${coupon.discount_value}%`
-                                          : `${coupon.discount_value} VND`}
+                                          : `${coupon.discount_value} VNĐ`}  {""} {coupon.coupon_type === "public"
+                                            ? ""
+                                            : coupon.coupon_type === "private"
+                                              ? "(Dành riêng bạn)"
+                                              : coupon.coupon_type === "rank"
+                                                ? "(Theo hạng)"
+                                                : ""}
                                       </div>
                                     ))
                                   ) : (
