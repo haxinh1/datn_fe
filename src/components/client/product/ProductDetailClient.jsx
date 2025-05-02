@@ -399,10 +399,10 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <Link to="/">Trang Chủ</Link>
+              <Link to="/"><span>Trang Chủ</span></Link>
             </li>
             <li className="breadcrumb-item">
-              <Link to="/list-prcl">Sản Phẩm</Link>
+              <Link to="/list-prcl"><span>Sản Phẩm</span></Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               Chi Tiết
