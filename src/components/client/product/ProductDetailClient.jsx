@@ -337,28 +337,44 @@ const ProductDetailClient = () => {
   };
 
   const getVariantPriceRange = (product) => {
+    const parsePrice = (price) => {
+      if (price == null) return null;
+      if (typeof price === 'number') return price;
+      const parsed = parseFloat(price);
+      return isNaN(parsed) ? null : parsed;
+    };
+  
     if (!product.variants || product.variants.length === 0) {
+      const sellPrice = parsePrice(product.sell_price || product.product_sell_price);
+      const salePrice = parsePrice(product.sale_price || product.product_sale_price);
+      const price = isSalePriceValid(product.sale_price_end_at) ? salePrice : sellPrice;
       return {
-        minPrice: isSalePriceValid(product.sale_price_end_at)
-          ? product.sale_price
-          : product.sell_price,
-        maxPrice: isSalePriceValid(product.sale_price_end_at)
-          ? product.sale_price
-          : product.sell_price,
+        minPrice: price || 0,
+        maxPrice: price || 0,
       };
     }
-
-    const prices = product.variants.map((variant) =>
-      isSalePriceValid(variant.sale_price_end_at)
-        ? variant.sale_price
-        : variant.sell_price
-    );
-
+  
+    const prices = product.variants
+      .map((variant) => {
+        const sellPrice = parsePrice(variant.sell_price || variant.variant_sell_price);
+        const salePrice = parsePrice(variant.sale_price || variant.variant_sale_price);
+        return isSalePriceValid(variant.sale_price_end_at) ? salePrice : sellPrice;
+      })
+      .filter((price) => typeof price === 'number' && !isNaN(price));
+  
+    if (prices.length === 0) {
+      return {
+        minPrice: 0,
+        maxPrice: 0,
+      };
+    }
+  
     return {
       minPrice: Math.min(...prices),
       maxPrice: Math.max(...prices),
     };
   };
+  
 
   // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
@@ -730,7 +746,7 @@ const ProductDetailClient = () => {
                   <Card
                     onClick={() => navigate(`/product-detail/${product.id}`)}
                     hoverable
-                    cover={<img alt={product.name} src={product.thumbnail} />}
+                    cover={<img alt={product.name} src={product.product_thumbnail} />}
                   >
                     <Card.Meta title={product.name} description={(() => {
                       const { minPrice, maxPrice } =
