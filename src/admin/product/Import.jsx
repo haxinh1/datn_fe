@@ -609,7 +609,7 @@ const Import = () => {
                     ]}
                     summary={() => (
                         <Table.Summary.Row>
-                            <Table.Summary.Cell colSpan={7} align="right">
+                            <Table.Summary.Cell colSpan={9} align="right">
                                 <strong>Tổng giá trị (VNĐ):</strong>
                             </Table.Summary.Cell>
                             <Table.Summary.Cell align="center">

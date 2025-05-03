@@ -378,7 +378,6 @@ const Creat = () => {
             dataIndex: "thumbnail",
             key: "thumbnail",
             align: "center",
-            width: 300,
             render: (_, record) => (
                 <Form.Item
                     name={`thumbnail_${record.key}`}
@@ -392,6 +391,7 @@ const Creat = () => {
                     ]}
                 >
                     <Upload
+                        className="custom-upload"
                         listType="picture"
                         action="https://api.cloudinary.com/v1_1/dzpr0epks/image/upload"
                         data={{ upload_preset: "quangOsuy" }}
