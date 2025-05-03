@@ -125,25 +125,6 @@ const Cancel = () => {
         return formatter.format(price);
     };
 
-    const getReturnReason = (note) => {
-        switch (note) {
-            case "mistake":
-                return "Đặt nhầm sản phẩm";
-            case "better":
-                return "Tìm thấy ưu đãi tốt hơn";
-            case "size_change":
-                return "Đổi size/màu";
-            case "error":
-                return "Sản phẩm bị hư, hỏng khi vận chuyển";
-            case "disconnect":
-                return "Không thể liên hệ với người đặt";
-            case "other":
-                return "Khác";
-            default:
-                return note || "";
-        }
-    };
-
     const columns = [
         {
             title: "STT",
@@ -163,7 +144,6 @@ const Cancel = () => {
             dataIndex: "reason",
             key: "reason",
             align: "center",
-            render: (reason) => getReturnReason(reason)
         },
         {
             title: "Ngày hủy",

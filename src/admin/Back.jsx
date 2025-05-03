@@ -168,23 +168,6 @@ const Back = () => {
         });
     };
 
-    const getReturnReason = (note) => {
-        switch (note) {
-            case "store_error":
-                return "Cửa hàng gửi sai, thiếu sản phẩm";
-            case "damaged":
-                return "Sản phẩm có dấu hiệu hư hỏng";
-            case "misdescription":
-                return "Sản phẩm khác với mô tả";
-            case "size_change":
-                return "Tôi muốn đổi size";
-            case "other":
-                return "Khác";
-            default:
-                return note || "";
-        }
-    };
-
     const { mutate: updateOrderStatus } = useMutation({
         mutationFn: async ({ id, data }) => {
             const response = await OrderService.updateOrderReturn(id, data);
@@ -449,7 +432,6 @@ const Back = () => {
             dataIndex: "reason",
             key: "reason",
             align: "center",
-            render: (reason) => getReturnReason(reason)
         },
         {
             title: "Minh chứng",

@@ -26,6 +26,9 @@ const Dashboard = () => {
   const [topView, setTopView] = useState([]);
   const [topBuy, setTopBuy] = useState([]);
   const [revenueByDay, setRevenueByDay] = useState([]);
+  // State cho nhập hàng theo ngày
+  const [stockByDay, setStockByDay] = useState([]);
+  const [filteredStockDay, setFilteredStockDay] = useState(0);
   // State cho bộ lọc ngày, tháng, năm (mặc định là hiện tại)
   const [selectedDate, setSelectedDate] = useState(moment()); // Ngày hiện tại
   const [selectedMonth, setSelectedMonth] = useState(moment()); // Tháng hiện tại
@@ -41,8 +44,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchRevenueStatistics = async () => {
       const data = await statisticServices.fetchRevenueStatistics();
-      console.log("Dữ liệu thô từ API:", data);
-
       const labels = data.statistics.map((item) => item.date);
       const cancelledOrders = data.statistics.map((item) => {
         const value = Number(item.cancelled_orders);
@@ -52,10 +53,6 @@ const Dashboard = () => {
         const value = Number(item.returned_orders);
         return isNaN(value) ? 0 : Math.floor(value);
       });
-
-      console.log("Labels:", labels);
-      console.log("Cancelled Orders:", cancelledOrders);
-      console.log("Returned Orders:", returnedOrders);
 
       setExpensesData({
         labels,
@@ -80,13 +77,14 @@ const Dashboard = () => {
     // Hàm lấy toàn bộ dữ liệu từ API
     const fetchAll = async () => {
       await fetchRevenueStatistics();
-      const [topU, topP, orderS, topR, buyView, revDay] = await Promise.all([
+      const [topU, topP, orderS, topR, buyView, revDay, stockDay] = await Promise.all([
         statisticServices.fetchTopUserBought(),
         statisticServices.fetchTopProductBought(),
         statisticServices.fetchOrderStatistics(),
         statisticServices.fetchTopRevenueDays(),
         statisticServices.fetchTopBuyView(),
         statisticServices.fetchRevenue(),
+        statisticServices.fetchRevenueStock(),
       ]);
       setTopUsers(topU.datas || []);
       setTopProducts(topP.datas || []);
@@ -95,12 +93,12 @@ const Dashboard = () => {
       setTopBuy(buyView.dataBuy || []);
       setTopView(buyView.dataView || []);
       setRevenueByDay(revDay.revenue || []);
-
-      // Tính toán doanh thu cho ngày, tháng, năm hiện tại
+      setStockByDay(stockDay.revenueStock?.datas || []); // Lấy từ revenueStock.datas
+      // Tính toán doanh thu và nhập hàng
       updateRevenueDay(revDay.revenue, moment());
       updateRevenueMonth(revDay.revenue, moment());
       updateRevenueYear(revDay.revenue, moment());
-
+      updateStockDay(stockDay.revenueStock?.datas || [], moment());
       setLoading(false);
     };
 
@@ -148,11 +146,26 @@ const Dashboard = () => {
     setFilteredRevenueYear(yearRevenue);
   };
 
+  // Hàm tính nhập hàng theo ngày
+  const updateStockDay = (stockData, date) => {
+    if (!date || !stockData) return;
+    const formattedDate = date.format("YYYY-MM-DD");
+    const dayStock = stockData
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+        const formattedItemDate = itemDate.toISOString().split("T")[0];
+        return formattedItemDate === formattedDate;
+      })
+      .reduce((sum, item) => sum + Number(item.total_amount), 0); // Sử dụng total_amount
+    setFilteredStockDay(dayStock);
+  };
+
   // Xử lý khi thay đổi ngày
   const handleDateChange = (date) => {
     if (date) {
       setSelectedDate(date);
       updateRevenueDay(revenueByDay, date);
+      updateStockDay(stockByDay, date); // Cập nhật nhập hàng theo ngày
     }
   };
 
@@ -191,16 +204,16 @@ const Dashboard = () => {
         beginAtZero: true,
         ticks: {
           callback: (value) => Math.floor(value),
-          stepSize: 1, // Khoảng cách giữa các giá trị trên trục Y
+          stepSize: 1,
         },
-        suggestedMax: 5, // Đặt giá trị tối đa gợi ý
+        suggestedMax: 5,
         max: (context) => {
           const chart = context.chart;
           const datasets = chart.data.datasets;
           const maxDataValue = Math.max(
             ...datasets.flatMap((dataset) => dataset.data)
           );
-          return Math.max(Math.ceil(maxDataValue) + 1, 5); // Đảm bảo trục Y ít nhất đến 5
+          return Math.max(Math.ceil(maxDataValue) + 1, 5);
         },
       },
       x: {
@@ -227,7 +240,6 @@ const Dashboard = () => {
 
   return (
     <div>
-      {/* CSS tùy chỉnh cho DatePicker và bảng */}
       <style>
         {`
           .custom-date-picker .ant-picker-input input {
@@ -273,7 +285,7 @@ const Dashboard = () => {
             <h1 className="mb-5">Doanh thu</h1>
             <Row gutter={24}>
               {/* Doanh thu theo ngày */}
-              <Col span={8}>
+              <Col span={6}>
                 <Card bordered={false} className="revenue-card">
                   <div
                     style={{
@@ -283,12 +295,12 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu ngày</h3>
+                    <h4>Doanh thu ngày</h4>
                     <DatePicker
                       value={selectedDate}
                       onChange={handleDateChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
                       placeholder=""
                       bordered={false}
                     />
@@ -300,8 +312,8 @@ const Dashboard = () => {
                   </span>
                 </Card>
               </Col>
-              {/* Doanh thu theo tháng */}
-              <Col span={8}>
+              {/* Nhập hàng theo ngày */}
+              <Col span={6}>
                 <Card bordered={false} className="revenue-card">
                   <div
                     style={{
@@ -311,12 +323,40 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu tháng</h3>
+                    <h4>Nhập hàng ngày</h4>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={handleDateChange}
+                      className="custom-date-picker"
+                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
+                      placeholder=""
+                      bordered={false}
+                    />
+                  </div>
+                  <span className="w-warning">
+                    {filteredStockDay > 0
+                      ? `${formatPrice(filteredStockDay)} VNĐ`
+                      : "Chưa có dữ liệu"}
+                  </span>
+                </Card>
+              </Col>
+              {/* Doanh thu theo tháng */}
+              <Col span={6}>
+                <Card bordered={false} className="revenue-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <h4>Doanh thu tháng</h4>
                     <MonthPicker
                       value={selectedMonth}
                       onChange={handleMonthChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
                       placeholder=""
                       bordered={false}
                       format="MM/YYYY"
@@ -330,7 +370,7 @@ const Dashboard = () => {
                 </Card>
               </Col>
               {/* Doanh thu theo năm */}
-              <Col span={8}>
+              <Col span={6}>
                 <Card bordered={false} className="revenue-card">
                   <div
                     style={{
@@ -340,12 +380,12 @@ const Dashboard = () => {
                       marginBottom: "10px",
                     }}
                   >
-                    <h3>Doanh thu năm</h3>
+                    <h4>Doanh thu năm</h4>
                     <YearPicker
                       value={selectedYear}
                       onChange={handleYearChange}
                       className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined style={{fontSize: '24px'}}/>}
+                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
                       placeholder=""
                       bordered={false}
                       format="YYYY"
@@ -468,9 +508,9 @@ const Dashboard = () => {
                       <div className="combined-column">
                         <Image src={record.thumbnail} width={60} />
                         <span>{record.name}</span>
-                    </div>
+                      </div>
                     ),
-                  },                  
+                  },
                   {
                     title: "Lượt xem",
                     dataIndex: "views",

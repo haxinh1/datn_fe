@@ -1,4 +1,4 @@
-import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image, Select } from 'antd';
+import { Table, notification, Skeleton, Checkbox, Form, Row, Col, Radio, Upload, Button, Input, Image, Select, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { OrderService } from '../services/order';
@@ -11,7 +11,6 @@ const Return = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [returnReason, setReturnReason] = useState(""); // Lý do trả hàng
-    const [selectedReturnReason, setSelectedReturnReason] = useState(""); // Lý do trả hàng đã chọn
     const [isCustomReason, setIsCustomReason] = useState(false);
     const [video, setVideo] = useState("");
     const [form] = Form.useForm();
@@ -107,10 +106,8 @@ const Return = () => {
 
     const handleSubmit = async () => {
         if (!selectedRowKeys.length) {
-            return notification.error({ message: "Vui lòng chọn ít nhất 1 sản phẩm để trả" });
+            return message.error("Vui lòng chọn ít nhất 1 sản phẩm để trả");
         }
-
-        const reasonToSend = selectedReturnReason === "other" ? returnReason : selectedReturnReason;
 
         const user = JSON.parse(localStorage.getItem("user"));
         const user_id = user?.id || user?.user_id;
@@ -133,44 +130,36 @@ const Return = () => {
             }
         });
 
-        // Sử dụng form.getFieldValue để lấy giá trị các trường nhập liệu
         const bank_account_number = form.getFieldValue('bank_account_number');
         const bank_name = form.getFieldValue('bank_name');
 
         const payload = {
             user_id,
-            reason: reasonToSend,
-            employee_evidence: video, // Video vẫn là string URL
-            bank_account_number: bank_account_number || null, // Lấy giá trị từ form
-            bank_name: bank_name || null, // Lấy giá trị từ form
-            bank_qr: image || null, // Đảm bảo đây là URL của ảnh QR
+            reason: returnReason, // Sử dụng trực tiếp returnReason
+            employee_evidence: video,
+            bank_account_number: bank_account_number || null,
+            bank_name: bank_name || null,
+            bank_qr: image || null,
             products,
         };
 
-        console.log("📦 Payload gửi đi:", payload); // Log để kiểm tra lại
+        console.log("📦 Payload gửi đi:", payload);
 
         try {
             await OrderService.returnOrder(id, payload);
 
-            notification.success({
-                message: "Thành công",
-                description: "Gửi yêu cầu trả hàng thành công.",
-            });
+            message.success("Gửi yêu cầu trả hàng thành công.");
 
-            // Reset form sau khi gửi
             setSelectedRowKeys([]);
             setQuantities({});
             setReturnReason("");
-            setSelectedReturnReason("");
+            setIsCustomReason(false);
             setVideo("");
             form.resetFields();
             navigate(`/dashboard/backcl/${user_id}`);
         } catch (error) {
             console.error("Lỗi gửi yêu cầu trả hàng:", error);
-            notification.error({
-                message: "Lỗi",
-                description: "Gửi yêu cầu trả hàng thất bại.",
-            });
+            message.error("Gửi yêu cầu trả hàng thất bại.");
         }
     };
 
@@ -235,15 +224,30 @@ const Return = () => {
                         min={1}
                         max={record.quantity}
                         value={quantities[key] || ""}
-                        onChange={(e) =>
-                            setQuantities({
-                                ...quantities,
-                                [key]: e.target.value,
-                            })
-                        }
+                        onChange={(e) => {
+                            const inputValue = Number(e.target.value);
+                            if (inputValue > record.quantity) {
+                                message.error("Bạn đã nhập quá số lượng trong đơn hàng!");
+                                setQuantities({
+                                    ...quantities,
+                                    [key]: record.quantity,
+                                });
+                            } else if (inputValue < 1) {
+                                message.error("Số lượng hoàn trả phải lớn hơn hoặc bằng 1.");
+                                setQuantities({
+                                    ...quantities,
+                                    [key]: 1,
+                                });
+                            } else {
+                                setQuantities({
+                                    ...quantities,
+                                    [key]: inputValue,
+                                });
+                            }
+                        }}
                     />
                 );
-            }
+            },
         },
         {
             title: "Giá hoàn (VNĐ)",
@@ -305,7 +309,7 @@ const Return = () => {
 
                                 <Table.Summary.Row>
                                     <Table.Summary.Cell colSpan={5} align="right">
-                                        <i style={{fontSize: '16px'}}><strong>Giá hoàn</strong> = giá bán * [ 1 - (điểm tiêu dùng + phiếu giảm giá) / tổng tiền hàng ]</i>
+                                        <i style={{ fontSize: '16px' }}><strong>Giá hoàn</strong> = giá bán * [ 1 - (điểm tiêu dùng + phiếu giảm giá) / tổng tiền hàng ]</i>
                                     </Table.Summary.Cell>
                                 </Table.Summary.Row>
                             </>
@@ -329,23 +333,26 @@ const Return = () => {
                             rules={[{ required: true, message: "Vui lòng chọn hoặc nhập lý do trả hàng" }]}
                         >
                             <Radio.Group
-                                value={selectedReturnReason}
+                                value={returnReason}
                                 onChange={(e) => {
                                     const value = e.target.value;
-                                    setSelectedReturnReason(value);
-                                    if (value === "other") {
-                                        setIsCustomReason(true); // Hiển thị ô nhập lý do thủ công nếu chọn "Khác"
+                                    setReturnReason(value);
+                                    if (value === "Khác") {
+                                        setIsCustomReason(true);
+                                        setReturnReason("");
+                                        form.setFieldsValue({ reason: "" });
                                     } else {
-                                        setIsCustomReason(false); // Nếu chọn lý do có sẵn, ẩn ô nhập lý do thủ công
+                                        setIsCustomReason(false);
+                                        form.setFieldsValue({ reason: value });
                                     }
                                 }}
                                 style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
                             >
-                                <Radio value="store_error">Cửa hàng gửi sai, thiếu sản phẩm</Radio>
-                                <Radio value="damaged">Sản phẩm có dấu hiệu hư hỏng</Radio>
-                                <Radio value="misdescription">Sản phẩm khác với mô tả</Radio>
-                                <Radio value="size_change">Tôi muốn đổi size</Radio>
-                                <Radio value="other">Khác</Radio>
+                                <Radio value="Cửa hàng gửi sai, thiếu sản phẩm">Cửa hàng gửi sai, thiếu sản phẩm</Radio>
+                                <Radio value="Sản phẩm có dấu hiệu hư hỏng">Sản phẩm có dấu hiệu hư hỏng</Radio>
+                                <Radio value="Sản phẩm khác với mô tả">Sản phẩm khác với mô tả</Radio>
+                                <Radio value="Tôi muốn đổi size">Tôi muốn đổi size</Radio>
+                                <Radio value="Khác">Khác</Radio>
                             </Radio.Group>
                         </Form.Item>
                     </Col>
@@ -378,10 +385,16 @@ const Return = () => {
                     <Col span={4}></Col>
                     <Col span={12}>
                         {isCustomReason && (
-                            <Form.Item label="Nhập lý do trả hàng">
+                            <Form.Item
+                                name="reason"
+                                rules={[{ required: true, message: "Vui lòng nhập lý do trả hàng" }]}
+                            >
                                 <Input.TextArea
                                     value={returnReason}
-                                    onChange={(e) => setReturnReason(e.target.value)}
+                                    onChange={(e) => {
+                                        setReturnReason(e.target.value);
+                                        form.setFieldsValue({ reason: e.target.value });
+                                    }}
                                     placeholder="Nhập lý do trả hàng tại đây..."
                                 />
                             </Form.Item>
@@ -426,7 +439,13 @@ const Return = () => {
                         <Form.Item
                             label="Số tài khoản"
                             name="bank_account_number"
-                            rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                            rules={[
+                                { required: true, message: "Vui lòng nhập số tài khoản" },
+                                {
+                                    pattern: /^\d+$/,
+                                    message: "Vui lòng không nhập chữ và dấu cách",
+                                },
+                            ]}
                         >
                             <Input className="input-item" placeholder="Nhập số tài khoản" />
                         </Form.Item>
