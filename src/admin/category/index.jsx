@@ -58,16 +58,16 @@ const Categories = () => {
             align: "center",
             render: (createdAt) => formatDate(createdAt)
         },
-        {
-            title: 'Thao tác',
-            key: 'action',
-            align: "center",
-            render: (_, record) => (
-                <span className="action-link action-link-blue" onClick={() => handleShowModal(record)}>
-                    Cập nhật
-                </span>
-            ),
-        }
+        // {
+        //     title: 'Thao tác',
+        //     key: 'action',
+        //     align: "center",
+        //     render: (_, record) => (
+        //         <span className="action-link action-link-blue" onClick={() => handleShowModal(record)}>
+        //             Cập nhật
+        //         </span>
+        //     ),
+        // }
     ];
 
     const handleShowModal = (category = null) => {

@@ -123,3 +123,11 @@
     display: block;
     margin-top: 16px;
 }
+
+.custom-upload .ant-upload-list-picture .ant-upload-list-item-name {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}

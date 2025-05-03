@@ -506,7 +506,13 @@ const Detail = () => {
                                             <Form.Item
                                                 label="Số tài khoản"
                                                 name="bank_account_number"
-                                                rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                                                rules={[
+                                                    { required: true, message: "Vui lòng nhập số tài khoản" },
+                                                    {
+                                                        pattern: /^\d+$/,
+                                                        message: "Vui lòng không nhập chữ và dấu cách",
+                                                    },
+                                                ]}
                                             >
                                                 <Input
                                                     className="input-item"
