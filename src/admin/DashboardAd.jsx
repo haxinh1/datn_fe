@@ -29,10 +29,11 @@ const Dashboard = () => {
   // State cho nhập hàng theo ngày
   const [stockByDay, setStockByDay] = useState([]);
   const [filteredStockDay, setFilteredStockDay] = useState(0);
-  // State cho bộ lọc ngày, tháng, năm (mặc định là hiện tại)
-  const [selectedDate, setSelectedDate] = useState(moment()); // Ngày hiện tại
-  const [selectedMonth, setSelectedMonth] = useState(moment()); // Tháng hiện tại
-  const [selectedYear, setSelectedYear] = useState(moment()); // Năm hiện tại
+  // State cho bộ lọc ngày, tháng, năm (mặc định là ngày hiện tại)
+  const currentDate = moment(); // Lấy ngày hiện tại (e.g., May 03, 2025 today, May 04, 2025 tomorrow)
+  const [selectedDate, setSelectedDate] = useState(currentDate); // Ngày hiện tại
+  const [selectedMonth, setSelectedMonth] = useState(currentDate); // Tháng hiện tại
+  const [selectedYear, setSelectedYear] = useState(currentDate); // Năm hiện tại
   // State cho doanh thu theo ngày, tháng, năm
   const [filteredRevenueDay, setFilteredRevenueDay] = useState(0);
   const [filteredRevenueMonth, setFilteredRevenueMonth] = useState(0);
@@ -94,11 +95,11 @@ const Dashboard = () => {
       setTopView(buyView.dataView || []);
       setRevenueByDay(revDay.revenue || []);
       setStockByDay(stockDay.revenueStock?.datas || []); // Lấy từ revenueStock.datas
-      // Tính toán doanh thu và nhập hàng
-      updateRevenueDay(revDay.revenue, moment());
-      updateRevenueMonth(revDay.revenue, moment());
-      updateRevenueYear(revDay.revenue, moment());
-      updateStockDay(stockDay.revenueStock?.datas || [], moment());
+      // Tính toán doanh thu và nhập hàng cho ngày hiện tại
+      updateRevenueDay(revDay.revenue, currentDate);
+      updateRevenueMonth(revDay.revenue, currentDate);
+      updateRevenueYear(revDay.revenue, currentDate);
+      updateStockDay(stockDay.revenueStock?.datas || [], currentDate);
       setLoading(false);
     };
 
