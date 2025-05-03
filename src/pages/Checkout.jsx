@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
@@ -1432,33 +1433,49 @@ const Checkout = () => {
                               >
                                 <div className="coupon-list">
                                   {coupons && coupons.length > 0 ? (
-                                    coupons.map((coupon) => (
-                                      <div
-                                        key={coupon.id}
-                                        style={{
-                                          padding: "10px",
-                                          marginBottom: "10px",
-                                          border: "1px solid #ddd",
-                                          borderRadius: "4px",
-                                          cursor: "pointer",
-                                          backgroundColor:
-                                            selectedCoupon?.id === coupon.id ? "#e48948" : "",
-                                          color: selectedCoupon?.id === coupon.id ? "white" : "",
-                                        }}
-                                        onClick={() => setSelectedCoupon(coupon)}
-                                      >
-                                        {coupon.code} -{" "}
-                                        {coupon.discount_type === "percent"
-                                          ? `${coupon.discount_value}%`
-                                          : `${coupon.discount_value} VNĐ`}  {""} {coupon.coupon_type === "public"
-                                            ? ""
-                                            : coupon.coupon_type === "private"
-                                              ? "(Dành riêng bạn)"
-                                              : coupon.coupon_type === "rank"
-                                                ? "(Theo hạng)"
-                                                : ""}
-                                      </div>
-                                    ))
+                                    coupons.map((coupon) => {
+                                      const startDate = new Date(coupon.start_date);
+                                      const endDate = new Date(coupon.end_date);
+                                      const currentDate = new Date();
+                                      const isValid = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && currentDate >= startDate && currentDate <= endDate;
+
+                                      return (
+                                        <div
+                                          key={coupon.id}
+                                          style={{
+                                            padding: "10px",
+                                            marginBottom: "10px",
+                                            border: "1px solid #ddd",
+                                            borderRadius: "4px",
+                                            cursor: "pointer",
+                                            backgroundColor:
+                                              selectedCoupon?.id === coupon.id ? "#e48948" : "",
+                                            color: selectedCoupon?.id === coupon.id ? "white" : "",
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                          }}
+                                          onClick={() => isValid && setSelectedCoupon(coupon)}
+                                        >
+                                          <span>
+                                            {coupon.code} -{" "}
+                                            {coupon.discount_type === "percent"
+                                              ? `${coupon.discount_value}%`
+                                              : `${coupon.discount_value} VNĐ`}{" "}
+                                            {coupon.coupon_type === "public"
+                                              ? ""
+                                              : coupon.coupon_type === "private"
+                                                ? "(Dành riêng bạn)"
+                                                : coupon.coupon_type === "rank"
+                                                  ? "(Theo hạng)"
+                                                  : ""}
+                                          </span>
+                                          <span style={{ fontSize: "0.8rem", color: isValid ? "green" : "red" }}>
+                                            {isValid ? "Hiệu lực" : "Hết hạn"}: {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
                                   ) : (
                                     <p>Không có mã giảm giá nào.</p>
                                   )}
