@@ -151,7 +151,7 @@ const Inbox = () => {
                     dataSource={chatSessions}
                     renderItem={(session) => (
                         <List.Item onClick={() => handleSelectSession(session)} style={{ cursor: "pointer" }}>
-                            <Text strong>{session.customer && session.customer.fullname || "Khách hàng"}</Text>
+                            <Text strong>{session.customer && session.customer.fullname || "Khách hàng"}{" " + session.id}</Text>
                         </List.Item>
                     )}
                 />
