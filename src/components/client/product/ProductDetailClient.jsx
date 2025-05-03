@@ -336,9 +336,50 @@ const ProductDetailClient = () => {
     };
   };
 
+  const getVariantPriceRange = (product) => {
+    const parsePrice = (price) => {
+      if (price == null) return null;
+      if (typeof price === 'number') return price;
+      const parsed = parseFloat(price);
+      return isNaN(parsed) ? null : parsed;
+    };
+  
+    if (!product.variants || product.variants.length === 0) {
+      const sellPrice = parsePrice(product.sell_price || product.product_sell_price);
+      const salePrice = parsePrice(product.sale_price || product.product_sale_price);
+      const price = isSalePriceValid(product.sale_price_end_at) ? salePrice : sellPrice;
+      return {
+        minPrice: price || 0,
+        maxPrice: price || 0,
+      };
+    }
+  
+    const prices = product.variants
+      .map((variant) => {
+        const sellPrice = parsePrice(variant.sell_price || variant.variant_sell_price);
+        const salePrice = parsePrice(variant.sale_price || variant.variant_sale_price);
+        return isSalePriceValid(variant.sale_price_end_at) ? salePrice : sellPrice;
+      })
+      .filter((price) => typeof price === 'number' && !isNaN(price));
+  
+    if (prices.length === 0) {
+      return {
+        minPrice: 0,
+        maxPrice: 0,
+      };
+    }
+  
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  };
+  
+
+  // Lấy dữ liệu sản phẩm
   const fetchProduct = async () => {
     try {
-      const { data, dataViewed, avgRate } = await productsServices.ProductById(id);
+      const { data, dataViewed, avgRate } = await productsServices.fetchProductById(id);
       setProduct(data);
       setDataViewed(dataViewed || []);
       setAvgRate(avgRate);
@@ -374,10 +415,10 @@ const ProductDetailClient = () => {
         <div className="container d-flex align-items-center">
           <ol className="breadcrumb">
             <li className="breadcrumb-item">
-              <Link to="/">Trang Chủ</Link>
+              <Link to="/"><span>Trang Chủ</span></Link>
             </li>
             <li className="breadcrumb-item">
-              <Link to="/list-prcl">Sản Phẩm</Link>
+              <Link to="/list-prcl"><span>Sản Phẩm</span></Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
               Chi Tiết
@@ -497,12 +538,12 @@ const ProductDetailClient = () => {
                     </div>
                   </div>
 
-                  <div className="details-filter-row details-row-size">
+                  {/* <div className="details-filter-row details-row-size">
                     <label>Lượt xem:</label>
                     <div className="product-nav product-nav-dots">
                       <div>{product.views}</div>
                     </div>
-                  </div>
+                  </div> */}
 
                   {selectedVariant ? (
                     <div className="product-price">
@@ -530,22 +571,14 @@ const ProductDetailClient = () => {
 
                   {product.is_active === 1 && (
                     <>
-                      {selectedVariant ? (
+                      {(selectedColor && selectedSize) && (
                         <div className="details-filter-row details-row-size">
                           <label>Tồn kho:</label>
                           <div className="product-nav product-nav-dots">
-                            <div>{selectedVariant.stock}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="details-filter-row details-row-size">
-                          <label>Tồn kho:</label>
-                          <div className="product-nav product-nav-dots">
-                            <div>{product.stock}</div>
+                            <div>{selectedVariant ? selectedVariant.stock : product.stock}</div>
                           </div>
                         </div>
                       )}
-
                       {product.atribute_value_product?.length > 0 && (
                         <div className="details-filter-row details-row-size">
                           <label htmlFor="Color">Màu:</label>
@@ -713,16 +746,17 @@ const ProductDetailClient = () => {
                   <Card
                     onClick={() => navigate(`/product-detail/${product.id}`)}
                     hoverable
-                    cover={<img alt={product.name} src={product.thumbnail} />}
+                    cover={<img alt={product.name} src={product.product_thumbnail} />}
                   >
-                    <Card.Meta
-                      title={product.name}
-                      description={`${formatPrice(
-                        isSalePriceValid(product.sale_price_end_at)
-                          ? product.sale_price
-                          : product.sell_price
-                      )} VNĐ`}
-                    />
+                    <Card.Meta title={product.name} description={(() => {
+                      const { minPrice, maxPrice } =
+                        getVariantPriceRange(product);
+                      return minPrice === maxPrice
+                        ? `${formatPrice(minPrice)} VNĐ`
+                        : `${formatPrice(minPrice)} - ${formatPrice(
+                          maxPrice
+                        )} VNĐ`;
+                    })()} />
                   </Card>
                 </Col>
               ))}
@@ -733,40 +767,44 @@ const ProductDetailClient = () => {
         {dataViewed.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
             <h2 className="title text-center mb-4">Top 8 Sản phẩm đã xem gần đây</h2>
-            <Swiper
-              spaceBetween={30}
-              slidesPerView={3}
-              slidesPerGroup={1}
-              autoplay={{
-                delay: 2500,
-                disableOnInteraction: false,
-              }}
-              pagination={{ clickable: true }}
-              navigation={true}
-              modules={[Autoplay, Pagination, Navigation]}
-              className="mySwiper"
-            >
-              {dataViewed.map((product, index) => (
-                <SwiperSlide key={index}>
-                  <div className="product product-7" style={{ width: "300px" }}>
-                    <Card
-                      onClick={() => navigate(`/product-detail/${product.id}`)}
-                      hoverable
-                      cover={<img alt={product.name} src={product.thumbnail} />}
-                    >
-                      <Card.Meta
-                        title={product.name}
-                        description={`${formatPrice(
-                          isSalePriceValid(product.sale_price_end_at)
-                            ? product.sale_price
-                            : product.sell_price
-                        )} VNĐ`}
-                      />
-                    </Card>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <div >
+              <Swiper
+                spaceBetween={30}
+                slidesPerView={3}
+                slidesPerGroup={1}
+                autoplay={{
+                  delay: 2500,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation]}
+                className="mySwiper"
+              >
+                {dataViewed.map((product, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="product product-7" style={{ width: "300px" }}>
+                      <Card
+                        onClick={() => navigate(`/product-detail/${product.id}`)}
+
+                        hoverable
+                        cover={<img alt={product.name} src={product.thumbnail} />}
+                      >
+                        <Card.Meta title={product.name} description={(() => {
+                          const { minPrice, maxPrice } =
+                            getVariantPriceRange(product);
+                          return minPrice === maxPrice
+                            ? `${formatPrice(minPrice)} VNĐ`
+                            : `${formatPrice(minPrice)} - ${formatPrice(
+                              maxPrice
+                            )} VNĐ`;
+                        })()} />
+                      </Card>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           </div>
         )}
 

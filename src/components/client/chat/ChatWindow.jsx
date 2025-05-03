@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Input, Button, Form, List, message } from 'antd';
+import { Modal, Input, Button, Form, List, message, Upload } from 'antd';
+import { PaperClipOutlined, PictureOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   createChatSession,
   getChatSessions,
@@ -11,40 +12,40 @@ import {
 import echo from '../../../echo';
 
 const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
-
   const [form] = Form.useForm();
   const [guestForm] = Form.useForm();
   const [chatSession, setChatSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
+  const [fileList, setFileList] = useState([]);
+  const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      const savedChatSessionId = localStorage.getItem('chat_session_id'); 
+      const savedChatSessionId = localStorage.getItem('chat_session_id');
       if (savedChatSessionId) {
         setChatSession({ id: savedChatSessionId });
         fetchMessages(savedChatSessionId);
       } else {
-        initializeChat(); 
+        initializeChat();
       }
     }
   }, [visible]);
-
 
   useEffect(() => {
     if (!chatSession) return;
 
     console.log('Joining channel:', `chat.${chatSession.id}`);
-    echo.private(`chat.${chatSession.id}`)
+    echo
+      .private(`chat.${chatSession.id}`)
       .subscribed(() => {
         console.log('Successfully subscribed to chat channel:', `chat.${chatSession.id}`);
       })
       .listen('.message.sent', (event) => {
         console.log('New message received:', JSON.stringify(event, null, 2));
         setMessages((prevMessages) => [...prevMessages, event.message]);
-        scrollToBottom(); 
+        scrollToBottom();
       })
       .error((error) => {
         console.error('Pusher error:', error);
@@ -66,7 +67,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
         const response = await createChatSession({});
         const chatSessionData = response.data.chat_session;
         setChatSession(chatSessionData);
-        localStorage.setItem('chat_session_id', chatSessionData.id);  // Lưu ID phiên chat
+        localStorage.setItem('chat_session_id', chatSessionData.id);
         fetchMessages(chatSessionData.id);
       } else {
         const guestPhone = localStorage.getItem('guest_phone');
@@ -75,7 +76,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
           const activeSession = sessions.data.chat_sessions.find((s) => !s.is_closed);
           if (activeSession) {
             setChatSession(activeSession);
-            localStorage.setItem('chat_session_id', activeSession.id);  // Lưu ID phiên chat
+            localStorage.setItem('chat_session_id', activeSession.id);
             fetchMessages(activeSession.id);
           }
         }
@@ -85,7 +86,6 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     }
     setLoading(false);
   };
-  
 
   const fetchMessages = async (chatSessionId) => {
     try {
@@ -111,6 +111,7 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
       setChatSession(response.data.chat_session);
       localStorage.setItem('guest_phone', values.guest_phone);
       localStorage.setItem('guest_name', values.guest_name);
+      localStorage.setItem('chat_session_id', response.data.chat_session.id);
       fetchMessages(response.data.chat_session.id);
     } catch (error) {
       message.error('Không thể tạo phiên chat');
@@ -127,7 +128,8 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     try {
       const messageData = {
         chat_session_id: chatSession.id,
-        message: values.message,
+        message: values.message || '', // Allow empty message if images are present
+        media: (values.images || []).map((url) => ({ url, type: 'image' })),
         type: 'text',
       };
       if (!isLoggedIn) {
@@ -136,7 +138,8 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
       }
       await sendMessage(messageData);
       form.resetFields();
-      // Không cần gọi fetchMessages vì real-time sẽ tự cập nhật
+      setFileList([]);
+      setShowUpload(false);
     } catch (error) {
       message.error('Không thể gửi tin nhắn');
     }
@@ -148,22 +151,73 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
     setLoading(true);
     try {
       await closeChatSession(chatSession.id);
-      
       localStorage.removeItem('chat_session_id');
-      
       setChatSession(null);
       setMessages([]);
-      
       localStorage.removeItem('guest_phone');
       localStorage.removeItem('guest_name');
-      
       onClose();
     } catch (error) {
       message.error('Không thể đóng phiên chat');
     }
     setLoading(false);
   };
-  
+
+  const handleUploadChange = ({ file, fileList }) => {
+    const newFileList = fileList.map((f) => ({
+      uid: f.uid,
+      name: f.name || 'Hình ảnh',
+      status: f.status,
+      url: f.response?.secure_url || f.url,
+    }));
+
+    setFileList(newFileList);
+
+    // Update form images field with URLs of successfully uploaded files
+    const imageUrls = newFileList
+      .filter((f) => f.status === 'done' && f.url)
+      .map((f) => f.url);
+    form.setFieldsValue({ images: imageUrls });
+
+    if (file.status === 'done' && file.response) {
+      message.success('Tải ảnh lên thành công');
+    } else if (file.status === 'error') {
+      message.error('Tải ảnh lên thất bại');
+    }
+  };
+
+  const onRemove = (file) => {
+    const newFileList = fileList.filter((item) => item.uid !== file.uid);
+    setFileList(newFileList);
+    const imageUrls = newFileList
+      .filter((f) => f.status === 'done' && f.url)
+      .map((f) => f.url);
+    form.setFieldsValue({ images: imageUrls });
+  };
+
+
+  const toggleUpload = () => {
+    setShowUpload(!showUpload);
+  };
+
+  const uploadProps = {
+    action: 'https://api.cloudinary.com/v1_1/dzpr0epks/image/upload',
+    data: { upload_preset: 'quangOsuy' },
+    multiple: true,
+    listType: 'picture-card',
+    fileList,
+    onChange: handleUploadChange,
+    onRemove,
+    onPreview: async (file) => {
+      const src = file.url || (file.response && file.response.secure_url);
+      if (!src) return;
+      const imgWindow = window.open(src);
+      if (imgWindow) {
+        imgWindow.document.write('<img src="' + src + '" style="max-width:100%;" />');
+      }
+    },
+    accept: 'image/*',
+  };
 
   return (
     <Modal
@@ -224,7 +278,16 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
                             : localStorage.getItem('guest_name')
                           : 'Nhân viên'}
                       </div>
-                      <div>{item.message}</div>
+                      {item.message && <div>{item.message}</div>}
+                      {item.media &&
+                        item.media.map((media, index) => (
+                          <img
+                            key={index}
+                            src={media.url}
+                            alt="media"
+                            style={{ maxWidth: '100%', marginTop: 8 }}
+                          />
+                        ))}
                     </div>
                   </List.Item>
                 );
@@ -233,12 +296,42 @@ const ChatWindow = ({ visible, onClose, isLoggedIn, user }) => {
             <div ref={messagesEndRef} />
           </div>
           <Form form={form} onFinish={handleSendMessage}>
-            <Form.Item
-              name="message"
-              rules={[{ required: true, message: 'Vui lòng nhập tin nhắn!' }]}
+            <div style={{ marginBottom: 12 }}>
+              {showUpload && (
+                <Form.Item name="images" noStyle>
+                  <Upload {...uploadProps}>
+                    <button className="upload-button" type="button">
+                      <UploadOutlined />
+                      <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                    </button>
+                  </Upload>
+                </Form.Item>
+              )}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: '#f0f2f5',
+                borderRadius: 20,
+                padding: '6px 12px',
+                marginBottom: 12,
+              }}
             >
-              <Input placeholder="Tin nhắn" />
-            </Form.Item>
+              <Form.Item name="message" style={{ flex: 1, margin: 0 }}>
+                <Input
+                  placeholder="Nhập tin nhắn..."
+                  bordered={false}
+                  style={{ background: 'transparent' }}
+                />
+              </Form.Item>
+              <Button
+                type="text"
+                icon={<PictureOutlined />}
+                style={{ color: '#65676b' }}
+                onClick={toggleUpload}
+              />
+            </div>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading}>
                 Gửi

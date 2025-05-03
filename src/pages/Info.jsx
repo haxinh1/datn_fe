@@ -404,7 +404,13 @@ const Info = () => {
                             <Form.Item
                                 label="Số điện thoại"
                                 name="phone_number"
-                                rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập số điện thoại" },
+                                    {
+                                        pattern: /^\d{10}$/,
+                                        message: "Số điện thoại phải gồm đúng 10 chữ số",
+                                    },
+                                ]}
                             >
                                 <Input className="input-item" />
                             </Form.Item>
@@ -436,7 +442,13 @@ const Info = () => {
                             <Form.Item
                                 label="Email"
                                 name="email"
-                                rules={[{ required: true, message: "Vui lòng nhập Email" }]}
+                                rules={[
+                                    {
+                                        required: true,
+                                        type: "email",
+                                        message: "Vui lòng nhập email hợp lệ",
+                                    },
+                                ]}
                             >
                                 <Input className="input-item" disabled={isGoogleAccount()} />
                             </Form.Item>

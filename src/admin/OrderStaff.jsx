@@ -23,7 +23,6 @@ const OrderStaff = () => {
     const hideModal = () => setIsModalVisible(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const hideEdit = () => setIsModal(false);
-    const hideCancel = () => setIsModalCancel(false);
     const [form] = Form.useForm();
     const [image, setImage] = useState("");
     const [orderDetails, setOrderDetails] = useState([]);
@@ -51,6 +50,8 @@ const OrderStaff = () => {
     const [searchInput, setSearchInput] = useState("");
     const [searchKeyword, setSearchKeyword] = useState("");
     const queryClient = useQueryClient();
+    const [returnReason, setReturnReason] = useState(""); // Thêm state cho lý do hủy
+    const [isCustomReason, setIsCustomReason] = useState(false);
 
     // danh sách đơn hàng
     const { data: ordersData = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useQuery({
@@ -109,10 +110,10 @@ const OrderStaff = () => {
     }));
 
     const validTransitions = {
-        2: [3, 8],
-        3: [4, 8],
+        2: [3],
+        3: [4],
         4: [5, 6],
-        6: [4, 8],
+        6: [4],
     };
 
     const showEdit = (order) => {
@@ -210,6 +211,13 @@ const OrderStaff = () => {
         },
     });
 
+    const hideCancel = () => {
+        setIsModalCancel(false);
+        form.resetFields();
+        setReturnReason("");
+        setIsCustomReason(false);
+    };
+
     const handleCancelOrder = async (values) => {
         try {
             // 1. Kiểm tra selectedOrderId
@@ -221,7 +229,16 @@ const OrderStaff = () => {
                 return;
             }
 
-            // 2. Lấy user_id từ localStorage
+            // 2. Kiểm tra lý do hủy
+            if (!returnReason) {
+                notification.error({
+                    message: "Error",
+                    description: "Vui lòng chọn hoặc nhập lý do hủy đơn!",
+                });
+                return;
+            }
+
+            // 3. Lấy user_id từ localStorage
             const user = JSON.parse(localStorage.getItem("user"));
             const userId = user?.id;
             if (!userId) {
@@ -232,15 +249,15 @@ const OrderStaff = () => {
                 return;
             }
 
-            // 3. Tạo payload
+            // 4. Tạo payload
             const payload = {
-                reason: values.reason,
+                reason: returnReason, // Sử dụng trực tiếp returnReason
                 user_id: userId,
             };
 
             console.log("Payload gửi đi:", payload);
 
-            // 4. Gọi API hủy đơn
+            // 5. Gọi API hủy đơn
             cancelOrder({ orderId: selectedOrderId, payload });
         } catch (error) {
             console.error("Error submitting cancel request:", error);
@@ -885,7 +902,7 @@ const OrderStaff = () => {
             </Modal>
 
             <Modal
-                title="Hủy đơn"
+                title="Lý do hủy đơn"
                 visible={isModalCancel}
                 onCancel={hideCancel}
                 footer={null}
@@ -894,16 +911,47 @@ const OrderStaff = () => {
                     <Form.Item
                         label="Lý do hủy đơn"
                         name="reason"
-                        rules={[{ required: true, message: "Vui lòng chọn lý do hủy đơn" }]}
+                        rules={[{ required: true, message: "Vui lòng chọn hoặc nhập lý do hủy đơn" }]}
                     >
                         <Radio.Group
-
+                            value={returnReason}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setReturnReason(value);
+                                if (value === "Khác") {
+                                    setIsCustomReason(true);
+                                    setReturnReason("");
+                                    form.setFieldsValue({ reason: "" });
+                                } else {
+                                    setIsCustomReason(false);
+                                    form.setFieldsValue({ reason: value });
+                                }
+                            }}
                             style={{ display: "flex", flexDirection: "column", gap: "10px" }}
                         >
-                            <Radio value="error">Sản phẩm bị hư, hỏng khi vận chuyển</Radio>
-                            <Radio value="disconnect">Không thể liên hệ với người đặt</Radio>
+                            <Radio value="Sản phẩm bị hư, hỏng khi vận chuyển">Sản phẩm bị hư, hỏng khi vận chuyển</Radio>
+                            <Radio value="Không thể liên hệ với người đặt">Không thể liên hệ với người đặt</Radio>
+                            <Radio value="Khác">Khác</Radio>
                         </Radio.Group>
                     </Form.Item>
+
+                    {isCustomReason && (
+                        <Form.Item
+                            label="Nhập lý do hủy đơn"
+                            name="reason"
+                            rules={[{ required: true, message: "Vui lòng nhập lý do hủy đơn" }]}
+                        >
+                            <Input.TextArea
+                                value={returnReason}
+                                onChange={(e) => {
+                                    setReturnReason(e.target.value);
+                                    form.setFieldsValue({ reason: e.target.value });
+                                }}
+                                placeholder="Nhập lý do hủy đơn tại đây..."
+                                rows={3}
+                            />
+                        </Form.Item>
+                    )}
 
                     <div className="add">
                         <Button type="primary" htmlType="submit">

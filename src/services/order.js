@@ -12,6 +12,12 @@ const getAllCancel = async () => {
   return response.data;
 };
 
+// 1 đơn hủy
+const getACancel = async (orderId) => {
+  const response = await instance.get(`/order-cancels/order/${orderId}`);
+  return response.data;
+};
+
 // tìm kiếm đơn hủy
 const searchOrderCancel = async (keyword = "") => {
   try {
@@ -304,6 +310,7 @@ export const OrderService = {
   getAllOrder,
   getAllBill,
   getAllCancel,
+  getACancel,
   searchOrderCancel,
   getCancelByUser,
   cancelRequest,

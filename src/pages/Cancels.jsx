@@ -29,15 +29,15 @@ const Cancels = () => {
                 return Array.isArray(response.order_cancels) ? response.order_cancels : [];
             }
         },
-    });    
+    });
 
     useEffect(() => {
         const delayDebounce = setTimeout(() => {
             refetch(); // gọi lại API với keyword mới
         }, 500); // debounce 500ms
-    
+
         return () => clearTimeout(delayDebounce);
-    }, [searchKeyword]);    
+    }, [searchKeyword]);
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -94,25 +94,6 @@ const Cancels = () => {
         return formatter.format(price);
     };
 
-    const getReturnReason = (note) => {
-        switch (note) {
-            case "mistake":
-                return "Đặt nhầm sản phẩm";
-            case "better":
-                return "Tìm thấy ưu đãi tốt hơn";
-            case "size_change":
-                return "Đổi size/màu";
-            case "error":
-                return "Sản phẩm bị hư, hỏng khi vận chuyển";
-            case "disconnect":
-                return "Không thể liên hệ với người đặt";
-            case "other":
-                return "Khác";
-            default:
-                return note || "";
-        }
-    };
-
     const columns = [
         {
             title: "STT",
@@ -132,7 +113,6 @@ const Cancels = () => {
             dataIndex: "reason",
             key: "reason",
             align: "center",
-            render: (reason) => getReturnReason(reason)
         },
         {
             title: "Ngày hủy",
@@ -263,7 +243,13 @@ const Cancels = () => {
                             <Form.Item
                                 label="Số tài khoản"
                                 name="bank_account_number"
-                                rules={[{ required: true, message: "Vui lòng nhập số tài khoản" }]}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập số tài khoản" },
+                                    {
+                                        pattern: /^\d+$/,
+                                        message: "Vui lòng không nhập chữ và dấu cách",
+                                    },
+                                ]}
                             >
                                 <Input
                                     className="input-item"

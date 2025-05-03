@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { List, Button, Input, Card, Typography, message as antdMessage } from "antd";
+import { List, message, Button, Input, Card, Typography, Upload } from "antd";
 import axios from "axios";
 import { closeChatSession, getChatSessions, getMessages, sendMessage } from "../services/chatBox";
 import echo from "../echo";
+import { PictureOutlined, UploadOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -12,6 +13,9 @@ const Inbox = () => {
     const [selectedSession, setSelectedSession] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
+    const [fileList, setFileList] = useState([]);
+    const [imageUrls, setImageUrls] = useState([]);
+    const [showUpload, setShowUpload] = useState(false);
 
     useEffect(() => {
         fetchChatSessions();
@@ -38,7 +42,7 @@ const Inbox = () => {
             const response = await getChatSessions();
             setChatSessions(response.data.chat_sessions);
         } catch (error) {
-            antdMessage.error("Lỗi khi tải danh sách phiên chat");
+            message.error("Lỗi khi tải danh sách phiên chat");
         }
     };
 
@@ -47,7 +51,7 @@ const Inbox = () => {
             const response = await getMessages(sessionId);
             setMessages(response.data.messages);
         } catch (error) {
-            antdMessage.error("Lỗi khi tải tin nhắn");
+            message.error("Lỗi khi tải tin nhắn");
         }
     };
 
@@ -62,23 +66,83 @@ const Inbox = () => {
             await sendMessage({
                 chat_session_id: selectedSession.id,
                 message: newMessage,
+                media: (imageUrls || []).map((url) => ({ url, type: 'image' })),
             });
             setNewMessage("");
+            setImageUrls([]);
+            setFileList([]);
+            setShowUpload(false);
             fetchMessages(selectedSession.id);
         } catch (error) {
-            antdMessage.error("Lỗi khi gửi tin nhắn");
+            message.error("Lỗi khi gửi tin nhắn");
         }
     };
 
     const handleCloseSession = async () => {
         try {
             await closeChatSession(selectedSession.id);
-            antdMessage.success("Phiên chat đã được đóng");
+            message.success("Phiên chat đã được đóng");
             setSelectedSession(null);
             fetchChatSessions();
         } catch (error) {
-            antdMessage.error("Lỗi khi đóng phiên chat");
+            message.error("Lỗi khi đóng phiên chat");
         }
+    };
+
+    const toggleUpload = () => {
+        setShowUpload(!showUpload);
+    };
+
+    const handleUploadChange = ({ file, fileList }) => {
+        console.log('File list:', fileList);
+        
+        const newFileList = fileList.map((f) => ({
+            uid: f.uid,
+            name: f.name || 'Hình ảnh',
+            status: f.status,
+            url: f.response?.secure_url || f.url,
+        }));
+
+        setFileList(newFileList);
+
+        const newImageUrls = newFileList
+            .filter((f) => f.status === 'done' && f.url)
+            .map((f) => f.url);
+        setImageUrls(newImageUrls);
+
+        if (file.status === 'done' && file.response) {
+            message.success('Tải ảnh lên thành công');
+        } else if (file.status === 'error') {
+            message.error('Tải ảnh lên thất bại');
+        }
+    };
+
+    const onRemove = (file) => {
+        const newFileList = fileList.filter((item) => item.uid !== file.uid);
+        setFileList(newFileList);
+        const newImageUrls = newFileList
+            .filter((f) => f.status === 'done' && f.url)
+            .map((f) => f.url);
+        setImageUrls(newImageUrls);
+    };
+
+    const uploadProps = {
+        action: 'https://api.cloudinary.com/v1_1/dzpr0epks/image/upload',
+        data: { upload_preset: 'quangOsuy' },
+        multiple: true,
+        listType: 'picture-card',
+        fileList,
+        onChange: handleUploadChange,
+        onRemove,
+        onPreview: async (file) => {
+            const src = file.url || (file.response && file.response.secure_url);
+            if (!src) return;
+            const imgWindow = window.open(src);
+            if (imgWindow) {
+                imgWindow.document.write('<img src="' + src + '" style="max-width:100%;" />');
+            }
+        },
+        accept: 'image/*',
     };
 
     return (
@@ -105,7 +169,7 @@ const Inbox = () => {
                                     <List.Item
                                         style={{
                                             display: 'flex',
-                                            justifyContent: isCustomer ? 'flex-end' : 'flex-start',
+                                            justifyContent: isCustomer ? 'flex-start' : 'flex-end',
                                         }}
                                     >
                                         <div
@@ -113,8 +177,8 @@ const Inbox = () => {
                                                 maxWidth: '70%',
                                                 padding: '8px 12px',
                                                 borderRadius: 8,
-                                                background: isCustomer ? '#1890ff' : '#f0f0f0',
-                                                color: isCustomer ? 'white' : 'black',
+                                                background: isCustomer ? '#f0f0f0' : '#1890ff',
+                                                color: isCustomer ? 'black' : 'white',
                                             }}
                                         >
                                             <div style={{ fontSize: 12, opacity: 0.7 }}>
@@ -122,20 +186,49 @@ const Inbox = () => {
                                                     ? "Khách hàng"
                                                     : 'Nhân viên'}
                                             </div>
-                                            <div>{msg.message}</div>
+                                            <div>  {msg.message && <div>{msg.message}</div>}
+                                            </div>
+                                            <div>
+                                                {msg.media &&
+                                                    msg.media.map((media, index) => (
+                                                        <img
+                                                            key={index}
+                                                            src={media.url}
+                                                            alt="media"
+                                                            style={{ width: '100%', marginTop: 8 }}
+                                                        />
+                                                    ))}
+                                            </div>
                                         </div>
                                     </List.Item>
                                 </div>
                             )
                         })}
                     </div>
+                    <div style={{ marginBottom: 12 }}>
+                        {showUpload && (
+                            <Upload {...uploadProps}>
+                                <button className="upload-button" type="button">
+                                    <UploadOutlined />
+                                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                </button>
+                            </Upload>
+                        )}
+                    </div>
+
                     <TextArea
                         rows={3}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Nhập tin nhắn..."
                     />
-                    <Button type="primary" onClick={handleSendMessage} style={{ marginTop: 10 }}>
+                    <Button
+                        type="text"
+                        icon={<PictureOutlined />}
+                        style={{ marginTop: 10, marginLeft: 10, color: "#1890ff", backgroundColor: "#f0f0f0" }}
+                        onClick={toggleUpload}
+                    />
+                    <Button type="primary" onClick={handleSendMessage} style={{ marginTop: 10, marginLeft: 10 }}>
                         Gửi
                     </Button>
                     <Button danger onClick={handleCloseSession} style={{ marginTop: 10, marginLeft: 10 }}>
@@ -146,6 +239,5 @@ const Inbox = () => {
         </div>
     );
 };
-
 
 export default Inbox;

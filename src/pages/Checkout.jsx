@@ -2,19 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { cartServices } from "../services/cart";
 import { OrderService } from "../services/order";
-import {
-  Button,
-  message,
-  Modal,
-  Radio,
-  Form,
-  Select,
-  Input,
-  notification,
-  Tooltip,
-  Row,
-  Col,
-} from "antd";
+import { Button, message, Modal, Radio, Form, Select, Input, notification, Tooltip, Row, Col } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ValuesServices } from "../services/attribute_value";
 import { paymentServices } from "../services/payments";
@@ -1507,8 +1495,8 @@ const Checkout = () => {
                         </tbody>
                       </table>
 
-                      <Button
-                        type="primary"
+                      <button
+                        type="button"
                         className="btn btn-primary btn-block"
                         style={{
                           fontSize: "1.2rem",
@@ -1549,7 +1537,7 @@ const Checkout = () => {
                         }}
                       >
                         Thanh Toán
-                      </Button>
+                      </button>
                     </div>
                   </aside>
                 </div>

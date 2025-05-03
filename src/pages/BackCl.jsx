@@ -161,23 +161,6 @@ const BackCl = () => {
         },
     });
 
-    const getReturnReason = (note) => {
-        switch (note) {
-            case "store_error":
-                return "Cửa hàng gửi sai, thiếu sản phẩm";
-            case "damaged":
-                return "Sản phẩm có dấu hiệu hư hỏng";
-            case "misdescription":
-                return "Sản phẩm khác với mô tả";
-            case "size_change":
-                return "Tôi muốn đổi size";
-            case "other":
-                return "Khác";
-            default:
-                return note || "";
-        }
-    };
-
     const formatPrice = (price) => {
         const formatter = new Intl.NumberFormat("de-DE", {
             style: "decimal",
@@ -204,7 +187,6 @@ const BackCl = () => {
             dataIndex: "reason",
             key: "reason",
             align: "center",
-            render: (reason) => getReturnReason(reason),
         },
         {
             title: "Số tiền (VNĐ)",
