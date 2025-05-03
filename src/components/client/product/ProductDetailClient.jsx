@@ -744,11 +744,11 @@ const ProductDetailClient = () => {
               {recommendedProducts.map((product) => (
                 <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
                   <Card
-                    onClick={() => navigate(`/product-detail/${product.id}`)}
+                    onClick={() => navigate(`/product-detail/${product.product_id}`)}
                     hoverable
-                    cover={<img alt={product.name} src={product.product_thumbnail} />}
+                    cover={<img alt={product.product_name} src={product.product_thumbnail} />}
                   >
-                    <Card.Meta title={product.name} description={(() => {
+                    <Card.Meta title={product.product_name} description={(() => {
                       const { minPrice, maxPrice } =
                         getVariantPriceRange(product);
                       return minPrice === maxPrice
