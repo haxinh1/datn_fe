@@ -893,8 +893,8 @@ const ProductDetailClient = () => {
 
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
+            <h2 className="title text-center mb-4">2 sản phẩm hay được mua cùng</h2>
             <Row gutter={[16, 16]} justify="center">
-              <h2 className="title text-center mb-4">2 sản phẩm hay được mua cùng</h2>
               {recommendedProducts.map((product) => (
                 <div className="col-6 col-md-4 col-lg-3" key={product.product_id}>
                   <div className="product product-7 text-center">
