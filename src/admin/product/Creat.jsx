@@ -658,8 +658,11 @@ const Creat = () => {
                     <Col span={8} className="col-item">
                         <Form.Item
                             label="Tên sản phẩm"
-                            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
                             name="name"
+                            rules={[
+                                { required: true, message: "Vui lòng nhập tên sản phẩm" },
+                                { pattern: /^(?!\s+$).+/, message: "Tên không được chứa toàn khoảng trắng" },
+                            ]}
                         >
                             <Input className="input-item" onChange={handleNameChange} />
                         </Form.Item>
@@ -980,71 +983,90 @@ const Creat = () => {
                             <BarsOutlined style={{ marginRight: "8px" }} />
                             Thuộc tính
                         </h1>
-                        {attributes && attributes
-                            .sort((a, b) => a.id - b.id)
-                            .map((attr) => (
-                                <div key={attr.id}>
-                                    <label className="attr-name">{attr.name}</label>
-                                    <div className="attribute">
-                                        <Select
-                                            mode="multiple"
-                                            className="input-attribute"
-                                            placeholder={`Chọn giá trị cho ${attr.name}`}
-                                            onChange={(values) => {
-                                                // Chỉ thêm thuộc tính vào danh sách nếu có giá trị được chọn
-                                                const updatedForms = [...forms];
-                                                const existingIndex = updatedForms.findIndex(f => f.id === attr.id);
 
-                                                if (values.length > 0) {
-                                                    if (existingIndex === -1) {
-                                                        updatedForms.push({
-                                                            id: attr.id,
-                                                            name: attr.name,
-                                                            values: values.map(value => ({
-                                                                id: Number(value),
-                                                                value: attributeValue?.find(val => val.id === Number(value))?.value || ""
-                                                            })),
-                                                        });
-                                                    } else {
-                                                        updatedForms[existingIndex].values = values.map(value => ({
-                                                            id: Number(value),
-                                                            value: attributeValue?.find(val => val.id === Number(value))?.value || ""
-                                                        }));
-                                                    }
-                                                } else {
-                                                    // Xóa thuộc tính khỏi danh sách nếu không có giá trị nào được chọn
-                                                    updatedForms.splice(existingIndex, 1);
-                                                }
+                        {attributes && attributes.length > 0 ? (
+                            // Chia attributes thành các nhóm, mỗi nhóm 3 thuộc tính
+                            attributes
+                                .sort((a, b) => a.id - b.id)
+                                .reduce((rows, attr, index) => {
+                                    if (index % 3 === 0) rows.push([]);
+                                    rows[rows.length - 1].push(attr);
+                                    return rows;
+                                }, [])
+                                .map((row, rowIndex) => (
+                                    <Row key={rowIndex} gutter={24} style={{ marginBottom: "16px" }}>
+                                        {row.map((attr) => (
+                                            <Col key={attr.id} span={8}>
+                                                <div className="attribute-container">
+                                                    <label className="attr-name">{attr.name}</label>
+                                                    <div className="attribute">
+                                                        <Select
+                                                            mode="multiple"
+                                                            className="input-item"
+                                                            placeholder={`Chọn giá trị cho ${attr.name}`}
+                                                            onChange={(values) => {
+                                                                // Chỉ thêm thuộc tính vào danh sách nếu có giá trị được chọn
+                                                                const updatedForms = [...forms];
+                                                                const existingIndex = updatedForms.findIndex(f => f.id === attr.id);
 
-                                                setForms(updatedForms);
-                                            }}
-                                            value={forms.find(f => f.id === attr.id)?.values.map(v => v.id) || []}
-                                        >
-                                            {attributeValue ? (
-                                                attributeValue
-                                                    .filter(val => val.attribute_id === attr.id)
-                                                    .map(val => (
-                                                        <Option key={val.id} value={val.id}>
-                                                            {val.value}
-                                                        </Option>
-                                                    ))
-                                            ) : (
-                                                <Option disabled>Đang tải...</Option>
-                                            )}
-                                        </Select>
+                                                                if (values.length > 0) {
+                                                                    if (existingIndex === -1) {
+                                                                        updatedForms.push({
+                                                                            id: attr.id,
+                                                                            name: attr.name,
+                                                                            values: values.map(value => ({
+                                                                                id: Number(value),
+                                                                                value: attributeValue?.find(val => val.id === Number(value))?.value || ""
+                                                                            })),
+                                                                        });
+                                                                    } else {
+                                                                        updatedForms[existingIndex].values = values.map(value => ({
+                                                                            id: Number(value),
+                                                                            value: attributeValue?.find(val => val.id === Number(value))?.value || ""
+                                                                        }));
+                                                                    }
+                                                                } else {
+                                                                    // Xóa thuộc tính khỏi danh sách nếu không có giá trị nào được chọn
+                                                                    if (existingIndex !== -1) {
+                                                                        updatedForms.splice(existingIndex, 1);
+                                                                    }
+                                                                }
 
-                                        <Tooltip title='Thêm giá trị mới'>
-                                            <Button
-                                                color="primary"
-                                                variant="outlined"
-                                                className="btn-item"
-                                                icon={<PlusOutlined />}
-                                                onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
-                                            />
-                                        </Tooltip>
-                                    </div>
-                                </div>
-                            ))}
+                                                                setForms(updatedForms);
+                                                            }}
+                                                            value={forms.find(f => f.id === attr.id)?.values.map(v => v.id) || []}
+                                                        >
+                                                            {attributeValue ? (
+                                                                attributeValue
+                                                                    .filter(val => val.attribute_id === attr.id)
+                                                                    .map(val => (
+                                                                        <Option key={val.id} value={val.id}>
+                                                                            {val.value}
+                                                                        </Option>
+                                                                    ))
+                                                            ) : (
+                                                                <Option disabled>Đang tải...</Option>
+                                                            )}
+                                                        </Select>
+
+                                                        <Tooltip title='Thêm giá trị mới'>
+                                                            <Button
+                                                                color="primary"
+                                                                variant="outlined"
+                                                                className="btn-item"
+                                                                icon={<PlusOutlined />}
+                                                                onClick={() => setIsValueModalOpen(true)} // Mở modal tạo giá trị thuộc tính mới
+                                                            />
+                                                        </Tooltip>
+                                                    </div>
+                                                </div>
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                ))
+                        ) : (
+                            <p>Không có thuộc tính nào để hiển thị.</p>
+                        )}
 
                         <Button
                             color="primary" variant="outlined" className="btn-item"
@@ -1064,7 +1086,7 @@ const Creat = () => {
                 )}
 
                 <Modal
-                    title="Thêm thuộc tính mới"
+                    title="Tạo thuộc tính mới"
                     visible={isAttributeModalOpen}
                     onCancel={() => setIsAttributeModalOpen(false)}
                     footer={null}
@@ -1141,7 +1163,7 @@ const Creat = () => {
                 </Modal>
 
                 <Modal
-                    title="Tạo thương hiệu mới"
+                    title="Thêm thương hiệu mới"
                     visible={isModalVisible}
                     onCancel={() => setIsModalVisible(false)}
                     footer={null}

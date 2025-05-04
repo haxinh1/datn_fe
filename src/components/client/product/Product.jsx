@@ -45,7 +45,7 @@ const Product = (props) => {
     <>
       <div className="product product-2 text-center">
         <figure className="product-media">
-          <span className="product-label label-sale">Sale</span>
+          <span className="product-label label-sale">New</span>
           <Link to={`/product-detail/${product.id}`}>
             <img
               alt={product.name}

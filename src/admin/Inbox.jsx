@@ -3,7 +3,7 @@ import { List, message, Button, Input, Card, Typography, Upload } from "antd";
 import axios from "axios";
 import { closeChatSession, getChatSessions, getMessages, sendMessage } from "../services/chatBox";
 import echo from "../echo";
-import { PictureOutlined, UploadOutlined } from "@ant-design/icons";
+import { MessageOutlined, PictureOutlined, UploadOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -146,11 +146,26 @@ const Inbox = () => {
 
     return (
         <div style={{ display: "flex", gap: 20, padding: 20 }}>
-            <Card title="Danh sách phiên chat" style={{ width: 300 }}>
+            <Card style={{ width: 300 }}>
+                <h1 className="mb-5">
+                    <MessageOutlined style={{ marginRight: "8px" }} />
+                    Danh sách phiên chat
+                </h1>
+
                 <List
                     dataSource={chatSessions}
                     renderItem={(session) => (
-                        <List.Item onClick={() => handleSelectSession(session)} style={{ cursor: "pointer" }}>
+                        <List.Item
+                            onClick={() => handleSelectSession(session)}
+                            style={{
+                                cursor: "pointer",
+                                padding: "8px 12px",
+                                borderRadius: "4px",
+                                transition: "all 0.3s ease",
+                                backgroundColor: selectedSession && selectedSession.id === session.id ? "#f5f5f5" : "transparent",
+                                color: selectedSession && selectedSession.id === session.id ? "#1890ff" : "inherit",
+                            }}
+                        >
                             <Text strong>{session.customer && session.customer.fullname || "Khách hàng"}{" " + session.id}</Text>
                         </List.Item>
                     )}
@@ -158,10 +173,12 @@ const Inbox = () => {
             </Card>
 
             {selectedSession && (
-                <Card title={`Chat với  ${selectedSession.customer && selectedSession.customer.fullname || "Khách hàng"}`} style={{ flex: 1 }}>
+                <Card style={{ flex: 1 }}>
+                    <h1 className="mb-5">{`${selectedSession.customer && selectedSession.customer.fullname || "Khách hàng"}`}</h1>
+
                     <div style={{ height: 300, overflowY: "scroll", borderBottom: "1px solid #ddd", padding: 10 }}>
                         {messages.map((msg) => {
-                            
+
                             const isCustomer = msg.sender_type === 'customer' || msg.sender_type === 'guest';
 
                             return (
