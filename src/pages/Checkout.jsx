@@ -1647,14 +1647,14 @@ const Checkout = () => {
           </div>
 
           <div className="add">
-            <button
+            <Button
               key="submit"
               type="primary"
               onClick={handleConfirmPayment}
               style={{ backgroundColor: "#eea287", color: "white" }}
             >
               Xác nhận
-            </button>
+            </Button>
           </div>
         </Modal>
       </main>

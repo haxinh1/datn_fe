@@ -9,33 +9,89 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 import ProductTabs from "./ProductTabs";
+import { AttributesServices } from "../../../services/attributes";
 
 const colorMap = {
   đen: "#333333",
   trắng: "#ffffff",
   đỏ: "#ff0000",
-  "xanh dương": "#3a588b",
+  xanh: "#3a588b",
   vàng: "#eab656",
+  xám: '#808080'
 };
 
 const ProductDetailClient = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [product, setProduct] = useState({});
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedAttributes, setSelectedAttributes] = useState({}); // Lưu trữ thuộc tính đã chọn: { [attribute_id]: attribute_value_id }
+  const [availableAttributes, setAvailableAttributes] = useState([]); // Lưu trữ danh sách attribute_id có sẵn
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState("");
   const [modal2Open, setModal2Open] = useState(false);
-  const [selectedColorId, setSelectedColorId] = useState(null);
-  const [selectedSizeId, setSelectedSizeId] = useState("");
   const [avgRate, setAvgRate] = useState(null);
   const [dataViewed, setDataViewed] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
+  const [attributeLabels, setAttributeLabels] = useState({})
 
   const { Title } = Typography;
+
+  // Trong useEffect theo dõi product
+  useEffect(() => {
+    if (product.atribute_value_product?.length > 0) {
+      const uniqueAttributes = [...new Set(
+        product.atribute_value_product.map(attr => attr.attribute_value.attribute_id)
+      )];
+      setAvailableAttributes(uniqueAttributes);
+      // Chỉ giữ lại các thuộc tính hợp lệ trong selectedAttributes
+      setSelectedAttributes((prev) => {
+        const newAttributes = {};
+        uniqueAttributes.forEach(attrId => {
+          if (prev[attrId] && product.atribute_value_product.some(attr =>
+            attr.attribute_value.attribute_id === attrId &&
+            attr.attribute_value_id === prev[attrId]
+          )) {
+            newAttributes[attrId] = prev[attrId];
+          }
+        });
+        return newAttributes;
+      });
+      setSelectedVariant(null);
+      setQuantity(1);
+    } else {
+      setAvailableAttributes([]);
+      setSelectedAttributes({});
+      setSelectedVariant(null);
+    }
+  }, [product]);
+
+  useEffect(() => {
+    if (product.thumbnail) {
+      setMainImage(product.thumbnail);
+    }
+  }, [product.thumbnail]);
+
+  useEffect(() => {
+    const fetchAttributesData = async () => {
+      try {
+        const response = await AttributesServices.fetchAttributes();
+        const attributes = response.data.reduce((acc, attr) => {
+          acc[attr.id] = attr.name; // Tạo ánh xạ attribute_id -> name
+          return acc;
+        }, {});
+        setAttributeLabels(attributes);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách thuộc tính:", error);
+        message.error("Không thể tải danh sách thuộc tính. Vui lòng thử lại!");
+      }
+    };
+
+    fetchAttributesData();
+    fetchProduct();
+    fetchProductRecommend();
+  }, [id]);
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -81,11 +137,23 @@ const ProductDetailClient = () => {
   }, [product]);
 
   const getCartQuantity = () => {
-    const matchingItem = cartItems.find(
-      (item) =>
-        item.product_id === product.id &&
-        item.product_variant_id === (selectedVariant ? selectedVariant.id : null)
-    );
+    const matchingItem = cartItems.find((item) => {
+      if (item.product_id !== product.id || item.product_variant_id !== (selectedVariant ? selectedVariant.id : null)) {
+        return false;
+      }
+      // So sánh attributes
+      const selectedAttrs = Object.entries(selectedAttributes).map(([attrId, valueId]) => ({
+        attribute_id: Number(attrId),
+        attribute_value_id: valueId,
+      }));
+      return item.attributes?.every((attr) =>
+        selectedAttrs.some(
+          (selAttr) =>
+            selAttr.attribute_id === attr.attribute_id &&
+            selAttr.attribute_value_id === attr.attribute_value_id
+        )
+      );
+    });
     return matchingItem ? matchingItem.quantity : 0;
   };
 
@@ -95,18 +163,12 @@ const ProductDetailClient = () => {
     return Math.max(0, totalStock - cartQuantity);
   };
 
-  const handleColorSelect = (colorId) => {
-    setSelectedColor(colorId);
-    setSelectedColorId(colorId);
-    setSelectedSize("");
-    setSelectedVariant(null);
-    setQuantity(1);
-  };
-
-  const handleSizeSelect = (sizeId) => {
-    setSelectedSize(sizeId);
-    setSelectedSizeId(sizeId);
-    findVariant(selectedColor, sizeId);
+  const handleAttributeSelect = (attributeId, valueId) => {
+    setSelectedAttributes((prev) => ({
+      ...prev,
+      [attributeId]: valueId,
+    }));
+    setTimeout(() => findVariant(), 0);
   };
 
   const formatPrice = (price) => {
@@ -117,18 +179,22 @@ const ProductDetailClient = () => {
     return formatter.format(price);
   };
 
-  const findVariant = (colorId, sizeId) => {
+  const findVariant = () => {
     const variant = product.variants?.find((v) => {
       const variantAttributes = v.attribute_value_product_variants.map(
         (attr) => attr.attribute_value_id
       );
-      return (
-        variantAttributes.includes(colorId) &&
-        variantAttributes.includes(Number(sizeId))
-      );
+      // Lấy danh sách các attribute_id đã chọn
+      const selectedAttrIds = Object.keys(selectedAttributes).map(Number);
+      // Kiểm tra xem tất cả các thuộc tính đã chọn có khớp với biến thể
+      return availableAttributes.every((attrId) => {
+        const selectedValueId = selectedAttributes[attrId];
+        if (!selectedValueId) return false; // Chưa chọn thuộc tính thì không khớp
+        return variantAttributes.includes(Number(selectedValueId));
+      }) && selectedAttrIds.length === availableAttributes.length; // Đảm bảo số lượng thuộc tính khớp
     });
-    setQuantity(1);
     setSelectedVariant(variant || null);
+    setQuantity(1);
     if (variant && variant.is_active === 0) {
       message.warning("Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác.");
     }
@@ -159,8 +225,26 @@ const ProductDetailClient = () => {
       return;
     }
 
+    // Kiểm tra xem đã chọn đủ thuộc tính cần thiết chưa
+    for (const attrId of availableAttributes) {
+      if (!selectedAttributes[attrId]) {
+        const label = attributeLabels[attrId] ? attributeLabels[attrId].toLowerCase() : `thuộc tính ${attrId}`;
+        message.error(`Vui lòng chọn ${label} trước khi thêm vào giỏ hàng.`);
+        return;
+      }
+    }
+
+    // Kiểm tra xem đã chọn đủ thuộc tính cần thiết chưa
+    for (const attrId of availableAttributes) {
+      if (!selectedAttributes[attrId]) {
+        const label = attrId === 1 ? "màu" : attrId === 2 ? "kích thước" : `thuộc tính ${attrId}`;
+        message.error(`Vui lòng chọn ${label} trước khi thêm vào giỏ hàng.`);
+        return;
+      }
+    }
+
     if (product.variants?.length > 0 && !selectedVariant) {
-      message.error("Vui lòng chọn biến thể trước khi thêm vào giỏ hàng.");
+      message.error("Không tìm thấy biến thể phù hợp. Vui lòng chọn lại.");
       return;
     }
 
@@ -188,10 +272,10 @@ const ProductDetailClient = () => {
         : isSalePriceValid(product.sale_price_end_at)
           ? product.sale_price
           : product.sell_price,
-      attributes: [
-        { attribute_id: 1, attribute_value_id: selectedColorId },
-        { attribute_id: 2, attribute_value_id: selectedSizeId },
-      ],
+      attributes: Object.entries(selectedAttributes).map(([attrId, valueId]) => ({
+        attribute_id: Number(attrId),
+        attribute_value_id: valueId,
+      })),
     };
 
     try {
@@ -213,11 +297,30 @@ const ProductDetailClient = () => {
           attributes: itemToAdd.attributes,
         };
 
-        const existingProductIndex = existingAttributes.findIndex(
-          (item) =>
-            item.product_id === product.id &&
-            item.product_variant_id === newAttributes.product_variant_id
-        );
+        // So sánh toàn bộ tập hợp attributes
+        const existingProductIndex = existingAttributes.findIndex((item) => {
+          if (item.product_id !== product.id || item.product_variant_id !== newAttributes.product_variant_id) {
+            return false;
+          }
+          // Kiểm tra số lượng và giá trị attributes phải khớp hoàn toàn
+          return (
+            item.attributes.length === newAttributes.attributes.length &&
+            item.attributes.every((attr) =>
+              newAttributes.attributes.some(
+                (newAttr) =>
+                  newAttr.attribute_id === attr.attribute_id &&
+                  newAttr.attribute_value_id === attr.attribute_value_id
+              )
+            ) &&
+            newAttributes.attributes.every((newAttr) =>
+              item.attributes.some(
+                (attr) =>
+                  attr.attribute_id === newAttr.attribute_id &&
+                  attr.attribute_value_id === newAttr.attribute_value_id
+              )
+            )
+          );
+        });
 
         if (existingProductIndex !== -1) {
           const newTotalQuantity = existingAttributes[existingProductIndex].quantity + quantity;
@@ -233,11 +336,32 @@ const ProductDetailClient = () => {
           existingAttributes.push(newAttributes);
         }
 
-        const existingCartItemIndex = cartItems.findIndex(
-          (item) =>
-            item.product_id === product.id &&
-            item.product_variant_id === itemToAdd.product_variant_id
-        );
+        // Cập nhật cartItems với attributes
+        const existingCartItemIndex = cartItems.findIndex((item) => {
+          if (item.product_id !== product.id || item.product_variant_id !== itemToAdd.product_variant_id) {
+            return false;
+          }
+          const cartAttrs = existingAttributes.find(
+            (attr) => attr.product_id === item.product_id && attr.product_variant_id === item.product_variant_id
+          )?.attributes || [];
+          return (
+            itemToAdd.attributes.length === cartAttrs.length &&
+            itemToAdd.attributes.every((attr) =>
+              cartAttrs.some(
+                (cartAttr) =>
+                  cartAttr.attribute_id === attr.attribute_id &&
+                  cartAttr.attribute_value_id === attr.attribute_value_id
+              )
+            ) &&
+            cartAttrs.every((cartAttr) =>
+              itemToAdd.attributes.some(
+                (attr) =>
+                  attr.attribute_id === cartAttr.attribute_id &&
+                  attr.attribute_value_id === cartAttr.attribute_value_id
+              )
+            )
+          );
+        });
 
         if (existingCartItemIndex !== -1) {
           const newTotalQuantity = cartItems[existingCartItemIndex].quantity + quantity;
@@ -254,6 +378,7 @@ const ProductDetailClient = () => {
             product_id: product.id,
             product_variant_id: selectedVariant ? selectedVariant.id : null,
             quantity: quantity,
+            attributes: itemToAdd.attributes,
           });
         }
 
@@ -278,19 +403,31 @@ const ProductDetailClient = () => {
     if (
       !stockAvailable ||
       product.is_active === 0 ||
-      (selectedVariant && selectedVariant.is_active === 0) ||
-      (product.variants?.length > 0 && !selectedVariant)
+      (selectedVariant && selectedVariant.is_active === 0)
     ) {
       e.preventDefault();
       message.error(
         product.is_active === 0
           ? "Sản phẩm này đã ngừng kinh doanh."
-          : product.variants?.length > 0 && !selectedVariant
-            ? "Vui lòng chọn biến thể trước khi kéo."
-            : selectedVariant && selectedVariant.is_active === 0
-              ? "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
-              : "Sản phẩm hết hàng."
+          : selectedVariant && selectedVariant.is_active === 0
+            ? "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
+            : "Sản phẩm hết hàng."
       );
+      return;
+    }
+
+    for (const attrId of availableAttributes) {
+      if (!selectedAttributes[attrId]) {
+        const label = attributeLabels[attrId] ? attributeLabels[attrId].toLowerCase() : `thuộc tính ${attrId}`;
+        e.preventDefault();
+        message.error(`Vui lòng chọn ${label} trước khi kéo.`);
+        return;
+      }
+    }
+
+    if (product.variants?.length > 0 && !selectedVariant) {
+      e.preventDefault();
+      message.error("Không tìm thấy biến thể phù hợp. Vui lòng chọn lại.");
       return;
     }
 
@@ -312,10 +449,10 @@ const ProductDetailClient = () => {
         : isSalePriceValid(product.sale_price_end_at)
           ? product.sale_price
           : product.sell_price,
-      attributes: [
-        { attribute_id: 1, attribute_value_id: selectedColorId },
-        { attribute_id: 2, attribute_value_id: selectedSizeId },
-      ],
+      attributes: Object.entries(selectedAttributes).map(([attrId, valueId]) => ({
+        attribute_id: Number(attrId),
+        attribute_value_id: valueId,
+      })),
     };
 
     e.dataTransfer.setData("application/json", JSON.stringify(dragData));
@@ -402,12 +539,6 @@ const ProductDetailClient = () => {
     fetchProduct();
     fetchProductRecommend();
   }, [id]);
-
-  useEffect(() => {
-    if (product.thumbnail) {
-      setMainImage(product.thumbnail);
-    }
-  }, [product.thumbnail]);
 
   return (
     <>
@@ -571,7 +702,7 @@ const ProductDetailClient = () => {
 
                   {product.is_active === 1 && (
                     <>
-                      {(selectedColor && selectedSize) && (
+                      {(availableAttributes.length === 0 || availableAttributes.every(attrId => selectedAttributes[attrId])) && (
                         <div className="details-filter-row details-row-size">
                           <label>Tồn kho:</label>
                           <div className="product-nav product-nav-dots">
@@ -579,62 +710,82 @@ const ProductDetailClient = () => {
                           </div>
                         </div>
                       )}
-                      {product.atribute_value_product?.length > 0 && (
-                        <div className="details-filter-row details-row-size">
-                          <label htmlFor="Color">Màu:</label>
-                          <div className="product-nav product-nav-dots">
-                            {product.atribute_value_product
-                              .filter((attr) => attr.attribute_value.attribute_id === 1)
-                              .map((item) => {
-                                const colorName = item.attribute_value.value;
-                                const colorCode = colorMap[colorName] || "#000";
-                                return (
-                                  <a
-                                    key={item.attribute_value_id}
-                                    href="#"
-                                    style={{
-                                      background: colorCode,
-                                      border: "1px solid #ddd",
-                                      borderRadius: "10px",
-                                    }}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      handleColorSelect(item.attribute_value_id);
-                                    }}
-                                  >
-                                    <span className="sr-only">{colorName}</span>
-                                  </a>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
 
-                      {product.atribute_value_product?.length > 0 && (
-                        <div className="details-filter-row details-row-size">
-                          <label htmlFor="size">Size:</label>
-                          <div className="select-custom">
-                            <select
-                              name="size"
-                              id="size"
-                              className="form-control"
-                              value={selectedSize}
-                              onChange={(e) => handleSizeSelect(e.target.value)}
-                            >
-                              <option value="">Chọn size</option>
-                              {product.atribute_value_product
-                                .filter((attr) => attr.attribute_value.attribute_id === 2)
-                                .map((item) => (
-                                  <option
-                                    key={item.attribute_value_id}
-                                    value={item.attribute_value_id}
-                                  >
-                                    {item.attribute_value.value}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                        </div>
+                      {product.atribute_value_product?.length > 0 && Object.keys(attributeLabels).length > 0 && (
+                        <>
+                          {availableAttributes.map((attrId) => {
+                            const attributes = product.atribute_value_product.filter(
+                              (attr) => attr.attribute_value.attribute_id === attrId
+                            );
+                            // Lấy tên label từ attributeLabels, mặc định là "Thuộc tính" nếu không tìm thấy
+                            const label = attributeLabels[attrId] ? `${attributeLabels[attrId]}:` : `Thuộc tính ${attrId}:`;
+                            const isColor = attrId === 1; // Hiển thị dạng ô màu cho màu sắc, dropdown cho các thuộc tính khác
+
+                            return (
+                              <div key={attrId} className="details-filter-row details-row-size">
+                                <label htmlFor={`attribute-${attrId}`}>{label}</label>
+                                {isColor ? (
+                                  <div className="product-nav product-nav-dots">
+                                    {attributes.map((item) => {
+                                      const colorName = item.attribute_value.value;
+                                      const colorCode = colorMap[colorName] || "#000"; // Mặc định là đen nếu không tìm thấy trong colorMap
+                                      return (
+                                        <div
+                                          key={item.attribute_value_id}
+                                          className="color-option"
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            marginRight: "10px",
+                                            cursor: "pointer",
+                                          }}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            handleAttributeSelect(attrId, item.attribute_value_id);
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              display: "inline-block",
+                                              width: "24px",
+                                              height: "24px",
+                                              background: colorCode,
+                                              border: `1px solid ${colorName === "trắng" ? "#ddd" : colorCode}`,
+                                              borderRadius: "50%",
+                                            }}
+                                          ></span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div className="select-custom">
+                                    <select
+                                      name={`attribute-${attrId}`}
+                                      id={`attribute-${attrId}`}
+                                      className="form-control"
+                                      value={selectedAttributes[attrId] || ""}
+                                      onChange={(e) => handleAttributeSelect(attrId, e.target.value)}
+                                    >
+                                      <option value="">
+                                        Chọn {attributeLabels[attrId] ? attributeLabels[attrId].toLowerCase() : `thuộc tính ${attrId}`}
+                                      </option>
+                                      {attributes.map((item) => (
+                                        <option
+                                          key={item.attribute_value_id}
+                                          value={item.attribute_value_id}
+                                        >
+                                          {item.attribute_value.value}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
                       )}
 
                       <div className="details-filter-row details-row-size">
@@ -662,14 +813,17 @@ const ProductDetailClient = () => {
                             if (
                               !stockAvailable ||
                               product.is_active === 0 ||
-                              (selectedVariant && selectedVariant.is_active === 0)
+                              (selectedVariant && selectedVariant.is_active === 0) ||
+                              (availableAttributes.length > 0 && !availableAttributes.every(attrId => selectedAttributes[attrId]))
                             ) {
                               message.error(
                                 product.is_active === 0
                                   ? "Sản phẩm này đã ngừng kinh doanh."
                                   : !stockAvailable
                                     ? "Sản phẩm hết hàng."
-                                    : "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
+                                    : availableAttributes.length > 0 && !availableAttributes.every(attrId => selectedAttributes[attrId])
+                                      ? "Vui lòng chọn đầy đủ các thuộc tính."
+                                      : "Biến thể này đã ngừng kinh doanh. Vui lòng chọn biến thể khác."
                               );
                               return;
                             }
@@ -678,7 +832,8 @@ const ProductDetailClient = () => {
                           href="#"
                           className={`btn-product btn-cart ${!stockAvailable ||
                             product.is_active === 0 ||
-                            (selectedVariant && selectedVariant.is_active === 0)
+                            (selectedVariant && selectedVariant.is_active === 0) ||
+                            (availableAttributes.length > 0 && !availableAttributes.every(attrId => selectedAttributes[attrId]))
                             ? "disabled text-muted"
                             : ""
                             }`}
@@ -686,7 +841,8 @@ const ProductDetailClient = () => {
                             pointerEvents:
                               !stockAvailable ||
                                 product.is_active === 0 ||
-                                (selectedVariant && selectedVariant.is_active === 0)
+                                (selectedVariant && selectedVariant.is_active === 0) ||
+                                (availableAttributes.length > 0 && !availableAttributes.every(attrId => selectedAttributes[attrId]))
                                 ? "none"
                                 : "auto",
                             fontFamily: "'Roboto', 'Arial', sans-serif",
@@ -737,9 +893,8 @@ const ProductDetailClient = () => {
 
         {recommendedProducts.length > 0 && (
           <div className="container" style={{ marginTop: "50px" }}>
-            <h2 className="title text-center mb-4">2 sản phẩm hay được mua cùng</h2>
-
             <Row gutter={[16, 16]} justify="center">
+              <h2 className="title text-center mb-4">2 sản phẩm hay được mua cùng</h2>
               {recommendedProducts.map((product) => (
                 <div className="col-6 col-md-4 col-lg-3" key={product.product_id}>
                   <div className="product product-7 text-center">

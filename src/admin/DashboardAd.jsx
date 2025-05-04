@@ -285,34 +285,6 @@ const Dashboard = () => {
           <Card>
             <h1 className="mb-5">Doanh thu</h1>
             <Row gutter={24}>
-              {/* Doanh thu theo ngày */}
-              <Col span={6}>
-                <Card bordered={false} className="revenue-card">
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <h4>Doanh thu ngày</h4>
-                    <DatePicker
-                      value={selectedDate}
-                      onChange={handleDateChange}
-                      className="custom-date-picker"
-                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
-                      placeholder=""
-                      bordered={false}
-                    />
-                  </div>
-                  <span className="w-warning">
-                    {filteredRevenueDay > 0
-                      ? `${formatPrice(filteredRevenueDay)} VNĐ`
-                      : "Chưa có dữ liệu"}
-                  </span>
-                </Card>
-              </Col>
               {/* Nhập hàng theo ngày */}
               <Col span={6}>
                 <Card bordered={false} className="revenue-card">
@@ -341,6 +313,35 @@ const Dashboard = () => {
                   </span>
                 </Card>
               </Col>
+              {/* Doanh thu theo ngày */}
+              <Col span={6}>
+                <Card bordered={false} className="revenue-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <h4>Doanh thu ngày</h4>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={handleDateChange}
+                      className="custom-date-picker"
+                      suffixIcon={<CalendarOutlined style={{ fontSize: '24px' }} />}
+                      placeholder=""
+                      bordered={false}
+                    />
+                  </div>
+                  <span className="w-warning">
+                    {filteredRevenueDay > 0
+                      ? `${formatPrice(filteredRevenueDay)} VNĐ`
+                      : "Chưa có dữ liệu"}
+                  </span>
+                </Card>
+              </Col>
+
               {/* Doanh thu theo tháng */}
               <Col span={6}>
                 <Card bordered={false} className="revenue-card">

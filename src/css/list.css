@@ -131,3 +131,8 @@
     white-space: nowrap;
     display: inline-block;
 }
+
+.color-option:hover span:first-child {
+    transform: scale(1.1);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
