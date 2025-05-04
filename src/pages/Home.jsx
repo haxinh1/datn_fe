@@ -30,8 +30,8 @@ import ig6 from "../assets/images/theme/ig6.jpg";
 import banner4 from "../assets/images/demo-8/banners/banner-1.jpg";
 import banner5 from "../assets/images/demo-8/banners/banner-2.jpg";
 import banner6 from "../assets/images/demo-8/banners/banner-6.jpg";
-import slider1 from "../assets/images/demo-8/slider/img-1.png";
-import slider2 from "../assets/images/demo-8/slider/img-2.png";
+import slider1 from "../assets/images/demo-8/slider/cut3.png";
+import slider2 from "../assets/images/demo-8/slider/cut4.png";
 import ProductList from "../components/client/product/ProductList";
 
 import { Link } from "react-router-dom";
@@ -243,7 +243,7 @@ const Home = () => {
             <h4 className="banner-subtitle text-white">thời trang</h4>
             <h3 className="banner-title text-white">molla</h3>
             <p className="d-none d-lg-block text-white">
-              <span style={{fontSize: '16px'}}>
+              <span style={{ fontSize: '16px' }}>
                 mang đến sự đa dạng phong cách thời trang cho nam giới, chuyên cung cấp các sản phẩm chất lượng cao từ áo sơ mi, áo thun, quần jeans đến phụ kiện, giúp phái mạnh tự tin khẳng định phong cách trong mọi hoàn cảnh.{" "}
               </span>
             </p>

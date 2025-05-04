@@ -35,7 +35,7 @@ const updateCoupon = async (id, payload) => {
 
 const getAvailableCoupons = async () => {
   try {
-    const { data } = await instance.get("/coupons/availableCoupons");
+    const { data } = await instance.get("coupons/available/coupons");
     return data;
   } catch (error) {
     console.log(error);

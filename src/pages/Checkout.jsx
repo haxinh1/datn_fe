@@ -804,32 +804,76 @@ const Checkout = () => {
     }
   };
 
+  // useEffect(() => {
+  //   const fetchCouponsData = async () => {
+  //     try {
+  //       const storedUser = JSON.parse(localStorage.getItem("user"));
+
+  //       let userCouponsData = [];
+  //       let availableCouponsData = [];
+
+  //       if (storedUser?.id) {
+  //         userCouponsData = await CouponServices.getCounponById(storedUser.id);
+  //         setUserCoupons(Array.isArray(userCouponsData) ? userCouponsData : []);
+  //       }
+
+  //       const searchParams = {
+  //         is_active: 1,
+  //         page: 1,
+  //       };
+  //       availableCouponsData = await CouponServices.searchCoupons(searchParams);
+
+  //       if (availableCouponsData?.data) {
+  //         setCoupons(availableCouponsData.data);
+  //       } else {
+  //         setCoupons([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("❌ Lỗi khi lấy danh sách mã giảm giá:", error);
+  //     }
+  //   };
+
+  //   fetchCouponsData();
+  // }, []);
+
   useEffect(() => {
     const fetchCouponsData = async () => {
       try {
         const storedUser = JSON.parse(localStorage.getItem("user"));
-
         let userCouponsData = [];
         let availableCouponsData = [];
 
+        // Lấy coupon theo ID người dùng (nếu đã đăng nhập)
         if (storedUser?.id) {
           userCouponsData = await CouponServices.getCounponById(storedUser.id);
           setUserCoupons(Array.isArray(userCouponsData) ? userCouponsData : []);
         }
 
-        const searchParams = {
-          is_active: 1,
-          page: 1,
-        };
-        availableCouponsData = await CouponServices.searchCoupons(searchParams);
+        // Lấy danh sách coupon công khai/có sẵn thông qua getAvailableCoupons
+        availableCouponsData = await CouponServices.getAvailableCoupons();
 
+        // Kết hợp danh sách coupon
         if (availableCouponsData?.data) {
-          setCoupons(availableCouponsData.data);
+          // Gộp userCouponsData và availableCouponsData, loại bỏ trùng lặp (dựa trên coupon ID hoặc code)
+          const combinedCoupons = [
+            ...(Array.isArray(userCouponsData) ? userCouponsData : []),
+            ...(Array.isArray(availableCouponsData.data) ? availableCouponsData.data : []),
+          ].reduce((unique, coupon) => {
+            // Kiểm tra trùng lặp dựa trên ID hoặc code
+            if (!unique.some((item) => item.id === coupon.id || item.code === coupon.code)) {
+              unique.push(coupon);
+            }
+            return unique;
+          }, []);
+
+          setCoupons(combinedCoupons);
         } else {
-          setCoupons([]);
+          // Nếu không có coupon công khai, chỉ sử dụng coupon của người dùng
+          setCoupons(Array.isArray(userCouponsData) ? userCouponsData : []);
         }
       } catch (error) {
         console.error("❌ Lỗi khi lấy danh sách mã giảm giá:", error);
+        setCoupons([]);
       }
     };
 
