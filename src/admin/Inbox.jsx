@@ -61,7 +61,7 @@ const Inbox = () => {
     };
 
     const handleSendMessage = async () => {
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() && !imageUrls.length) return;
         try {
             await sendMessage({
                 chat_session_id: selectedSession.id,
@@ -94,8 +94,7 @@ const Inbox = () => {
     };
 
     const handleUploadChange = ({ file, fileList }) => {
-        console.log('File list:', fileList);
-        
+
         const newFileList = fileList.map((f) => ({
             uid: f.uid,
             name: f.name || 'Hình ảnh',
@@ -152,16 +151,17 @@ const Inbox = () => {
                     dataSource={chatSessions}
                     renderItem={(session) => (
                         <List.Item onClick={() => handleSelectSession(session)} style={{ cursor: "pointer" }}>
-                            <Text strong>Phiên #{session.id}</Text>
+                            <Text strong>{session.customer && session.customer.fullname || "Khách hàng"}{" " + session.id}</Text>
                         </List.Item>
                     )}
                 />
             </Card>
 
             {selectedSession && (
-                <Card title={`Chat với khách hàng #${selectedSession.id}`} style={{ flex: 1 }}>
+                <Card title={`Chat với  ${selectedSession.customer && selectedSession.customer.fullname || "Khách hàng"}`} style={{ flex: 1 }}>
                     <div style={{ height: 300, overflowY: "scroll", borderBottom: "1px solid #ddd", padding: 10 }}>
                         {messages.map((msg) => {
+                            
                             const isCustomer = msg.sender_type === 'customer' || msg.sender_type === 'guest';
 
                             return (
